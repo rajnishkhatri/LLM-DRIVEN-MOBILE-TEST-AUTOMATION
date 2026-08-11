@@ -17,7 +17,6 @@ Use this when you want to run a **spec-driven change** in
 | Clone / provision skills | [../SETUP.md](../SETUP.md) |
 | Full operator manual (all four families) | [sdd-usage-guide.md](sdd-usage-guide.md) |
 | Agent pointers | [../../AGENTS.md](../../AGENTS.md) |
-| Worked throwaway smoke (signed-off) | [../research/sdd-lifecycle-smoke-receipt.md](../research/sdd-lifecycle-smoke-receipt.md) |
 
 **This repo is the design workspace** (specs, plans, ADRs). It is **not** the
 Java spine/o1 delivery repo — `coding-rules` and Java `test_gate` are not
@@ -195,7 +194,7 @@ Your reply: `SIGN-OFF` (or name a gap). Commit only if you ask for a commit.
 | Tasks | `docs/sdd/plans/<name>.tasks.md` |
 | Early research / brainstorm | `docs/research/<name>-brainstorm.md` (optional) |
 
-Use one basename across the triplet (e.g. `skill-sync`, `sdd-lifecycle-smoke`).
+Use one basename across the triplet (e.g. `skill-sync`).
 
 Ask-first / new abstraction → ADR under the binding `adr_home` (or
 `adr_home_sdd_roles` if the change touches `tooling/sdd-roles/`), using the
@@ -217,16 +216,17 @@ Ask-first / new abstraction → ADR under the binding `adr_home` (or
 
 ## 6. Smoke / sanity
 
-A signed-off throwaway conveyor run already exists:
-
-- Spec: `docs/sdd/specs/sdd-lifecycle-smoke.spec.md`
-- Receipt: `docs/research/sdd-lifecycle-smoke-receipt.md`
-
-To re-prove install only, you can ask:
+To prove SDD is ready after setup (no new change):
 
 ```text
 Load sdd-lifecycle. Confirm binding + skill paths for this repo, run
 check_gate, and summarize whether SDD is ready — do not start a new change.
+```
+
+Or from the repo root:
+
+```bash
+python3 tooling/skill-sync/skill_sync.py check
 ```
 
 ---

@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'Ch.16 Independence - layers x use-cases grid (illustrative order system)'
+description: 'An illustrative order-processing system decomposed along BOTH axes at once: horizontal layers (UI / application rules / domain rules) and vertical use cases (AddOrder,'
+tags: [coding-rules, diagram]
+---
+
 # Ch.16 Independence - layers x use-cases grid (illustrative order system)
 
 ![Ch.16 Independence - layers x use-cases grid (illustrative order system)](ch16-independence-grid.svg)

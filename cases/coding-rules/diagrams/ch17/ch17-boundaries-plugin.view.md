@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'Ch.17 Boundaries - plugin architecture (illustrative wiki system)'
+description: 'An illustrative wiki system (FitNesse-style) partitioned into a core and plugins.'
+tags: [coding-rules, diagram]
+---
+
 # Ch.17 Boundaries - plugin architecture (illustrative wiki system)
 
 ![Ch.17 Boundaries - plugin architecture (illustrative wiki system)](ch17-boundaries-plugin.svg)

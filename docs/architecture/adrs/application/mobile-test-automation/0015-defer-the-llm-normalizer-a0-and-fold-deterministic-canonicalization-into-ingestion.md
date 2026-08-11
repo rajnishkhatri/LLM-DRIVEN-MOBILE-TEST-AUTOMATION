@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'ADR 0015. LLM normalizer (A0): DEFERRED at the 2026-08-01 gate, then RATIFIED by owner override 2026-08-02 (see Amendment)'
+description: 'Fold deterministic canonicalization into ingestion now; LLM normalizer (A0) deferred at gate then ratified by owner override 2026-08-02.'
+tags: [architecture, adr]
+---
+
 # ADR 0015. LLM normalizer (A0): DEFERRED at the 2026-08-01 gate, then RATIFIED by owner override 2026-08-02 (see Amendment)
 
 ## Status

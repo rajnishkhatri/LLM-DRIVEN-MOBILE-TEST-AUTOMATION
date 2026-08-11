@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'Ch.17 Boundaries - plugin architecture (illustrative wiki system) — detail tables'
+description: 'Locator: this view opens WIKI from 01-context.'
+tags: [coding-rules, diagram]
+---
+
 # Ch.17 Boundaries - plugin architecture (illustrative wiki system) — detail tables
 
 > An illustrative wiki system (FitNesse-style) partitioned into a core and plugins. The core business rules OWN the WikiPage interface; every plugin (the UI, the page stores, the web framework) IMPLEMENTS that interface and DEPENDS ON the core. Every arrow points TOWARD the core - the core has zero outgoing dependencies. This is the asymmetric plugin relationship: a plugin cannot break the core, the core can swap any plugin at will. The boundary is drawn across the inheritance arrows just below the core's interface - the same boundary that let FitNesse defer the database decision for 18 months and ultimately abandon it.

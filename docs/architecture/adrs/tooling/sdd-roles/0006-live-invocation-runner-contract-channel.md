@@ -1,3 +1,10 @@
+---
+type: architecture
+title: '6. Live invocation carries the runner contract in the command template'
+description: 'Live harness command templates must carry the runner contract channels ({run_dir}, handoff.draft, {args}) that stub goldens already exercised.'
+tags: [architecture, adr]
+---
+
 # 6. Live invocation carries the runner contract in the command template
 
 Date: 2026-08-09

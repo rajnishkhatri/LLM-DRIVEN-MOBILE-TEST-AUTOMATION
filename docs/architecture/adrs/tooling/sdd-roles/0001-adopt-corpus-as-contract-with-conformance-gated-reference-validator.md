@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'ADR 1. Adopt corpus-as-contract with a conformance-gated reference validator'
+description: 'Adopt the golden corpus + CHK table as the normative, language-neutral contract; one Python reference validator; ports admitted only on identical-verdict conformance.'
+tags: [architecture, adr]
+---
+
 # ADR 1. Adopt corpus-as-contract with a conformance-gated reference validator
 
 ## Status

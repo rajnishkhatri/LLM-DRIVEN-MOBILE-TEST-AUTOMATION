@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'ADR 3. Catalog-as-source: harness projections are build outputs, never sources'
+description: 'Canonical role catalog is the source of truth; harness projections (Claude/Cursor/Copilot) are build outputs, never hand-edited.'
+tags: [architecture, adr]
+---
+
 # ADR 3. Catalog-as-source: harness projections are build outputs, never sources
 
 ## Status

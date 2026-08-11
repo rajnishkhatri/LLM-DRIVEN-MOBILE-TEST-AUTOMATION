@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'P3 — A committed test''s journey to the week-3 gate'
+description: 'A committed test''s journey through replay to an auditable week-3 gate verdict.'
+tags: [architecture, presentation]
+---
+
 # P3 — A committed test's journey to the week-3 gate
 
 ![P3 — A committed test's journey to the week-3 gate](p3-replay-flow.svg)

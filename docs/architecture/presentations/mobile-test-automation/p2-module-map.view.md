@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'P2 — The repo you''ll live in: six Maven modules, one deployable'
+description: 'Repository shape for the spine: six Maven modules, one deployable modular monolith.'
+tags: [architecture, presentation]
+---
+
 # P2 — The repo you'll live in: six Maven modules, one deployable
 
 ![P2 — The repo you'll live in: six Maven modules, one deployable](p2-module-map.svg)

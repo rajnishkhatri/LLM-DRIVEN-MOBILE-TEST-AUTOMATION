@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'P2 — The repo you''ll live in: six Maven modules, one deployable — detail tables'
+description: 'Locator: this view opens SYS from p1-spine-context.'
+tags: [architecture, presentation]
+---
+
 # P2 — The repo you'll live in: six Maven modules, one deployable — detail tables
 
 > How is the new repository shaped? Six Maven modules, one bootable jar (ADR 0005, five-module reading ratified at PLAN-OK). Cluster modules may depend on spine-contracts only — the module-boundary rule wired CI-blocking in task zero; screening is a shared library, not a pipeline component. Opens SYS from P1.

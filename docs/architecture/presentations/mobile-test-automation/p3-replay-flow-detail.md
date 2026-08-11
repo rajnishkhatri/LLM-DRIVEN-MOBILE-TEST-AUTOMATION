@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'P3 — A committed test''s journey to the week-3 gate — detail tables'
+description: 'Locator: this view opens SYS from p1-spine-context.'
+tags: [architecture, presentation]
+---
+
 # P3 — A committed test's journey to the week-3 gate — detail tables
 
 > How does a committed test become an auditable verdict? The replay leg of the spine at component grain — static gate first (seconds, zero device cost), then the queued device gate, then rule-based classification; every hop writes append-only lineage. Opens SYS from P1; gate clause b's ingestion path lives in P2 and the detailed set.

@@ -1,0 +1,17 @@
+{
+  "command": "role-emit",
+  "args": [
+    "project",
+    "--kernel",
+    "<KERNEL>",
+    "--descriptors",
+    "../../orchestrator/descriptors-stub.json",
+    "--harness",
+    "stub-alpha",
+    "--registry",
+    "../../emitter/common/role-registry.json",
+    "--out",
+    "./out"
+  ],
+  "expected_exit": 1
+}

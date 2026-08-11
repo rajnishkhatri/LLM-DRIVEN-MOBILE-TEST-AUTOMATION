@@ -1,0 +1,62 @@
+{
+  "artifact_type": "ir_gate_report",
+  "checks": [
+    {
+      "id": "schemaValid",
+      "outcome": "fail",
+      "violations": [
+        {
+          "detail": "seal broken: digest does not match the canonical IR",
+          "pointer": "/irDigest"
+        }
+      ]
+    },
+    {
+      "id": "opcodeClosed",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "boundedWaits",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "locatorManifest",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "noLiteralCreds",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "ambiguityClear",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "dryRun",
+      "outcome": "pass",
+      "violations": []
+    }
+  ],
+  "contract": "o7-spec-derived.1",
+  "inputs": {
+    "ir_sha256": "a39a48d98ece1123f9d9819fcade050bc5e5b3c8a825280127b4976cb31786f9",
+    "manifest_sha256": "00213d11fb4f510c6a4b56e0feffc069443aba13825a97385661541c37958a36"
+  },
+  "ir_digest": {
+    "computed": "79ba5bf6835059fe97c4c59f6694c82c88a10bfae3214c73b5433cf7b44f86ac",
+    "declared": "79ba5bf6835059fe97c4c59f6694c82c88a10bfae3214c73b5433cf7b44f86a0"
+  },
+  "threshold": {
+    "name": "ir_gate_violations_max",
+    "value": 0
+  },
+  "tool": "ir-gate-checker",
+  "tool_version": "1.0.0",
+  "verdict": "red",
+  "violations_total": 1
+}

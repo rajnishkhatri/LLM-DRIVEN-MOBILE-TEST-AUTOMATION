@@ -1,0 +1,5 @@
+{
+  "check_id": "CHK-NET",
+  "phase": "v1",
+  "expected": "fail"
+}

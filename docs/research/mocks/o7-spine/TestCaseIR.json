@@ -1,0 +1,59 @@
+{
+  "sourceSystem": "octane",
+  "sourceId": "ACC-2087",
+  "title": "Send $25 to a saved Zelle recipient and see the confirmation",
+  "irVersion": "sha:ir:2087:d41c9a...",
+  "irDigest": "sha:ir:2087:d41c9a...",
+  "testData": {
+    "username": "vault:user_qa",
+    "password": "vault:pass_qa",
+    "recipient": "Alex Rivera",
+    "amount": "25.00"
+  },
+  "platforms": ["IOS", "ANDROID"],
+  "provenance": {
+    "a2Version": "sha:a2:8b1e...",
+    "irVersion": "sha:ir:2087:d41c9a...",
+    "committedAt": "2026-08-05T10:07Z"
+  },
+  "steps": [
+    { "index": 0, "action": "TAP", "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the username field", "elementType": "field", "screenContext": "LoginScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "usernameField", "confidence": 0.98, "source": "OBJECT_REPO" }] } },
+    { "index": 1, "action": "TYPE", "inputData": "${testData.username}", "timeoutMs": 7000, "syncAfter": "NONE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the username field", "screenContext": "LoginScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "usernameField", "confidence": 0.98, "source": "OBJECT_REPO" }] } },
+    { "index": 2, "action": "TYPE", "inputData": "${testData.password}", "timeoutMs": 7000, "syncAfter": "NONE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the password field", "screenContext": "LoginScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "passwordField", "confidence": 0.98, "source": "OBJECT_REPO" }] } },
+    { "index": 3, "action": "TAP", "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the Sign In button", "screenContext": "LoginScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "loginButton", "confidence": 0.97, "source": "OBJECT_REPO" }] } },
+    { "index": 4, "action": "ASSERT", "timeoutMs": 8000, "syncAfter": "NONE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the home dashboard", "screenContext": "HomeScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "homeDashboard", "confidence": 0.95, "source": "OBJECT_REPO" }] },
+      "assertion": { "kind": "ELEMENT_PRESENT", "expected": null } },
+    { "index": 5, "action": "TAP", "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "Pay & Transfers tab", "screenContext": "HomeScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "payTransfersTab", "confidence": 0.96, "source": "OBJECT_REPO" }] } },
+    { "index": 6, "action": "TAP", "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the Zelle option", "screenContext": "PayTransfersScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "zelleMenuItem", "confidence": 0.94, "source": "OBJECT_REPO" }] } },
+    { "index": 7, "action": "TAP", "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the saved recipient Alex Rivera", "screenContext": "ZelleScreen",
+        "resolvedLocators": [
+          { "strategy": "ACCESSIBILITY_ID", "value": "recipient_AlexRivera", "confidence": 0.91, "source": "OBJECT_REPO" },
+          { "strategy": "XPATH", "value": "//XCUIElementTypeCell[@name='recipient_AlexRivera']", "confidence": 0.86, "source": "PAGE_SOURCE" }
+        ] } },
+    { "index": 8, "action": "TYPE", "inputData": "${testData.amount}", "timeoutMs": 7000, "syncAfter": "NONE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the amount field", "screenContext": "ZelleSendScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "amountField", "confidence": 0.95, "source": "OBJECT_REPO" }] } },
+    { "index": 9, "action": "TAP", "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the Send button", "screenContext": "ZelleSendScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "zelleSendButton", "confidence": 0.96, "source": "OBJECT_REPO" }] } },
+    { "index": 10, "action": "ASSERT", "timeoutMs": 10000, "syncAfter": "NONE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the confirmation banner", "screenContext": "ZelleConfirmationScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "zelleConfirmationBanner", "confidence": 0.93, "source": "OBJECT_REPO" }] },
+      "assertion": { "kind": "TEXT_EQUALS", "expected": "$25.00 sent to Alex Rivera" } }
+  ]
+}

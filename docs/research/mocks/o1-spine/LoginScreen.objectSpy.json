@@ -1,0 +1,45 @@
+{
+  "screen": "LoginScreen",
+  "capturedAt": "2026-07-29T14:05Z",
+  "source": "PERFECTO_OBJECT_SPY",
+  "elements": [
+    {
+      "id": "usernameField",
+      "label": "Username",
+      "candidates": [
+        { "strategy": "ACCESSIBILITY_ID", "value": "usernameField", "confidence": 0.98 },
+        { "strategy": "ID", "value": "usernameField", "confidence": 0.95 },
+        { "strategy": "XPATH", "value": "//XCUIElementTypeTextField[@name='usernameField']", "confidence": 0.90 },
+        { "strategy": "CLASS_CHAIN", "value": "**/XCUIElementTypeTextField[`name == 'usernameField'`]", "confidence": 0.88 }
+      ]
+    },
+    {
+      "id": "passwordField",
+      "label": "Password",
+      "candidates": [
+        { "strategy": "ACCESSIBILITY_ID", "value": "passwordField", "confidence": 0.98 },
+        { "strategy": "ID", "value": "passwordField", "confidence": 0.95 },
+        { "strategy": "XPATH", "value": "//XCUIElementTypeSecureTextField[@name='passwordField']", "confidence": 0.90 },
+        { "strategy": "CLASS_CHAIN", "value": "**/XCUIElementTypeSecureTextField[`name == 'passwordField'`]", "confidence": 0.88 }
+      ]
+    },
+    {
+      "id": "loginButton",
+      "label": "Login",
+      "candidates": [
+        { "strategy": "ACCESSIBILITY_ID", "value": "loginButton", "confidence": 0.97 },
+        { "strategy": "ID", "value": "loginButton", "confidence": 0.94 },
+        { "strategy": "XPATH", "value": "//XCUIElementTypeButton[@name='loginButton']", "confidence": 0.89 },
+        { "strategy": "CLASS_CHAIN", "value": "**/XCUIElementTypeButton[`name == 'loginButton'`]", "confidence": 0.87 }
+      ]
+    },
+    {
+      "id": "forgotPasswordButton",
+      "label": "Forgot Password?",
+      "candidates": [
+        { "strategy": "ACCESSIBILITY_ID", "value": "forgotPasswordButton", "confidence": 0.96 },
+        { "strategy": "XPATH", "value": "//XCUIElementTypeButton[@name='forgotPasswordButton']", "confidence": 0.88 }
+      ]
+    }
+  ]
+}

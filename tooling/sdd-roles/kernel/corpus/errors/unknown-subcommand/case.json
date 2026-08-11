@@ -1,0 +1,7 @@
+{
+  "command": "contract-lint",
+  "args": [
+    "frobnicate"
+  ],
+  "expected_exit": 1
+}

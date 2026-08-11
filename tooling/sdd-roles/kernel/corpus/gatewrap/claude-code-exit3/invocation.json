@@ -1,0 +1,6 @@
+{
+  "harness": "claude-code",
+  "tool_exit": 3,
+  "expected_stdout": "block\n",
+  "expected_exit": 2
+}

@@ -1,0 +1,17 @@
+{
+  "command": "kata",
+  "args": [
+    "analyze",
+    "--kernel",
+    "<KERNEL>",
+    "--plan",
+    "<KERNEL>/corpus/kata/does-not-exist.json",
+    "--prereg",
+    "<KERNEL>/corpus/kata/preregistration.json",
+    "--results",
+    "<KERNEL>/corpus/kata/results-six-roles.json",
+    "--out",
+    "/dev/null"
+  ],
+  "expected_exit": 1
+}

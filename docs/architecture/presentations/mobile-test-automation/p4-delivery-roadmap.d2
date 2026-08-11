@@ -1,0 +1,71 @@
+# P4 — Delivery roadmap: eight work packages to the week-3 gate
+# caption: Work-package dependency flow from the approved plan (PLAN-OK
+# 2026-07-28, §5). NOT a C4 architecture view — a delivery flow — so the
+# architecture linter does not apply; facts are verbatim from the plan's WP
+# table. Solid arrow = "must complete before". Node colours track the P2
+# module map: yellow = conversion, green = validation-certification,
+# blue = evidence, orange hexagon = screening (shared library).
+direction: right
+
+# Visual classes reuse the skill's reserved palette
+# (docs/skills/generating-architecture-diagrams/references/d2-classes.d2)
+# so this view reads consistently beside the linted P1–P3 set.
+classes: {
+  # Neutral work package (scaffold / contracts — not a cluster module).
+  container: {
+    style: {
+      fill: "#ffffff"
+      stroke: "#333333"
+      font-color: "#111111"
+    }
+  }
+
+  # The finish line — heaviest element on the canvas, like the system box.
+  system: {
+    style: {
+      fill: "#fdf2d0"
+      stroke: "#7d6608"
+      stroke-width: 2
+      font-color: "#111111"
+    }
+  }
+
+  # Hexagon = deliberately not a pipeline component (the screening library).
+  not-a-component: {
+    shape: hexagon
+    style: {
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      font-color: "#111111"
+    }
+  }
+
+  # Module colour-tracking, locked to the same fills as P2.
+  module-a: { style: { fill: "#fef9e7"; stroke: "#7d6608"; font-color: "#111111" } }
+  module-b: { style: { fill: "#eafaf1"; stroke: "#1e8449"; font-color: "#111111" } }
+  module-c: { style: { fill: "#ebf5fb"; stroke: "#21618c"; font-color: "#111111" } }
+}
+
+WP0: "WP0 · Task zero — wk 0\nscaffold + fitness functions\nCI-blocking first" { class: container }
+WP1: "WP1 · spine-contracts — wk 0–1\nthe 3 schema records" { class: container }
+WP2: "WP2 · evidence core — wk 1\nlineage · queue · storage port" { class: module-c }
+WP3: "WP3 · screening library — wk 1" { class: not-a-component }
+WP4: "WP4 · Ingestion — wk 1–2\nExcel + Octane adapters" { class: module-a }
+WP5: "WP5 · Hierarchy tool — wk 2" { class: module-a }
+WP6: "WP6 · Replay pipeline — wk 2–3" { class: module-b }
+WP7: "WP7 · Week-3 gate — wk 3\nclause a + clause b" { class: system }
+
+WP0 -> WP1
+WP0 -> WP3
+WP1 -> WP2
+WP1 -> WP4
+WP1 -> WP5
+WP1 -> WP6
+WP2 -> WP4
+WP2 -> WP5
+WP2 -> WP6
+WP3 -> WP4
+WP3 -> WP5
+WP3 -> WP6
+WP4 -> WP7
+WP6 -> WP7

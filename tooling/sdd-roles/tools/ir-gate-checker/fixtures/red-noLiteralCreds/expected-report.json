@@ -1,0 +1,66 @@
+{
+  "artifact_type": "ir_gate_report",
+  "checks": [
+    {
+      "id": "schemaValid",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "opcodeClosed",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "boundedWaits",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "locatorManifest",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "noLiteralCreds",
+      "outcome": "fail",
+      "violations": [
+        {
+          "detail": "literal value matches credential token 'password' (vault-key indirection only)",
+          "pointer": "/steps/2/value"
+        },
+        {
+          "detail": "sensitive step carries a literal value: vault-key indirection only",
+          "pointer": "/steps/2/value"
+        }
+      ]
+    },
+    {
+      "id": "ambiguityClear",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "dryRun",
+      "outcome": "pass",
+      "violations": []
+    }
+  ],
+  "contract": "o7-spec-derived.1",
+  "inputs": {
+    "ir_sha256": "bfcb127464b3f409e0af1ccc96759a68b9ff7c1846ddbeb09766970ac8d48567",
+    "manifest_sha256": "00213d11fb4f510c6a4b56e0feffc069443aba13825a97385661541c37958a36"
+  },
+  "ir_digest": {
+    "computed": "55c32dd312c95fe17100d2993be32d1f1e7c093dd2233f439e80fc9b7b9f3def",
+    "declared": "55c32dd312c95fe17100d2993be32d1f1e7c093dd2233f439e80fc9b7b9f3def"
+  },
+  "threshold": {
+    "name": "ir_gate_violations_max",
+    "value": 0
+  },
+  "tool": "ir-gate-checker",
+  "tool_version": "1.0.0",
+  "verdict": "red",
+  "violations_total": 2
+}

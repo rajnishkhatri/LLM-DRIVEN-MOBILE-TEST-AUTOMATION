@@ -1,0 +1,50 @@
+{
+  "screen": "LoginScreen",
+  "capturedAt": "2026-07-29T14:05Z",
+  "device": {
+    "platform": "IOS",
+    "model": "iPhone 15",
+    "os": "iOS 17.4"
+  },
+  "interactiveElements": [
+    {
+      "id": "usernameField",
+      "type": "XCUIElementTypeTextField",
+      "label": "Username",
+      "placeholder": "Username",
+      "enabled": true,
+      "ancestors": ["Application>BankApp", "Window", "Other", "ScrollView", "Other"]
+    },
+    {
+      "id": "passwordField",
+      "type": "XCUIElementTypeSecureTextField",
+      "label": "Password",
+      "placeholder": "Password",
+      "enabled": true,
+      "ancestors": ["Application>BankApp", "Window", "Other", "ScrollView", "Other"]
+    },
+    {
+      "id": "loginButton",
+      "type": "XCUIElementTypeButton",
+      "label": "Login",
+      "enabled": true,
+      "ancestors": ["Application>BankApp", "Window", "Other", "ScrollView", "Other"]
+    },
+    {
+      "id": "forgotPasswordButton",
+      "type": "XCUIElementTypeButton",
+      "label": "Forgot Password?",
+      "enabled": true,
+      "ancestors": ["Application>BankApp", "Window", "Other", "ScrollView", "Other"]
+    }
+  ],
+  "prunedAway": [
+    "StatusBar",
+    "bankLogo",
+    "versionText",
+    "usernameLabel",
+    "passwordLabel",
+    "signInHeading",
+    "NavigationBar>Login"
+  ]
+}

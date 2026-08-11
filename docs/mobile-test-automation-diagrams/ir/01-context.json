@@ -1,0 +1,163 @@
+{
+  "$schema": "../../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "01-context",
+    "level": "context",
+    "title": "C1 \u2014 Context view: the system in its world",
+    "caption": "Who and what does the system touch? The whole conversion-and-certification pipeline, its four actor classes, and its external dependencies. The single system box drawn here is opened in C2a.",
+    "direction": "down",
+    "completeness": "complete",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "QA",
+      "kind": "actor",
+      "label": "QA engineer",
+      "detail": [
+        "IDE + 2 CLIs. In P1 the conversion reasoning happens in THIS actor's IDE (Copilot, ADR 0001); the system receives only committed artifacts"
+      ]
+    },
+    {
+      "id": "REVIEWER",
+      "kind": "actor",
+      "label": "Reviewer",
+      "detail": [
+        "HITL queue; responds in hours\u2013days"
+      ]
+    },
+    {
+      "id": "AUDITOR",
+      "kind": "actor",
+      "label": "Auditor",
+      "detail": [
+        "Must reconstruct verdicts from stored evidence alone, without access to the running system (ADR 0008)"
+      ]
+    },
+    {
+      "id": "LEAD",
+      "kind": "actor",
+      "label": "Delivery lead",
+      "detail": [
+        "Read-only metrics"
+      ]
+    },
+    {
+      "id": "SYS",
+      "kind": "system",
+      "label": "Mobile Test Automation LLM Pipeline",
+      "detail": [
+        "ACCEPTED: Spring Boot modular monolith, ONE architecture quantum (ADR 0005). Runs inside the bank's validated internal network (E3). Opened in C2a"
+      ],
+      "emphasis": "heaviest"
+    },
+    {
+      "id": "PERFECTO",
+      "kind": "external",
+      "label": "Perfecto device lab",
+      "detail": [
+        "INCUMBENT vendor \u2014 MSA on file, unread against this system's needs (E1). Flows run on mock/synthetic data (E2); artifacts produced OFF-PREM. NOT covered by E3. SLA: UNKNOWN (pending \u2014 probe = read the MSA, M1)"
+      ]
+    },
+    {
+      "id": "GATEWAY",
+      "kind": "external",
+      "label": "Orchestrator AI gateway",
+      "detail": [
+        "Internal gateway; model providers hosted INSIDE the bank \u2014 prompts never leave (E4). Version-report contract UNVERIFIED (M5 probe held). SLA: UNKNOWN (pending \u2014 M4 consolidated inquiry)"
+      ]
+    },
+    {
+      "id": "OCTANE",
+      "kind": "external",
+      "label": "ALM Octane",
+      "detail": [
+        "At BOTH ends of the pipeline (E5): ingest source (REST, API-key) AND certified-asset publish target. Asset-versioning capability UNVERIFIED (M7 probe held). SLA: UNKNOWN (pending)"
+      ]
+    },
+    {
+      "id": "XLS",
+      "kind": "external",
+      "label": "Excel / ALM-QC",
+      "detail": [
+        "Excel workbooks + ALM-QC later (additive \u2014 C1). File input originating from bank teams inside the network (E3/S9). \"The least deterministic input\" \u2014 M16 real-workbook corpus is the probe"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "QA",
+      "to": "SYS",
+      "kind": "sync",
+      "label": "2 CLIs (sync)",
+      "detail": "Ingestion CLI + hierarchy-tool CLI, sync"
+    },
+    {
+      "from": "REVIEWER",
+      "to": "SYS",
+      "kind": "async",
+      "label": "reviews (hours-days)",
+      "detail": "Review of ambiguous / sub-threshold cases; async, hours\u2013days"
+    },
+    {
+      "from": "AUDITOR",
+      "to": "SYS",
+      "kind": "sync",
+      "label": "versioned export",
+      "detail": "Read-only versioned export \u2014 no access to the running system (ADR 0008); the export is itself an attributable lineage event (CF11)"
+    },
+    {
+      "from": "LEAD",
+      "to": "SYS",
+      "kind": "sync",
+      "label": "metrics (read-only)",
+      "detail": "Metrics dashboard, sync, read-only"
+    },
+    {
+      "from": "SYS",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "label": "device runs",
+      "detail": "Device runs on pinned pools (sync); single-run session tokens (ADR 0013)"
+    },
+    {
+      "from": "SYS",
+      "to": "GATEWAY",
+      "kind": "sync",
+      "label": "model calls (P2)",
+      "detail": "Model calls via the Invoke Models seam, P2 (sync)"
+    },
+    {
+      "from": "SYS",
+      "to": "OCTANE",
+      "kind": "sync",
+      "label": "ingest",
+      "detail": "Manual-test ingest, sync, REST"
+    },
+    {
+      "from": "SYS",
+      "to": "OCTANE",
+      "kind": "async",
+      "label": "A3: publish",
+      "detail": "Publish certified assets \u2014 async, retryable, idempotent projection, never a verdict precondition (CF3; weeks 3\u20138)"
+    },
+    {
+      "from": "SYS",
+      "to": "XLS",
+      "kind": "sync",
+      "label": "workbooks",
+      "detail": "Workbook file input"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "artifact": "hook_mount",
+  "events": {
+    "beforeFileEdit": [
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role em-planner",
+        "matcher": "em-planner"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role em-builder",
+        "matcher": "em-builder"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role em-reviewer",
+        "matcher": "em-reviewer"
+      }
+    ]
+  },
+  "generated_by": "write-guard mount",
+  "harness": "cursor"
+}

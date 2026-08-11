@@ -1,0 +1,41 @@
+{
+  "honestyTags": [
+    "PROPOSED ADR 0014",
+    "Replan R1 D2",
+    "lives outside spine repo",
+    "F1 does not apply"
+  ],
+  "appVersion": "8.4.0",
+  "graphVersion": "sha:graph:3b2c7e8f...",
+  "loopState": {
+    "currentScreen": "HomeScreen",
+    "currentSignature": {
+      "skeletonHash": "h_home_4a2f",
+      "titleAnchor": "Home"
+    },
+    "targetScreen": "AccountOverview",
+    "targetSignature": {
+      "skeletonHash": "h_acctov_9c1d",
+      "titleAnchor": "Account Overview"
+    },
+    "stepBudgetRemaining": 12,
+    "noProgressStrikes": 0,
+    "sessionTimeRemainingSec": 480
+  },
+  "screenshotRef": "HomeScreen.discovery-step3.png",
+  "prunedTree": {
+    "screen": "HomeScreen",
+    "interactiveElements": [
+      { "id": "hamburgerMenu", "type": "XCUIElementTypeButton", "label": "Menu" },
+      { "id": "accountsTab", "type": "XCUIElementTypeButton", "label": "Accounts" },
+      { "id": "paymentsTab", "type": "XCUIElementTypeButton", "label": "Payments & Activity" },
+      { "id": "profileButton", "type": "XCUIElementTypeButton", "label": "Profile" },
+      { "id": "notificationsBell", "type": "XCUIElementTypeButton", "label": "Notifications" }
+    ]
+  },
+  "knownEdgesFromCurrentNode": [],
+  "denylist": ["logout", "transfer", "pay", "confirm", "sign out"],
+  "cascadeFloor": 0.85,
+  "maxProposalsK": 3,
+  "screeningCallSite": "adr-0009:ash-discovery-proposer-egress"
+}

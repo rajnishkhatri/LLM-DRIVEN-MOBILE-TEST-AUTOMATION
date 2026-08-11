@@ -1,0 +1,13 @@
+{
+  "comment": "Token list for the CHK-NEUTRAL grep (S2 proxy). Lives outside kernel/schemas/ and validator source so the scanner itself stays token-free in scope. Case-insensitive substring match.",
+  "tokens": [
+    "claude",
+    "cursor",
+    "copilot",
+    "anthropic",
+    ".claude/",
+    ".cursor/",
+    ".github/agents",
+    ".github/skills"
+  ]
+}

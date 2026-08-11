@@ -1,0 +1,94 @@
+# The IR gate — seven deterministic checks, run before any device is touched.
+# Zero device cost, zero compilation. A FAIL routes back to authoring, never to a re-prompt.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  check: {
+    style: {
+      fill: "#FFFFFF"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 4
+    }
+  }
+  port: {
+    style: {
+      fill: "#E7E1F1"
+      stroke: "#6A5A9C"
+      font-color: "#453A6B"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  passE: {
+    style: {
+      stroke: "#2E7D5B"
+      font-color: "#2E7D5B"
+      font-size: 13
+      bold: true
+    }
+  }
+  failE: {
+    style: {
+      stroke: "#A6402F"
+      stroke-dash: 3
+      font-color: "#A6402F"
+      font-size: 13
+    }
+  }
+}
+
+ir: "Committed\nTestCaseIR\n+ locator manifest" { class: port }
+
+gate: "IR GATE — deterministic, pre-device" {
+  grid-columns: 4
+  grid-gap: 16
+  style: {
+    fill: "#F2F7F6"
+    stroke: "#1F6F6B"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 16
+    bold: true
+  }
+
+  c1: "1 · schemaValid\nIR matches the\ncommitted schema" { class: check }
+  c2: "2 · opcodeClosed\nonly TAP TYPE SWIPE WAIT\nASSERT LAUNCH NAVIGATE" { class: check }
+  c3: "3 · boundedWaits\nevery step carries\nfinite timeoutMs" { class: check }
+  c4: "4 · locatorManifest\nno locator outside the\ncommitted manifest" { class: check }
+  c5: "5 · noLiteralCreds\nvault-key\nindirection only" { class: check }
+  c6: "6 · ambiguityClear\nno unresolved\nflags survive" { class: check }
+  c7: "7 · dryRun\nno-device structural\nwalk of the whole IR" { class: check }
+}
+
+queue: "Replay request\nenqueued\n(transactional outbox)" { class: policy }
+back: "Back to the\nauthoring arm\n(fix, re-gate,\nre-commit)" {
+  style: {
+    fill: "#FBEFEC"
+    stroke: "#A6402F"
+    font-color: "#7A2E21"
+    border-radius: 6
+    stroke-width: 2
+  }
+}
+
+ir -> gate: { style.stroke: "#4A5A59" }
+gate -> queue: "all seven green —\nonly now may a\ndevice minute be spent" { class: passE }
+gate -> back: "any FAIL —\nno device acquired,\nno re-prompt loop" { class: failE }

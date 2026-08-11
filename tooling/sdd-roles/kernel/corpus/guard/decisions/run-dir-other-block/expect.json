@@ -1,0 +1,4 @@
+{
+  "exit_code": 2,
+  "stdout": "block REPO_SCOPE ../run-dir/ledger.ndjson\n"
+}

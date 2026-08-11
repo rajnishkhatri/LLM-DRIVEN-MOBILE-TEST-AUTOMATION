@@ -1,0 +1,6 @@
+{
+  "operation": "modify",
+  "paths": [
+    ".sdd-roles/kernel-config.json"
+  ]
+}

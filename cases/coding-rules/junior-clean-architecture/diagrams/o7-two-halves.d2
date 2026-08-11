@@ -1,0 +1,121 @@
+# The o7 pipeline end to end — two halves, one commit between them.
+# Teal = deterministic policy, amber = bounded LLM touchpoints, violet = the boundary artifact.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  detail: {
+    style: {
+      fill: "#F1E3CE"
+      stroke: "#B0742A"
+      font-color: "#6E4718"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  port: {
+    style: {
+      fill: "#E7E1F1"
+      stroke: "#6A5A9C"
+      font-color: "#453A6B"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  human: {
+    style: {
+      fill: "#E3E9F2"
+      stroke: "#495C77"
+      font-color: "#2F3E52"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  flow: {
+    style: {
+      stroke: "#4A5A59"
+      font-color: "#4A5A59"
+      font-size: 13
+    }
+  }
+}
+
+arm: "AUTHORING ARM — LLM-bounded, produces committed artifacts" {
+  direction: right
+  style: {
+    fill: "#FBF7EF"
+    stroke: "#B0742A"
+    font-color: "#6E4718"
+    stroke-dash: 5
+    border-radius: 8
+    font-size: 16
+    bold: true
+  }
+
+  src: "Octane / Excel\ntest case" { class: detail }
+  ing: "Ingestion\n(deterministic,\nscreened at the door)" { class: policy }
+  a1: "A1 Parser\n(deterministic\nskeleton)" { class: policy }
+  a2: "A2 Semantic\nInterpreter\n(deterministic-first,\nLLM fallback)" { class: detail }
+  cap: "Hierarchy capture +\nlocator resolution\n(deterministic cascade,\nLLM last resort)" { class: detail }
+
+  src -> ing: { class: flow }
+  ing -> a1: { class: flow }
+  a1 -> a2: { class: flow }
+  a2 -> cap: { class: flow }
+}
+
+commit: "THE COMMIT\n─────────────\nTestCaseIR.json (irDigest)\n+ LocatorCandidate manifest\nsigned by svc:conversion-pipeline\nhash-chain link, same transaction" {
+  class: port
+  style.font-size: 14
+  style.bold: true
+}
+
+spine: "THE SPINE — the replay path, LLM-free by construction" {
+  direction: right
+  style: {
+    fill: "#F2F7F6"
+    stroke: "#1F6F6B"
+    font-color: "#134844"
+    stroke-width: 2
+    border-radius: 8
+    font-size: 16
+    bold: true
+  }
+
+  gate: "IR GATE\n7 deterministic checks,\npre-device, zero compile" { class: policy }
+  interp: "INTERPRETER\nwalks committed IR\nover Appium / Perfecto\nversion-pinned, no self-heal" { class: policy }
+  cls: "CLASSIFICATION\nrule-based,\nfixed 7-class taxonomy" { class: policy }
+  rr: "ReplayReport\npins irDigest +\ninterpreterVersion" { class: policy }
+
+  gate -> interp: "outbox → queue →\nidempotent worker" { class: flow }
+  interp -> cls: { class: flow }
+  cls -> rr: { class: flow }
+}
+
+evaluator: "HUMAN EVALUATOR — post-run\nnovelty-sampled review (R2),\nadvised by a recorded fidelity\ngrade (ADR 0004)\nPASS ⇒ attributable certification\nsigned by an individual" { class: human }
+
+arm.cap -> commit: "artifacts, not code" { class: flow }
+commit -> spine.gate: "the replay path\nissues no model call" {
+  style: {
+    stroke: "#6A5A9C"
+    font-color: "#453A6B"
+    font-size: 13
+    bold: true
+  }
+}
+spine.rr -> evaluator: "machine PASS is a\nprecondition, never\na certification" { class: flow }

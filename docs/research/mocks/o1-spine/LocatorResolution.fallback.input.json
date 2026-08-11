@@ -1,0 +1,37 @@
+{
+  "testId": "ACC-1042",
+  "irVersion": "sha:4f2c91e8...",
+  "screen": "LoginScreen",
+  "naturalReference": "the Forgot Password link",
+  "cascadeFloor": 0.85,
+  "deterministicCandidatesTried": [
+    {
+      "source": "OBJECT_REPO",
+      "status": "MISS",
+      "reason": "no entry for naturalReference 'the Forgot Password link'"
+    },
+    {
+      "source": "PAGE_SOURCE",
+      "status": "BELOW_FLOOR",
+      "candidate": { "strategy": "ACCESSIBILITY_ID", "value": "forgotPasswordButton", "confidence": 0.72 },
+      "reason": "type mismatch: naturalReference says 'link', element type is XCUIElementTypeButton"
+    },
+    {
+      "source": "OBJECT_SPY",
+      "status": "BELOW_FLOOR",
+      "candidate": { "strategy": "ACCESSIBILITY_ID", "value": "forgotPasswordButton", "confidence": 0.74 },
+      "reason": "same type mismatch as PAGE_SOURCE"
+    }
+  ],
+  "prunedTreeRef": "LoginScreen.pruned.json",
+  "screenshotRef": "LoginScreen.screenshot.png",
+  "prunedTree": {
+    "screen": "LoginScreen",
+    "interactiveElements": [
+      { "id": "usernameField", "type": "XCUIElementTypeTextField", "label": "Username" },
+      { "id": "passwordField", "type": "XCUIElementTypeSecureTextField", "label": "Password" },
+      { "id": "loginButton", "type": "XCUIElementTypeButton", "label": "Login" },
+      { "id": "forgotPasswordButton", "type": "XCUIElementTypeButton", "label": "Forgot Password?" }
+    ]
+  }
+}

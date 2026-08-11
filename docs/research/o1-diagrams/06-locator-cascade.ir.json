@@ -1,0 +1,111 @@
+{
+  "$schema": "../../../skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "06-locator-cascade",
+    "level": "component",
+    "title": "Locator Resolution - Cascade + LLM fallback",
+    "caption": "Zooms into the Locator resolution step from the pipeline flow. This stage is DECIDED (base O1 spine, blueprint-revision-v2). The cascade tries three deterministic sources in order; only when all fall below the confidence floor does it fall to the VLM and LLM-guess sources - both genuine model calls, routed through the Gateway, screened as a decided-spine egress. Output is the shared LocatorCandidate.manifest.json that the static gate's no-orphan-locator rule enforces against.",
+    "direction": "down",
+    "opens": "LOC",
+    "opens_from": "04-pipeline-flow",
+    "completeness": "complete",
+    "overlays": "none",
+    "key": true
+  },
+  "nodes": [
+    {
+      "id": "REPO",
+      "kind": "process",
+      "label": "OBJECT_REPO",
+      "detail": [
+        "source 1 of 5 in the cascade - the object repository (existing resolved locators, single-writer discipline)",
+        "deterministic: no model call"
+      ]
+    },
+    {
+      "id": "PAGESRC",
+      "kind": "process",
+      "label": "PAGE_SOURCE",
+      "detail": [
+        "source 2 of 5 - the live Appium getPageSource() dump for the current screen (LoginScreen.pageSource.xml)",
+        "deterministic: no model call"
+      ]
+    },
+    {
+      "id": "SPY",
+      "kind": "process",
+      "label": "OBJECT_SPY",
+      "detail": [
+        "source 3 of 5 - Perfecto's Object Spy smart-locator candidates (LoginScreen.objectSpy.json)",
+        "deterministic: no model call"
+      ]
+    },
+    {
+      "id": "VLM",
+      "kind": "process",
+      "label": "VLM",
+      "detail": [
+        "source 4 of 5 - a vision-language model confirms the element is visually present and tappable from a screenshot",
+        "THIS IS A GENUINE MODEL CALL, routed through the Gateway (ADR 0013); part of the decided spine, not a proposal awaiting an ADR",
+        "screening call-site: adr-0009:locator-fallback-egress"
+      ],
+      "role": "model-seam",
+      "family": "module-a"
+    },
+    {
+      "id": "LLMGUESS",
+      "kind": "process",
+      "label": "LLM-guess",
+      "detail": [
+        "source 5 of 5, last resort - proposes a locator strategy from the pruned tree text alone, no screenshot",
+        "THIS IS A GENUINE MODEL CALL, routed through the Gateway (ADR 0013); part of the decided spine, not a proposal awaiting an ADR",
+        "concrete mock: LocatorResolution.fallback.{input.json,prompt.md,output.json} - resolves 'the Forgot Password link' -> forgotPasswordButton (ACCESSIBILITY_ID, 0.91)",
+        "does NOT invent elements outside the pruned tree (returns NO_MATCH instead); does NOT execute anything on a device"
+      ],
+      "role": "model-seam",
+      "family": "module-a"
+    },
+    {
+      "id": "MANIFEST",
+      "kind": "datastore",
+      "label": "LocatorCandidate.manifest.json",
+      "detail": [
+        "every candidate carries a confidence and a source (OBJECT_REPO | PAGE_SOURCE | OBJECT_SPY | VLM | LLM-guess)",
+        "concrete mock: LocatorCandidate.manifest.json (ACC-1042 scenario - 4 ACCESSIBILITY_ID candidates, all source OBJECT_REPO in the happy-path case)",
+        "committed as the resolved locator set for this IR version"
+      ]
+    },
+    {
+      "id": "SG",
+      "kind": "process",
+      "label": "Static gate",
+      "detail": [
+        "THE SPINE BEGINS - LLM-free from here (same node as in 04-pipeline-flow)",
+        "no-orphan-locator rule: every locator used in the committed Java must appear in this manifest or the object repository",
+        "concrete mock: StaticGate.report.json - locatorManifest check PASS, 4/4 locators found, 0 orphans"
+      ]
+    }
+  ],
+  "edges": [
+    { "from": "REPO",     "to": "PAGESRC",  "kind": "sync", "label": "MISS or below the 0.85 confidence floor: cascade tries the next source" },
+    { "from": "PAGESRC",  "to": "SPY",      "kind": "sync", "label": "MISS or below the 0.85 confidence floor: cascade tries the next source" },
+    { "from": "SPY",      "to": "VLM",      "kind": "sync", "label": "MISS or below the 0.85 confidence floor: cascade falls to the vision-model (VLM) source" },
+    { "from": "VLM",      "to": "LLMGUESS", "kind": "sync", "label": "MISS or below the 0.85 confidence floor: cascade falls to the last-resort LLM-guess" },
+    { "from": "REPO",     "to": "MANIFEST", "kind": "sync", "label": "confidence >= 0.85 floor: writes the accepted candidate, tagged source OBJECT_REPO" },
+    { "from": "PAGESRC",  "to": "MANIFEST", "kind": "sync", "label": "confidence >= 0.85 floor: writes the accepted candidate, tagged source PAGE_SOURCE" },
+    { "from": "SPY",      "to": "MANIFEST", "kind": "sync", "label": "confidence >= 0.85 floor: writes the accepted candidate, tagged source OBJECT_SPY" },
+    { "from": "VLM",      "to": "MANIFEST", "kind": "sync", "label": "confidence >= 0.85 floor: writes the accepted candidate, tagged source VLM" },
+    { "from": "LLMGUESS", "to": "MANIFEST", "kind": "sync", "label": "always writes a result (RESOLVED or NO_MATCH), tagged source LLM-guess" },
+    { "from": "MANIFEST", "to": "SG",       "kind": "sync", "label": "static gate reads this manifest to enforce the no-orphan-locator rule" }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b"
+  ]
+}

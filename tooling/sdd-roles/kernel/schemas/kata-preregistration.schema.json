@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdd-roles:kata-preregistration:1.4.0",
+  "title": "KataPreregistration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "arms",
+    "reps",
+    "instance_count",
+    "primary_metric",
+    "interval_method",
+    "wilson_z_num",
+    "wilson_z_den",
+    "scale",
+    "criteria",
+    "prereg_digest"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.4.0" },
+    "artifact_type": { "const": "kata_preregistration" },
+    "arms": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "reps": { "type": "integer", "minimum": 1 },
+    "instance_count": { "type": "integer", "minimum": 1 },
+    "primary_metric": { "const": "final_all_gates_pass" },
+    "interval_method": { "const": "wilson" },
+    "wilson_z_num": { "type": "integer", "minimum": 1 },
+    "wilson_z_den": { "type": "integer", "minimum": 1 },
+    "scale": { "const": 10000 },
+    "criteria": { "$ref": "#/$defs/criteria" },
+    "prereg_digest": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "criteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "c_over_a_pp",
+        "c_over_a_intervals",
+        "c_over_a_token_ratio_max",
+        "c_over_b_pp",
+        "b_over_a_pp",
+        "b_over_a_token_ratio_max",
+        "kill_a_within_c_pp",
+        "kill_a_token_num",
+        "kill_a_token_den",
+        "tamper_zero_tolerance"
+      ],
+      "properties": {
+        "c_over_a_pp": { "type": "integer", "minimum": 0 },
+        "c_over_a_intervals": { "const": "non-overlapping" },
+        "c_over_a_token_ratio_max": { "type": "integer", "minimum": 1 },
+        "c_over_b_pp": { "type": "integer", "minimum": 0 },
+        "b_over_a_pp": { "type": "integer", "minimum": 0 },
+        "b_over_a_token_ratio_max": { "type": "integer", "minimum": 1 },
+        "kill_a_within_c_pp": { "type": "integer", "minimum": 0 },
+        "kill_a_token_num": { "type": "integer", "minimum": 1 },
+        "kill_a_token_den": { "type": "integer", "minimum": 1 },
+        "tamper_zero_tolerance": { "const": true }
+      }
+    }
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "view": {
+    "id": "03-container-module-wiring--module-c",
+    "level": "container",
+    "title": "C2b - Container drill-down: module wiring \u2014 module-c overlay",
+    "caption": "This view is a subset of `03-container-module-wiring` opening `APP` \u2014 only the edges owned by `module-c`. Edge numbers match the primary; see `03-container-module-wiring` for the complete edge set.",
+    "direction": "right",
+    "opens": "APP",
+    "opens_from": "03-container-module-wiring",
+    "completeness": "subset:03-container-module-wiring",
+    "overlays": "none",
+    "primary_of": "03-container-module-wiring"
+  },
+  "nodes": [
+    {
+      "id": "AUD",
+      "kind": "actor",
+      "label": "Auditor"
+    },
+    {
+      "id": "MC",
+      "kind": "component",
+      "family": "module-c",
+      "label": "evidence",
+      "detail": [
+        "Evidence (cluster C) - Preserve Provenance + metrics read model + auditor export.",
+        "Only MC anchors the lineage chain."
+      ]
+    },
+    {
+      "id": "PG",
+      "kind": "datastore",
+      "label": "PostgreSQL",
+      "detail": [
+        "WORKING ASSUMPTION (spine C3); dev/CI embedded or containerized, ephemeral-only (D1, M40).",
+        "Schemas: conversion-state; lineage (append-only: app role INSERT/SELECT only, per-conversion hash chain, supersede-not-update - ADR 0012); outbox+queue (bounded retries, dead-letter quarantine - M21); judge-response cache (M27, CF7).",
+        "No cross-lifecycle foreign keys (F4, ADR 0006)."
+      ]
+    },
+    {
+      "id": "OBJ",
+      "kind": "datastore",
+      "label": "object storage",
+      "detail": [
+        "Evidence object storage behind an S3-compatible port (ADR 0011).",
+        "Dev/CI: containerized MinIO; production BINDING PROBE-PENDING (week-0 platform probe; default = self-operated MinIO).",
+        "Write-once / object-lock REQUIRED - ADR 0012's precondition, deployment-checked.",
+        "Holds: classified artifacts + retention classes (M39); canonicalized source snapshots (M15); lineage chain anchors (ADR 0012).",
+        "Envelope encryption + crypto-shredding before the first audit-retained artifact (ADR 0011 as amended)."
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "AUD",
+      "to": "MC",
+      "kind": "sync",
+      "ref": 5,
+      "detail": "Versioned export; itself an attributable lineage event (CF11)"
+    },
+    {
+      "from": "MC",
+      "to": "PG",
+      "kind": "sync",
+      "ref": 8,
+      "detail": "Append-only lineage writes + read-model reads"
+    },
+    {
+      "from": "MC",
+      "to": "OBJ",
+      "kind": "sync",
+      "ref": 11,
+      "detail": "Chain-head anchors at interval; a stale anchor is an alert (ADR 0012)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

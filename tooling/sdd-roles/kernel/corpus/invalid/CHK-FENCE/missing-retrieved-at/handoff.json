@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "handoff_contract",
+  "from_role": "coder",
+  "to_role": "cleaner",
+  "stage": "implement",
+  "stage_status": "in_progress",
+  "summary": {
+    "text": "stage summary",
+    "provenance": {
+      "source": "role_authored"
+    }
+  },
+  "decisions": [
+    {
+      "choice": "adopt-outbox-queue",
+      "rationale": "smallest machinery that satisfies the criteria",
+      "rejected_alternatives": [
+        "broker-based queue"
+      ],
+      "provenance": {
+        "source": "role_authored"
+      }
+    }
+  ],
+  "gate_outcomes": [],
+  "completion_evidence": [],
+  "fences": [
+    {
+      "fence_id": "09679cc494ed5472ed1a07d4c003e3b0957f25387a9cd6e6a70664f0ea383b89",
+      "content": "Env note: pool identity ios-pool-7.",
+      "source_uri": "https://runner.internal/notes/1"
+    }
+  ]
+}

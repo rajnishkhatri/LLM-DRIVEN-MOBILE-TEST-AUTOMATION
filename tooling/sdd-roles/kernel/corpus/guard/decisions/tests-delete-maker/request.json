@@ -1,0 +1,6 @@
+{
+  "operation": "delete",
+  "paths": [
+    "tests/test_base.py"
+  ]
+}

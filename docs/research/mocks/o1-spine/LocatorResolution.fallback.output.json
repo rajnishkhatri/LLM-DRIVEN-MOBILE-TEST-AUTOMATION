@@ -1,0 +1,19 @@
+{
+  "testId": "ACC-1042",
+  "irVersion": "sha:4f2c91e8...",
+  "screen": "LoginScreen",
+  "naturalReference": "the Forgot Password link",
+  "status": "RESOLVED",
+  "proposedLocator": {
+    "strategy": "ACCESSIBILITY_ID",
+    "value": "forgotPasswordButton",
+    "confidence": 0.91,
+    "source": "LLM-guess"
+  },
+  "reasoning": "The pruned tree has exactly one element whose label 'Forgot Password?' matches the reference; the 'link' vs 'Button' type mismatch is a common UI-labeling looseness, not a true mismatch.",
+  "screeningCallSite": "adr-0009:locator-fallback-egress",
+  "provenance": {
+    "model": "gpt-4o-mini via Gateway",
+    "resolvedAt": "2026-07-29T14:12Z"
+  }
+}

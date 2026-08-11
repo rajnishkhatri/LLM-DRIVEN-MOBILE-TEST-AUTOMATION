@@ -1,0 +1,22 @@
+=== OCTANE TEST CASE ===
+ID: ACC-1042
+Title: Login with valid credentials shows welcome
+Created: 2024-03-15   Last Updated: 2026-07-20   Owner: QA Team
+Priority: HIGH   Status: READY   Automation: PENDING
+
+Pre-conditions:
+- App should be freshly installed
+- User should be on the login screen
+
+Test Data:
+- Username: ${vault:user_qa}
+- Password: ${vault:pass_qa}
+
+Platforms: iOS, Android
+
+Steps:
+1. Sign in to the app using the test credentials (username/password)
+2. Verify that the welcome banner appears on the home screen
+
+Notes: This is a happy path test. Make sure to use the QA environment creds.
+Do not run against prod. Refer to confluence for any clarifications.

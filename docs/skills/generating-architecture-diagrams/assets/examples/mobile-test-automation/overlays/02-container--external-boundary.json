@@ -1,0 +1,240 @@
+{
+  "view": {
+    "id": "02-container--external-boundary",
+    "level": "container",
+    "title": "Mobile Test Automation LLM Pipeline - Container view (logical components) \u2014 external-boundary overlay",
+    "caption": "This view is a subset of `02-container` opening `SYS` \u2014 only the edges that cross the system's external boundary. Edge numbers match the primary; see `02-container` for the complete edge set.",
+    "direction": "down",
+    "opens": "SYS",
+    "opens_from": "02-container",
+    "completeness": "subset:02-container",
+    "primary_of": "02-container",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "ITS",
+      "kind": "component",
+      "label": "Ingest Test Sources",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Acquires manual-test payloads and their source references from Octane, ALM/QC, and Excel.",
+        "One of three trust boundaries that invoke the screening library."
+      ]
+    },
+    {
+      "id": "SRC",
+      "kind": "external",
+      "label": "Octane / ALM-QC / Excel",
+      "detail": [
+        "External manual-test source systems, drawn as EXT1 in the section 10 component diagram."
+      ]
+    },
+    {
+      "id": "AUE",
+      "kind": "component",
+      "label": "Acquire UI Evidence",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Captures and prunes page-source and Object Spy evidence from a live Perfecto device.",
+        "One implementation, two callers (human in Phase 1, service in Phase 2). One of three trust boundaries invoking the screening library."
+      ]
+    },
+    {
+      "id": "PERF",
+      "kind": "external",
+      "label": "Perfecto device lab",
+      "detail": [
+        "External device lab, drawn as EXT2; touched by Acquire UI Evidence and Replay on Devices."
+      ]
+    },
+    {
+      "id": "ROD",
+      "kind": "component",
+      "label": "Replay on Devices",
+      "qualifiers": [
+        "Cluster B"
+      ],
+      "detail": [
+        "Executes committed tests K times against pinned Perfecto capability sets.",
+        "The system's dominant cost; inherently flaky; rate-limited by lab capacity. K=3 conversion, K=5 certification."
+      ]
+    },
+    {
+      "id": "IM",
+      "kind": "component",
+      "label": "Invoke Models",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Mediates every model call with versioned prompts, fixed sampling policy, caching, and backoff.",
+        "Single choke point. Stable and abstract: CE = 1, CA = 5, I = 0.17. Cache-key defect (must include model and provider version) carried to Stage 4 as ADR-2. One of three trust boundaries invoking the screening library."
+      ],
+      "role": "model-seam"
+    },
+    {
+      "id": "GATEWAY",
+      "kind": "external",
+      "label": "Orchestrator AI gateway",
+      "detail": [
+        "External model provider, drawn as EXT3; reached only through Invoke Models."
+      ]
+    },
+    {
+      "id": "RE",
+      "kind": "component",
+      "label": "Resolve Elements",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Ranks and validates locator candidates against captured evidence and the object repository.",
+        "Owns the locator cascade - nothing else may know it. Watch item: if VLM grounding is adopted, extract Ground Visually (section 6)."
+      ]
+    },
+    {
+      "id": "OBJREPO",
+      "kind": "external",
+      "label": "object repository",
+      "detail": [
+        "External store, drawn as EXT4; read by Resolve Elements, written by Publish Certified Assets."
+      ]
+    },
+    {
+      "id": "PCA",
+      "kind": "component",
+      "label": "Publish Certified Assets",
+      "qualifiers": [
+        "Cluster B"
+      ],
+      "detail": [
+        "Writes certified locators and tests to the object repository and the exemplar corpus under single-writer discipline.",
+        "Both writes must succeed or neither is visible; balanced CE = 1, CA = 1, I = 0.50."
+      ]
+    },
+    {
+      "id": "RCA",
+      "kind": "component",
+      "label": "Retrieve Conversion Assets",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Supplies the versioned prompts, house rules, and exemplars a conversion step requires.",
+        "Stable; version identity is its whole job. CE = 1, CA = 4, I = 0.20."
+      ]
+    },
+    {
+      "id": "GITCORP",
+      "kind": "external",
+      "label": "Git prompt and exemplar corpus",
+      "detail": [
+        "External store, drawn as EXT5; read by Retrieve Conversion Assets, grown by Publish Certified Assets."
+      ]
+    },
+    {
+      "id": "RHD",
+      "kind": "component",
+      "label": "Route Human Decisions",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Presents ambiguous and sub-threshold cases for decision and records the outcome attributably.",
+        "Human/identity boundary; balanced CE = 1, CA = 1, I = 0.50."
+      ]
+    },
+    {
+      "id": "HUMAN_EXT",
+      "kind": "external",
+      "label": "QA engineers and reviewers",
+      "detail": [
+        "The human actor from the Context view, drawn as EXT6 in the section 10 component diagram; the endpoint of Route Human Decisions."
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "ITS",
+      "to": "SRC",
+      "kind": "sync",
+      "ref": 39,
+      "detail": "Ingest Test Sources reads from Octane / ALM-QC / Excel (EXT1)."
+    },
+    {
+      "from": "AUE",
+      "to": "PERF",
+      "kind": "sync",
+      "ref": 40,
+      "detail": "Acquire UI Evidence captures evidence from the Perfecto device lab (EXT2)."
+    },
+    {
+      "from": "ROD",
+      "to": "PERF",
+      "kind": "sync",
+      "ref": 41,
+      "detail": "Replay on Devices runs K replays against the Perfecto device lab (EXT2)."
+    },
+    {
+      "from": "IM",
+      "to": "GATEWAY",
+      "kind": "sync",
+      "ref": 42,
+      "detail": "Invoke Models reaches the Orchestrator AI gateway (EXT3) - the single model-call seam."
+    },
+    {
+      "from": "RE",
+      "to": "OBJREPO",
+      "kind": "sync",
+      "ref": 43,
+      "detail": "Resolve Elements looks up known elements in the object repository (EXT4)."
+    },
+    {
+      "from": "PCA",
+      "to": "OBJREPO",
+      "kind": "sync",
+      "ref": 44,
+      "detail": "Publish Certified Assets writes certified locators/tests back to the object repository (EXT4)."
+    },
+    {
+      "from": "RCA",
+      "to": "GITCORP",
+      "kind": "sync",
+      "ref": 45,
+      "detail": "Retrieve Conversion Assets reads versioned prompts/exemplars from the Git corpus (EXT5)."
+    },
+    {
+      "from": "PCA",
+      "to": "GITCORP",
+      "kind": "sync",
+      "ref": 46,
+      "detail": "Publish Certified Assets grows the exemplar/golden set in the Git corpus (EXT5)."
+    },
+    {
+      "from": "RHD",
+      "to": "HUMAN_EXT",
+      "kind": "sync",
+      "ref": 47,
+      "detail": "Route Human Decisions presents cases to QA engineers and reviewers (EXT6)."
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bPostgres\\b",
+    "\\bOpenAI\\b",
+    "\\bGPT-",
+    "\\bClaude\\b"
+  ]
+}

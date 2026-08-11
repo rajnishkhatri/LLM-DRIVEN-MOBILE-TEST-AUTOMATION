@@ -1,0 +1,509 @@
+<title>Who Signs? — How a Human Certifies a Test in the o7 Pipeline</title>
+<style>
+  :root{
+    --paper:#F5F1E7; --card:#FFFFFF; --ink:#1B2A2B; --ink-soft:#4a5654; --faint:#6b7573;
+    --line:#e2dccd; --line-2:#d3ccb8;
+    --det:#1F6F6B;         /* machine / deterministic — teal */
+    --det-wash:#e9f1f0;
+    --human:#3E4C6E;       /* the human act — slate-indigo */
+    --human-wash:#e9ecf4;
+    --pass:#2E7D5B;
+    --pending:#B0742A;     /* PENDING_HUMAN — amber */
+    --fail:#A6402F;
+    --seal:#8a7a3d;
+    --mono:'SF Mono',SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+    --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#151d1e; --card:#1d2829; --ink:#eef2f0; --ink-soft:#b9c3c1; --faint:#8a938f;
+      --line:#2b3839; --line-2:#374747;
+      --det:#5bb8b2; --det-wash:#16302f;
+      --human:#93a2c8; --human-wash:#1c2436;
+      --pass:#5cc48d; --pending:#d69a4e; --fail:#d97a68; --seal:#c2ac5f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#151d1e; --card:#1d2829; --ink:#eef2f0; --ink-soft:#b9c3c1; --faint:#8a938f;
+    --line:#2b3839; --line-2:#374747;
+    --det:#5bb8b2; --det-wash:#16302f;
+    --human:#93a2c8; --human-wash:#1c2436;
+    --pass:#5cc48d; --pending:#d69a4e; --fail:#d97a68; --seal:#c2ac5f;
+  }
+  :root[data-theme="light"]{
+    --paper:#F5F1E7; --card:#FFFFFF; --ink:#1B2A2B; --ink-soft:#4a5654; --faint:#6b7573;
+    --line:#e2dccd; --line-2:#d3ccb8;
+    --det:#1F6F6B; --det-wash:#e9f1f0;
+    --human:#3E4C6E; --human-wash:#e9ecf4;
+    --pass:#2E7D5B; --pending:#B0742A; --fail:#A6402F; --seal:#8a7a3d;
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  .page{
+    background:var(--paper); color:var(--ink); font-family:var(--sans);
+    font-size:17px; line-height:1.62; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 24px;}
+
+  /* ---------- masthead ---------- */
+  .masthead{padding:64px 0 30px;}
+  .eyebrow{
+    font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--det); margin:0 0 18px;
+  }
+  h1{
+    font-family:var(--serif); font-weight:700; font-size:46px; line-height:1.08;
+    letter-spacing:-.01em; margin:0 0 18px; text-wrap:balance; color:var(--ink);
+  }
+  .dek{font-size:20px; line-height:1.5; color:var(--ink-soft); margin:0 0 26px; text-wrap:balance;}
+  .byline{
+    display:flex; flex-wrap:wrap; gap:8px 26px; padding-top:20px;
+    border-top:1px solid var(--line); font-size:13.5px; color:var(--faint);
+  }
+  .byline b{color:var(--ink-soft); font-weight:600;}
+
+  /* ---------- sections ---------- */
+  section{padding:14px 0;}
+  h2{
+    font-family:var(--serif); font-weight:700; font-size:28px; line-height:1.15;
+    margin:38px 0 6px; letter-spacing:-.01em; text-wrap:balance;
+  }
+  h2 .num{
+    font-family:var(--mono); font-size:14px; color:var(--det); font-weight:600;
+    display:block; margin-bottom:6px; letter-spacing:.05em;
+  }
+  h3{font-size:18px; font-weight:700; margin:26px 0 4px; color:var(--ink);}
+  p{margin:14px 0;}
+  .lead{font-size:19px; color:var(--ink-soft);}
+  strong{font-weight:700;}
+  em{font-style:italic;}
+  a{color:var(--det); text-underline-offset:2px;}
+
+  /* ---------- the thesis panel ---------- */
+  .thesis{
+    background:var(--det-wash); border:1px solid var(--line);
+    border-left:4px solid var(--det); border-radius:12px;
+    padding:24px 26px; margin:26px 0;
+  }
+  .thesis p{margin:8px 0;}
+  .thesis .big{font-family:var(--serif); font-size:23px; line-height:1.32; color:var(--ink); margin:0;}
+
+  /* ---------- split: correctness vs attribution ---------- */
+  .split{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:24px 0;}
+  .split .col{border:1px solid var(--line); border-radius:12px; padding:20px 22px; background:var(--card);}
+  .split .col.machine{border-top:3px solid var(--det);}
+  .split .col.human{border-top:3px solid var(--human);}
+  .split h4{margin:0 0 4px; font-size:12px; letter-spacing:.1em; text-transform:uppercase;}
+  .split .machine h4{color:var(--det);}
+  .split .human h4{color:var(--human);}
+  .split .who{font-size:14px; color:var(--faint); margin:2px 0 12px;}
+  .split p{font-size:15px; margin:8px 0;}
+
+  /* ---------- artifact card ---------- */
+  figure{margin:28px 0;}
+  .artifact{
+    background:var(--card); border:1px solid var(--line-2); border-radius:12px;
+    overflow:hidden;
+  }
+  .artifact .head{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:12px 18px; border-bottom:1px solid var(--line);
+    background:var(--det-wash);
+  }
+  .artifact.humanbar .head{background:var(--human-wash);}
+  .artifact .fname{font-family:var(--mono); font-size:13.5px; font-weight:600; color:var(--ink);}
+  .artifact .tag{
+    font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    padding:3px 9px; border-radius:20px; margin-left:auto;
+  }
+  .tag.det{background:var(--det); color:#fff;}
+  .tag.human{background:var(--human); color:#fff;}
+  pre{
+    margin:0; padding:18px; overflow-x:auto;
+    font-family:var(--mono); font-size:13px; line-height:1.7; color:var(--ink);
+    background:var(--card);
+  }
+  .k{color:var(--seal);}        /* json key */
+  .s{color:var(--ink-soft);}    /* string */
+  .pass{color:var(--pass); font-weight:700;}
+  .pend{color:var(--pending); font-weight:700;}
+  .nul{color:var(--fail); font-weight:700;}
+  .cmt{color:var(--faint); font-style:italic;}
+  figcaption{font-size:13.5px; color:var(--faint); margin-top:10px; padding:0 4px; line-height:1.5;}
+
+  /* ---------- the flip ---------- */
+  .flip{
+    display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:center;
+    margin:22px 0; text-align:center;
+  }
+  .flip .state{border:1px solid var(--line-2); border-radius:10px; padding:16px 14px; background:var(--card);}
+  .flip .state.before{border-color:var(--pending);}
+  .flip .state.after{border-color:var(--pass); background:var(--human-wash);}
+  .flip .lbl{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-bottom:8px;}
+  .flip .val{font-family:var(--mono); font-size:13px; line-height:1.6;}
+  .flip .arrow{font-size:26px; color:var(--human); font-weight:700;}
+
+  /* ---------- pull rule / callout ---------- */
+  .callout{
+    border:1px solid var(--line); border-left:4px solid var(--human);
+    background:var(--human-wash); border-radius:12px; padding:20px 24px; margin:26px 0;
+  }
+  .callout.barred{border-left-color:var(--fail);}
+  .callout .kicker{font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--human); margin:0 0 6px;}
+  .callout.barred .kicker{color:var(--fail);}
+  .callout p{margin:6px 0; font-size:16px;}
+
+  /* ---------- routing chips ---------- */
+  .routes{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:20px 0;}
+  .route{border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:var(--card);}
+  .route .cond{font-family:var(--mono); font-size:12.5px; color:var(--human); font-weight:600;}
+  .route .then{font-size:15px; margin-top:8px;}
+  .route .then b{color:var(--ink);}
+
+  /* ---------- inline code ---------- */
+  code{font-family:var(--mono); font-size:0.86em; background:var(--det-wash);
+       padding:1px 6px; border-radius:5px; color:var(--ink);}
+
+  /* ---------- figure diagram ---------- */
+  .diagram-frame{border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#F5F1E7;}
+  .diagram{width:100%; height:auto; display:block;}
+
+  /* ---------- checklist ---------- */
+  ul.check{list-style:none; padding:0; margin:16px 0;}
+  ul.check li{padding:8px 0 8px 30px; position:relative; border-bottom:1px solid var(--line); font-size:16px;}
+  ul.check li:last-child{border-bottom:none;}
+  ul.check li::before{content:"✓"; position:absolute; left:2px; top:8px; color:var(--pass); font-weight:700;}
+  ul.check code{font-size:0.82em;}
+
+  /* ---------- footer ---------- */
+  .foot{margin:48px 0 70px; padding-top:22px; border-top:1px solid var(--line); font-size:13.5px; color:var(--faint);}
+  .foot .status{
+    display:inline-block; font-family:var(--mono); font-size:12px; color:var(--pending);
+    border:1px solid var(--pending); border-radius:20px; padding:3px 12px; margin-bottom:12px;
+  }
+
+  @media (max-width:640px){
+    h1{font-size:34px;} .dek{font-size:18px;}
+    .split, .routes{grid-template-columns:1fr;}
+    .flip{grid-template-columns:1fr; }
+    .flip .arrow{transform:rotate(90deg);}
+    .masthead{padding:44px 0 24px;}
+  }
+</style>
+
+<div class="page">
+  <div class="wrap">
+
+    <header class="masthead">
+      <p class="eyebrow">Engineering &amp; Product · Mobile Test Automation · o7 Pipeline</p>
+      <h1>Who signs?</h1>
+      <p class="dek">In the o7 test pipeline, the machine does the proving and the running. But a test is never <em>certified</em> until a named human puts their name on it — after it runs, not before. Here is exactly how that handoff works.</p>
+      <div class="byline">
+        <span><b>Audience</b> Engineering &amp; Product</span>
+        <span><b>Reading time</b> ~8 min</span>
+        <span><b>Scenario</b> “Send $25 to Alex Rivera on Zelle”</span>
+      </div>
+    </header>
+
+    <section>
+      <p class="lead">Every automated test that certifies our mobile banking app ends with a question a computer is <em>not allowed</em> to answer on its own: <strong>is this good enough to stand behind?</strong></p>
+
+      <p>The o7 pipeline draws a hard line between two kinds of work. One kind a machine can do perfectly and tirelessly — checking that a test is well-formed, running it on a real device, recording exactly what happened. The other kind — <em>taking responsibility for the result</em> — stays with a person. This piece is about that second kind: how a human reviews and approves the artifacts, what they actually look at, and why the pipeline is built to <em>stop and wait</em> for them.</p>
+
+      <div class="thesis">
+        <p class="big">The old way put a human <em>in front of</em> the test, reading code before it ran. o7 moves the human to the <em>end</em> — certifying a result that has already run, with the full evidence in hand.</p>
+      </div>
+
+      <p>That move wasn't made lightly. In the previous pipeline (called o1), an engineer reviewed the generated test script before it executed. It was recorded, honestly, as a control that was <em>“genuinely effective and genuinely fatal to the system's purpose”</em> — it worked, but it didn't scale, and it turned out it was never really the safety net people believed it was. So o7 took that single review and split it in two.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">The split</span>Two jobs that used to be one</h2>
+      <p>The pre-run review was quietly doing two different things at once. o7 separates them and gives each to whoever does it best.</p>
+
+      <div class="split">
+        <div class="col machine">
+          <h4>Correctness</h4>
+          <p class="who">→ now owned by the machine</p>
+          <p>Is the test well-formed? Does it wait forever anywhere? Does it hard-code a password? Does it point at a screen element that doesn't exist? These are mechanical questions with mechanical answers — so a deterministic gate answers them, every time, with no judgment call.</p>
+        </div>
+        <div class="col human">
+          <h4>Attribution</h4>
+          <p class="who">→ still owned by a person</p>
+          <p>Does a named, accountable human stand behind this result? That is not a mechanical question. It's a decision, and decisions need a decider. o7 keeps this with a person — and moves it to <em>after</em> the run, where the evidence is real instead of predicted.</p>
+        </div>
+      </div>
+
+      <p>So when a person approves a test in o7, they are <strong>not</strong> checking whether the code compiles or whether the waits are bounded — the machine already proved that, reproducibly. They are doing the one thing only a human can: reading the evidence and deciding it's worthy of their name.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">The picture</span>The handoff, end to end</h2>
+      <p>Everything on the left is the machine's lane — deterministic and free of any live AI. Everything on the right is the human's. They meet at a single seam, and the object that crosses it is a signed-off-pending verdict.</p>
+      <figure>
+        <div class="diagram-frame">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 660" class="diagram" font-family="'Helvetica Neue',Arial,sans-serif" role="img" aria-label="The certification handoff: auto-commit, IR gate, and interpreter run in the machine lane and produce a ReplayReport with certification status PENDING_HUMAN; a human evaluator reads the evidence and flips the status to CERTIFIED by attaching their individual principal. Fully-autonomous certification is barred.">
+  <defs>
+    <style>
+      .lane-label{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;}
+      .d-title{font-size:15px;font-weight:700;}
+      .d-sub{font-size:11.5px;}
+      .d-mono{font-family:var(--mono);}
+      .d-tiny{font-size:10px;}
+      .d-chip{font-size:10px;font-weight:700;letter-spacing:.04em;}
+    </style>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5c6b6a"/>
+    </marker>
+    <marker id="arrH" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3E4C6E"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1120" height="660" fill="#F5F1E7"/>
+  <text x="48" y="52" font-size="25" font-weight="700" fill="#1B2A2B" font-family="Georgia,'Times New Roman',serif">The certification handoff</text>
+  <text x="48" y="76" class="d-sub" fill="#4a5654">o7 pipeline — the machine proves and executes; a named human takes responsibility. Scenario ACC-2087: “Send $25 to Alex Rivera on Zelle.”</text>
+  <rect x="40" y="100" width="700" height="512" rx="14" fill="#1F6F6B" opacity="0.05"/>
+  <rect x="770" y="100" width="310" height="512" rx="14" fill="#3E4C6E" opacity="0.07"/>
+  <line x1="755" y1="112" x2="755" y2="600" stroke="#8a7a3d" stroke-width="2" stroke-dasharray="2 5"/>
+  <g transform="translate(755,356)">
+    <rect x="-30" y="-58" width="60" height="116" rx="8" fill="#F5F1E7" stroke="#8a7a3d" stroke-width="1.5"/>
+    <text x="0" y="-30" text-anchor="middle" class="d-chip" fill="#8a7a3d">THE</text>
+    <text x="0" y="-16" text-anchor="middle" class="d-chip" fill="#8a7a3d">SEAL</text>
+    <text x="0" y="6" text-anchor="middle" font-size="20">🔏</text>
+    <text x="0" y="30" text-anchor="middle" class="d-tiny d-mono" fill="#8a7a3d">irDigest</text>
+    <text x="0" y="44" text-anchor="middle" class="d-tiny d-mono" fill="#8a7a3d">pins it</text>
+  </g>
+  <text x="60" y="128" class="lane-label" fill="#1F6F6B">Machine — deterministic, LLM-free</text>
+  <text x="790" y="128" class="lane-label" fill="#3E4C6E">Human — evaluator</text>
+  <g transform="translate(60,150)">
+    <rect width="180" height="86" rx="10" fill="#fff" stroke="#1F6F6B" stroke-width="1.5"/>
+    <text x="14" y="26" class="d-title" fill="#1B2A2B">Auto-commit</text>
+    <text x="14" y="46" class="d-sub" fill="#4a5654">TestCaseIR + locators —</text>
+    <text x="14" y="61" class="d-sub" fill="#4a5654">the committed IR</text>
+    <rect x="14" y="68" width="152" height="14" rx="7" fill="#1F6F6B" opacity="0.12"/>
+    <text x="20" y="78" class="d-tiny d-mono" fill="#1F6F6B">svc:conversion-pipeline</text>
+  </g>
+  <g transform="translate(280,150)">
+    <rect width="196" height="86" rx="10" fill="#fff" stroke="#1F6F6B" stroke-width="1.5"/>
+    <text x="14" y="26" class="d-title" fill="#1B2A2B">IR gate</text>
+    <text x="14" y="45" class="d-sub" fill="#4a5654">7 checks · no device · no compile</text>
+    <text x="14" y="62" class="d-tiny" fill="#6b7573">schema · opcodes · waits · locators</text>
+    <text x="14" y="75" class="d-tiny" fill="#6b7573">creds · ambiguity · dry-run</text>
+  </g>
+  <g transform="translate(280,244)">
+    <rect width="196" height="20" rx="5" fill="#1F6F6B" opacity="0.1"/>
+    <text x="8" y="14" class="d-tiny d-mono" fill="#1F6F6B">▸ IRGate.report.json → PROCEED</text>
+  </g>
+  <g transform="translate(516,150)">
+    <rect width="196" height="86" rx="10" fill="#fff" stroke="#1F6F6B" stroke-width="1.5"/>
+    <text x="14" y="26" class="d-title" fill="#1B2A2B">Interpreter</text>
+    <text x="14" y="45" class="d-sub" fill="#4a5654">walks committed IR on a</text>
+    <text x="14" y="61" class="d-sub" fill="#4a5654">real Perfecto device</text>
+    <text x="14" y="78" class="d-tiny" fill="#a6402f" font-weight="700">healPolicy = NONE · no self-heal</text>
+  </g>
+  <g transform="translate(516,244)">
+    <rect width="196" height="20" rx="5" fill="#1F6F6B" opacity="0.1"/>
+    <text x="8" y="14" class="d-tiny d-mono" fill="#1F6F6B">▸ ExecutionPlan.acc-2087.md</text>
+  </g>
+  <line x1="240" y1="193" x2="278" y2="193" stroke="#5c6b6a" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="476" y1="193" x2="514" y2="193" stroke="#5c6b6a" stroke-width="1.6" marker-end="url(#arr)"/>
+  <g transform="translate(60,300)">
+    <text x="0" y="0" class="lane-label" fill="#1F6F6B" font-size="11">The machine owns CORRECTNESS</text>
+    <text x="0" y="20" class="d-sub" fill="#4a5654">A structurally broken IR never reaches a device. Every wait is</text>
+    <text x="0" y="36" class="d-sub" fill="#4a5654">bounded; no credential is literal; no locator is invented. The green</text>
+    <text x="0" y="52" class="d-sub" fill="#4a5654">is a property of the committed artifact — not a lucky adaptive recovery.</text>
+  </g>
+  <g transform="translate(60,372)">
+    <rect width="652" height="212" rx="12" fill="#fff" stroke="#1F6F6B" stroke-width="1.5"/>
+    <text x="18" y="28" class="d-title" fill="#1B2A2B">ReplayReport.json</text>
+    <text x="150" y="28" class="d-tiny" fill="#6b7573">— the verdict artifact handed across the seal</text>
+    <g class="d-mono" font-size="11.5" fill="#2b3a39">
+      <text x="18" y="54"><tspan fill="#8a7a3d">"verdict"</tspan>: <tspan fill="#2E7D5B" font-weight="700">"PASS"</tspan>,          <tspan fill="#8a7a3d">"healsApplied"</tspan>: <tspan fill="#2E7D5B" font-weight="700">"NONE"</tspan>,</text>
+      <text x="18" y="74"><tspan fill="#8a7a3d">"irDigest"</tspan>: "sha:ir:2087:d41c9a…",</text>
+      <text x="18" y="94"><tspan fill="#8a7a3d">"interpreterVersion"</tspan>: "sha:interp:9f0c22…",</text>
+      <text x="18" y="114"><tspan fill="#8a7a3d">"cloudAdaptivity"</tspan>: { selfHealing: <tspan fill="#2E7D5B">DISABLED</tspan>, perfectoAI: <tspan fill="#2E7D5B">DISABLED</tspan> },</text>
+      <text x="18" y="134"><tspan fill="#8a7a3d">"commitPrincipal"</tspan>: "svc:conversion-pipeline",</text>
+      <text x="18" y="154"><tspan fill="#8a7a3d">"noveltyFlag"</tspan>: false,</text>
+    </g>
+    <rect x="14" y="166" width="624" height="34" rx="7" fill="#B0742A" opacity="0.12"/>
+    <text x="18" y="188" class="d-mono" font-size="11.5" fill="#2b3a39"><tspan fill="#8a7a3d">"certification"</tspan>: { <tspan fill="#8a7a3d">"status"</tspan>: <tspan fill="#B0742A" font-weight="700">"PENDING_HUMAN"</tspan>, <tspan fill="#8a7a3d">"certifiedBy"</tspan>: <tspan fill="#a6402f" font-weight="700">null</tspan> }</text>
+    <text x="470" y="188" class="d-tiny" fill="#B0742A" font-weight="700"> ◄ machine stops here</text>
+  </g>
+  <path d="M712 478 C 745 478, 748 356, 788 356" fill="none" stroke="#3E4C6E" stroke-width="2.2" marker-end="url(#arrH)"/>
+  <g transform="translate(790,160)">
+    <rect width="270" height="150" rx="12" fill="#fff" stroke="#3E4C6E" stroke-width="1.6"/>
+    <text x="18" y="30" class="d-title" fill="#1B2A2B">The human reads</text>
+    <g font-size="11.5" fill="#3a4658">
+      <text x="18" y="54">✓ verdict = PASS (precondition met)</text>
+      <text x="18" y="76">✓ no heals, cloud AI off → real green</text>
+      <text x="18" y="98">✓ plan validates the business intent:</text>
+      <text x="32" y="115" class="d-tiny" fill="#6b7573">“$25.00 sent to Alex Rivera”</text>
+      <text x="18" y="137">✓ commit was a service principal</text>
+    </g>
+  </g>
+  <g transform="translate(790,326)">
+    <rect width="270" height="70" rx="12" fill="#3E4C6E" opacity="0.09"/>
+    <text x="18" y="26" class="lane-label" font-size="11" fill="#3E4C6E">How much review?</text>
+    <text x="18" y="46" class="d-tiny" fill="#3a4658">noveltyFlag=false → <tspan font-weight="700">sampled</tspan> review</text>
+    <text x="18" y="62" class="d-tiny" fill="#3a4658">new source shape → <tspan font-weight="700">mandatory</tspan> review</text>
+  </g>
+  <g transform="translate(790,412)">
+    <rect width="270" height="118" rx="12" fill="#3E4C6E"/>
+    <text x="18" y="30" class="d-title" fill="#fff">The act of approval</text>
+    <text x="18" y="52" class="d-mono" font-size="10" fill="#cdd4e4">status: PENDING_HUMAN</text>
+    <text x="163" y="52" font-size="12" fill="#fff">→</text>
+    <text x="180" y="52" class="d-mono" font-size="10" fill="#8fe0b8" font-weight="700">CERTIFIED</text>
+    <text x="18" y="74" class="d-mono" font-size="10" fill="#cdd4e4">certifiedBy: null</text>
+    <text x="163" y="74" font-size="12" fill="#fff">→</text>
+    <text x="180" y="74" class="d-mono" font-size="10" fill="#8fe0b8" font-weight="700">a.person@bank</text>
+    <line x1="18" y1="84" x2="252" y2="84" stroke="#ffffff" stroke-opacity="0.25"/>
+    <text x="18" y="104" class="d-tiny" fill="#e6ebf5">An attributable individual decision —</text>
+    <text x="18" y="117" class="d-tiny" fill="#e6ebf5" font-weight="700">no verdict without a named person.</text>
+  </g>
+  <g transform="translate(790,548)">
+    <rect width="270" height="46" rx="10" fill="#fff" stroke="#a6402f" stroke-width="1.4"/>
+    <text x="18" y="21" class="d-chip" fill="#a6402f">⛔ AUTONOMOUS CERTIFY — BARRED</text>
+    <text x="18" y="37" class="d-tiny" fill="#7a4a40">A machine PASS is never a certification.</text>
+  </g>
+  <text x="48" y="640" class="d-tiny" fill="#8a938f">Grounded in the o7 reference mocks and interpreter spec. Status: designed, not yet built — spec is draft, gated on an architecture decision.</text>
+</svg>
+        </div>
+        <figcaption>The machine establishes correctness and executes the committed test on a real device, then stops — leaving the certification field marked <code>PENDING_HUMAN</code>. Only a person closes it.</figcaption>
+      </figure>
+    </section>
+
+    <section>
+      <h2><span class="num">Artifact 1</span>What the machine hands over: the gate result</h2>
+      <p>Before any device is touched, a deterministic gate runs seven checks on the committed test. A human doesn't run this — but they trust its result <em>because</em> it's mechanical and reproducible. This is the correctness half, made concrete.</p>
+
+      <figure>
+        <div class="artifact">
+          <div class="head">
+            <span class="fname">IRGate.report.json</span>
+            <span class="tag det">Machine · pre-device</span>
+          </div>
+<pre><span class="k">"checks"</span>: {
+  <span class="k">"schemaValid"</span>:     { <span class="k">"status"</span>: <span class="pass">"PASS"</span>, <span class="cmt">"11 steps valid"</span> },
+  <span class="k">"opcodeClosed"</span>:    { <span class="k">"status"</span>: <span class="pass">"PASS"</span>, <span class="cmt">"only known actions used"</span> },
+  <span class="k">"boundedWaits"</span>:    { <span class="k">"status"</span>: <span class="pass">"PASS"</span>, <span class="cmt">"0 unbounded waits"</span> },
+  <span class="k">"locatorManifest"</span>: { <span class="k">"status"</span>: <span class="pass">"PASS"</span>, <span class="cmt">"0 orphan locators"</span> },
+  <span class="k">"noLiteralCreds"</span>:  { <span class="k">"status"</span>: <span class="pass">"PASS"</span>, <span class="cmt">"vault refs only"</span> },
+  <span class="k">"ambiguityClear"</span>:  { <span class="k">"status"</span>: <span class="pass">"PASS"</span>, <span class="cmt">"nothing left ambiguous"</span> }
+},
+<span class="k">"dryRun"</span>:   { <span class="k">"status"</span>: <span class="pass">"PASS"</span>, <span class="cmt">"walks end-to-end, no device used"</span> },
+<span class="k">"decision"</span>: <span class="pass">"PROCEED_TO_DEVICE_GATE"</span></pre>
+        </div>
+        <figcaption>Every line here is something a human reviewer used to eyeball by hand. Now it's a checked, reproducible fact — a structurally broken test never reaches a device.</figcaption>
+      </figure>
+    </section>
+
+    <section>
+      <h2><span class="num">Artifact 2</span>The plain-English evidence: the execution plan</h2>
+      <p>This is the artifact built for the reviewer who isn't an engineer — a business analyst, a compliance officer. It's rendered from the <em>same</em> committed test the machine actually ran, so it can never quietly drift from reality. Reading it answers one question: <strong>did this test really verify the thing the business cares about?</strong></p>
+
+      <figure>
+        <div class="artifact">
+          <div class="head">
+            <span class="fname">ExecutionPlan.acc-2087.md</span>
+            <span class="tag det">Machine · evidence</span>
+          </div>
+<pre> 3. TAP    "Sign In button"        → loginButton
+ 4. ASSERT home dashboard present  → homeDashboard
+ 5. TAP    "Pay &amp; Transfers"       → payTransfersTab
+ 6. TAP    "Zelle"                 → zelleMenuItem
+ 7. TAP    "recipient Alex Rivera" → recipient_AlexRivera
+ 8. TYPE   ${testData.amount}      → amountField
+ 9. TAP    "Send"                  → zelleSendButton
+10. ASSERT confirmation            <span class="pass">[TEXT_EQUALS "$25.00 sent to Alex Rivera"]</span>
+
+<span class="cmt">healPolicy = NONE for every step — a miss is a red build, never a repair.</span></pre>
+        </div>
+        <figcaption>The reviewer is checking <em>intent</em>, not code: sign in, go to Zelle, send $25, and confirm the customer sees the right message. The plan is evidence — it is never the thing that gets signed.</figcaption>
+      </figure>
+    </section>
+
+    <section>
+      <h2><span class="num">Artifact 3</span>The verdict the human signs: the replay report</h2>
+      <p>This is the object that crosses the seam. Look at the last line: the machine has done <em>everything</em> up to certification and then deliberately stopped, leaving the decision open.</p>
+
+      <figure>
+        <div class="artifact humanbar">
+          <div class="head">
+            <span class="fname">ReplayReport.json</span>
+            <span class="tag human">The verdict artifact</span>
+          </div>
+<pre><span class="k">"verdict"</span>: <span class="pass">"PASS"</span>,   <span class="k">"healsApplied"</span>: <span class="pass">"NONE"</span>,
+<span class="k">"cloudAdaptivity"</span>: { selfHealing: <span class="pass">DISABLED</span>, perfectoAI: <span class="pass">DISABLED</span> },
+<span class="k">"commitPrincipal"</span>: <span class="s">"svc:conversion-pipeline"</span>,
+<span class="k">"noveltyFlag"</span>: false,
+
+<span class="k">"certification"</span>: { <span class="k">"status"</span>: <span class="pend">"PENDING_HUMAN"</span>, <span class="k">"certifiedBy"</span>: <span class="nul">null</span> }
+                                        <span class="cmt">▲ the machine stops here</span></pre>
+        </div>
+        <figcaption>A machine <code>PASS</code> is a <em>precondition</em>, never a certification. The report is complete in every mechanical respect — and still unfinished, because no one has signed.</figcaption>
+      </figure>
+
+      <h3>The act of approval, precisely</h3>
+      <p>Approving the test <em>is</em> this — and nothing more mysterious than this. A person reviews the evidence and writes their identity into the one field the machine left blank:</p>
+
+      <div class="flip">
+        <div class="state before">
+          <div class="lbl">Before — machine done</div>
+          <div class="val"><span class="k">status</span>: <span class="pend">PENDING_HUMAN</span><br><span class="k">certifiedBy</span>: <span class="nul">null</span></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="state after">
+          <div class="lbl">After — human certifies</div>
+          <div class="val"><span class="k">status</span>: <span class="pass">CERTIFIED</span><br><span class="k">certifiedBy</span>: <span class="pass">a.person@bank</span></div>
+        </div>
+      </div>
+
+      <h3>What the human checks before signing</h3>
+      <p>Everything they need is already in the report. The review is fast because the machine did the hard part — the person is confirming, not investigating:</p>
+      <ul class="check">
+        <li><code>verdict: PASS</code> — the machine precondition is met. No pass, nothing to certify.</li>
+        <li><code>healsApplied: NONE</code> and cloud AI <code>DISABLED</code> — the green is <em>real</em>, not a lucky self-healing recovery. The result depends only on the committed test, nothing adaptive.</li>
+        <li>The execution plan matches the business intent — <em>“$25.00 sent to Alex Rivera.”</em></li>
+        <li><code>commitPrincipal</code> is a service account — confirming the commit was automated, so the individual name must land here, on the verdict.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2><span class="num">The dial</span>How much gets human review</h2>
+      <p>Not every test needs a full read — that wouldn't scale, and scale was the whole point. One signal on the report decides the depth of review: <code>noveltyFlag</code>.</p>
+
+      <div class="routes">
+        <div class="route">
+          <div class="cond">noveltyFlag: true</div>
+          <div class="then"><b>Mandatory review.</b> The test came from a source shape the pipeline has never seen before. A human reads it, every time.</div>
+        </div>
+        <div class="route">
+          <div class="cond">noveltyFlag: false</div>
+          <div class="then"><b>Sampled review.</b> A familiar shape — like our Zelle flow. Only a small fixed random fraction is pulled for human eyes; the rest certify on the machine evidence.</div>
+        </div>
+      </div>
+
+      <p>But sampling only decides <em>how many</em> get a close read. It never removes the human from the ones that certify. That floor is absolute:</p>
+
+      <div class="callout barred">
+        <p class="kicker">⛔ The hard boundary</p>
+        <p>A certification verdict is <strong>invalid at the database level if it lacks an individual person's identity.</strong> The machine can pass a million tests on its own; it can <em>certify</em> none of them. Fully-autonomous sign-off isn't a future feature to build — it's a line the system is designed never to cross.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="num">In one breath</span>The human's role</h2>
+      <div class="callout">
+        <p>The human is a <strong>post-run certifier, not a pre-run code reviewer.</strong> The machine proves the test is well-formed, runs it on a real device with nothing adaptive allowed, and produces a <code>PASS</code> plus a full evidence bundle — then stops. The person reads the plain-English plan and the replay report, confirms the test genuinely checked the business intent with no cheating, and writes their name into the one field the machine left blank. That signature is a decision the pipeline is <em>forbidden</em> to make for them.</p>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span class="status">Status — designed, not yet built</span>
+      <p>This describes the o7 approval model as specified. The o7 spec is currently in draft and gated on an internal architecture decision moving from <em>proposed</em> to <em>accepted</em>; nothing here is a shipped-and-running behavior yet. Every artifact shown is drawn from the o7 reference mocks for scenario ACC-2087 (“Send $25 to Alex Rivera on Zelle”).</p>
+    </footer>
+
+  </div>
+</div>

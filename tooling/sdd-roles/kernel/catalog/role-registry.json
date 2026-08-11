@@ -1,0 +1,204 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "role_registry",
+  "roles": [
+    {
+      "id": "specifier",
+      "tag": "maker",
+      "gates": [],
+      "write_scopes": [
+        "specs/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "You are the specifier role of the SDD conveyor. Read the kernel skill card (the constitution) and your role card before acting; convert tasks into scenario law and QA procedures; you never write production code. Work only your stage for: {args}",
+        "model": "UNBOUND"
+      }
+    },
+    {
+      "id": "coder",
+      "tag": "maker",
+      "gates": [
+        "build",
+        "tests",
+        "ir-gate"
+      ],
+      "write_scopes": [
+        "src/",
+        "tests/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "You are the coder role of the SDD conveyor. Read the kernel skill card (the constitution) and your role card before acting; make failing acceptance law pass with test-driven implementation; you never author the law. Work only your stage for: {args}",
+        "model": "UNBOUND"
+      }
+    },
+    {
+      "id": "cleaner",
+      "tag": "maker",
+      "gates": [
+        "build",
+        "tests",
+        "crap"
+      ],
+      "write_scopes": [
+        "src/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "You are the cleaner role of the SDD conveyor. Read the kernel skill card (the constitution) and your role card before acting; improve structure without changing behavior; every suite stays green. Work only your stage for: {args}",
+        "model": "UNBOUND"
+      }
+    },
+    {
+      "id": "architect",
+      "tag": "maker",
+      "gates": [
+        "build"
+      ],
+      "write_scopes": [
+        "src/",
+        "tests/",
+        "docs/adr/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "You are the architect role of the SDD conveyor. Read the kernel skill card (the constitution) and your role card before acting; partition modules, enforce the dependency rule, add property tests; record decisions. Work only your stage for: {args}",
+        "model": "UNBOUND"
+      }
+    },
+    {
+      "id": "hardener",
+      "tag": "checker",
+      "gates": [
+        "tests",
+        "mutation"
+      ],
+      "write_scopes": [
+        "src/test/",
+        "tests/",
+        "specs/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "You are the hardener role of the SDD conveyor. Read the kernel skill card (the constitution) and your role card before acting; kill every surviving mutant by strengthening tests; you never weaken the law. Work only your stage for: {args}",
+        "model": "UNBOUND"
+      }
+    },
+    {
+      "id": "qa",
+      "tag": "checker",
+      "gates": [
+        "build",
+        "tests",
+        "crap",
+        "ir-gate"
+      ],
+      "write_scopes": [
+        "src/",
+        "tests/"
+      ],
+      "diagnostic_capability": true,
+      "invocation": {
+        "prompt": "You are the qa role of the SDD conveyor. Read the kernel skill card (the constitution) and your role card before acting; verify independently through the user interface only; minimal fixes; stop and ask on contradictions. Work only your stage for: {args}",
+        "model": "UNBOUND"
+      }
+    },
+    {
+      "id": "solo",
+      "tag": "maker",
+      "gates": [
+        "build",
+        "tests",
+        "crap",
+        "mutation",
+        "ir-gate"
+      ],
+      "write_scopes": [
+        "src/",
+        "tests/",
+        "specs/"
+      ],
+      "diagnostic_capability": true,
+      "invocation": {
+        "prompt": "You are the solo role of the SDD conveyor. Read the kernel skill card (the constitution) and your role card before acting; carry every stage yourself under the full gate set; the gates, not your judgment, decide done. Work only your stage for: {args}",
+        "model": "UNBOUND"
+      }
+    },
+    {
+      "id": "maker3",
+      "tag": "maker",
+      "gates": [
+        "build",
+        "tests",
+        "crap",
+        "ir-gate"
+      ],
+      "write_scopes": [
+        "src/",
+        "tests/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "You are the maker3 role of the SDD conveyor. Read the kernel skill card (the constitution) and your role card before acting; implement and clean in one stage (merged coder+cleaner); you never author the law. Work only your stage for: {args}",
+        "model": "UNBOUND"
+      }
+    },
+    {
+      "id": "checker3",
+      "tag": "checker",
+      "gates": [
+        "tests",
+        "mutation",
+        "ir-gate"
+      ],
+      "write_scopes": [
+        "src/",
+        "tests/"
+      ],
+      "diagnostic_capability": true,
+      "invocation": {
+        "prompt": "You are the checker3 role of the SDD conveyor. Read the kernel skill card (the constitution) and your role card before acting; harden and verify in one stage (merged hardener+qa); independent of the makers' assumptions. Work only your stage for: {args}",
+        "model": "UNBOUND"
+      }
+    }
+  ],
+  "arms": [
+    {
+      "id": "A",
+      "roles": [
+        "solo"
+      ]
+    },
+    {
+      "id": "B",
+      "roles": [
+        "specifier",
+        "maker3",
+        "checker3"
+      ]
+    },
+    {
+      "id": "C",
+      "roles": [
+        "specifier",
+        "architect",
+        "coder",
+        "cleaner",
+        "hardener",
+        "qa"
+      ]
+    },
+    {
+      "id": "C-dbg",
+      "roles": [
+        "specifier",
+        "architect",
+        "coder",
+        "cleaner",
+        "hardener"
+      ],
+      "ablation": "diagnostic-debug"
+    }
+  ]
+}

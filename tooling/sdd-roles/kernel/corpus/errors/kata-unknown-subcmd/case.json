@@ -1,0 +1,7 @@
+{
+  "command": "kata",
+  "args": [
+    "frobnicate"
+  ],
+  "expected_exit": 1
+}

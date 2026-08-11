@@ -1,0 +1,95 @@
+# The human seam — R4 + R2. The commit is a service action; the verdict is a person.
+# Two principals, two rows, one invariant: no lineage row is ever principal-less.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  port: {
+    style: {
+      fill: "#E7E1F1"
+      stroke: "#6A5A9C"
+      font-color: "#453A6B"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  human: {
+    style: {
+      fill: "#E3E9F2"
+      stroke: "#495C77"
+      font-color: "#2F3E52"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  flow: {
+    style: {
+      stroke: "#4A5A59"
+      font-color: "#4A5A59"
+      font-size: 13
+    }
+  }
+}
+
+commit: "COMMIT ROW\nprincipal: svc:conversion-pipeline\n(a service account —\nvalid for automated actions)" { class: port }
+
+gate: "IR gate + dry-run\n(the correctness vouch\nthat replaced the\npre-commit reviewer)" { class: policy }
+
+run: "Interpreter run\nmachine PASS" { class: policy }
+
+router: "R2 novelty router" {
+  style: {
+    fill: "#F6F8F7"
+    stroke: "#5B8A85"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 15
+    bold: true
+  }
+  novel: "source shape\nnever seen before\n→ MANDATORY review" { class: policy }
+  known: "known shape\n→ SAMPLED review\n(the spine's existing\nfixed random draw)" { class: policy }
+}
+
+verdict: "VERDICT ROW\ncertification signed by\nan INDIVIDUAL principal\n(post-run evaluator)\n\na catch-all “system”\nprincipal is invalid\nat the database level" { class: human }
+
+barred: "R5 — fully autonomous\ncertification\nBARRED on the\ncertified path" {
+  style: {
+    fill: "#FBEFEC"
+    stroke: "#A6402F"
+    font-color: "#7A2E21"
+    border-radius: 6
+    stroke-width: 2
+    bold: true
+  }
+}
+
+gate -> commit: "all green →\nauto-commit" { class: flow }
+commit -> run: { class: flow }
+run -> router: { class: flow }
+router.novel -> verdict: { class: flow }
+router.known -> verdict: { class: flow }
+run -> barred: "no human?\nno verdict." {
+  style: {
+    stroke: "#A6402F"
+    stroke-dash: 3
+    font-color: "#A6402F"
+    font-size: 13
+    bold: true
+  }
+}

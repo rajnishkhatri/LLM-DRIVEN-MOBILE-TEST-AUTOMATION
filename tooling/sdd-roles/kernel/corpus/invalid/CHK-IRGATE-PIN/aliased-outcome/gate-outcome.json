@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "gate_outcome",
+  "gate_id": "ir-gate",
+  "tool": "junit-runner",
+  "tool_version": "5.10.0",
+  "exit_code": 0,
+  "input_tree_digest": "abababababababababababababababababababababababababababababababab",
+  "attempt_number": 1,
+  "report_ref": {
+    "path": "reports/ir-gate.json",
+    "sha256": "5922354f75a66357d9497fe1a68b0f916be3619f2f8addb36eda6a441a18ef91"
+  },
+  "threshold": {
+    "name": "build_errors_max",
+    "value": 0
+  }
+}

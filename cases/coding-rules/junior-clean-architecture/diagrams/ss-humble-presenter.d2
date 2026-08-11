@@ -1,0 +1,68 @@
+# Humble Object — Presenter / ViewModel / View for PlaceOrder.
+# Silicon Sandwiches cast.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+title: "Humble Object — PlaceOrder → Presenter → View" {
+  shape: text
+  near: top-center
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+usecase: "PlaceOrder\n(use case)" {
+  style: {
+    fill: "#f5f5f5"
+    stroke: "#4a4a4a"
+    font-size: 15
+    bold: true
+  }
+}
+
+presenter: "OrderPresenter\n(testable logic)" {
+  style: {
+    fill: "#e8eef5"
+    stroke: "#4a4a4a"
+    font-size: 15
+    bold: true
+  }
+}
+
+vm: "OrderViewModel\n(strings, flags,\nformatted totals)" {
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    font-size: 14
+  }
+}
+
+view: "Humble View\n(binds ViewModel;\nlittle/no logic)" {
+  style: {
+    fill: "#dcdcdc"
+    stroke: "#4a4a4a"
+    font-size: 14
+  }
+}
+
+usecase -> presenter: "output\n(order placed,\ntotals, errors)"
+presenter -> vm: "maps to\ndisplay model"
+vm -> view: "read by"
+
+caption: "Hard-to-test UI stays humble. Formatting, branching, and error wording live in OrderPresenter — easy to unit-test without a browser." {
+  shape: rectangle
+  near: bottom-center
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 14
+  }
+}

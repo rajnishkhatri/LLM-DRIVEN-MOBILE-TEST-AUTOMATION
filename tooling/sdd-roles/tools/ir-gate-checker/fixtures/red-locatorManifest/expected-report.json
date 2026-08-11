@@ -1,0 +1,62 @@
+{
+  "artifact_type": "ir_gate_report",
+  "checks": [
+    {
+      "id": "schemaValid",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "opcodeClosed",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "boundedWaits",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "locatorManifest",
+      "outcome": "fail",
+      "violations": [
+        {
+          "detail": "orphan locator 'loc-ghost': not present in the committed manifest",
+          "pointer": "/steps/5/target/locatorRef"
+        }
+      ]
+    },
+    {
+      "id": "noLiteralCreds",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "ambiguityClear",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "dryRun",
+      "outcome": "pass",
+      "violations": []
+    }
+  ],
+  "contract": "o7-spec-derived.1",
+  "inputs": {
+    "ir_sha256": "a224bd60599f7a1a3c6a6bd90266297faa8cde491558dd99dc7916963503f075",
+    "manifest_sha256": "00213d11fb4f510c6a4b56e0feffc069443aba13825a97385661541c37958a36"
+  },
+  "ir_digest": {
+    "computed": "8b8b5e6de01c1362ea5bb374202e5348215931862c2eab31a82c4a64125e78a9",
+    "declared": "8b8b5e6de01c1362ea5bb374202e5348215931862c2eab31a82c4a64125e78a9"
+  },
+  "threshold": {
+    "name": "ir_gate_violations_max",
+    "value": 0
+  },
+  "tool": "ir-gate-checker",
+  "tool_version": "1.0.0",
+  "verdict": "red",
+  "violations_total": 1
+}

@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mobile Test Automation — Six-Way Strategic Comparison</title>
+<style>
+  :root {
+    --ground: #f7f8fa;
+    --panel: #ffffff;
+    --panel-2: #eef1f5;
+    --ink: #1a2027;
+    --ink-soft: #4a5560;
+    --ink-faint: #737f8b;
+    --rule: #d8dee6;
+    --rule-soft: #e6eaef;
+    --accent: #2d6a8e;
+    --accent-soft: #dbe8f0;
+    --good: #3f7d52;
+    --good-bg: #e2efe6;
+    --warn: #9a6a24;
+    --warn-bg: #f3e9d6;
+    --crit: #b0483a;
+    --crit-bg: #f4ddd8;
+    --shadow: 0 1px 2px rgba(20,32,44,.04), 0 4px 16px rgba(20,32,44,.05);
+    --maxw: 1080px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0f1418;
+      --panel: #161d23;
+      --panel-2: #1c252c;
+      --ink: #e7ecf1;
+      --ink-soft: #a9b4bf;
+      --ink-faint: #78848f;
+      --rule: #2a343d;
+      --rule-soft: #212a32;
+      --accent: #5fa8cd;
+      --accent-soft: #16323f;
+      --good: #6ab383;
+      --good-bg: #16281c;
+      --warn: #d3aa5e;
+      --warn-bg: #2a2113;
+      --crit: #e0796b;
+      --crit-bg: #2c1713;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f1418; --panel: #161d23; --panel-2: #1c252c;
+    --ink: #e7ecf1; --ink-soft: #a9b4bf; --ink-faint: #78848f;
+    --rule: #2a343d; --rule-soft: #212a32;
+    --accent: #5fa8cd; --accent-soft: #16323f;
+    --good: #6ab383; --good-bg: #16281c;
+    --warn: #d3aa5e; --warn-bg: #2a2113;
+    --crit: #e0796b; --crit-bg: #2c1713;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"] {
+    --ground: #f7f8fa; --panel: #ffffff; --panel-2: #eef1f5;
+    --ink: #1a2027; --ink-soft: #4a5560; --ink-faint: #737f8b;
+    --rule: #d8dee6; --rule-soft: #e6eaef;
+    --accent: #2d6a8e; --accent-soft: #dbe8f0;
+    --good: #3f7d52; --good-bg: #e2efe6;
+    --warn: #9a6a24; --warn-bg: #f3e9d6;
+    --crit: #b0483a; --crit-bg: #f4ddd8;
+    --shadow: 0 1px 2px rgba(20,32,44,.04), 0 4px 16px rgba(20,32,44,.05);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px 96px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---- Masthead ---- */
+  header.mast {
+    border-bottom: 1px solid var(--rule);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, var(--ground)), var(--ground));
+  }
+  .mast-inner { max-width: var(--maxw); margin: 0 auto; padding: 40px 24px 34px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .eyebrow::before {
+    content: ""; width: 26px; height: 2px; background: var(--accent); display: inline-block;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 4.4vw, 2.9rem); line-height: 1.08; margin: 0 0 14px;
+    font-weight: 800; letter-spacing: -.02em; text-wrap: balance; max-width: 20ch;
+  }
+  .dek { font-size: 1.075rem; color: var(--ink-soft); max-width: 62ch; margin: 0; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 8px 10px; margin-top: 22px;
+  }
+  .chip {
+    font-size: 12px; padding: 5px 11px; border-radius: 999px;
+    background: var(--panel); border: 1px solid var(--rule); color: var(--ink-soft);
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
+  }
+  .chip b { color: var(--ink); font-weight: 700; }
+
+  /* ---- Section scaffolding ---- */
+  section { margin-top: 52px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin: 0 0 6px; }
+  .sec-no {
+    font-size: 13px; font-weight: 700; color: var(--accent);
+    font-variant-numeric: tabular-nums; letter-spacing: .04em;
+  }
+  h2 { font-size: 1.5rem; margin: 0; font-weight: 750; letter-spacing: -.015em; text-wrap: balance; }
+  .sec-sub { color: var(--ink-soft); margin: 8px 0 22px; max-width: 68ch; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 22px 24px;
+  }
+  .panel + .panel { margin-top: 16px; }
+
+  /* ---- Verdict callout ---- */
+  .verdict {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 24px;
+  }
+  @media (max-width: 720px){ .verdict { grid-template-columns: 1fr; } }
+  .vcard {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 14px;
+    padding: 20px 22px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .vcard::before {
+    content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background: var(--accent);
+  }
+  .vcard.prod::before { background: var(--good); }
+  .vcard.poc::before { background: var(--accent); }
+  .vcard h3 { margin: 0 0 4px; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+  .vcard .headline { font-size: 1.18rem; font-weight: 750; letter-spacing: -.01em; margin: 0 0 8px; }
+  .vcard p { margin: 0; color: var(--ink-soft); font-size: .94rem; }
+
+  /* ---- Options table ---- */
+  .scroll { overflow-x: auto; border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  .opt-table th, .opt-table td { text-align: left; padding: 11px 13px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  .opt-table thead th { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  .opt-code { font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .opt-name { font-weight: 650; }
+
+  /* ---- Weighted matrix ---- */
+  .matrix { font-size: .86rem; min-width: 720px; }
+  .matrix th, .matrix td { padding: 9px 6px; text-align: center; border-bottom: 1px solid var(--rule-soft); }
+  .matrix thead th { position: sticky; top: 0; background: var(--panel); font-size: 11px; letter-spacing: .03em; text-transform: uppercase; color: var(--ink-faint); border-bottom: 1px solid var(--rule); z-index: 1; }
+  .matrix tbody th { text-align: left; font-weight: 550; color: var(--ink-soft); font-size: .82rem; white-space: nowrap; padding-right: 14px; }
+  .matrix .wt { color: var(--ink-faint); font-weight: 600; font-size: .78rem; }
+  .cell { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 26px; border-radius: 7px; font-weight: 700; font-variant-numeric: tabular-nums; font-size: .84rem; }
+  .s5 { background: var(--good-bg); color: var(--good); }
+  .s4 { background: color-mix(in srgb, var(--good-bg) 65%, var(--panel)); color: var(--good); }
+  .s3 { background: var(--warn-bg); color: var(--warn); }
+  .s2 { background: color-mix(in srgb, var(--crit-bg) 70%, var(--panel)); color: var(--crit); }
+  .s1 { background: var(--crit-bg); color: var(--crit); }
+  .matrix tfoot td, .matrix tfoot th { border-top: 2px solid var(--rule); padding-top: 12px; font-weight: 800; }
+  .total { font-size: 1.02rem; font-variant-numeric: tabular-nums; }
+  .total .lead { color: var(--accent); }
+  .rankshift { font-size: .72rem; color: var(--ink-faint); font-weight: 600; display:block; margin-top:2px; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; font-size: .8rem; color: var(--ink-soft); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; }
+
+  /* ---- SWOT grid ---- */
+  .swot-opt { margin-top: 16px; }
+  .swot-opt > .label { display:flex; align-items:baseline; gap:10px; margin-bottom:10px; }
+  .swot-opt .label .opt-code { font-size: 1rem; }
+  .swot-opt .label .nm { font-weight: 700; font-size: 1.02rem; }
+  .swot-opt .label .score { margin-left:auto; font-size:.82rem; color:var(--ink-faint); font-weight:700; font-variant-numeric:tabular-nums; }
+  .swot { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+  @media (max-width: 620px){ .swot { grid-template-columns: 1fr; } }
+  .swot > div { background: var(--panel); padding: 13px 15px; }
+  .swot h4 { margin: 0 0 6px; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+  .swot .s h4 { color: var(--good); }
+  .swot .w h4 { color: var(--crit); }
+  .swot .o h4 { color: var(--accent); }
+  .swot .t h4 { color: var(--warn); }
+  .swot p { margin: 0; font-size: .875rem; color: var(--ink-soft); }
+
+  /* ---- Tension diagram ---- */
+  .tension { position: relative; height: 340px; margin-top: 8px; border-radius: 12px;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--good) 10%, var(--panel)) 0%, var(--panel) 45%, color-mix(in srgb, var(--accent) 9%, var(--panel)) 100%);
+    border: 1px solid var(--rule); overflow: hidden; }
+  .tension .axis { position: absolute; color: var(--ink-faint); font-size: .74rem; font-weight: 600; letter-spacing: .04em; }
+  .ax-y { left: 14px; top: 14px; }
+  .ax-x { right: 14px; bottom: 12px; }
+  .frontier { position: absolute; inset: 0; }
+  .dot { position: absolute; transform: translate(-50%,-50%); text-align: center; }
+  .dot .b { width: 13px; height: 13px; border-radius: 50%; background: var(--accent); margin: 0 auto 4px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .dot.good .b { background: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 22%, transparent); }
+  .dot.warnd .b { background: var(--warn); box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 20%, transparent); }
+  .dot.critd .b { background: var(--crit); box-shadow: 0 0 0 4px color-mix(in srgb, var(--crit) 20%, transparent); }
+  .dot .l { font-size: .76rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .dot .sc { font-size: .68rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+  /* ---- Data tables (TCO / risk / flywheel) ---- */
+  .data { font-size: .87rem; min-width: 640px; }
+  .data th, .data td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  .data thead th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; border-bottom: 1px solid var(--rule); }
+  .data td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: .74rem; font-weight: 700; letter-spacing: .02em; }
+  .tag.lo { background: var(--good-bg); color: var(--good); }
+  .tag.md { background: var(--warn-bg); color: var(--warn); }
+  .tag.hi { background: var(--crit-bg); color: var(--crit); }
+  .risk-row td:first-child { border-left: 3px solid var(--rule); font-weight: 700; }
+  .risk-row.rc td:first-child { border-left-color: var(--crit); }
+  .risk-row.rh td:first-child { border-left-color: var(--warn); }
+  .sev { font-weight: 700; }
+  .sev.c { color: var(--crit); }
+  .sev.h { color: var(--warn); }
+
+  .note { font-size: .84rem; color: var(--ink-faint); margin-top: 12px; border-left: 2px solid var(--rule); padding-left: 12px; }
+  .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82em; background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+
+  ul.tight { margin: 6px 0 0; padding-left: 18px; }
+  ul.tight li { margin: 4px 0; color: var(--ink-soft); }
+
+  footer { margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--rule); font-size: .82rem; color: var(--ink-faint); }
+  footer a { color: var(--accent); }
+  a { color: var(--accent); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .dot { transition: transform .2s ease; }
+    .dot:hover { transform: translate(-50%,-50%) scale(1.12); z-index:2; }
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="mast-inner">
+    <p class="eyebrow">Architecture Review Board &nbsp;·&nbsp; Audit Function &nbsp;·&nbsp; Decision-Grade</p>
+    <h1>How the mobile test system generates &amp; runs tests: a six-way comparison</h1>
+    <p class="dek">A strategic evaluation of six architectures for LLM-driven mobile test automation, weighted for a banking context where <b>auditability</b> and <b>maintenance under monthly app releases</b> are decisive. SWOT, a weighted decision matrix, a maintenance-economics model, a self-healing risk register, and a data-asset lens.</p>
+    <div class="meta-row">
+      <span class="chip">Target <b>mobile-test-automation</b></span>
+      <span class="chip">Method <b>SWOT · weighted matrix · TCO · risk register</b></span>
+      <span class="chip">Weighting <b>maintainability elevated to 22%</b></span>
+      <span class="chip">Status <b>Draft for ARB sign-off</b></span>
+      <span class="chip">Rev 2 <b>O1 re-grounded (ADR 0014 premise)</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- VERDICT FIRST -->
+  <section id="verdict" style="margin-top:38px;">
+    <div class="sec-head"><span class="sec-no">Summary</span><h2>The decision, up front</h2></div>
+    <p class="sec-sub">Two questions with two different winners. The POC question and the production question do not resolve to the same option. Once <em>minimizing hand-maintained static code under monthly releases</em> is weighted as a first-class goal, the field compresses to a near-tie — and re-grounding O1 in the current pipeline design (ADR 0014 treated as accepted) breaks it in O1’s favor.</p>
+    <div class="verdict">
+      <div class="vcard prod">
+        <h3>Production north-star</h3>
+        <div class="headline">The evolved spine + regenerate-and-filter</div>
+        <p>Keep the LLM-free deterministic replay spine as the audit-ready foundation — with ADR 0014’s automated authoring arm (A0 intake, ASH-Capture discovery, locator fallback, codegen) already making the maintenance model <b>regenerate-and-review, never hand-maintain</b> (the Meta “Assured Offline LLMSE” pattern). This scores 88/100 <em>assuming ADR 0014 accepted; coverage targets unmeasured</em>. It preserves the committed-code audit trail while shifting maintenance cost from engineer-hours to compute.</p>
+      </div>
+      <div class="vcard poc">
+        <h3>POC / spike</h3>
+        <div class="headline">The proposed hybrid (O3)</div>
+        <p>A runtime-interpreting Appium framework — LLM emits <span class="kbd">TestCaseIR</span> JSON executed live on real local devices — with a <b>deterministic critic</b> and a bounded ReAct↔Reflexion repair loop. Fastest proof of adaptability; materialize successful runs to committed code as the bridge to production.</p>
+      </div>
+    </div>
+    <p class="note">Scope: this situates the choice against the strategic landscape; it does <b>not</b> re-open the approved spine. The spine is the benchmark the others are measured against.</p>
+  </section>
+
+  <!-- THE SIX OPTIONS -->
+  <section id="options">
+    <div class="sec-head"><span class="sec-no">01</span><h2>The six options</h2></div>
+    <p class="sec-sub">Two axes separate them: what the <em>execution artifact</em> is (committed code vs interpreted data), and where the LLM sits (upstream, in the loop, or authoring a DSL).</p>
+    <div class="panel scroll">
+      <table class="opt-table">
+        <thead><tr><th>#</th><th>Option</th><th>Characterization</th><th>Execution artifact</th><th>LLM role</th></tr></thead>
+        <tbody>
+          <tr><td class="opt-code">O1</td><td class="opt-name">Our spine <span style="color:var(--ink-faint);font-weight:400">(approved)</span></td><td>LLM-free execution spine + LLM-automated authoring arm (per ADR 0014) — the north-star</td><td>Committed Appium/TestNG <b>code</b></td><td>None in execution (F1 forbids it); authoring automated: A0 intake, ASH-Capture discovery, locator fallback, codegen</td></tr>
+          <tr><td class="opt-code">O2</td><td class="opt-name">Pure interpreter</td><td>LLM → JSON → live execution, minimal scaffolding</td><td>LLM’s <b>JSON</b>, executed live</td><td>In the runtime loop, per step</td></tr>
+          <tr><td class="opt-code">O3</td><td class="opt-name">Proposed hybrid</td><td>Interpreter core + deterministic critic + bounded repair + export-to-code</td><td><b>JSON</b> live; <b>code</b> on export</td><td>Reason + emit + repair, behind a seam</td></tr>
+          <tr><td class="opt-code">O4</td><td class="opt-name">Perfecto AI <span style="color:var(--ink-faint);font-weight:400">(vendor)</span></td><td>Scriptless runtime interpreter; Appium export (rel 26.2)</td><td>Interpreted intent; <b>exportable</b></td><td>Vendor-internal, closed</td></tr>
+          <tr><td class="opt-code">O5</td><td class="opt-name">Maestro <span style="color:var(--ink-faint);font-weight:400">(OSS)</span></td><td>LLM authors YAML DSL; fixed runtime interprets it</td><td>Committed <b>YAML</b>, interpreted live</td><td>Authors the DSL; not in execution</td></tr>
+          <tr><td class="opt-code">O6</td><td class="opt-name">Meta TestGen-LLM</td><td>Assured Offline LLMSE — generate candidates, deterministic filter, human accepts</td><td>Committed <b>code</b> (filtered)</td><td>Generates offline; filter is the gate</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- WEIGHTED MATRIX -->
+  <section id="matrix">
+    <div class="sec-head"><span class="sec-no">02</span><h2>Weighted decision matrix</h2></div>
+    <p class="sec-sub">Scores 1–5 (5 = best), weighted for a banking + monthly-release context. Elevating maintainability to 22% compresses the original field to a 4-way near-tie; re-grounding O1 in the current pipeline design then breaks it. <b>O1 scores assume ADR 0014 accepted (A0 intake, ASH-Capture, locator fallback); coverage targets are unmeasured.</b> O2–O6 scores unchanged.</p>
+    <div class="panel scroll">
+      <table class="matrix num">
+        <thead>
+          <tr>
+            <th style="text-align:left">Criterion <span class="wt">(weight)</span></th>
+            <th>O1<br>Spine</th><th>O2<br>Pure interp</th><th>O3<br>Hybrid</th><th>O4<br>Perfecto</th><th>O5<br>Maestro</th><th>O6<br>Meta-Gen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th>Auditability &amp; compliance <span class="wt">20</span></th><td><span class="cell s5">5</span></td><td><span class="cell s1">1</span></td><td><span class="cell s4">4</span></td><td><span class="cell s2">2</span></td><td><span class="cell s4">4</span></td><td><span class="cell s5">5</span></td></tr>
+          <tr><th>Maint. (a) static-code burden <span class="wt">13</span></th><td><span class="cell s4">4</span></td><td><span class="cell s5">5</span></td><td><span class="cell s5">5</span></td><td><span class="cell s5">5</span></td><td><span class="cell s3">3</span></td><td><span class="cell s2">2</span></td></tr>
+          <tr><th>Maint. (b) drift-adaptation effort <span class="wt">9</span></th><td><span class="cell s4">4</span></td><td><span class="cell s4">4</span></td><td><span class="cell s5">5</span></td><td><span class="cell s5">5</span></td><td><span class="cell s3">3</span></td><td><span class="cell s3">3</span></td></tr>
+          <tr><th>Reproducibility / determinism <span class="wt">13</span></th><td><span class="cell s5">5</span></td><td><span class="cell s1">1</span></td><td><span class="cell s3">3</span></td><td><span class="cell s2">2</span></td><td><span class="cell s4">4</span></td><td><span class="cell s5">5</span></td></tr>
+          <tr><th>Security (injection→exec) <span class="wt">13</span></th><td><span class="cell s4">4</span></td><td><span class="cell s2">2</span></td><td><span class="cell s4">4</span></td><td><span class="cell s3">3</span></td><td><span class="cell s4">4</span></td><td><span class="cell s5">5</span></td></tr>
+          <tr><th>Reliability (benchmark) <span class="wt">11</span></th><td><span class="cell s5">5</span></td><td><span class="cell s2">2</span></td><td><span class="cell s3">3</span></td><td><span class="cell s3">3</span></td><td><span class="cell s4">4</span></td><td><span class="cell s5">5</span></td></tr>
+          <tr><th>Adaptability <span class="wt">8</span></th><td><span class="cell s4">4</span></td><td><span class="cell s5">5</span></td><td><span class="cell s5">5</span></td><td><span class="cell s5">5</span></td><td><span class="cell s3">3</span></td><td><span class="cell s2">2</span></td></tr>
+          <tr><th>Speed-to-value / build cost <span class="wt">6</span></th><td><span class="cell s2">2</span></td><td><span class="cell s5">5</span></td><td><span class="cell s3">3</span></td><td><span class="cell s5">5</span></td><td><span class="cell s4">4</span></td><td><span class="cell s2">2</span></td></tr>
+          <tr><th>Portability / lock-in <span class="wt">7</span></th><td><span class="cell s5">5</span></td><td><span class="cell s4">4</span></td><td><span class="cell s4">4</span></td><td><span class="cell s1">1</span></td><td><span class="cell s4">4</span></td><td><span class="cell s5">5</span></td></tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th style="text-align:left">Weighted total /100</th>
+            <td class="total lead">88<span class="rankshift">↑ from 73</span></td>
+            <td class="total">50</td>
+            <td class="total lead">74<span class="rankshift">↑ from 71</span></td>
+            <td class="total">62</td>
+            <td class="total">73</td>
+            <td class="total lead">75</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--good-bg)"></span> 4–5 strong</span>
+      <span><span class="swatch" style="background:var(--warn-bg)"></span> 3 mixed</span>
+      <span><span class="swatch" style="background:var(--crit-bg)"></span> 1–2 weak</span>
+      <span style="margin-left:auto; color:var(--ink-faint)">Ranking: O1 88 · O6 75 · O3 74 · O5 73 — O1 leads under the ADR-0014 premise</span>
+    </div>
+    <p class="note">The re-weight is the analytically important move: once “minimize static-code maintenance” is weighted as intended, the decision reframes from <em>code vs interpreter</em> to <em>how to get interpreter-grade maintenance economics without losing the audit trail</em> — answered by O3 (interpret-then-materialize) and O6 (regenerate, never hand-edit). Re-grounding O1 in the ADR-0014 design then breaks the near-tie: automating the authoring arm (A0 intake, ASH-Capture discovery, drift repair, codegen) is what changed the answer — O1 acquires the regenerate economics itself while keeping the LLM-free execution spine. The one honest debit: the authoring arm adds LLM surfaces, so security drops 5→4.</p>
+  </section>
+
+  <!-- TENSION -->
+  <section id="tension">
+    <div class="sec-head"><span class="sec-no">03</span><h2>The dominant tension</h2></div>
+    <p class="sec-sub">Every option sits on one trade-off the architecture already names — adaptability against auditability. The efficient frontier runs from the audit-safe corner to the demo-friendly corner; anything off it is dominated.</p>
+    <div class="panel">
+      <div class="tension">
+        <div class="axis ax-y">▲ audit / determinism (banking-safe)</div>
+        <div class="axis ax-x">adaptability (demo-friendly) ▶</div>
+        <div class="frontier">
+          <div class="dot good" style="left:52%; top:18%;"><div class="b"></div><div class="l">O1 Spine</div><div class="sc">88</div></div>
+          <div class="dot good" style="left:34%; top:16%;"><div class="b"></div><div class="l">O6 Meta-Gen</div><div class="sc">75</div></div>
+          <div class="dot" style="left:33%; top:37%;"><div class="b"></div><div class="l">O5 Maestro</div><div class="sc">73</div></div>
+          <div class="dot" style="left:56%; top:48%;"><div class="b"></div><div class="l">O3 Hybrid</div><div class="sc">74</div></div>
+          <div class="dot warnd" style="left:74%; top:62%;"><div class="b"></div><div class="l">O4 Perfecto</div><div class="sc">62</div></div>
+          <div class="dot critd" style="left:82%; top:78%;"><div class="b"></div><div class="l">O2 Pure interp</div><div class="sc">50</div></div>
+        </div>
+      </div>
+      <p class="note">The auditor’s single question — <em>“show me the executable that produced this verdict, and prove it hasn’t changed”</em> — is answerable by O1/O5/O6 (committed artifacts), only after export by O3/O4, and not at all by O2. That is why O2 cannot be a production answer regardless of its demo appeal. Under the ADR-0014 premise, O1 no longer sits in the audit-only corner: automated authoring-time adaptation (discovery, drift repair) moves it to the frontier’s upper middle — high on the audit axis <em>and</em> adaptive between runs, though never during a certified run.</p>
+    </div>
+  </section>
+
+  <!-- SWOT -->
+  <section id="swot">
+    <div class="sec-head"><span class="sec-no">04</span><h2>SWOT by option</h2></div>
+    <p class="sec-sub">The condensed strategic read on each. Strengths and weaknesses are current-state; opportunities and threats are forward-looking.</p>
+
+    <div class="swot-opt">
+      <div class="label"><span class="opt-code">O1</span><span class="nm">Our spine — LLM-free execution, automated authoring</span><span class="score">≈88 /100</span></div>
+      <div class="swot">
+        <div class="s"><h4>Strengths</h4><p>Maximal auditability &amp; reproducibility; F1–F7 fitness functions; hash-chain lineage; credential isolation built in. Authoring arm now automated per ADR 0014 (A0 intake, ASH-Capture discovery, locator fallback, codegen) — humans review diffs instead of writing code. Approved and funded.</p></div>
+        <div class="w"><h4>Weaknesses</h4><p>Significant build still ahead (ASH-Capture + A0). Coverage targets (~90% warm path, &lt;10% escape hatch) are unmeasured. The authoring arm adds new LLM surfaces to screen (A0 ingress/egress, discovery proposer, deep-link probe). Committed Java still needs human review per release.</p></div>
+        <div class="o"><h4>Opportunities</h4><p>The audit-ready foundation every other option must land on; the automated authoring arm makes regenerate-and-review the default posture, and Meta-style assured generation plugs straight in.</p></div>
+        <div class="t"><h4>Threats</h4><p>If the org over-indexes on “show me the demo,” the load-bearing fitness functions risk under-resourcing.</p></div>
+      </div>
+    </div>
+
+    <div class="swot-opt">
+      <div class="label"><span class="opt-code">O2</span><span class="nm">Pure interpreter</span><span class="score">≈50 /100</span></div>
+      <div class="swot">
+        <div class="s"><h4>Strengths</h4><p>Fastest adaptability demo; least code; reuses TestCaseIR as an action IR; self-healing is visceral. Lowest static-code burden.</p></div>
+        <div class="w"><h4>Weaknesses</h4><p>Fails the audit axis — no committed executable, no codeCommit, bypasses the static gate. Non-deterministic; ~25–50% F1.</p></div>
+        <div class="o"><h4>Opportunities</h4><p>Excellent throwaway signal-generator; can seed the hybrid.</p></div>
+        <div class="t"><h4>Threats</h4><p>Compliance-fatal if mistaken for production; injection→execution risk is <em>higher</em> here (shorter fuse).</p></div>
+      </div>
+    </div>
+
+    <div class="swot-opt">
+      <div class="label"><span class="opt-code">O3</span><span class="nm">Proposed hybrid</span><span class="score">≈74 /100</span></div>
+      <div class="swot">
+        <div class="s"><h4>Strengths</h4><p>Interpreter adaptability <em>plus</em> a deterministic critic for reliability; reuses TestCaseIR; export-on-success bridges to the audit path; honors credential isolation.</p></div>
+        <div class="w"><h4>Weaknesses</h4><p>Two modes to build (interpret + export); the interpreted mode isn’t audit-grade until materialized.</p></div>
+        <div class="o"><h4>Opportunities</h4><p>Matches the 2026 vendor consensus (interpret-then-export); a clean spike → Phase-1 → production migration.</p></div>
+        <div class="t"><h4>Threats</h4><p>Scope creep — critic + repair + export can bloat a throwaway; discipline required to stay a spike.</p></div>
+      </div>
+    </div>
+
+    <div class="swot-opt">
+      <div class="label"><span class="opt-code">O4</span><span class="nm">Perfecto AI (vendor scriptless)</span><span class="score">≈62 /100</span></div>
+      <div class="swot">
+        <div class="s"><h4>Strengths</h4><p>Turnkey runtime adaptability + semantic/visual validation; real-device native; rel 26.2 exports to Appium JS; already in the stack.</p></div>
+        <div class="w"><h4>Weaknesses</h4><p>Closed/proprietary — interpreter internals are a black box; validations must be pass/fail; efficiency claims unverified.</p></div>
+        <div class="o"><h4>Opportunities</h4><p>Fastest vendor-blessed demo; the export can feed the committed-code path.</p></div>
+        <div class="t"><h4>Threats</h4><p>Lock-in + un-auditable black box — a bank auditor cannot inspect a closed model’s decision. Declined as the <em>target</em> for exactly this reason.</p></div>
+      </div>
+    </div>
+
+    <div class="swot-opt">
+      <div class="label"><span class="opt-code">O5</span><span class="nm">Maestro (LLM authors YAML DSL)</span><span class="score">≈73 /100</span></div>
+      <div class="swot">
+        <div class="s"><h4>Strengths</h4><p>Best determinism/audit story of the interpreter family — committed YAML is readable, versionable, diff-able, runs deterministically; agentic at authoring only.</p></div>
+        <div class="w"><h4>Weaknesses</h4><p>iOS is simulator-only natively; no runtime self-healing; YAML is a second vocabulary to reconcile with TestCaseIR; Perfecto doesn’t run Maestro.</p></div>
+        <div class="o"><h4>Opportunities</h4><p>Proves “LLM authors data, fixed runtime interprets, artifact stays auditable” — the needle O3 threads.</p></div>
+        <div class="t"><h4>Threats</h4><p>The iOS gap + Perfecto incompatibility make it a poor fit for this bank’s certification tier; its DSL forks the schema spine.</p></div>
+      </div>
+    </div>
+
+    <div class="swot-opt">
+      <div class="label"><span class="opt-code">O6</span><span class="nm">Meta TestGen-LLM (Assured Offline LLMSE)</span><span class="score">≈75 /100</span></div>
+      <div class="swot">
+        <div class="s"><h4>Strengths</h4><p>Best-in-class reliability discipline — a deterministic ensemble+filter eliminates hallucination by construction; output is committed, auditable code; 73% of survivors accepted at Meta.</p></div>
+        <div class="w"><h4>Weaknesses</h4><p>Improves existing tests more than green-field authoring; adaptability is indirect; needs a filter harness (≈ the spine’s gate).</p></div>
+        <div class="o"><h4>Opportunities</h4><p>It is O1 + an LLM generator + a deterministic filter — the production shape the spine is built to host. Validates the whole thesis with real numbers.</p></div>
+        <div class="t"><h4>Threats</h4><p>Its figures are unit-test-improvement, not mobile-UI green-field — don’t over-transfer the 73%.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAINTENANCE ECONOMICS / TCO -->
+  <section id="tco">
+    <div class="sec-head"><span class="sec-no">05</span><h2>Maintenance economics — per-release TCO</h2></div>
+    <p class="sec-sub">Order-of-magnitude planning figures (substitute bank actuals): 100 automated critical-path tests, monthly release, ~$100/hr loaded QA cost. The cost is overwhelmingly human-hours, not compute — which is exactly the lever for “minimize static-code maintenance.”</p>
+    <div class="panel scroll">
+      <table class="data">
+        <thead><tr><th>Option</th><th>Static-code edits / release</th><th>Human hrs</th><th>LLM+infra $</th><th class="n">Est $/release</th><th class="n">12-mo TCO</th></tr></thead>
+        <tbody>
+          <tr><td class="opt-code">O1 Spine</td><td>~0 hand-edits — regenerate-and-review (drift → re-capture → regen → gates)</td><td><span class="tag lo">5–8 h</span></td><td>~$150–400</td><td class="n">$650–1,200</td><td class="n">$8k–14k</td></tr>
+          <tr><td class="opt-code">O2 Pure interp</td><td>~0 (no committed code)</td><td><span class="tag lo">3–6 h</span></td><td>~$50–150</td><td class="n">$400–750</td><td class="n">$5k–9k</td></tr>
+          <tr><td class="opt-code">O3 Hybrid</td><td>~0 live; materialize on export</td><td><span class="tag lo">5–8 h</span></td><td>~$100–250</td><td class="n">$700–1,050</td><td class="n">$8k–13k</td></tr>
+          <tr><td class="opt-code">O4 Perfecto</td><td>~0 (vendor-internal)</td><td><span class="tag lo">4–8 h</span></td><td>license (opaque)</td><td class="n">license-dom.</td><td class="n">license +$5k–10k</td></tr>
+          <tr><td class="opt-code">O5 Maestro</td><td>small YAML edits on locator drift</td><td><span class="tag md">8–14 h</span></td><td>~$50–150</td><td class="n">$850–1,550</td><td class="n">$10k–19k</td></tr>
+          <tr><td class="opt-code">O6 Meta-Gen</td><td><b>0 hand-edits</b> (regenerate)</td><td><span class="tag lo">5–8 h</span></td><td>~$150–400</td><td class="n">$800–1,200</td><td class="n">$10k–14k</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">The pre-ADR-0014 spine would have cost ~$24k–36k/yr in hand-editing (~20–30 tests hand-edited per release); the evolved O1 now sits in the same regenerate-economics band as O3/O6 (~$8k–14k/yr), because drift triggers re-capture, locator re-resolution, and code regeneration rather than engineer edits. Human hours are supervision plus edge-case captures. Regeneration (O1/O6) and interpretation (O2/O3) all convert engineer-hours into compute — the cheaper resource; O1 and O6 keep the audit trail while doing so, O2 does not. The advantage widens with suite size and release frequency.</p>
+  </section>
+
+  <!-- RISK REGISTER -->
+  <section id="risk">
+    <div class="sec-head"><span class="sec-no">06</span><h2>Self-healing risk register</h2></div>
+    <p class="sec-sub">The interpreter/self-heal advantage carries a specific danger: an auto-heal that silently binds to the wrong element turns a test <em>green on a broken app</em> — a false-negative far more dangerous in banking than a false-positive. Un-gated auto-heal is a control failure, not a feature.</p>
+    <div class="panel scroll">
+      <table class="data">
+        <thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Control</th></tr></thead>
+        <tbody>
+          <tr class="risk-row rc"><td>R1 · Silent wrong-heal</td><td>Med–High</td><td class="sev c">Critical</td><td>Confidence ≥0.90; alert on every heal; disable auto-heal on payments/auth/balance — human confirm required</td></tr>
+          <tr class="risk-row rh"><td>R2 · Non-deterministic verdict</td><td>High (O2)</td><td class="sev h">High</td><td>Deterministic critic gates acceptance (not the LLM); pin/cache output; materialize to code before any compliance verdict</td></tr>
+          <tr class="risk-row rc"><td>R3 · Un-audited change</td><td>High (O2/O4)</td><td class="sev c">Critical</td><td>Every heal is a hash-chain lineage event; the materialized diff is the reviewable artifact</td></tr>
+          <tr class="risk-row rc"><td>R4 · Injection → heal → exec</td><td>Med</td><td class="sev c">Critical</td><td>No gateway credential in exec path; single-run token; separate process; screening at the boundary (F3)</td></tr>
+          <tr class="risk-row rh"><td>R5 · Heal masks a real regression</td><td>Med</td><td class="sev h">High</td><td>Rule-based classification: ASSERTION_MISMATCH / APP_CRASH never heal; ENV_INFRA re-queues, never heals</td></tr>
+          <tr class="risk-row rh"><td>R6 · Over-trust structural channel</td><td>Med</td><td class="sev h">Med–High</td><td>Corroborate view-tree against a screenshot before acting; track belief provenance</td></tr>
+          <tr class="risk-row rc"><td>R7 · Persistent memory poisoning&thinsp;†</td><td>Med–High</td><td class="sev c">Critical</td><td>Re-screen or bar free NL at write-back (memory write-back is a 4th injection egress); admissible alternatives from the trusted store only; append-only lineage + canary window bound blast radius</td></tr>
+          <tr class="risk-row rc"><td>R8 · Wrong-but-stable false-green&thinsp;†</td><td>Med</td><td class="sev c">Critical</td><td>Postcondition asserts a positive distinguishing anchor of the <em>correct</em> control (not mere screen arrival); data-flow-tainted critical-path interlock; canary window + periodic re-proof of high-fan-in skills</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Self-healing repairs only the ~25–30% of failures that are broken locators, at ~75% on that slice — ~20% of all failures at best. Practitioner audits report ML-element-match self-heal has ~3× the false-pass rate of selector-fallback, and ~60% of teams disabled AI self-heal within 3 months. Auto-heal is safe <em>only</em> with a deterministic critic + human confirm on critical paths + a full audit trail — which is why the recommendation is O3/O6, not O2.</p>
+    <p class="note">† R7/R8 arise only if the O3 hybrid adds a procedural/semantic memory layer (§7.5 of the brainstorm doc). Memory raises reliability and lowers per-release cost, but write-back becomes shared, mutable, verdict-influencing state — banking-safe only human-ratified-CANDIDATE-only and never feeding a certification verdict. These rows extend R1–R6 for that design; they do not change the six-way verdict.</p>
+  </section>
+
+  <!-- FLYWHEEL -->
+  <section id="flywheel">
+    <div class="sec-head"><span class="sec-no">07</span><h2>Data-asset / flywheel lens</h2></div>
+    <p class="sec-sub">Maintenance is not only a cost — in a flywheel design it is a data-generation opportunity. Each approach either produces labelled training data as a byproduct or wastes it. A second, independent reason the recommendation lands where it does.</p>
+    <div class="panel scroll">
+      <table class="data">
+        <thead><tr><th>Option</th><th>Maintenance generates flywheel data?</th><th style="text-align:center">Value</th></tr></thead>
+        <tbody>
+          <tr><td class="opt-code">O1 Spine</td><td>Yes, richly — every edit is a human correction (preference pair); every re-gate is a labelled ReplayReport</td><td style="text-align:center"><span class="tag lo">High</span></td></tr>
+          <tr><td class="opt-code">O2 Pure interp</td><td>Largely wasted — runtime heals are ephemeral; no committed diff, often no record of what/why</td><td style="text-align:center"><span class="tag hi">Low</span></td></tr>
+          <tr><td class="opt-code">O3 Hybrid</td><td>Yes, if materialized — export + critic classifications become exemplars &amp; labelled outcomes; repair feedback is few-shot data</td><td style="text-align:center"><span class="tag lo">High</span></td></tr>
+          <tr><td class="opt-code">O4 Perfecto</td><td>No — adaptations happen in a black box; the bank doesn’t own the labelled data</td><td style="text-align:center"><span class="tag hi">Low / neg.</span></td></tr>
+          <tr><td class="opt-code">O5 Maestro</td><td>Partial — YAML diffs are reviewable corrections, but no failure-class calibration data</td><td style="text-align:center"><span class="tag md">Medium</span></td></tr>
+          <tr><td class="opt-code">O6 Meta-Gen</td><td>Yes, by construction — the accept/reject decision on each candidate <em>is</em> labelled data; filter outcomes are failure-class base rates</td><td style="text-align:center"><span class="tag lo">Highest</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">O6’s “regenerate-and-filter” and O3’s “materialize-and-gate” both turn the monthly-release maintenance cycle into a labelled-data pump for Phase 2; O2 and O4 spend the effort and get no durable asset — O4 actively gives the asset to the vendor. The effort you spend maintaining tests should <em>compound</em> into the Phase-2 asset base, not evaporate.</p>
+  </section>
+
+  <footer>
+    <p><b>Rev 2 (2026-08-01):</b> O1 re-grounded in the current pipeline design — A0 Normalizer, ASH-Capture (ScreenGraph, discovery loop, deep links, drift/repair), locator LLM fallback, and DeviceSession abstraction per ADR 0014 treated as accepted for scoring; coverage figures (~90% warm path, &lt;10% escape hatch) are targets, unmeasured; O2–O6 scores untouched.</p>
+    <p><b>Draft for ARB sign-off.</b> Weights, scores, and the illustrative TCO constants are the analyst’s and are to be ratified with bank actuals; the ranking is robust to wide swings because it is driven by the human-hours-vs-compute structural difference, not the specific constants. Grounded in the mobile-test-automation architecture artifacts, 2026 vendor/academic research (Perfecto, Maestro, Appium MCP, Meta TestGen-LLM), and independent reliability benchmarks. Companion to the SDD Stage-1 brainstorm.</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "role_registry",
+  "roles": [
+    {
+      "id": "u8-coder",
+      "tag": "maker",
+      "gates": [
+        "g-build"
+      ],
+      "write_scopes": [
+        "src/",
+        "scratch/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "unhooked"
+      }
+    }
+  ],
+  "arms": [
+    {
+      "id": "U2",
+      "roles": [
+        "u8-coder"
+      ],
+      "ablation": "no-diagnostic-lone-maker"
+    }
+  ]
+}

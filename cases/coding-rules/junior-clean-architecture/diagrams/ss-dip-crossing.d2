@@ -1,0 +1,91 @@
+# DIP at the architectural boundary — Silicon Sandwiches PlaceOrder path.
+# Filled arrowheads = flow of control / calls.
+# Hollow triangles = implements (source dependency opposing control flow).
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+title: "Crossing the boundary — PlaceOrder & OrderGateway" {
+  shape: text
+  near: top-center
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+adapters: "Interface Adapters (outer)" {
+  style: {
+    fill: "#dcdcdc"
+    stroke: "#4a4a4a"
+    font-size: 16
+    bold: true
+  }
+
+  controller: "SpringPlaceOrderController" {
+    style.fill: "#ffffff"
+  }
+  sql: "SqlOrderGateway" {
+    style.fill: "#ffffff"
+  }
+}
+
+usecases: "Use Cases (inner)" {
+  style: {
+    fill: "#f5f5f5"
+    stroke: "#4a4a4a"
+    font-size: 16
+    bold: true
+  }
+
+  place: "PlaceOrder" {
+    style.fill: "#ffffff"
+  }
+  port: "«interface»\nOrderGateway" {
+    style: {
+      fill: "#ffffff"
+      stroke-dash: 3
+    }
+  }
+}
+
+adapters.controller -> usecases.place: "calls"
+
+usecases.place -> usecases.port: "calls" {
+  style.bold: true
+}
+
+adapters.sql -> usecases.port: "implements" {
+  target-arrowhead: {
+    shape: triangle
+    style.filled: false
+  }
+  style.stroke-dash: 4
+}
+
+legend: "Legend\nfilled arrow = flow of control / calls\nhollow triangle = implements\n(source dependency points inward)" {
+  shape: rectangle
+  near: bottom-left
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 13
+  }
+}
+
+annotation: "PlaceOrder depends on the OrderGateway port (inner).\nSqlOrderGateway implements that port from the outside.\nControl may flow to SQL at runtime; source arrows still point inward." {
+  shape: rectangle
+  near: bottom-right
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 13
+  }
+}

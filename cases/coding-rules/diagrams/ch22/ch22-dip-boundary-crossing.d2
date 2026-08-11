@@ -1,0 +1,103 @@
+# DIP at the architectural boundary (lower-right inset of Fig 22.1).
+# Filled arrowheads = flow of control / calls.
+# Hollow triangles = implements (source dependency opposing control flow).
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+title: "Crossing the boundary — Dependency Inversion" {
+  shape: text
+  near: top-center
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+adapters: "Interface Adapters (outer circle)" {
+  style: {
+    fill: "#dcdcdc"
+    stroke: "#4a4a4a"
+    font-size: 18
+    bold: true
+  }
+
+  controller: "Controller" {
+    style.fill: "#ffffff"
+  }
+  presenter: "Presenter" {
+    style.fill: "#ffffff"
+  }
+}
+
+usecases: "Use Cases (inner circle)" {
+  style: {
+    fill: "#f5f5f5"
+    stroke: "#4a4a4a"
+    font-size: 18
+    bold: true
+  }
+
+  input: "«interface»\nInput Boundary" {
+    style: {
+      fill: "#ffffff"
+      stroke-dash: 3
+    }
+  }
+  interactor: "Use Case Interactor" {
+    style.fill: "#ffffff"
+  }
+  output: "«interface»\nOutput Boundary" {
+    style: {
+      fill: "#ffffff"
+      stroke-dash: 3
+    }
+  }
+}
+
+adapters.controller -> usecases.input: "calls"
+
+usecases.interactor -> usecases.input: "implements" {
+  target-arrowhead: {
+    shape: triangle
+    style.filled: false
+  }
+  style.stroke-dash: 4
+}
+
+usecases.interactor -> usecases.output: "calls"
+
+adapters.presenter -> usecases.output: "implements" {
+  target-arrowhead: {
+    shape: triangle
+    style.filled: false
+  }
+  style.stroke-dash: 4
+}
+
+legend: "Legend\nfilled arrow = flow of control / calls\nhollow triangle = implements (source dependency, opposes control flow)" {
+  shape: rectangle
+  near: bottom-left
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 14
+  }
+}
+
+annotation: "Control flows outward (Interactor → Presenter at runtime),\nbut the source dependency points inward: the Presenter implements\nthe Output Boundary owned by the inner circle." {
+  shape: rectangle
+  near: bottom-right
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 14
+  }
+}

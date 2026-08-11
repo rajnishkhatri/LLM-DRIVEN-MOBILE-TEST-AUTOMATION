@@ -1,0 +1,27 @@
+# SDD workspace-binding — LLM-DRIVEN-MOBILE-TEST-AUTOMATION
+# Copied/adapted from Architect 2026-08-11.
+# Design workspace for mobile-test-automation / spine / O7.
+# test_gate is <none>; check_gate is the skill-sync drift guard
+# (docs/sdd/specs/skill-sync.spec.md).
+# Run check_gate from the repo root: the tool resolves the manifest
+# against CWD; a subdir invocation fails loud (exit 1), never silently green.
+# ADR seam points at mobile-test-automation ADRs; second seam for
+# tooling/sdd-roles work.
+
+[binding]
+constitution       = ".cursor/rules/architecture-principles.mdc"
+check_gate         = "python3 tooling/skill-sync/skill_sync.py check"
+test_gate          = "<none>"
+spec_home          = "docs/sdd/specs/"
+plan_home          = "docs/sdd/plans/"
+adr_home           = "docs/architecture/adrs/application/mobile-test-automation/"
+# Second ADR seam (C4, sdd-roles-kernel): work touching tooling/sdd-roles/
+# files its ADRs in this series instead of adr_home.
+adr_home_sdd_roles = "docs/architecture/adrs/tooling/sdd-roles/"
+adr_template       = ".cursor/skills/arch-decide/references/adr-template.md"
+decision_log       = "docs/architecture/log.md"
+adr_waiver_token   = "<none>"
+test_waiver_token  = "<none>"
+breadth_read_tool  = "explore subagent"
+methodology_source = "<none>"
+gate_catalog       = "<none>"

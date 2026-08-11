@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdd-roles:kata-verdict:1.4.0",
+  "title": "KataVerdict",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "plan_stamp",
+    "prereg_digest",
+    "input_digest",
+    "wilson_z_num",
+    "wilson_z_den",
+    "scale",
+    "arms",
+    "ablation",
+    "criteria",
+    "winner",
+    "decision_reason",
+    "c_earns_six_roles",
+    "b_beats_a",
+    "kill_rule_triggered",
+    "tamper_fail"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.4.0" },
+    "artifact_type": { "const": "kata_verdict" },
+    "plan_stamp": { "type": "string", "minLength": 1 },
+    "prereg_digest": { "type": "string", "minLength": 1 },
+    "input_digest": { "type": "string", "minLength": 1 },
+    "wilson_z_num": { "type": "integer", "minimum": 1 },
+    "wilson_z_den": { "type": "integer", "minimum": 1 },
+    "scale": { "const": 10000 },
+    "arms": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/arm_stat" }
+    },
+    "ablation": { "$ref": "#/$defs/ablation" },
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/criterion" }
+    },
+    "winner": { "enum": ["A", "B", "C", "none"] },
+    "decision_reason": {
+      "enum": [
+        "tamper-invalid",
+        "gates-not-roles",
+        "six-roles-earned",
+        "three-roles",
+        "default-solo"
+      ]
+    },
+    "c_earns_six_roles": { "type": "boolean" },
+    "b_beats_a": { "type": "boolean" },
+    "kill_rule_triggered": { "type": "boolean" },
+    "tamper_fail": { "type": "boolean" }
+  },
+  "$defs": {
+    "arm_stat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "arm",
+        "decisional",
+        "k",
+        "n",
+        "rate10k",
+        "wilson_lo10k",
+        "wilson_hi10k",
+        "tokens_sum",
+        "tokens_mean",
+        "mutation_score_mean10k",
+        "crap_max",
+        "wall_clock_ms_sum",
+        "handoff_schema_failures",
+        "tamper_events",
+        "insufficient_data"
+      ],
+      "properties": {
+        "arm": { "type": "string", "minLength": 1 },
+        "decisional": { "type": "boolean" },
+        "k": { "type": "integer", "minimum": 0 },
+        "n": { "type": "integer", "minimum": 0 },
+        "rate10k": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "wilson_lo10k": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "wilson_hi10k": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "tokens_sum": { "type": "integer", "minimum": 0 },
+        "tokens_mean": { "type": "integer", "minimum": 0 },
+        "mutation_score_mean10k": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "crap_max": { "type": "integer", "minimum": 0 },
+        "wall_clock_ms_sum": { "type": "integer", "minimum": 0 },
+        "handoff_schema_failures": { "type": "integer", "minimum": 0 },
+        "tamper_events": { "type": "integer", "minimum": 0 },
+        "insufficient_data": { "type": "boolean" }
+      }
+    },
+    "ablation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["c_minus_cdbg_pp10k", "intervals_nonoverlap"],
+      "properties": {
+        "c_minus_cdbg_pp10k": { "type": "integer" },
+        "intervals_nonoverlap": { "type": "boolean" }
+      }
+    },
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "passed", "operands"],
+      "properties": {
+        "id": {
+          "enum": ["C_i_a", "C_i_b", "C_ii", "C_iii", "B_pp", "B_tokens", "kill_pp", "kill_tokens"]
+        },
+        "passed": { "type": "boolean" },
+        "operands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/operand" }
+        }
+      }
+    },
+    "operand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "value": { "type": "integer" }
+      }
+    }
+  }
+}

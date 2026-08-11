@@ -1,0 +1,243 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "invocation_descriptor_set",
+  "declares": [
+    "stub-alpha",
+    "stub-beta",
+    "stub-gamma",
+    "stub-delta",
+    "stub-epsilon"
+  ],
+  "rows": [
+    {
+      "harness": "stub-alpha",
+      "command_template": "{python} {fixture_dir}/stubs/role_stub.py --scenario {prompt} --workspace {workspace} --run-dir {run_dir} --role {role} --attempt {attempt}",
+      "agent_selection": "scenario-table",
+      "auth_env_var": "STUB_TOKEN",
+      "resume_semantics": "ledger-replay",
+      "output_parse_mode": "text",
+      "exit_code_map": [
+        {
+          "tool_exit": 0,
+          "decision_output": "allow",
+          "wrapper_exit": 0
+        },
+        {
+          "tool_exit": 1,
+          "decision_output": "error",
+          "wrapper_exit": 1
+        },
+        {
+          "tool_exit": 2,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        },
+        {
+          "tool_exit": 3,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        }
+      ]
+    },
+    {
+      "harness": "stub-beta",
+      "command_template": "{python} {fixture_dir}/stubs/role_stub.py --scenario {prompt} --workspace {workspace} --run-dir {run_dir} --role {role} --attempt {attempt}",
+      "agent_selection": "scenario-table",
+      "auth_env_var": "STUB_TOKEN",
+      "resume_semantics": "ledger-replay",
+      "output_parse_mode": "text",
+      "exit_code_map": [
+        {
+          "tool_exit": 0,
+          "decision_output": "allow",
+          "wrapper_exit": 0
+        },
+        {
+          "tool_exit": 1,
+          "decision_output": "error",
+          "wrapper_exit": 1
+        },
+        {
+          "tool_exit": 2,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        },
+        {
+          "tool_exit": 3,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        }
+      ]
+    },
+    {
+      "harness": "stub-gamma",
+      "command_template": "{python} {fixture_dir}/stubs/role_stub.py --scenario {prompt} --workspace {workspace} --run-dir {run_dir} --role {role} --attempt {attempt}",
+      "agent_selection": "scenario-table",
+      "auth_env_var": "STUB_TOKEN",
+      "resume_semantics": "ledger-replay",
+      "output_parse_mode": "text",
+      "exit_code_map": [
+        {
+          "tool_exit": 0,
+          "decision_output": "allow",
+          "wrapper_exit": 0
+        },
+        {
+          "tool_exit": 1,
+          "decision_output": "error",
+          "wrapper_exit": 1
+        },
+        {
+          "tool_exit": 2,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        },
+        {
+          "tool_exit": 3,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        }
+      ]
+    },
+    {
+      "harness": "stub-delta",
+      "command_template": "{python} {fixture_dir}/stubs/role_stub.py --scenario {prompt} --workspace {workspace} --run-dir {run_dir} --role {role} --attempt {attempt}",
+      "agent_selection": "scenario-table",
+      "auth_env_var": "STUB_TOKEN",
+      "resume_semantics": "ledger-replay",
+      "output_parse_mode": "text",
+      "hooks": {
+        "events": [
+          "pre_write"
+        ],
+        "mount_path": "harness-settings/stub-hooks.json",
+        "command_template": "{python} -m sdd_roles_validator.gate_wrap --descriptors {descriptors} --harness stub-delta -- {python} -m sdd_roles_validator.guard decide --kernel {kernel} --descriptors {descriptors} --harness stub-delta --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role {role}",
+        "request": {
+          "paths_pointers": [
+            "/write/targets/0/file",
+            "/write/targets/1/file"
+          ],
+          "operation": {
+            "pointer": "/write/mode",
+            "map": [
+              {
+                "from": "add",
+                "to": "create"
+              },
+              {
+                "from": "edit",
+                "to": "modify"
+              },
+              {
+                "from": "rm",
+                "to": "delete"
+              }
+            ],
+            "default": "modify"
+          }
+        }
+      },
+      "exit_code_map": [
+        {
+          "tool_exit": 0,
+          "decision_output": "allow",
+          "wrapper_exit": 0
+        },
+        {
+          "tool_exit": 1,
+          "decision_output": "error",
+          "wrapper_exit": 1
+        },
+        {
+          "tool_exit": 2,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        },
+        {
+          "tool_exit": 3,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        }
+      ]
+    },
+    {
+      "harness": "stub-epsilon",
+      "command_template": "{python} {fixture_dir}/stubs/role_stub.py --scenario {prompt} --workspace {workspace} --run-dir {run_dir} --role {role} --attempt {attempt}",
+      "agent_selection": "scenario-table",
+      "auth_env_var": "STUB_TOKEN",
+      "resume_semantics": "ledger-replay",
+      "output_parse_mode": "text",
+      "projection": {
+        "targets": [
+          {
+            "kind": "manifest",
+            "path_template": "pack/meta.json",
+            "format": "json",
+            "char_cap": null,
+            "args_token": null
+          },
+          {
+            "kind": "agent-card",
+            "path_template": "pack/units/{role}.card.md",
+            "format": "markdown",
+            "front_matter": [
+              {
+                "key": "unit",
+                "source": "id"
+              },
+              {
+                "key": "about",
+                "source": "description"
+              },
+              {
+                "key": "stamp",
+                "source": "stamp"
+              }
+            ],
+            "char_cap": 4096,
+            "args_token": "%ARGS%"
+          },
+          {
+            "kind": "kernel-skill",
+            "path_template": "pack/kernel.md",
+            "format": "markdown",
+            "front_matter": [
+              {
+                "key": "unit",
+                "source": "id"
+              },
+              {
+                "key": "stamp",
+                "source": "stamp"
+              }
+            ],
+            "char_cap": null,
+            "args_token": null
+          }
+        ]
+      },
+      "exit_code_map": [
+        {
+          "tool_exit": 0,
+          "decision_output": "allow",
+          "wrapper_exit": 0
+        },
+        {
+          "tool_exit": 1,
+          "decision_output": "error",
+          "wrapper_exit": 1
+        },
+        {
+          "tool_exit": 2,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        },
+        {
+          "tool_exit": 3,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        }
+      ]
+    }
+  ]
+}

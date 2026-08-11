@@ -1,0 +1,88 @@
+{
+  "roles": {
+    "g-coder": [
+      {
+        "workspace_writes": [
+          {
+            "path": "src/app.txt",
+            "content": "app v1\n"
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "g-coder",
+          "to_role": "g-checker",
+          "stage": "g-coder",
+          "stage_status": "complete",
+          "summary": {
+            "text": "coder stage complete, build green.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "adopt-plain-text-store",
+              "rationale": "deterministic scenario decision 1",
+              "rejected_alternatives": [
+                "alternative-1"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      }
+    ],
+    "g-checker": [
+      {
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "g-checker",
+          "to_role": "g-coder",
+          "stage": "g-checker",
+          "stage_status": "complete",
+          "summary": {
+            "text": "checker stage complete, tests green.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "accept-coverage-envelope",
+              "rationale": "deterministic scenario decision 2",
+              "rejected_alternatives": [
+                "alternative-2"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      }
+    ]
+  },
+  "gates": {
+    "g-build": {
+      "exits": [
+        0
+      ],
+      "tool_version": "9.9.1"
+    },
+    "g-tests": {
+      "exits": [
+        0
+      ],
+      "tool_version": "9.9.1"
+    }
+  }
+}

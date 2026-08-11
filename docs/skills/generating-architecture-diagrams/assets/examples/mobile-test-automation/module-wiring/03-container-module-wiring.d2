@@ -1,0 +1,186 @@
+# C2b - Container drill-down: module wiring
+# caption: Which module owns which store/external edge? This view opens the APP box from C2a into its three modules; every rolled-up C2a edge reappears here at module grain. Canvas carries numbered edge refs only (1-23); the full claim lives in the edge-detail table keyed by number. This is the completeness reference for module-granular edges - the C2c-e overlays each repeat a subset of it.
+direction: right
+
+# Canonical reserved-vocabulary D2 classes for C4-flavored diagrams.
+#
+# The IR -> D2 transformer (scripts/ir_to_d2.py) emits this block verbatim at
+# the top of every generated .d2 file, then applies the classes via `class:`.
+# Encoding shape/line semantics as classes is what makes the reserved
+# vocabulary CONSISTENT across all views and un-driftable (diagramskill.md
+# "Enforced consistency"). Do not restyle nodes inline; add or edit a class
+# here so every view moves together.
+#
+# Palette values are the exact hex from the Silicon Sandwiches designer brief
+# (.arch/components/silicon-sandwiches/designer-agent-prompt.md, "Visual
+# system"). Every colour is paired with a SHAPE and/or TEXT difference so the
+# set survives grayscale (rule: colour is never the only channel).
+
+classes: {
+  # Stadium / pill = person (actor). High border-radius makes the pill.
+  actor: {
+    style: {
+      border-radius: 999
+      fill: "#d0e7f9"
+      stroke: "#1a5276"
+      font-color: "#111111"
+    }
+  }
+
+  # Plain rectangle = system / container / component. The system box is the
+  # heaviest element on a Context canvas: 2px stroke.
+  system: {
+    style: {
+      fill: "#fdf2d0"
+      stroke: "#7d6608"
+      stroke-width: 2
+      font-color: "#111111"
+    }
+  }
+
+  # Plain rectangle for containers / components (lighter than the system box).
+  container: {
+    style: {
+      fill: "#ffffff"
+      stroke: "#333333"
+      font-color: "#111111"
+    }
+  }
+
+  # Double-bordered rectangle = external system. Label is prefixed `EXT:` by
+  # the transformer so the convention reads even in grayscale.
+  external: {
+    style: {
+      fill: "#eeeeee"
+      stroke: "#555555"
+      double-border: true
+      font-color: "#111111"
+    }
+  }
+
+  # Orange "evidence gap" family for unresolved production evidence
+  # (provisional vendor, pending contract). Still a rectangle/EXT shape; the
+  # orange only reinforces a tag that is also written in the label text.
+  evidence-gap: {
+    style: {
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      double-border: true
+      font-color: "#111111"
+    }
+  }
+
+  # Cylinder = datastore ONLY. Never use a cylinder for anything else.
+  datastore: {
+    shape: cylinder
+    style: {
+      fill: "#e8daef"
+      stroke: "#6c3483"
+      font-color: "#111111"
+    }
+  }
+
+  # Infrastructure (e.g. load balancer) — white rectangle, dark stroke.
+  infra: {
+    style: {
+      fill: "#ffffff"
+      stroke: "#333333"
+      font-color: "#111111"
+    }
+  }
+
+  # Faded / location-only element: reappears in a deeper view for context, not
+  # as subject. De-emphasised fill + muted text.
+  faded: {
+    style: {
+      fill: "#f8f9f9"
+      stroke: "#aaaaaa"
+      font-color: "#555555"
+    }
+  }
+
+  # Dashed-outline container = a boundary/grouping, never a node.
+  boundary: {
+    style: {
+      stroke-dash: 4
+      fill: transparent
+      font-color: "#111111"
+    }
+  }
+
+  # --- Readability additions (see references/readability.md) ---
+
+  # Dash-bordered rectangle = a runtime PROCESS, not a deployable artifact.
+  # The dash border (a shape channel) carries the meaning, so it survives gray.
+  process: {
+    style: {
+      stroke-dash: 3
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      font-color: "#111111"
+    }
+  }
+
+  # Hexagon = an element deliberately NOT modelled as a component (e.g. a
+  # library an ADR records is not a component). The distinct shape says "this
+  # is not one of the boxes" without a word.
+  not-a-component: {
+    shape: hexagon
+    style: {
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      font-color: "#111111"
+    }
+  }
+
+  # Module / domain fills — LOCK these and apply the SAME one to a module in
+  # EVERY view that contains it, so a reader tracks the module across the zoom
+  # chain by colour (readability.md §7). Each is paired with the module name in
+  # the label, so the tracking survives grayscale.
+  module-a: { style: { fill: "#fef9e7"; stroke: "#7d6608"; font-color: "#111111" } }
+  module-b: { style: { fill: "#eafaf1"; stroke: "#1e8449"; font-color: "#111111" } }
+  module-c: { style: { fill: "#ebf5fb"; stroke: "#21618c"; font-color: "#111111" } }
+}
+
+QA: "[1] QA engineer" { class: actor }
+REV: "[2] Reviewer" { class: actor }
+AUD: "[3] Auditor" { class: actor }
+LEAD: "[4] Delivery lead" { class: actor }
+APP: "[5] Spring Boot modular monolith" { class: system }
+MA: "[6] conversion" { class: module-a }
+MB: "[7] validation-certification" { class: module-b }
+MC: "[8] evidence" { class: module-c }
+WEB: "[9] Review UI" { class: container }
+PG: "[10] PostgreSQL" { class: datastore }
+EXEC: "[11] test-execution process" { class: process }
+SEC: "[12] secrets store" { class: datastore }
+OBJ: "[13] object storage" { class: datastore }
+GIT: "[14] Git" { class: datastore }
+PERF: "[15] EXT: Perfecto" { class: external }
+GW: "[16] EXT: AI gateway" { class: external }
+OCT: "[17] EXT: ALM Octane" { class: external }
+XLS: "[18] EXT: Excel / ALM-QC" { class: external }
+
+QA -> APP: "1"
+REV -> WEB: "2" { style.stroke-dash: 3 }
+LEAD -> WEB: "3"
+WEB -> APP: "4"
+AUD -> MC: "5"
+MA -> PG: "6"
+MB -> PG: "7"
+MC -> PG: "8"
+MA -> OBJ: "9"
+MB -> OBJ: "10"
+MC -> OBJ: "11"
+MA -> SEC: "12"
+MB -> SEC: "13"
+MA -> GIT: "14"
+MB -> GIT: "15"
+MB -> EXEC: "16"
+EXEC -> PERF: "17"
+MB -> PERF: "18"
+MA -> GW: "19"
+MB -> GW: "20"
+MA -> OCT: "21"
+MB -> OCT: "22" { style.stroke-dash: 3 }
+MA -> XLS: "23"

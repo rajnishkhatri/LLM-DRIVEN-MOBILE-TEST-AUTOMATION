@@ -1,0 +1,11 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK-SCHEMA",
+      "phase": "v1",
+      "outcome": "fail",
+      "artifact": "x.json",
+      "detail": "d"
+    }
+  ]
+}

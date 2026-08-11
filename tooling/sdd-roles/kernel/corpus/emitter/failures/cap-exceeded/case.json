@@ -1,0 +1,23 @@
+{
+  "command": "role-emit",
+  "args": [
+    "project",
+    "--kernel",
+    "<KERNEL>",
+    "--descriptors",
+    "./descriptors.json",
+    "--harness",
+    "fail-cap",
+    "--registry",
+    "../../common/role-registry.json",
+    "--bodies",
+    "../../common/bodies",
+    "--out",
+    "./out"
+  ],
+  "expected_exit": 2,
+  "expect_stderr_contains": [
+    "exceeds char_cap 64"
+  ],
+  "expect_no_out_dir": "out"
+}

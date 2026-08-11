@@ -1,0 +1,11 @@
+# ARCH workspace-binding — template (copy to .arch/binding.toml and confirm)
+
+[binding]
+methodology_source = "cases/ArchitectureBook"
+constitution       = "<none>"
+worksheet_home     = ".arch/worksheets/"
+component_home     = ".arch/components/"
+adr_home           = ".arch/adrs/"
+risk_home          = ".arch/risk/"
+diagram_notation   = "mermaid"
+breadth_read_tool  = "explore subagent"

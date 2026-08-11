@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Test That Runs the Data, Not the Code — the o7 story</title>
+<style>
+  :root {
+    --ground: #f7f8fa;
+    --panel: #ffffff;
+    --panel-2: #eef1f5;
+    --ink: #1a2027;
+    --ink-soft: #4a5560;
+    --ink-faint: #737f8b;
+    --rule: #d8dee6;
+    --rule-soft: #e6eaef;
+    --accent: #2d6a8e;
+    --accent-soft: #dbe8f0;
+    --good: #3f7d52;
+    --good-bg: #e2efe6;
+    --warn: #9a6a24;
+    --warn-bg: #f3e9d6;
+    --crit: #b0483a;
+    --crit-bg: #f4ddd8;
+    --shadow: 0 1px 2px rgba(20,32,44,.04), 0 4px 16px rgba(20,32,44,.05);
+    --maxw: 860px;
+    --svg-blue-bg: #e6effc; --svg-blue-st: #9cc0f0; --svg-blue-tx: #1f4e8c;
+    --svg-teal-bg: #e3f4f1; --svg-teal-st: #93d4c8; --svg-teal-tx: #136457;
+    --svg-amber-bg: #fbf0dd; --svg-amber-st: #e8c98a; --svg-amber-tx: #8a5a12;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0f1418;
+      --panel: #161d23;
+      --panel-2: #1c252c;
+      --ink: #e7ecf1;
+      --ink-soft: #a9b4bf;
+      --ink-faint: #78848f;
+      --rule: #2a343d;
+      --rule-soft: #212a32;
+      --accent: #5fa8cd;
+      --accent-soft: #16323f;
+      --good: #6ab383;
+      --good-bg: #16281c;
+      --warn: #d3aa5e;
+      --warn-bg: #2a2113;
+      --crit: #e0796b;
+      --crit-bg: #2c1713;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+      --svg-blue-bg: #182a44; --svg-blue-st: #3a5f92; --svg-blue-tx: #b9d3f5;
+      --svg-teal-bg: #123430; --svg-teal-st: #2f6b60; --svg-teal-tx: #a6e2d6;
+      --svg-amber-bg: #3a2c12; --svg-amber-st: #7a5c25; --svg-amber-tx: #efcf95;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px 96px; }
+
+  header.mast {
+    border-bottom: 1px solid var(--rule);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, var(--ground)), var(--ground));
+  }
+  .mast-inner { max-width: var(--maxw); margin: 0 auto; padding: 48px 24px 36px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 4.6vw, 2.7rem); line-height: 1.12; margin: 0 0 12px;
+    font-weight: 800; letter-spacing: -.02em; text-wrap: balance;
+  }
+  .dek { font-size: 1.08rem; color: var(--ink-soft); max-width: 62ch; margin: 0; }
+  .readtime { margin-top: 18px; font-size: .82rem; color: var(--ink-faint); }
+  .scenario { margin-top: 16px; font-size: .9rem; color: var(--ink-soft);
+    background: var(--panel-2); border: 1px solid var(--rule-soft); border-radius: 10px; padding: 12px 16px; }
+  .scenario b { color: var(--ink); }
+
+  section { margin-top: 56px; }
+  h2 { font-size: 1.45rem; margin: 0 0 14px; font-weight: 750; letter-spacing: -.015em; text-wrap: balance; }
+  h2 .num { color: var(--accent); font-weight: 800; margin-right: .5em; }
+  h3 { font-size: 1.06rem; margin: 26px 0 10px; font-weight: 700; }
+  p { margin: 0 0 16px; }
+  a { color: var(--accent); }
+  ul { margin: 0 0 16px; padding-left: 22px; }
+  li { margin: 6px 0; }
+  strong { font-weight: 700; }
+
+  blockquote.pull {
+    margin: 26px 0; padding: 4px 0 4px 22px; border-left: 3px solid var(--accent);
+    font-size: 1.25rem; font-weight: 650; line-height: 1.45; color: var(--ink);
+  }
+  blockquote.script {
+    margin: 20px 0; padding: 14px 20px; border-left: 3px solid var(--ink-faint);
+    background: var(--panel-2); border-radius: 0 10px 10px 0; font-size: .95rem; color: var(--ink-soft); }
+  blockquote.script ol { margin: 8px 0 0; padding-left: 20px; }
+  blockquote.script p { margin: 0 0 4px; font-style: italic; }
+
+  code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: .84em;
+    background: var(--panel-2); padding: .1em .35em; border-radius: 4px; }
+  pre { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .78rem; line-height: 1.5; margin: 0 0 16px; }
+  pre code { background: none; padding: 0; font-size: 1em; }
+  .snip-label { font-size: .72rem; color: var(--ink-faint); margin: 18px 0 5px; font-weight: 700;
+    letter-spacing: .04em; text-transform: uppercase; }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .68rem;
+    font-weight: 800; letter-spacing: .05em; text-transform: uppercase; vertical-align: middle; }
+  .badge.det { background: var(--good-bg); color: var(--good); }
+  .badge.llm { background: var(--warn-bg); color: var(--warn); }
+  .badge.new { background: var(--accent-soft); color: var(--accent); }
+
+  figure.diagram { margin: 8px 0 6px; padding: 16px; border: 1px solid var(--rule); border-radius: 14px;
+    background: var(--panel); box-shadow: var(--shadow); }
+  figure.diagram svg { width: 100%; height: auto; display: block; }
+  figure.diagram figcaption { margin-top: 10px; font-size: .84rem; color: var(--ink-faint); font-style: italic; text-align: center; }
+
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; font-size: .9rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th { font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint); font-weight: 800;
+    border-bottom: 1px solid var(--rule); }
+  td code { font-size: .82em; }
+  .cmp td:first-child { color: var(--ink-soft); }
+  .cmp td:last-child { color: var(--ink); }
+
+  .callout { background: var(--crit-bg); border: 1px solid color-mix(in srgb, var(--crit) 30%, var(--rule));
+    border-radius: 12px; padding: 18px 20px; margin: 22px 0; }
+  .callout h3 { margin: 0 0 8px; font-size: 1.02rem; color: var(--crit); }
+  .callout p { font-size: .93rem; margin-bottom: 10px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .keyline { background: var(--good-bg); border: 1px solid color-mix(in srgb, var(--good) 30%, var(--rule));
+    border-radius: 12px; padding: 18px 20px; margin: 22px 0; }
+  .keyline h3 { margin: 0 0 8px; font-size: 1.02rem; color: var(--good); }
+  .keyline p { font-size: .93rem; margin-bottom: 10px; }
+  .keyline p:last-child { margin-bottom: 0; }
+
+  .spec-pointer { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--rule));
+    border-radius: 12px; padding: 14px 18px; margin: 22px 0; font-size: .9rem; }
+  .spec-pointer b { color: var(--accent); }
+
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; margin: 8px 0 18px; }
+  .stop { flex: 1 1 120px; min-width: 116px; background: var(--svg-teal-bg); border: 1px solid var(--svg-teal-st);
+    border-radius: 10px; padding: 10px 12px; }
+  .stop .n { font-size: .68rem; font-weight: 800; color: var(--svg-teal-tx); opacity: .8; }
+  .stop .nm { font-size: .85rem; font-weight: 700; line-height: 1.2; margin: 2px 0; color: var(--svg-teal-tx); }
+  .stop .what { font-size: .72rem; color: var(--svg-teal-tx); opacity: .85; line-height: 1.3; }
+
+  .note { font-size: .84rem; color: var(--ink-faint); margin-top: 12px; border-left: 2px solid var(--rule); padding-left: 12px; }
+  footer { margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--rule); font-size: .82rem; color: var(--ink-faint); }
+  footer ul { padding-left: 20px; }
+  hr.sec { border: 0; border-top: 1px solid var(--rule-soft); margin: 0; }
+
+  /* inlined figure svg color wiring */
+  .fig-svg .mk{fill:var(--ink-faint)}
+  .fig-svg .ln{stroke:var(--ink-faint);stroke-width:2;fill:none}
+  .fig-svg .lnd{stroke:var(--ink-faint);stroke-width:2;fill:none;stroke-dasharray:5 4}
+  .fig-svg .t{fill:var(--ink);font-size:13px}
+  .fig-svg .ts{fill:var(--ink-soft);font-size:11px}
+  .fig-svg .th{fill:var(--ink);font-size:14px;font-weight:500}
+  .fig-svg .tb{fill:var(--ink-soft);font-size:12px;font-weight:500;letter-spacing:.04em}
+  .fig-svg .c-blue{fill:var(--svg-blue-bg);stroke:var(--svg-blue-st)}
+  .fig-svg .c-teal{fill:var(--svg-teal-bg);stroke:var(--svg-teal-st)}
+  .fig-svg .c-amber{fill:var(--svg-amber-bg);stroke:var(--svg-amber-st)}
+  .fig-svg .c-blue .th,.fig-svg .c-blue .t{fill:var(--svg-blue-tx)}
+  .fig-svg .c-blue .ts{fill:var(--svg-blue-tx);opacity:.8}
+  .fig-svg .c-teal .th,.fig-svg .c-teal .t{fill:var(--svg-teal-tx)}
+  .fig-svg .c-teal .ts{fill:var(--svg-teal-tx);opacity:.8}
+  .fig-svg .c-amber .th,.fig-svg .c-amber .t{fill:var(--svg-amber-tx)}
+  .fig-svg .c-amber .ts{fill:var(--svg-amber-tx);opacity:.85}
+  .fig-svg .surf{fill:var(--panel);stroke:var(--rule)}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="mast-inner">
+    <p class="eyebrow">Engineering story · Mobile test automation · o7</p>
+    <h1>The Test That Runs the Data, Not the Code</h1>
+    <p class="dek">o7 — the interpreter-based fork of o1 — deletes the code-generation stage entirely. The committed test <em>data</em> is the executable, walked by one version-pinned, LLM-free interpreter. Here is the whole thing, end to end, on a real Zelle transfer.</p>
+    <p class="readtime">~12-minute read · August 2026 · draft companion to the Stage-1 brainstorm</p>
+    <p class="scenario"><b>Scenario throughout:</b> <code>ACC-2087</code> — "Send $25 to a saved Zelle recipient and see the confirmation." Flow: <b>Sign in → Home → Pay &amp; Transfers → Zelle → Send money.</b> iOS / iPhone 15 / iOS 17.4, on the Perfecto cloud. Every artifact below is a mocked illustration shaped to the committed mocks in <code>mocks/o1-spine/</code>.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="what-changed">
+  <h2><span class="num">0</span>What changed — and what didn't</h2>
+  <p>The <strong>two-halves</strong> shape is unchanged: an <strong>LLM-bounded authoring arm</strong> produces committed, reviewed artifacts; an <strong>LLM-free spine</strong> consumes only committed artifacts; the handoff is a <strong>git commit</strong>. Exactly <strong>one thing</strong> changes — <em>the shape of the executable</em>.</p>
+
+  <table class="cmp">
+    <thead><tr><th>o1 (code-gen, parent)</th><th>o7 (interpreter, this story)</th></tr></thead>
+    <tbody>
+      <tr><td>LLM generates per-test <b>Java/TestNG</b> → engineer reviews + commits the Java</td><td><b>No generation.</b> The committed <code>TestCaseIR.json</code> <em>is</em> the executable</td></tr>
+      <tr><td>Static gate: <code>mvn compile</code> / Checkstyle / Error&nbsp;Prone / format</td><td><b>IR gate</b>: JSON-schema + closed-opcode + bounded-waits + no-orphan-locator + no-literal-creds + ambiguity-clear</td></tr>
+      <tr><td>Device gate: TestNG runs the compiled Java</td><td><b>Interpreter</b> walks IR steps over Appium (java-client behind a seam)</td></tr>
+      <tr><td>Audit pin = <code>codeCommit</code> (SHA of the Java)</td><td>Audit pin = <b><code>irDigest</code> + <code>interpreterVersion</code></b>; Perfecto server/driver versions captured as <em>evidence</em> (unpinnable remainder)</td></tr>
+      <tr><td><b>Engineer reviews every generated test before commit</b></td><td><b>Auto-commit by a service principal (R1); the human moves to <em>after</em> the run (R4) and is novelty-sampled (R2)</b></td></tr>
+    </tbody>
+  </table>
+
+  <p>Two properties are <strong>structural</strong>, not policy, and carry over untouched:</p>
+  <ul>
+    <li><strong>LLM-free execution.</strong> The interpreter contains no model call. Locator fallback is an <em>authoring-time</em> concern; at replay every locator is already committed.</li>
+    <li><strong>No self-heal</strong> (<code>healPolicy: NONE</code>). A locator miss is a <strong>red build</strong>, never a runtime repair. This one policy line is the entire difference from every "self-healing" vendor — and it is why the verdict is a <em>stable regression signal</em> (runtime-LLM agents fail the all-<em>k</em>-runs-must-agree regime by <code>pass^k</code> arithmetic).</li>
+  </ul>
+
+  <div class="keyline">
+    <h3>The review decision, in one paragraph (R4 + R2)</h3>
+    <p>The old pre-commit engineer review did <strong>two</strong> jobs: <strong>correctness</strong> (does the IR match intent?) and <strong>attribution</strong> (an individual principal signs the ADR-0012 hash-chain, spec M37). Its <strong>security</strong> rationale was <em>already retired</em> by ADR 0013, which explicitly rejected per-script human review as the control ("dissolves the system's reason to exist") and instead removed all credentials from the execution path. So the review's only residue is correctness + a signature.</p>
+    <p><strong>R4</strong> moves the human to the <em>already-mandatory</em> §7 evaluator (post-run) as the sole attribution anchor; <strong>R2</strong> thins even that touch by routing only <em>novel</em> test-shapes to a human, using the spec's existing CF4/M21 novelty-sampling flag; <strong>R1</strong> (deterministic IR gate + no-device dry-run) is the substrate that makes service-principal auto-commit defensible.</p>
+    <p><strong>Hard line:</strong> the <em>certification</em> verdict still requires a named individual (CF9 + M37) — the human is removed from <em>authoring/commit</em>, never from <em>certification</em>.</p>
+  </div>
+</section>
+
+<hr class="sec">
+
+<section id="one-page">
+  <h2><span class="num">1</span>The whole pipeline on one page</h2>
+
+  <figure class="diagram">
+    <svg class="fig-svg" viewBox="0 0 1180 760" xmlns="http://www.w3.org/2000/svg" role="img">
+      <title>o7 pipeline end to end for the Zelle send-money flow</title>
+      <desc>The LLM-bounded authoring arm produces a committed TestCaseIR and locator manifest; a git commit signed by a service principal hands them to the LLM-free spine, where a deterministic IR gate and a version-pinned interpreter run the Zelle flow on Appium/Perfecto and emit a ReplayReport, with a single human evaluator certifying after the run.</desc>
+      <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk"/></marker>
+      </defs>
+      <text x="40" y="34" class="tb">authoring arm — llm-bounded, produces committed artifacts</text>
+      <rect x="30" y="46" width="560" height="300" rx="12" class="surf"/>
+      <text x="620" y="34" class="tb">the spine — llm-free from the git commit onward</text>
+      <rect x="608" y="46" width="542" height="300" rx="12" class="surf"/>
+      <g class="c-blue">
+      <rect x="48" y="70" width="120" height="52" rx="8"/><text x="108" y="92" text-anchor="middle" class="th">ingest</text><text x="108" y="110" text-anchor="middle" class="ts">octane ACC-2087</text>
+      <rect x="188" y="70" width="120" height="52" rx="8"/><text x="248" y="92" text-anchor="middle" class="th">A1 parse</text><text x="248" y="110" text-anchor="middle" class="ts">skeleton, det.</text>
+      <rect x="328" y="70" width="120" height="52" rx="8"/><text x="388" y="90" text-anchor="middle" class="th">A2 interpret</text><text x="388" y="106" text-anchor="middle" class="ts">det-first,</text><text x="388" y="119" text-anchor="middle" class="ts">llm fallback</text>
+      <rect x="468" y="70" width="108" height="52" rx="8"/><text x="522" y="90" text-anchor="middle" class="th">capture +</text><text x="522" y="106" text-anchor="middle" class="th">locators</text><text x="522" y="119" text-anchor="middle" class="ts">det. cascade</text>
+      </g>
+      <line x1="168" y1="96" x2="186" y2="96" class="ln" marker-end="url(#ar)"/>
+      <line x1="308" y1="96" x2="326" y2="96" class="ln" marker-end="url(#ar)"/>
+      <line x1="448" y1="96" x2="466" y2="96" class="ln" marker-end="url(#ar)"/>
+      <g class="c-teal"><rect x="150" y="170" width="320" height="60" rx="8"/></g>
+      <text x="310" y="194" text-anchor="middle" class="th">committed TestCaseIR.json + manifest</text>
+      <text x="310" y="214" text-anchor="middle" class="ts">11 steps · irDigest sha:ir:2087:d41c9a…</text>
+      <line x1="522" y1="122" x2="522" y2="150" class="ln"/><line x1="522" y1="150" x2="470" y2="150" class="ln"/><line x1="470" y1="150" x2="470" y2="168" class="ln" marker-end="url(#ar)"/>
+      <g class="c-amber"><rect x="150" y="258" width="320" height="70" rx="8"/></g>
+      <text x="310" y="280" text-anchor="middle" class="th">git commit — service principal</text>
+      <text x="310" y="298" text-anchor="middle" class="ts">svc:conversion-pipeline · R1 gate+dry-run vouches</text>
+      <text x="310" y="314" text-anchor="middle" class="ts">novelty flag (R2): known shape → sampled</text>
+      <line x1="310" y1="230" x2="310" y2="256" class="ln" marker-end="url(#ar)"/>
+      <line x1="470" y1="293" x2="606" y2="293" class="lnd" marker-end="url(#ar)"/>
+      <text x="500" y="285" class="ts">handoff</text>
+      <g class="c-blue">
+      <rect x="626" y="258" width="150" height="70" rx="8"/><text x="701" y="284" text-anchor="middle" class="th">IR gate</text><text x="701" y="301" text-anchor="middle" class="ts">schema · opcodes ·</text><text x="701" y="315" text-anchor="middle" class="ts">bounded waits · dry-run</text>
+      <rect x="796" y="258" width="150" height="70" rx="8"/><text x="871" y="278" text-anchor="middle" class="th">interpreter</text><text x="871" y="295" text-anchor="middle" class="ts">walks IR on</text><text x="871" y="309" text-anchor="middle" class="ts">appium/perfecto</text>
+      <rect x="966" y="258" width="166" height="70" rx="8"/><text x="1049" y="278" text-anchor="middle" class="th">verdict</text><text x="1049" y="295" text-anchor="middle" class="ts">ReplayReport · pins</text><text x="1049" y="309" text-anchor="middle" class="ts">irDigest+interpreter</text>
+      </g>
+      <line x1="776" y1="293" x2="794" y2="293" class="ln" marker-end="url(#ar)"/>
+      <line x1="946" y1="293" x2="964" y2="293" class="ln" marker-end="url(#ar)"/>
+      <text x="626" y="360" class="ts">healPolicy: NONE — a locator miss is a red build, never a runtime repair</text>
+      <text x="40" y="424" class="tb">the zelle flow the interpreter walks (11 steps, 6 screens)</text>
+      <g class="c-teal">
+      <rect x="40" y="440" width="150" height="46" rx="8"/><text x="115" y="462" text-anchor="middle" class="t">login screen</text><text x="115" y="477" text-anchor="middle" class="ts">username·pwd·sign in</text>
+      <rect x="210" y="440" width="150" height="46" rx="8"/><text x="285" y="462" text-anchor="middle" class="t">home screen</text><text x="285" y="477" text-anchor="middle" class="ts">assert dashboard</text>
+      <rect x="380" y="440" width="160" height="46" rx="8"/><text x="460" y="462" text-anchor="middle" class="t">pay &amp; transfers</text><text x="460" y="477" text-anchor="middle" class="ts">tap tab</text>
+      <rect x="560" y="440" width="150" height="46" rx="8"/><text x="635" y="462" text-anchor="middle" class="t">zelle screen</text><text x="635" y="477" text-anchor="middle" class="ts">pick recipient</text>
+      <rect x="730" y="440" width="160" height="46" rx="8"/><text x="810" y="462" text-anchor="middle" class="t">zelle send</text><text x="810" y="477" text-anchor="middle" class="ts">amount 25.00 · send</text>
+      <rect x="910" y="440" width="222" height="46" rx="8"/><text x="1021" y="462" text-anchor="middle" class="t">confirmation</text><text x="1021" y="477" text-anchor="middle" class="ts">"$25.00 sent to Alex Rivera"</text>
+      </g>
+      <line x1="190" y1="463" x2="208" y2="463" class="ln" marker-end="url(#ar)"/>
+      <line x1="360" y1="463" x2="378" y2="463" class="ln" marker-end="url(#ar)"/>
+      <line x1="540" y1="463" x2="558" y2="463" class="ln" marker-end="url(#ar)"/>
+      <line x1="710" y1="463" x2="728" y2="463" class="ln" marker-end="url(#ar)"/>
+      <line x1="890" y1="463" x2="908" y2="463" class="ln" marker-end="url(#ar)"/>
+      <text x="40" y="546" class="tb">the single human — moved after the run (R4), novelty-sampled (R2)</text>
+      <g class="c-amber"><rect x="40" y="560" width="1092" height="150" rx="12"/></g>
+      <line x1="1049" y1="328" x2="1049" y2="540" class="ln"/><line x1="1049" y1="540" x2="586" y2="540" class="ln"/><line x1="586" y1="540" x2="586" y2="558" class="ln" marker-end="url(#ar)"/>
+      <text x="70" y="590" class="th">§7 human evaluator — the only human touch in the flow</text>
+      <text x="70" y="614" class="t">machine PASS is a precondition, never a certification (CF9)</text>
+      <text x="70" y="636" class="ts">R2 routing:  novel shape → mandatory review   ·   known shape → sampled (this run is in the sample)</text>
+      <text x="70" y="660" class="t">validated PASS → CERTIFIED, signed by an individual principal (jdoe) — the attribution anchor (M37)</text>
+      <text x="70" y="682" class="ts">FAIL → bounded loop back to A2 with error + original intent   ·   PASS → feeds the flywheel</text>
+      <g class="c-blue"><rect x="820" y="600" width="290" height="90" rx="8"/></g>
+      <text x="838" y="624" class="th">audit pin (re-based)</text>
+      <text x="838" y="645" class="ts">irDigest + interpreterVersion (git SHAs)</text>
+      <text x="838" y="662" class="ts">perfecto server/driver = captured evidence</text>
+      <text x="838" y="679" class="ts">cloud AI &amp; self-heal: DISABLED</text>
+    </svg>
+    <figcaption>Figure 1 — o7 end to end on the Zelle send-money flow. The <span class="badge new">new</span> parts are the IR gate, the interpreter, the re-based audit pin, and the human moved to after the run.</figcaption>
+  </figure>
+
+  <p>The <strong>only LLM call sites</strong> are inside the authoring arm and are all <em>bounded</em> (A2 semantic fallback, locator last-resort, and — outside this flow — ASH-Capture proposers). <strong>Nothing past the git commit calls a model.</strong></p>
+</section>
+
+<hr class="sec">
+
+<section id="authoring">
+  <h2><span class="num">2</span>Authoring arm — building the committed Zelle IR</h2>
+
+  <h3>2.1 Ingestion <span class="badge det">deterministic</span> — Octane → normalized intent</h3>
+  <p>The Octane test case <code>ACC-2087</code> enters through the deterministic ingestion CLI (Excel/Octane adapters, per-adapter canonicalization). The raw script:</p>
+  <blockquote class="script">
+    <p>Send money via Zelle:</p>
+    <ol>
+      <li>sign in with test credentials</li>
+      <li>from the home screen, open Pay &amp; Transfers</li>
+      <li>open Zelle</li>
+      <li>send $25 to the saved recipient "Alex Rivera"</li>
+      <li>verify the confirmation shows "$25.00 sent to Alex Rivera"</li>
+    </ol>
+  </blockquote>
+  <p>Screening (ADR 0009) runs at the ingestion boundary; the canonicalized intake is emitted. <em>(A0, the LLM normalizer, is ratified with open obligations — orthogonal to this flow.)</em></p>
+
+  <h3>2.2 A1 Parser <span class="badge det">deterministic</span> — structure only</h3>
+  <p>A1 splits intent into a <strong>skeleton</strong> — raw intent text per step, recognized patterns, no semantics filled. Shape matches <code>mocks/o1-spine/TestCaseIR.skeleton.json</code>:</p>
+  <p class="snip-label">TestCaseIR.skeleton.json (A1 output)</p>
+  <pre><code>{
+  "sourceSystem": "octane", "sourceId": "ACC-2087",
+  "title": "Send $25 to a saved Zelle recipient and see the confirmation",
+  "preconditions": ["app freshly installed", "on the login screen"],
+  "testData": { "username": "vault:user_qa", "password": "vault:pass_qa",
+                "recipient": "Alex Rivera", "amount": "25.00" },
+  "platforms": ["IOS", "ANDROID"],
+  "provenance": { "a1Version": "sha:a1:6f2b...", "derivedFrom": "sha:a0:1c9d...", "parsedAt": "2026-08-05T10:02Z" },
+  "steps": [
+    { "index": 0, "intent": "sign in with test credentials", "recognizedPattern": "login",
+      "credsNote": "present-but-unresolved", "action": null, "target": {"screenContext": null}, "ambiguityFlags": [] },
+    { "index": 1, "intent": "open Pay &amp; Transfers from the home screen", "recognizedPattern": "navigate",
+      "action": null, "target": {"screenContext": null}, "ambiguityFlags": [] },
+    { "index": 2, "intent": "open Zelle", "recognizedPattern": "navigate", "action": null, "ambiguityFlags": [] },
+    { "index": 3, "intent": "send $25 to saved recipient Alex Rivera", "recognizedPattern": "form-submit",
+      "action": null, "ambiguityFlags": ["recipient-selection-mechanism-unspecified"] },
+    { "index": 4, "intent": "verify confirmation shows the sent amount and recipient", "recognizedPattern": "assertion",
+      "action": null, "ambiguityFlags": [] }
+  ]
+}</code></pre>
+  <p>Note the <code>ambiguityFlag</code> on step 3 — A1 doesn't know <em>how</em> the recipient is chosen (tap a saved tile? search?). <strong>This flag is now load-bearing</strong> (see §4 — the IR gate blocks on unresolved flags).</p>
+
+  <h3>2.3 A2 Semantic Interpreter <span class="badge det">det-first</span> <span class="badge llm">llm fallback</span> — the committed IR</h3>
+  <p>A2 expands compound steps into runtime opcodes, resolves the navigation into <code>NAVIGATE</code> + <code>screenContext</code>, structures the assertion, and <em>resolves the ambiguity flag</em> (deterministically if the login/navigate patterns match a known template; via bounded LLM fallback otherwise — the <strong>last</strong> model call before the commit). It leaves <code>resolvedLocators</code> empty (no device touched yet).</p>
+  <p>Expanding the 5 business steps into interpreter opcodes gives <strong>11 committed steps</strong>. This is the <strong>committed <code>TestCaseIR.json</code></strong> — the executable. <strong>F-B / E2 add the three runtime fields</strong> (<code>timeoutMs</code>, <code>syncAfter</code>, <code>healPolicy</code>) the interpreter needs:</p>
+  <p class="snip-label">TestCaseIR.json (A2 output — the committed executable)</p>
+  <pre><code>{
+  "sourceSystem": "octane", "sourceId": "ACC-2087",
+  "title": "Send $25 to a saved Zelle recipient and see the confirmation",
+  "irVersion": "sha:ir:2087:d41c9a...", "irDigest": "sha:ir:2087:d41c9a...",
+  "testData": { "username": "vault:user_qa", "password": "vault:pass_qa",
+                "recipient": "Alex Rivera", "amount": "25.00" },
+  "platforms": ["IOS", "ANDROID"],
+  "provenance": { "a2Version": "sha:a2:8b1e...", "irVersion": "sha:ir:2087:d41c9a...", "committedAt": "2026-08-05T10:07Z" },
+  "steps": [
+    { "index": 0, "action": "TAP",  "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the username field", "elementType": "field", "screenContext": "LoginScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "usernameField", "confidence": 0.98, "source": "OBJECT_REPO" }] } },
+    { "index": 1, "action": "TYPE", "inputData": "${testData.username}", "timeoutMs": 7000, "syncAfter": "NONE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the username field", "screenContext": "LoginScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "usernameField", "confidence": 0.98, "source": "OBJECT_REPO" }] } },
+    { "index": 2, "action": "TYPE", "inputData": "${testData.password}", "timeoutMs": 7000, "syncAfter": "NONE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the password field", "screenContext": "LoginScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "passwordField", "confidence": 0.98, "source": "OBJECT_REPO" }] } },
+    { "index": 3, "action": "TAP",  "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the Sign In button", "screenContext": "LoginScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "loginButton", "confidence": 0.97, "source": "OBJECT_REPO" }] } },
+    { "index": 4, "action": "ASSERT", "timeoutMs": 8000, "syncAfter": "NONE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the home dashboard", "screenContext": "HomeScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "homeDashboard", "confidence": 0.95, "source": "OBJECT_REPO" }] },
+      "assertion": { "kind": "ELEMENT_PRESENT", "expected": null } },
+    { "index": 5, "action": "TAP",  "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "Pay &amp; Transfers tab", "screenContext": "HomeScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "payTransfersTab", "confidence": 0.96, "source": "OBJECT_REPO" }] } },
+    { "index": 6, "action": "TAP",  "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the Zelle option", "screenContext": "PayTransfersScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "zelleMenuItem", "confidence": 0.94, "source": "OBJECT_REPO" }] } },
+    { "index": 7, "action": "TAP",  "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the saved recipient Alex Rivera", "screenContext": "ZelleScreen",
+        "resolvedLocators": [
+          { "strategy": "ACCESSIBILITY_ID", "value": "recipient_AlexRivera", "confidence": 0.91, "source": "OBJECT_REPO" },
+          { "strategy": "XPATH", "value": "//XCUIElementTypeCell[@name='recipient_AlexRivera']", "confidence": 0.86, "source": "PAGE_SOURCE" }
+        ] } },
+    { "index": 8, "action": "TYPE", "inputData": "${testData.amount}", "timeoutMs": 7000, "syncAfter": "NONE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the amount field", "screenContext": "ZelleSendScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "amountField", "confidence": 0.95, "source": "OBJECT_REPO" }] } },
+    { "index": 9, "action": "TAP",  "timeoutMs": 7000, "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the Send button", "screenContext": "ZelleSendScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "zelleSendButton", "confidence": 0.96, "source": "OBJECT_REPO" }] } },
+    { "index": 10, "action": "ASSERT", "timeoutMs": 10000, "syncAfter": "NONE", "healPolicy": "NONE",
+      "target": { "naturalReference": "the confirmation banner", "screenContext": "ZelleConfirmationScreen",
+        "resolvedLocators": [{ "strategy": "ACCESSIBILITY_ID", "value": "zelleConfirmationBanner", "confidence": 0.93, "source": "OBJECT_REPO" }] },
+      "assertion": { "kind": "TEXT_EQUALS", "expected": "$25.00 sent to Alex Rivera" } }
+  ]
+}</code></pre>
+
+  <p><strong>Read the flow in the <code>screenContext</code> column:</strong></p>
+  <div class="flow">
+    <div class="stop"><div class="n">steps 0–4</div><div class="nm">LoginScreen</div><div class="what">tap · type · type · tap · assert home</div></div>
+    <div class="stop"><div class="n">step 5</div><div class="nm">HomeScreen</div><div class="what">tap Pay &amp; Transfers</div></div>
+    <div class="stop"><div class="n">step 6</div><div class="nm">PayTransfersScreen</div><div class="what">tap Zelle</div></div>
+    <div class="stop"><div class="n">step 7</div><div class="nm">ZelleScreen</div><div class="what">tap recipient</div></div>
+    <div class="stop"><div class="n">steps 8–9</div><div class="nm">ZelleSendScreen</div><div class="what">type amount · tap Send</div></div>
+    <div class="stop"><div class="n">step 10</div><div class="nm">ZelleConfirmation</div><div class="what">assert banner text</div></div>
+  </div>
+  <p>That is exactly the five-screen path, expanded to the taps/types the device needs. Notice step 7 carries <strong>two</strong> locator candidates in committed cascade order — the interpreter tries <code>ACCESSIBILITY_ID</code> first, <code>XPATH</code> only if the first <em>is absent from the tree</em>; both are committed, so this is <strong>not</strong> self-heal (see §6).</p>
+
+  <h3>2.4 Capture Hierarchy + Locator Resolution <span class="badge det">deterministic</span></h3>
+  <p>Before the IR was committed, the hierarchy tool opened an Appium session on a live Perfecto device, pulled <code>getPageSource</code> + Object Spy for each screen, and the <strong>deterministic cascade</strong> (<code>OBJECT_REPO &gt; PAGE_SOURCE &gt; OBJECT_SPY &gt; VLM &gt; LLM-guess</code>) chose each locator. The output is the committed <code>LocatorCandidate.manifest.json</code>:</p>
+  <p class="snip-label">LocatorCandidate.manifest.json</p>
+  <pre><code>{
+  "testId": "ACC-2087", "irVersion": "sha:ir:2087:d41c9a...", "manifestDigest": "sha:loc:2087:7e3a...",
+  "candidates": [
+    { "strategy": "ACCESSIBILITY_ID", "value": "usernameField",           "confidence": 0.98, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "passwordField",           "confidence": 0.98, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "loginButton",             "confidence": 0.97, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "homeDashboard",           "confidence": 0.95, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "payTransfersTab",         "confidence": 0.96, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "zelleMenuItem",           "confidence": 0.94, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "recipient_AlexRivera",    "confidence": 0.91, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "amountField",             "confidence": 0.95, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "zelleSendButton",         "confidence": 0.96, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "zelleConfirmationBanner", "confidence": 0.93, "source": "OBJECT_REPO" }
+  ]
+}</code></pre>
+  <p>The <strong>no-orphan-locator rule</strong> (survives from the old static gate, reworded): every locator the IR references must appear here. It does. This is the <em>artifact</em> the IR gate checks against in §4.</p>
+</section>
+
+<hr class="sec">
+
+<section id="handoff">
+  <h2><span class="num">3</span>The handoff — auto-commit by a service principal (R1 + R4)</h2>
+  <p><strong>This is the step that used to be a human.</strong> Under R1 + R4, when the authoring artifacts are ready:</p>
+  <pre><code>                       ┌─────────────────────────────────────────────────────────┐
+   TestCaseIR.json ───►│  IR GATE (deterministic, §4)  +  NO-DEVICE DRY-RUN       │
+   manifest.json  ───►│  resolve every locator against the committed captured    │──► all green?
+                       │  hierarchy; prove each step is executable                │      │
+                       └─────────────────────────────────────────────────────────┘      │
+                                                                                         ▼
+                          ┌──────────────────────────────────────────────────────────────────┐
+                          │  git commit — authored by SERVICE principal                       │
+                          │  principal = "svc:conversion-pipeline"  (M37-legal service acct)   │
+                          │  hash-chain link computed in the same write txn (ADR 0012)         │
+                          │  novelty flag set by R2 sampler: NOVEL=false (matches login+nav    │
+                          │    +form-submit family already in the golden corpus)              │
+                          └──────────────────────────────────────────────────────────────────┘</code></pre>
+  <ul>
+    <li><strong>No human here.</strong> The deterministic gate + dry-run is the correctness vouch; the service principal signs. This is legal under M37 (a <em>per-component service principal</em> is a valid attribution for automated actions; only a catch-all <code>system</code> principal is forbidden).</li>
+    <li><strong>The novelty sampler (R2)</strong> stamps <code>NOVEL=false</code> because this test's <em>shape</em> (login → navigate → form-submit → assert) already exists in the conformance corpus. A genuinely new shape would stamp <code>NOVEL=true</code> and flag the eventual verdict for mandatory human scrutiny.</li>
+    <li><strong>Security is not riding on this commit</strong> — ADR 0013 removed all credentials from the execution path, so an unreviewed-but-gated IR cannot exfiltrate anything even if malformed.</li>
+  </ul>
+</section>
+
+<hr class="sec">
+
+<section id="ir-gate">
+  <h2><span class="num">4</span>IR gate — deterministic, pre-device</h2>
+  <p>Seconds, no device. Purpose unchanged from the old static gate: <strong>reject bad artifacts before spending a device minute.</strong> Only the checks change (no compiler; validate the IR instead):</p>
+  <p class="snip-label">IRGate.report.json</p>
+  <pre><code>{
+  "testId": "ACC-2087",
+  "irDigest": "sha:ir:2087:d41c9a...", "manifestDigest": "sha:loc:2087:7e3a...",
+  "interpreterVersion": "sha:interp:9f0c22...", "gateVersion": "sha:gate:1f4c8b...",
+  "gatedAt": "2026-08-05T10:08Z",
+  "checks": {
+    "schemaValid":     { "status": "PASS", "details": "TestCaseIR v2 schema (victools-exported); 11 steps valid" },
+    "opcodeClosed":    { "status": "PASS", "details": "11/11 actions ∈ {TAP,TYPE,SWIPE,WAIT,ASSERT,LAUNCH,NAVIGATE}" },
+    "boundedWaits":    { "status": "PASS", "details": "11/11 steps carry explicit timeoutMs; 0 unbounded/implicit waits" },
+    "locatorManifest": { "status": "PASS", "details": "10/10 IR-referenced locators present in manifest; 0 orphans" },
+    "noLiteralCreds":  { "status": "PASS", "details": "inputData uses ${testData.*}/vault: refs only; 0 literal secrets" },
+    "ambiguityClear":  { "status": "PASS", "details": "0 unresolved ambiguityFlags (step-3 flag resolved by A2)" }
+  },
+  "dryRun":  { "status": "PASS", "details": "all 11 steps resolvable against committed captured hierarchy; no device used" },
+  "findings": [],
+  "decision": "PROCEED_TO_DEVICE_GATE",
+  "auditPin": "gateVersion sha:gate:1f4c8b... over irDigest sha:ir:2087:d41c9a... — deterministic; re-runnable at these SHAs."
+}</code></pre>
+  <p><strong>What each check buys you:</strong> <code>opcodeClosed</code> kills DSL-sprawl (no vocabulary drift); <code>boundedWaits</code> is the <code>Thread.sleep</code>-ban analog (determinism control, not style); <code>ambiguityClear</code> is the new consumer for A1/A2's flags; <code>dryRun</code> is R1's correctness substrate. A FAIL here routes back to A2 deterministically — <strong>no Copilot re-prompt loop, no device time spent.</strong></p>
+</section>
+
+<hr class="sec">
+
+<section id="interpreter">
+  <h2><span class="num">5</span>The interpreter — device gate</h2>
+  <p>The interpreter is a <strong>loop over IR steps with a dispatch table</strong>, hosted as an engine in the <code>validation-certification</code> Spring Boot module (H-SB), talking to Appium through a <code>Driver</code> seam (C-MIG: java-client 10.x now, raw-W3C behind the seam if drift bites).</p>
+
+  <h3>5.1 Pseudocode — the whole engine</h3>
+  <pre><code>function replay(ir, manifest, perfectoCaps):
+    # ── session setup: determinism lives HERE, set explicitly, once ──
+    session = Driver.open(perfectoCaps + {                     # pinned: appiumVersion=2.19, automationVersion=&lt;xcuitest bundle&gt;
+        "perfecto:securityToken": vault("perfecto_token"),     #   single-run device token (ADR 0013)
+        "appium:settings": { "waitForIdleTimeout": 200, "reduceMotion": true }
+    })
+    assertCloudAdaptivityDisabled(session)   # A-STD: record selfHealing/perfectoAI = DISABLED
+    session.setImplicitWait(0)               # implicit waits OFF; every wait is explicit + bounded
+
+    report = new ReplayReport(irDigest=ir.digest, interpreterVersion=SELF.version)
+
+    for step in ir.steps:                                       # deterministic, ordered, no branching on model output
+        t0 = clock()
+        element = null
+        for locator in step.target.resolvedLocators:           # committed cascade order — NOT self-heal
+            element = session.findElement(locator, within=step.timeoutMs)
+            if element != null: break
+        if element == null:
+            report.fail(step, classify(session), evidence(step, session, t0))   # healPolicy:NONE → HARD STOP
+            return report                                        # a miss is a red build, never a repair
+
+        switch step.action:
+            TAP:    element.click()
+            TYPE:   element.sendKeys( resolve(step.inputData) )  # ${testData.*}/vault → value, never logged raw
+            SWIPE:  session.w3cActions( step.gesture )           # tick-based → replay-deterministic
+            ASSERT: checkAssertion(element, step.assertion)      # TEXT_EQUALS / ELEMENT_PRESENT / VALUE_CHECK
+            ...
+        if step.syncAfter == "WAIT_FOR_IDLE":
+            session.waitForIdle(bounded=step.timeoutMs)
+
+        report.recordStep(step, element.usedLocator, screenshotPrePost(session), elapsed=clock()-t0)  # per-step evidence
+
+    report.finish(verdict = report.allPassed() ? "PASS" : "FAIL")
+    session.close()
+    return report</code></pre>
+
+  <h3>5.2 What the run looks like on the Zelle flow</h3>
+  <pre><code>step  action  screen                     locator used                     result   ms
+────  ──────  ─────────────────────────  ───────────────────────────────  ──────  ────
+ 0    TAP     LoginScreen                usernameField (ACCESSIBILITY_ID)  ✓ ok     140
+ 1    TYPE    LoginScreen                usernameField                     ✓ ok      90   (value from vault, not logged)
+ 2    TYPE    LoginScreen                passwordField                     ✓ ok      85
+ 3    TAP     LoginScreen                loginButton                       ✓ ok     210   → WAIT_FOR_IDLE
+ 4    ASSERT  HomeScreen                 homeDashboard  ELEMENT_PRESENT     ✓ ok     120
+ 5    TAP     HomeScreen                 payTransfersTab                   ✓ ok     180   → WAIT_FOR_IDLE
+ 6    TAP     PayTransfersScreen         zelleMenuItem                     ✓ ok     160   → WAIT_FOR_IDLE
+ 7    TAP     ZelleScreen                recipient_AlexRivera (ACC_ID)      ✓ ok     150   (candidate 1 hit; XPATH not needed)
+ 8    TYPE    ZelleSendScreen            amountField  "25.00"              ✓ ok      95
+ 9    TAP     ZelleSendScreen            zelleSendButton                   ✓ ok     220   → WAIT_FOR_IDLE
+10    ASSERT  ZelleConfirmationScreen    zelleConfirmationBanner            ✓ ok     130
+                                          TEXT_EQUALS "$25.00 sent to Alex Rivera"
+────────────────────────────────────────────────────────────────────────────────────
+verdict: PASS   ·   11/11 steps   ·   healsApplied: NONE   ·   K=1 run</code></pre>
+</section>
+
+<hr class="sec">
+
+<section id="determinism">
+  <h2><span class="num">6</span>Determinism &amp; the no-self-heal line</h2>
+  <p>Step 7 lists two locators. If <code>recipient_AlexRivera</code> (candidate 1) is <strong>found</strong>, it is used and candidate 2 is never touched. If candidate 1 is <strong>absent</strong>, the interpreter tries the committed <code>XPATH</code> — and if <em>that</em> is also absent, the step <strong>hard-fails</strong>. Critically:</p>
+  <ul>
+    <li>Both candidates were <strong>committed at authoring time</strong> and are in the manifest. The interpreter chooses among <em>committed</em> options in <em>committed</em> order — it never asks a model, never invents a locator, never relaxes a match. That is the difference between a <strong>committed cascade</strong> (o7: deterministic, auditable) and <strong>runtime self-heal</strong> (rejected: a model picks a new locator mid-run).</li>
+    <li><code>healPolicy: NONE</code> means there is no "try something clever on miss." Miss → classify → red build → repair happens back in the <strong>authoring arm</strong> (new IR version, re-gated, re-committed).</li>
+  </ul>
+  <p>Determinism sources handled explicitly at session start: implicit-wait 0, bounded explicit waits per step, <code>waitForIdleTimeout</code>, <code>reduceMotion</code>, tick-based W3C Actions for gestures. The <strong>unpinnable remainder</strong> (Perfecto upgrades drivers on its own schedule; <code>appiumVersion</code> is major.minor only) is <em>captured as evidence</em>, not pretended-pinned — see §8.</p>
+</section>
+
+<hr class="sec">
+
+<section id="verdict">
+  <h2><span class="num">7</span>Verdict + the human (R4 + R2)</h2>
+
+  <h3>7.1 The machine ReplayReport (re-based audit pin, A-STD evidence bundle)</h3>
+  <p class="snip-label">ReplayReport.json</p>
+  <pre><code>{
+  "testId": "ACC-2087",
+  "irDigest": "sha:ir:2087:d41c9a...",
+  "interpreterVersion": "sha:interp:9f0c22...",
+  "locatorManifestDigest": "sha:loc:2087:7e3a...",
+  "irGate": { "schemaValid":"PASS","opcodeClosed":"PASS","boundedWaits":"PASS",
+              "locatorManifest":"PASS","noLiteralCreds":"PASS","ambiguityClear":"PASS","dryRun":"PASS" },
+  "deviceGate": {
+    "runs": 1, "passes": 1, "flakiness": "NOT_DERIVABLE_AT_K1",
+    "pinnedVersions": {
+      "interpreter": "sha:interp:9f0c22...",
+      "appiumRequested": "2.19", "appiumReported": "2.19.0",           /* evidence, unpinnable remainder */
+      "driverReported": "XCUITest 9.4.0",                             /* evidence, unpinnable remainder */
+      "device": "iPhone 15 / iOS 17.4", "appVersion": "8.4.0"
+    },
+    "cloudAdaptivity": { "selfHealing": "DISABLED", "perfectoAI": "DISABLED" }   /* A-STD, post-2025 control */
+  },
+  "executionPlanRef": "acc-2087.plan.md",       /* E2: rendered plan attached as EVIDENCE, never a pin */
+  "healsApplied": "NONE",
+  "verdict": "PASS",
+  "commitPrincipal": "svc:conversion-pipeline",         /* R1/R4: the COMMIT was service-signed */
+  "noveltyFlag": false,                                  /* R2: shape known → sampled, not mandatory-review */
+  "certification": { "status": "PENDING_HUMAN", "certifiedBy": null },   /* CF9: machine PASS ≠ certified */
+  "auditPin": "irDigest sha:ir:2087:d41c9a... executed by interpreterVersion sha:interp:9f0c22... — reviewable &amp; reproducible; Perfecto server/driver versions captured as recorded evidence (pinned per epoch, not forever)."
+}</code></pre>
+
+  <h3>7.2 The one human, moved to after the run (R4), and sampled (R2)</h3>
+  <pre><code>                         ┌──────────────────────────────────────────────────────────────┐
+   machine PASS  ───────►│  §7 HUMAN EVALUATOR  (the SINGLE human touch in the flow)     │
+   noveltyFlag=false ───►│                                                              │
+                         │  R2 routing:                                                 │
+                         │    NOVEL=true  → MANDATORY human validation                  │
+                         │    NOVEL=false → SAMPLED (this run falls in the audit sample) │
+                         │                                                              │
+                         │  If validated PASS:                                          │
+                         │    certification.status = CERTIFIED                          │
+                         │    certification.certifiedBy = "jdoe (individual principal)" │  ← CF9 + M37: the
+                         │    → this INDIVIDUAL principal signs the verdict lineage row  │     attribution anchor
+                         │    → PASS feeds the flywheel (locators, exemplars, labels)   │
+                         │                                                              │
+                         │  If FAIL: bounded loop back to A2 with error + original      │
+                         │    intent (iteration budget — an existing open Replan item)  │
+                         └──────────────────────────────────────────────────────────────┘</code></pre>
+  <div class="keyline">
+    <h3>The attribution shift, stated plainly</h3>
+    <p>Under the <em>old</em> design the <strong>commit row</strong> carried the individual principal (the engineer who reviewed the Java). Under <strong>R4</strong>, the <strong>commit row</strong> carries a <em>service</em> principal and the <strong>certification/verdict row</strong> carries the <em>individual</em> principal (<code>jdoe</code>). No lineage row is ever principal-less (M37 holds), and the <strong>certified path still has a named human</strong> (CF9 holds). What's deleted is the <em>pre-commit</em> human touch — halving the recurring human cost (two touches → one) without weakening either invariant.</p>
+  </div>
+
+  <h3>7.3 The E2 execution plan (the compliance-officer artifact)</h3>
+  <p>Attached to the report as <code>acc-2087.plan.md</code>, deterministically rendered from <code>irDigest</code>:</p>
+  <pre><code># Execution Plan — ACC-2087  (irDigest sha:ir:2087:d41c9a..., interpreter sha:interp:9f0c22...)
+ 0. TAP    "username field"  → ACCESSIBILITY_ID=usernameField        (budget 7000ms, then WAIT_FOR_IDLE)
+ 1. TYPE   ${testData.username} → usernameField
+ 2. TYPE   ${testData.password} → passwordField
+ 3. TAP    "Sign In button"  → loginButton                            (→ WAIT_FOR_IDLE)
+ 4. ASSERT home dashboard present → homeDashboard
+ 5. TAP    "Pay &amp; Transfers"  → payTransfersTab                       (→ WAIT_FOR_IDLE)
+ 6. TAP    "Zelle"            → zelleMenuItem                          (→ WAIT_FOR_IDLE)
+ 7. TAP    "recipient Alex Rivera" → recipient_AlexRivera             (fallback XPATH committed, order fixed)
+ 8. TYPE   ${testData.amount} → amountField
+ 9. TAP    "Send"            → zelleSendButton                        (→ WAIT_FOR_IDLE)
+10. ASSERT confirmation TEXT_EQUALS "$25.00 sent to Alex Rivera" → zelleConfirmationBanner
+    healPolicy=NONE for every step — a miss is a red build, never a runtime repair.</code></pre>
+  <p>An auditor/compliance officer reads <em>this</em>, not code. It is derived from <code>irDigest</code> so it cannot drift from what ran — but it is <strong>evidence, not the pin</strong> (that avoids the two-competing-pins problem the earlier review flagged).</p>
+</section>
+
+<hr class="sec">
+
+<section id="auditor">
+  <h2><span class="num">8</span>The auditor conversation — what this is all for</h2>
+  <blockquote class="pull">"Show me exactly what produced this CERTIFIED verdict for the Zelle transfer, and prove it hasn't changed."</blockquote>
+  <ul>
+    <li><strong>The executable:</strong> <code>irDigest sha:ir:2087:d41c9a...</code> (the reviewed IR) executed by <code>interpreterVersion sha:interp:9f0c22...</code> (the interpreter, audited once as infrastructure). Both are git SHAs; re-clone and re-run to reproduce.</li>
+    <li><strong>What ran, in English:</strong> <code>acc-2087.plan.md</code> (E2), byte-derived from the IR.</li>
+    <li><strong>Who vouched:</strong> commit signed by <code>svc:conversion-pipeline</code>; <strong>certification signed by the individual principal <code>jdoe</code></strong> (CF9 + M37). The ADR-0012 hash-chain makes the lineage tamper-evident.</li>
+    <li><strong>The cloud we can't pin:</strong> <code>appiumReported 2.19.0 / XCUITest 9.4.0</code> captured as <strong>recorded evidence</strong> — "pinned per epoch with recorded migrations," never claimed as frozen-forever.</li>
+    <li><strong>No hidden adaptivity:</strong> <code>cloudAdaptivity: { selfHealing: DISABLED, perfectoAI: DISABLED }</code>, <code>healsApplied: NONE</code>. The verdict is a <em>deterministic replay</em>, not an agent's best-effort.</li>
+  </ul>
+  <div class="spec-pointer"><b>Next-tier evidence.</b> A-STD ships this bundle now; the follow-on D7 ADR can later wrap it as a Sigstore-signed in-toto <code>test-result</code> attestation for cryptographic tamper-evidence — near-zero schema invention.</div>
+</section>
+
+<hr class="sec">
+
+<section id="failure">
+  <h2><span class="num">9</span>Where a failure lands (the same flow, one screen drifted)</h2>
+  <p>Suppose release 8.5.0 renamed <code>zelleSendButton</code> → <code>zelleSubmitButton</code>. Step 9 finds neither the committed <code>ACCESSIBILITY_ID</code> nor any committed fallback:</p>
+  <pre><code> 9    TAP     ZelleSendScreen   zelleSendButton (ACCESSIBILITY_ID)   ✗ NOT FOUND   7000  (timeout)
+       └─ healPolicy: NONE → HARD STOP. classify: LOCATOR_NOT_FOUND. red build.</code></pre>
+  <ul>
+    <li>The interpreter does <strong>not</strong> guess a new button — no self-heal (that is the whole point).</li>
+    <li>ReplayReport: <code>verdict: FAIL</code>, <code>classificationOnFailure: "LOCATOR_NOT_FOUND"</code>, per-step evidence (pre/post screenshots) attached, <code>certification: PENDING_HUMAN</code> never reached.</li>
+    <li><strong>Repair happens in the authoring arm:</strong> re-capture the screen → cascade re-resolves the locator → new IR version <code>sha:ir:2087:e88f...</code> → re-gated → re-committed (service principal). No Java to regenerate, no page-object to hand-edit — the drift → regenerate → re-review cascade of the old design is simply gone.</li>
+    <li>Because this is a <em>known test shape</em>, R2 keeps it on the auto-lane; only the eventual re-run's verdict is sampled.</li>
+  </ul>
+  <div class="callout">
+    <h3>The one owned risk</h3>
+    <p>The interpreter is a single shared executable — a defect in it taints <em>every</em> verdict, where a defect in one generated test tainted one. The mitigation is the same trick the spine uses for the pipeline itself: a <strong>conformance corpus</strong> of golden IRs with hand-verified expected behavior, run as the interpreter's own release gate, plus a CI-enforced closed opcode set. Interpreters that are nobody's product rot — so the interpreter must be resourced as a maintained internal product, not a project.</p>
+  </div>
+</section>
+
+<footer>
+  <p><strong>Cross-references</strong></p>
+  <ul>
+    <li>Design rationale, directions, gate: <code>docs/research/mobile-test-automation-interpreter-spine-brainstorm.md</code> (§2b = the R4+R2 review decision; §0c = external research; §3 = directions D1–D7).</li>
+    <li>o1 (parent) code-gen walkthrough — the pipeline o7 forks: <code>docs/research/o1-pipeline-walkthrough.md</code>.</li>
+    <li>Markdown source of this page: <code>docs/research/o7-pipeline-walkthrough.md</code> · standalone diagram: <code>docs/research/o1-diagrams/o7-pipeline-zelle-end-to-end.svg</code> · o7 mocks: <code>docs/research/mocks/o7-spine/</code>.</li>
+    <li>Load-bearing invariants: spec M37 (principal attribution), CF9 (individual certifier), ADR 0012 (hash-chain), ADR 0013 (credential isolation — retired the security case for pre-commit review), ADR 0009 (screening), F6 (pinning set — amended for <code>irDigest</code>/<code>interpreterVersion</code>).</li>
+    <li><strong>Records into ADR 0016:</strong> executable = committed IR; pin re-base; M37 amendment (attribution moves commit-row → verdict-row); §7 evaluator re-scoped to attribution anchor; dry-run/gate strength as the correctness control; R5 barred on the certified path.</li>
+  </ul>
+  <p class="note">Draft companion to the Stage-1 brainstorm. Design bundle: F-B · E2 · H-SB · C-MIG · R-YES · A-STD, review resolved as R4 + R2. All artifacts are mocked illustrations shaped to <code>mocks/o1-spine/</code>. August 2026.</p>
+</footer>
+
+</div>
+</body>
+</html>

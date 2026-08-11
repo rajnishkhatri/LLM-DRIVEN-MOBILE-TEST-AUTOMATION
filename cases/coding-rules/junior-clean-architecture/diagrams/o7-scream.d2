@@ -1,0 +1,98 @@
+# What the repository screams — framework-shaped vs o7's cluster-shaped modules.
+# Colors follow the blog key: amber = volatile detail, teal = stable policy.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  detail: {
+    style: {
+      fill: "#F1E3CE"
+      stroke: "#B0742A"
+      font-color: "#6E4718"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  pkg: {
+    style: {
+      fill: "#FFFFFF"
+      stroke: "#8FA6A2"
+      font-color: "#1B2A2B"
+      border-radius: 4
+    }
+  }
+  ghost: {
+    style: {
+      fill: "#FFFFFF"
+      stroke: "#C9BFA9"
+      font-color: "#7A8683"
+      border-radius: 4
+      stroke-dash: 3
+    }
+  }
+}
+
+bad: "❌  A repo that screams its framework" {
+  style: {
+    fill: "#FBF7EF"
+    stroke: "#B0742A"
+    font-color: "#6E4718"
+    stroke-width: 2
+    border-radius: 8
+    font-size: 18
+    bold: true
+  }
+
+  c: "controllers/" { class: detail }
+  s: "services/" { class: detail }
+  r: "repositories/" { class: detail }
+  cfg: "config/" { class: detail }
+  u: "utils/" { class: detail }
+  note: "Spring is talking.\nThe pipeline is whispering\nsomewhere underneath." { class: ghost }
+}
+
+good: "✓  The o7 repo screams its business" {
+  style: {
+    fill: "#F2F7F6"
+    stroke: "#1F6F6B"
+    font-color: "#134844"
+    stroke-width: 2
+    border-radius: 8
+    font-size: 18
+    bold: true
+  }
+
+  conv: "conversion/" {
+    class: policy
+    ing: "ingestion" { class: pkg }
+    ht: "hierarchy-tool" { class: pkg }
+    cp: "conversion" { class: pkg }
+  }
+  vc: "validation-certification/" {
+    class: policy
+    replay: "replay\n(o7: the IR gate + the\ninterpreter, hosted by the\ndevice-gate worker)" { class: pkg }
+    cert: "certification" { class: pkg }
+  }
+  ev: "evidence/" {
+    class: policy
+    prov: "provenance (lineage)" { class: pkg }
+    rm: "read model" { class: pkg }
+    plan: "execution-plan renderer" { class: pkg }
+  }
+}
+

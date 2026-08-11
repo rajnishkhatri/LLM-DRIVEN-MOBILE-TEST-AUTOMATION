@@ -1,0 +1,25 @@
+---
+description: Load the generating-architecture-diagrams skill when producing C4-flavored architecture diagrams (context/container/component), a diagram set, or any *.d2 / diagram-set.md file. Enforces the reserved shape vocabulary, verbatim labels, honesty tags, and the render→lint→self-audit loop.
+globs: ["*.d2", "**/diagram-set.md", "**/*-context.svg", "**/*-container.svg", "**/*-component.svg", "**/*-container--*.svg", "**/*-module-wiring*.svg"]
+alwaysApply: false
+---
+
+# Architecture-diagram generation
+
+When drawing, redrawing, or rendering a system's C4 diagrams (context /
+container / component), or when editing a `*.d2` or `diagram-set.md`, use the
+canonical skill:
+
+**`docs/skills/generating-architecture-diagrams/SKILL.md`**
+
+It defines the fact-frozen IR, the reserved shape vocabulary
+(pill=actor, rect=system/container/component, `EXT:` double-border=external,
+cylinder=datastore only), solid=sync / dashed=async lines, honesty tags for
+genuine gaps (no invented facts), and the deterministic
+render → lint → self-audit → fix loop. Do not restyle nodes inline — edit the
+classes block. Do not invent SLAs, vendors, regions, or counts; carry unknowns
+as explicit tags and stop-and-ask when a required fact is missing.
+
+Do NOT use this skill for book-figure / pattern / concept illustrations (e.g.
+Clean Architecture rings, principle diagrams) — it is for C4 topology of real
+systems only; hand-author such figures directly.

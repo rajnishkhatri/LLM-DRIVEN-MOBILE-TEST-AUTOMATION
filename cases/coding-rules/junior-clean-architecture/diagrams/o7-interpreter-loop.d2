@@ -1,0 +1,121 @@
+# The interpreter — a fixed loop over committed data, with one seam to the device.
+# The executable is the IR; the interpreter is audited infrastructure, pinned by Git SHA.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  detail: {
+    style: {
+      fill: "#F1E3CE"
+      stroke: "#B0742A"
+      font-color: "#6E4718"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  port: {
+    style: {
+      fill: "#E7E1F1"
+      stroke: "#6A5A9C"
+      font-color: "#453A6B"
+      border-radius: 6
+      stroke-width: 2
+      stroke-dash: 4
+    }
+  }
+  stub: {
+    style: {
+      fill: "#FFFFFF"
+      stroke: "#B0742A"
+      font-color: "#9A8468"
+      border-radius: 6
+      stroke-dash: 5
+    }
+  }
+  flow: {
+    style: {
+      stroke: "#4A5A59"
+      font-color: "#4A5A59"
+      font-size: 13
+    }
+  }
+}
+
+interp: "INTERPRETER — Spring Boot module in the device-gate worker\npinned by interpreterVersion (Git SHA) · LLM-free · non-adaptive" {
+  style: {
+    fill: "#F2F7F6"
+    stroke: "#1F6F6B"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 15
+    bold: true
+  }
+
+  loop: "for each committed step:\ntry locators in committed\ncascade order, within timeoutMs" { class: policy }
+  dispatch: "dispatch on opcode\nTAP · TYPE · SWIPE · WAIT\nASSERT · LAUNCH · NAVIGATE\n(closed set — extension\nis a spec change)" { class: policy }
+  sync: "syncAfter:\nWAIT_FOR_IDLE | NONE\n(bounded, explicit)" { class: policy }
+  miss: "cascade exhausted?\nHARD FAIL → red build\nhealPolicy: NONE —\nnever search, never adapt" {
+    style: {
+      fill: "#FBEFEC"
+      stroke: "#A6402F"
+      font-color: "#7A2E21"
+      border-radius: 6
+      stroke-width: 2
+      bold: true
+    }
+  }
+
+  loop -> dispatch: "found" { class: flow }
+  dispatch -> sync: { class: flow }
+  sync -> loop: "next step" { class: flow }
+  loop -> miss: "no committed\nlocator matched" {
+    style: {
+      stroke: "#A6402F"
+      font-color: "#A6402F"
+      font-size: 13
+    }
+  }
+}
+
+seam: "«Driver seam»\none interface,\nchosen by Spring DI" { class: port }
+
+drivers: "Device side" {
+  style: {
+    fill: "#FBF7EF"
+    stroke: "#B0742A"
+    stroke-dash: 5
+    border-radius: 8
+    font-color: "#6E4718"
+    font-size: 15
+    bold: true
+  }
+  jc: "Appium java-client 10.x\n(the one LIVE driver)" { class: detail }
+  w3c: "raw-W3C adapter\n(STUB — activation must\nbe recorded in lineage)" { class: stub }
+  perfecto: "Perfecto cloud device\ncloudAdaptivityDisabled\nattested per session" { class: detail }
+}
+
+interp.dispatch -> seam: "speaks the seam,\nnever the vendor API" { class: flow }
+seam -> drivers.jc: { style.stroke: "#B0742A" }
+seam -> drivers.w3c: {
+  style: {
+    stroke: "#B0742A"
+    stroke-dash: 5
+  }
+}
+drivers.jc -> drivers.perfecto: { style.stroke: "#B0742A" }

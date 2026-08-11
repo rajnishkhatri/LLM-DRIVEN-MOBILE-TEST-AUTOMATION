@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "role_registry",
+  "roles": [
+    {
+      "id": "em-planner",
+      "tag": "maker",
+      "gates": [],
+      "write_scopes": [
+        "plans/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "plan {args}",
+        "model": "m-large"
+      }
+    },
+    {
+      "id": "em-builder",
+      "tag": "maker",
+      "gates": [
+        "build",
+        "tests"
+      ],
+      "write_scopes": [
+        "src/",
+        "tests/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "build {args}",
+        "model": "m-fast"
+      }
+    },
+    {
+      "id": "em-reviewer",
+      "tag": "checker",
+      "gates": [
+        "tests"
+      ],
+      "write_scopes": [],
+      "diagnostic_capability": true
+    }
+  ],
+  "arms": [
+    {
+      "id": "EM1",
+      "roles": [
+        "em-planner",
+        "em-builder",
+        "em-reviewer"
+      ]
+    }
+  ]
+}

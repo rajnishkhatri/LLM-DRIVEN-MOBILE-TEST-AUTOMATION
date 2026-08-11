@@ -1,0 +1,155 @@
+{
+  "$schema": "../../../skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "03-component-ash",
+    "level": "component",
+    "title": "ASH-Capture - Component view",
+    "caption": "Zooms into the ASH-Capture container. The discovery loop, deterministic validator, DeviceSession abstraction, and the two committed artifacts (ScreenGraph, NavigationManifest). Every node here is PROPOSED (ADR 0014 in flight). The spine consumes only the committed manifest; none of these components run in the spine.",
+    "direction": "down",
+    "opens": "ASH",
+    "opens_from": "02-container",
+    "completeness": "complete",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "DISC",
+      "kind": "component",
+      "label": "Discovery loop",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "LLM proposes <=K candidate next actions from screenshot + pruned tree",
+        "budgets: <=15 actions, <=60s/step, <=3 no-progress strikes, 10-min session cap",
+        "records every transition as a graph edge (side effect)",
+        "concrete mocks: ASHCapture.discovery.{input.json,prompt.md,output.json} - HomeScreen -> AccountOverview scenario; see 05-discovery-loop for the step-by-step runtime cycle"
+      ],
+      "role": "model-seam"
+    },
+    {
+      "id": "VAL",
+      "kind": "component",
+      "label": "Deterministic validator",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "filters by locator cascade + confidence floor",
+        "denylist (logout/transfer/pay/confirm) - defense-in-depth, not the safety guarantee",
+        "safety is environmental: lower test env, resettable data"
+      ]
+    },
+    {
+      "id": "EXEC",
+      "kind": "component",
+      "label": "Executor",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "applies the surviving action via DeviceSession.act()",
+        "re-dumps hierarchy, computes screen signature, checks arrival"
+      ]
+    },
+    {
+      "id": "SIG",
+      "kind": "component",
+      "label": "Screen-signature function",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "signature = (skeletonHash, titleAnchor)",
+        "skeletonHash = hash of sorted (elementType, accessibilityId) tuples, excludes text",
+        "titleAnchor = auto-discovered accessibility title element (no app-team ask)",
+        "ANCHOR_LESS screens -> human escape hatch"
+      ]
+    },
+    {
+      "id": "DEV",
+      "kind": "component",
+      "label": "DeviceSession",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "abstraction: login(), screenshot(), hierarchy(), act(), launchDeepLink()",
+        "implementations: PerfectoSession, LocalIOSSession, LocalAndroidSession",
+        "normalized hierarchy output; locator source field marks backend"
+      ]
+    },
+    {
+      "id": "DRIFT",
+      "kind": "component",
+      "label": "Drift/repair loop",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "on release: edges flip UNVERIFIED, re-verify lazily",
+        "on capture failure: mark edge BROKEN, scoped re-discovery from last good node",
+        "graph versioned per appVersion; supersede-not-update (ADR 0012)",
+        "concrete mock: ASHCapture.driftrepair.input.json; surfaces the signature re-keying defect (Replan R1 D1/S1) - reuses the discovery prompt unchanged"
+      ]
+    },
+    {
+      "id": "DEEP",
+      "kind": "component",
+      "label": "Deep-link sub-loop",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "static parse (APK intent filters / iOS associated domains) + LLM-proposed routes + deterministic probe",
+        "stores confirmed links as DEEP_LINK edges (cost 1), supplemental not replacing",
+        "concrete mocks: ASHCapture.deeplink.{input.json,prompt.md,output.json}; known gap preserved: the probe has no URL denylist (Replan R1 D1)"
+      ]
+    },
+    {
+      "id": "HATCH",
+      "kind": "component",
+      "label": "Human escape hatch",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "triggered by discovery failure or ANCHOR_LESS screen (<10% target)",
+        "human steers; system records action stream and commits manifest + edges",
+        "provenance: MANUAL_CAPTURE"
+      ]
+    },
+    {
+      "id": "GRAPH",
+      "kind": "datastore",
+      "label": "ScreenGraph (PostgreSQL)",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "nodes = screen signatures, edges = deterministic locator-actions",
+        "snapshot per graph_version_sha; auditable-not-gated",
+        "cost weights: DEEP_LINK=1 < SCROLL/TAP=2 < TYPE=3"
+      ],
+      "role": "lineage-store"
+    },
+    {
+      "id": "MAN",
+      "kind": "datastore",
+      "label": "NavigationManifest (PostgreSQL)",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "per-screen deterministic path the spine replays",
+        "rootMode FRESH_LOGIN or DEEP_LINK; always starts from a known root",
+        "provenance: DISCOVERY | GRAPH_SEARCH | DEEP_LINK_PROBE | DRIFT_REPAIR | MANUAL_CAPTURE"
+      ],
+      "role": "lineage-store"
+    }
+  ],
+  "edges": [
+    { "from": "DISC",  "to": "VAL",   "kind": "sync", "label": "proposes candidate actions" },
+    { "from": "VAL",   "to": "EXEC",  "kind": "sync", "label": "hands surviving action" },
+    { "from": "EXEC",  "to": "DEV",   "kind": "sync", "label": "act() + hierarchy()" },
+    { "from": "EXEC",  "to": "SIG",   "kind": "sync", "label": "compute landed signature" },
+    { "from": "DISC",  "to": "GRAPH", "kind": "sync", "label": "records edges (side effect)" },
+    { "from": "DISC",  "to": "MAN",   "kind": "sync", "label": "commits manifest on arrival" },
+    { "from": "DRIFT", "to": "DISC",  "kind": "sync", "label": "scoped re-discovery on BROKEN edge" },
+    { "from": "DEEP",  "to": "GRAPH", "kind": "sync", "label": "writes DEEP_LINK edges (cost 1)" },
+    { "from": "DEEP",  "to": "DEV",   "kind": "sync", "label": "probes candidate deep links" },
+    { "from": "HATCH", "to": "DEV",   "kind": "sync", "label": "records human-driven actions" },
+    { "from": "HATCH", "to": "MAN",   "kind": "sync", "label": "commits MANUAL_CAPTURE manifest" },
+    { "from": "HATCH", "to": "GRAPH", "kind": "sync", "label": "commits edges from recorded stream" }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b"
+  ]
+}

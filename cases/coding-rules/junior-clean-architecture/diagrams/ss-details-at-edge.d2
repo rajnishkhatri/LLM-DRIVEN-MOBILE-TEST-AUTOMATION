@@ -1,0 +1,90 @@
+# Details at the edge — business core vs Spring + SQL/ORM outside.
+# Chapters 30 + 32 merged story for Silicon Sandwiches.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+title: "Details stay at the edge — DB & frameworks are plugins" {
+  shape: text
+  near: top-center
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+core: "Business core (stable policy)" {
+  style: {
+    fill: "#f5f5f5"
+    stroke: "#4a4a4a"
+    font-size: 16
+    bold: true
+  }
+
+  entities: "Entities\nOrder · Offer · FranchiseShop" {
+    style.fill: "#ffffff"
+  }
+  usecases: "Use Cases\nPlaceOrder · ResolveOffer" {
+    style.fill: "#ffffff"
+  }
+  ports: "Ports\nOrderGateway · PaymentGateway · OfferGateway" {
+    style: {
+      fill: "#ffffff"
+      stroke-dash: 3
+    }
+  }
+
+  entities -> usecases: ""
+  usecases -> ports: "depends on"
+}
+
+edge: "Volatile details (plugins)" {
+  style: {
+    fill: "#dcdcdc"
+    stroke: "#4a4a4a"
+    font-size: 16
+    bold: true
+  }
+
+  spring: "Spring / Web\nSpringPlaceOrderController\n@Configuration Main" {
+    style.fill: "#ffffff"
+  }
+  sql: "SQL / ORM\nSqlOrderGateway" {
+    style.fill: "#ffffff"
+  }
+  stripe: "Payment SDK\nStripePaymentAdapter" {
+    style.fill: "#ffffff"
+  }
+}
+
+edge.spring -> core.usecases: "calls inward"
+edge.sql -> core.ports: "implements" {
+  target-arrowhead: {
+    shape: triangle
+    style.filled: false
+  }
+  style.stroke-dash: 4
+}
+edge.stripe -> core.ports: "implements" {
+  target-arrowhead: {
+    shape: triangle
+    style.filled: false
+  }
+  style.stroke-dash: 4
+}
+
+caption: "Swap Postgres for another store, or Stripe for another gateway — the PlaceOrder policy should not need a rewrite." {
+  shape: rectangle
+  near: bottom-center
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 14
+  }
+}

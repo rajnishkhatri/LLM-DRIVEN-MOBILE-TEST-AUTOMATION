@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 660" font-family="'Helvetica Neue',Arial,sans-serif" role="img" aria-label="o7 certification handoff: the machine establishes correctness and executes deterministically, then a human certifies the result post-run by attaching their individual principal.">
+  <defs>
+    <style>
+      .lane-label{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;}
+      .title{font-size:15px;font-weight:700;}
+      .sub{font-size:11.5px;}
+      .mono{font-family:'SF Mono',Menlo,Consolas,monospace;}
+      .tiny{font-size:10px;}
+      .chip{font-size:10px;font-weight:700;letter-spacing:.04em;}
+    </style>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5c6b6a"/>
+    </marker>
+    <marker id="arrH" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3E4C6E"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1120" height="660" fill="#F5F1E7"/>
+
+  <!-- header -->
+  <text x="48" y="52" font-size="25" font-weight="700" fill="#1B2A2B" font-family="Georgia,'Times New Roman',serif">The certification handoff</text>
+  <text x="48" y="76" class="sub" fill="#4a5654">o7 pipeline — the machine proves and executes; a named human takes responsibility. Scenario ACC-2087: “Send $25 to Alex Rivera on Zelle.”</text>
+
+  <!-- lane backgrounds -->
+  <rect x="40" y="100" width="700" height="512" rx="14" fill="#1F6F6B" opacity="0.05"/>
+  <rect x="770" y="100" width="310" height="512" rx="14" fill="#3E4C6E" opacity="0.07"/>
+
+  <!-- the seal line -->
+  <line x1="755" y1="112" x2="755" y2="600" stroke="#8a7a3d" stroke-width="2" stroke-dasharray="2 5"/>
+  <g transform="translate(755,356)">
+    <rect x="-30" y="-58" width="60" height="116" rx="8" fill="#F5F1E7" stroke="#8a7a3d" stroke-width="1.5"/>
+    <text x="0" y="-30" text-anchor="middle" class="chip" fill="#8a7a3d">THE</text>
+    <text x="0" y="-16" text-anchor="middle" class="chip" fill="#8a7a3d">SEAL</text>
+    <text x="0" y="6" text-anchor="middle" font-size="20">🔏</text>
+    <text x="0" y="30" text-anchor="middle" class="tiny mono" fill="#8a7a3d">irDigest</text>
+    <text x="0" y="44" text-anchor="middle" class="tiny mono" fill="#8a7a3d">pins it</text>
+  </g>
+
+  <!-- lane labels -->
+  <text x="60" y="128" class="lane-label" fill="#1F6F6B">Machine — deterministic, LLM-free</text>
+  <text x="790" y="128" class="lane-label" fill="#3E4C6E">Human — §7 evaluator</text>
+
+  <!-- ===== MACHINE LANE ===== -->
+
+  <!-- commit -->
+  <g transform="translate(60,150)">
+    <rect width="180" height="86" rx="10" fill="#fff" stroke="#1F6F6B" stroke-width="1.5"/>
+    <text x="14" y="26" class="title" fill="#1B2A2B">Auto-commit</text>
+    <text x="14" y="46" class="sub" fill="#4a5654">TestCaseIR + locators —</text>
+    <text x="14" y="61" class="sub" fill="#4a5654">the committed IR</text>
+    <rect x="14" y="68" width="152" height="14" rx="7" fill="#1F6F6B" opacity="0.12"/>
+    <text x="20" y="78" class="tiny mono" fill="#1F6F6B">svc:conversion-pipeline</text>
+  </g>
+
+  <!-- IR gate -->
+  <g transform="translate(280,150)">
+    <rect width="196" height="86" rx="10" fill="#fff" stroke="#1F6F6B" stroke-width="1.5"/>
+    <text x="14" y="26" class="title" fill="#1B2A2B">IR gate</text>
+    <text x="14" y="45" class="sub" fill="#4a5654">7 checks · no device · no compile</text>
+    <text x="14" y="62" class="tiny" fill="#6b7573">schema · opcodes · waits · locators</text>
+    <text x="14" y="75" class="tiny" fill="#6b7573">creds · ambiguity · dry-run</text>
+  </g>
+  <!-- artifact tag 1 -->
+  <g transform="translate(280,244)">
+    <rect width="196" height="20" rx="5" fill="#1F6F6B" opacity="0.1"/>
+    <text x="8" y="14" class="tiny mono" fill="#1F6F6B">▸ IRGate.report.json → PROCEED</text>
+  </g>
+
+  <!-- interpreter -->
+  <g transform="translate(516,150)">
+    <rect width="196" height="86" rx="10" fill="#fff" stroke="#1F6F6B" stroke-width="1.5"/>
+    <text x="14" y="26" class="title" fill="#1B2A2B">Interpreter</text>
+    <text x="14" y="45" class="sub" fill="#4a5654">walks committed IR on a</text>
+    <text x="14" y="61" class="sub" fill="#4a5654">real Perfecto device</text>
+    <text x="14" y="78" class="tiny" fill="#a6402f" font-weight="700">healPolicy = NONE · no self-heal</text>
+  </g>
+  <!-- artifact tag 2 -->
+  <g transform="translate(516,244)">
+    <rect width="196" height="20" rx="5" fill="#1F6F6B" opacity="0.1"/>
+    <text x="8" y="14" class="tiny mono" fill="#1F6F6B">▸ ExecutionPlan.acc-2087.md</text>
+  </g>
+
+  <!-- machine arrows -->
+  <line x1="240" y1="193" x2="278" y2="193" stroke="#5c6b6a" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="476" y1="193" x2="514" y2="193" stroke="#5c6b6a" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- what the machine owns -->
+  <g transform="translate(60,300)">
+    <text x="0" y="0" class="lane-label" fill="#1F6F6B" font-size="11">The machine owns CORRECTNESS</text>
+    <text x="0" y="20" class="sub" fill="#4a5654">A structurally broken IR never reaches a device. Every wait is</text>
+    <text x="0" y="36" class="sub" fill="#4a5654">bounded; no credential is literal; no locator is invented. The green</text>
+    <text x="0" y="52" class="sub" fill="#4a5654">is a property of the committed artifact — not a lucky adaptive recovery.</text>
+  </g>
+
+  <!-- ReplayReport artifact (the handoff object) -->
+  <g transform="translate(60,372)">
+    <rect width="652" height="212" rx="12" fill="#fff" stroke="#1F6F6B" stroke-width="1.5"/>
+    <text x="18" y="28" class="title" fill="#1B2A2B">ReplayReport.json</text>
+    <text x="150" y="28" class="tiny" fill="#6b7573">— the verdict artifact handed across the seal</text>
+
+    <g class="mono" font-size="11.5" fill="#2b3a39">
+      <text x="18" y="54"><tspan fill="#8a7a3d">"verdict"</tspan>: <tspan fill="#2E7D5B" font-weight="700">"PASS"</tspan>,          <tspan fill="#8a7a3d">"healsApplied"</tspan>: <tspan fill="#2E7D5B" font-weight="700">"NONE"</tspan>,</text>
+      <text x="18" y="74"><tspan fill="#8a7a3d">"irDigest"</tspan>: "sha:ir:2087:d41c9a…",</text>
+      <text x="18" y="94"><tspan fill="#8a7a3d">"interpreterVersion"</tspan>: "sha:interp:9f0c22…",</text>
+      <text x="18" y="114"><tspan fill="#8a7a3d">"cloudAdaptivity"</tspan>: { selfHealing: <tspan fill="#2E7D5B">DISABLED</tspan>, perfectoAI: <tspan fill="#2E7D5B">DISABLED</tspan> },</text>
+      <text x="18" y="134"><tspan fill="#8a7a3d">"commitPrincipal"</tspan>: "svc:conversion-pipeline",</text>
+      <text x="18" y="154"><tspan fill="#8a7a3d">"noveltyFlag"</tspan>: false,</text>
+    </g>
+
+    <!-- the pending line, highlighted -->
+    <rect x="14" y="166" width="624" height="34" rx="7" fill="#B0742A" opacity="0.12"/>
+    <text x="18" y="188" class="mono" font-size="11.5" fill="#2b3a39"><tspan fill="#8a7a3d">"certification"</tspan>: { <tspan fill="#8a7a3d">"status"</tspan>: <tspan fill="#B0742A" font-weight="700">"PENDING_HUMAN"</tspan>, <tspan fill="#8a7a3d">"certifiedBy"</tspan>: <tspan fill="#a6402f" font-weight="700">null</tspan> }</text>
+    <text x="470" y="188" class="tiny" fill="#B0742A" font-weight="700"> ◄ machine stops here</text>
+  </g>
+
+  <!-- ===== HANDOFF ARROW across the seal ===== -->
+  <path d="M712 478 C 745 478, 748 356, 788 356" fill="none" stroke="#3E4C6E" stroke-width="2.2" marker-end="url(#arrH)"/>
+
+  <!-- ===== HUMAN LANE ===== -->
+  <g transform="translate(790,160)">
+    <rect width="270" height="150" rx="12" fill="#fff" stroke="#3E4C6E" stroke-width="1.6"/>
+    <text x="18" y="30" class="title" fill="#1B2A2B">The human reads</text>
+    <g font-size="11.5" fill="#3a4658">
+      <text x="18" y="54">✓ verdict = PASS (precondition met)</text>
+      <text x="18" y="76">✓ no heals, cloud AI off → real green</text>
+      <text x="18" y="98">✓ plan validates the business intent:</text>
+      <text x="32" y="115" class="tiny" fill="#6b7573">“$25.00 sent to Alex Rivera”</text>
+      <text x="18" y="137">✓ commit was a service principal</text>
+    </g>
+  </g>
+
+  <!-- routing -->
+  <g transform="translate(790,326)">
+    <rect width="270" height="70" rx="12" fill="#3E4C6E" opacity="0.09"/>
+    <text x="18" y="26" class="lane-label" font-size="11" fill="#3E4C6E">How much review?</text>
+    <text x="18" y="46" class="tiny" fill="#3a4658">noveltyFlag=false → <tspan font-weight="700">sampled</tspan> review</text>
+    <text x="18" y="62" class="tiny" fill="#3a4658">new source shape → <tspan font-weight="700">mandatory</tspan> review</text>
+  </g>
+
+  <!-- the certify act -->
+  <g transform="translate(790,412)">
+    <rect width="270" height="118" rx="12" fill="#3E4C6E"/>
+    <text x="18" y="30" class="title" fill="#fff">The act of approval</text>
+    <text x="18" y="52" class="mono" font-size="10" fill="#cdd4e4">status: PENDING_HUMAN</text>
+    <text x="163" y="52" font-size="12" fill="#fff">→</text>
+    <text x="180" y="52" class="mono" font-size="10" fill="#8fe0b8" font-weight="700">CERTIFIED</text>
+    <text x="18" y="74" class="mono" font-size="10" fill="#cdd4e4">certifiedBy: null</text>
+    <text x="163" y="74" font-size="12" fill="#fff">→</text>
+    <text x="180" y="74" class="mono" font-size="10" fill="#8fe0b8" font-weight="700">rajnish.khatri</text>
+    <line x1="18" y1="84" x2="252" y2="84" stroke="#ffffff" stroke-opacity="0.25"/>
+    <text x="18" y="104" class="tiny" fill="#e6ebf5">An attributable individual decision —</text>
+    <text x="18" y="117" class="tiny" fill="#e6ebf5" font-weight="700">M37: no verdict without a named person.</text>
+  </g>
+
+  <!-- R5 barred -->
+  <g transform="translate(790,548)">
+    <rect width="270" height="46" rx="10" fill="#fff" stroke="#a6402f" stroke-width="1.4"/>
+    <text x="18" y="21" class="chip" fill="#a6402f">⛔ R5 — AUTONOMOUS CERTIFY — BARRED</text>
+    <text x="18" y="37" class="tiny" fill="#7a4a40">A machine PASS is never a certification.</text>
+  </g>
+
+  <!-- footer -->
+  <text x="48" y="640" class="tiny" fill="#8a938f">Grounded in docs/research/mocks/o7-spine/ and the o7 interpreter spec. Status: designed, not yet built — spec is DRAFT, gated on ADR 0016 (Proposed → Accepted).</text>
+</svg>

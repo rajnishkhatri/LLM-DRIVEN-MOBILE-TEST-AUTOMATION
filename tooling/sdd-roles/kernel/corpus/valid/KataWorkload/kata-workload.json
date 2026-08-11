@@ -1,0 +1,79 @@
+{
+  "artifact_type": "kata_workload",
+  "instances": [
+    {
+      "family": "greenfield-tdd",
+      "id": "greenfield-1",
+      "protected_tests": false,
+      "source_kata": "PLACEHOLDER-greenfield-1"
+    },
+    {
+      "family": "greenfield-tdd",
+      "id": "greenfield-2",
+      "protected_tests": false,
+      "source_kata": "PLACEHOLDER-greenfield-2"
+    },
+    {
+      "family": "greenfield-tdd",
+      "id": "greenfield-3",
+      "protected_tests": false,
+      "source_kata": "PLACEHOLDER-greenfield-3"
+    },
+    {
+      "family": "greenfield-tdd",
+      "id": "greenfield-4",
+      "protected_tests": false,
+      "source_kata": "PLACEHOLDER-greenfield-4"
+    },
+    {
+      "family": "legacy-refactor",
+      "id": "legacy-1",
+      "protected_tests": false,
+      "source_kata": "PLACEHOLDER-legacy-1"
+    },
+    {
+      "family": "legacy-refactor",
+      "id": "legacy-2",
+      "protected_tests": false,
+      "source_kata": "PLACEHOLDER-legacy-2"
+    },
+    {
+      "family": "legacy-refactor",
+      "id": "legacy-3",
+      "protected_tests": false,
+      "source_kata": "PLACEHOLDER-legacy-3"
+    },
+    {
+      "family": "legacy-refactor",
+      "id": "legacy-4",
+      "protected_tests": false,
+      "source_kata": "PLACEHOLDER-legacy-4"
+    },
+    {
+      "family": "seeded-bugfix",
+      "id": "bugfix-1",
+      "protected_tests": true,
+      "source_kata": "PLACEHOLDER-bugfix-1"
+    },
+    {
+      "family": "seeded-bugfix",
+      "id": "bugfix-2",
+      "protected_tests": true,
+      "source_kata": "PLACEHOLDER-bugfix-2"
+    },
+    {
+      "family": "seeded-bugfix",
+      "id": "bugfix-3",
+      "protected_tests": true,
+      "source_kata": "PLACEHOLDER-bugfix-3"
+    },
+    {
+      "family": "seeded-bugfix",
+      "id": "bugfix-4",
+      "protected_tests": true,
+      "source_kata": "PLACEHOLDER-bugfix-4"
+    }
+  ],
+  "provenance_note": "CLARIFY: PLACEHOLDER workload (C1-C4 deferred to run time). 12 instances across 3 families pin the pre-registered count (12x5x4arms=240 cells); real kata names (Mars Rover / Bank OCR / Gilded Rose / Trivia + the 3rd greenfield/legacy + the seeded-bugfix split) are filled when the actual kata run is scheduled. Do not treat source_kata values as final.",
+  "schema_version": "1.4.0"
+}

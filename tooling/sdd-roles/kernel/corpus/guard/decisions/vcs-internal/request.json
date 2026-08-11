@@ -1,0 +1,6 @@
+{
+  "operation": "create",
+  "paths": [
+    ".git/hooks/pre-commit"
+  ]
+}

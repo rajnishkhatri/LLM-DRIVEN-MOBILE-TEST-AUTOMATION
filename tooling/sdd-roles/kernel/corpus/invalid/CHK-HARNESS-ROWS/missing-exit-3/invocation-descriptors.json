@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "invocation_descriptor_set",
+  "declares": [
+    "claude-code",
+    "cursor",
+    "copilot"
+  ],
+  "rows": [
+    {
+      "harness": "claude-code",
+      "command_template": "claude -p {prompt} --agents {agents_file}",
+      "agent_selection": "agents-dir",
+      "auth_env_var": "ANTHROPIC_API_KEY",
+      "resume_semantics": "resume-handle",
+      "output_parse_mode": "stream-json",
+      "exit_code_map": [
+        {
+          "tool_exit": 0,
+          "decision_output": "allow",
+          "wrapper_exit": 0
+        },
+        {
+          "tool_exit": 1,
+          "decision_output": "error",
+          "wrapper_exit": 1
+        },
+        {
+          "tool_exit": 2,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        }
+      ]
+    },
+    {
+      "harness": "cursor",
+      "command_template": "agent -p {prompt} --model {model}",
+      "agent_selection": "rules-dir",
+      "auth_env_var": "CURSOR_API_KEY",
+      "resume_semantics": "chat-restore-only",
+      "output_parse_mode": "text",
+      "exit_code_map": [
+        {
+          "tool_exit": 0,
+          "decision_output": "allow",
+          "wrapper_exit": 0
+        },
+        {
+          "tool_exit": 1,
+          "decision_output": "error",
+          "wrapper_exit": 1
+        },
+        {
+          "tool_exit": 2,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        },
+        {
+          "tool_exit": 3,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        }
+      ]
+    },
+    {
+      "harness": "copilot",
+      "command_template": "copilot -p {prompt} --agent {agent}",
+      "agent_selection": "dual-target-agents",
+      "auth_env_var": "GH_TOKEN",
+      "resume_semantics": "per-pr-memory",
+      "output_parse_mode": "text",
+      "exit_code_map": [
+        {
+          "tool_exit": 0,
+          "decision_output": "allow",
+          "wrapper_exit": 0
+        },
+        {
+          "tool_exit": 1,
+          "decision_output": "deny",
+          "wrapper_exit": 1
+        },
+        {
+          "tool_exit": 2,
+          "decision_output": "deny",
+          "wrapper_exit": 1
+        },
+        {
+          "tool_exit": 3,
+          "decision_output": "deny",
+          "wrapper_exit": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "operation": "create",
+  "paths": [
+    "docs/notes.md"
+  ]
+}

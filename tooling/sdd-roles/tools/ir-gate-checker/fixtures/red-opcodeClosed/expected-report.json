@@ -1,0 +1,62 @@
+{
+  "artifact_type": "ir_gate_report",
+  "checks": [
+    {
+      "id": "schemaValid",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "opcodeClosed",
+      "outcome": "fail",
+      "violations": [
+        {
+          "detail": "opcode outside the closed set ['TAP', 'TYPE', 'SWIPE', 'WAIT', 'ASSERT', 'LAUNCH', 'NAVIGATE']",
+          "pointer": "/steps/4/opcode"
+        }
+      ]
+    },
+    {
+      "id": "boundedWaits",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "locatorManifest",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "noLiteralCreds",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "ambiguityClear",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "dryRun",
+      "outcome": "pass",
+      "violations": []
+    }
+  ],
+  "contract": "o7-spec-derived.1",
+  "inputs": {
+    "ir_sha256": "1d8b2c5fc809580495817d8abec6c33218e83e6e1562ca093a1e8363961fef24",
+    "manifest_sha256": "00213d11fb4f510c6a4b56e0feffc069443aba13825a97385661541c37958a36"
+  },
+  "ir_digest": {
+    "computed": "2f520bb8c75a6d1ce87747551b08152085e693270aa4c88a478e2e3d0c6569d6",
+    "declared": "2f520bb8c75a6d1ce87747551b08152085e693270aa4c88a478e2e3d0c6569d6"
+  },
+  "threshold": {
+    "name": "ir_gate_violations_max",
+    "value": 0
+  },
+  "tool": "ir-gate-checker",
+  "tool_version": "1.0.0",
+  "verdict": "red",
+  "violations_total": 1
+}

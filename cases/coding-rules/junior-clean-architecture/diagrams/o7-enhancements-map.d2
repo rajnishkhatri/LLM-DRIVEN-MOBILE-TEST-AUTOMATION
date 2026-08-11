@@ -1,0 +1,109 @@
+# Proposed enhancements — dashed boxes are NOT built and NOT decided.
+# Each attaches where it would strengthen the pipeline; each has a trigger worth watching.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  proposed: {
+    style: {
+      fill: "#FFFFFF"
+      stroke: "#6A5A9C"
+      font-color: "#453A6B"
+      border-radius: 6
+      stroke-dash: 6
+      stroke-width: 2
+    }
+  }
+  named: {
+    style: {
+      fill: "#F6F3FA"
+      stroke: "#6A5A9C"
+      font-color: "#453A6B"
+      border-radius: 6
+      stroke-dash: 2
+      stroke-width: 2
+    }
+  }
+  attach: {
+    style: {
+      stroke: "#6A5A9C"
+      stroke-dash: 5
+      font-color: "#453A6B"
+      font-size: 12
+    }
+  }
+}
+
+pipe: "The o7 pipeline as built (see Figure 2)" {
+  style: {
+    fill: "#F2F7F6"
+    stroke: "#1F6F6B"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 15
+    bold: true
+  }
+  arm: "authoring arm" { class: policy }
+  spine: "IR gate → interpreter\n→ ReplayReport" { class: policy }
+  record: "evidence + lineage" { class: policy }
+  struct: "three-module monolith" { class: policy }
+}
+
+followons: "ALREADY NAMED IN THE DESIGN RECORD (deferred, not new ideas)" {
+  style: {
+    fill: "#FBF9F3"
+    stroke: "#6A5A9C"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#453A6B"
+    font-size: 14
+    bold: true
+  }
+  d7: "D7 — signed in-toto\nattestation over the\nevidence bundle" { class: named }
+  w3c: "raw-W3C driver\nimplementation\n(stub today, trigger-gated)" { class: named }
+  svc: "service-based extraction\n(the named migration target,\ncut on module seams)" { class: named }
+}
+
+proposals: "PROPOSED IN THIS POST (no decision record exists — discuss, don't assume)" {
+  style: {
+    fill: "#FDFCF8"
+    stroke: "#6A5A9C"
+    stroke-dash: 6
+    border-radius: 8
+    font-color: "#453A6B"
+    font-size: 14
+    bold: true
+  }
+  rec: "recorded-driver replay\nrun the interpreter against\nrecorded device responses —\nzero device minutes" { class: proposed }
+  tapi: "testing-API module\nstate-forcing superpowers,\nexcluded from prod builds" { class: proposed }
+  reg: "boundary register\nevery seam: full / partial /\nignored + upgrade trigger" { class: proposed }
+  met: "component metrics in CI\ncycle watch + coupling &\nabstractness distance" { class: proposed }
+  rel: "IR-schema release discipline\nversion + notes; two live\nconsumers (o1 and o7)" { class: proposed }
+  mains: "one Main per environment\ndev / CI / prod composition\nroots instead of flags" { class: proposed }
+}
+
+pipe.record -> followons.d7: { class: attach }
+pipe.spine -> followons.w3c: { class: attach }
+pipe.struct -> followons.svc: { class: attach }
+pipe.spine -> proposals.rec: { class: attach }
+pipe.record -> proposals.tapi: { class: attach }
+pipe.struct -> proposals.reg: { class: attach }
+pipe.struct -> proposals.met: { class: attach }
+pipe.arm -> proposals.rel: { class: attach }
+pipe.struct -> proposals.mains: { class: attach }

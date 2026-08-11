@@ -1,0 +1,112 @@
+{
+  "$schema": "../../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "06-container-async",
+    "level": "container",
+    "title": "C2e \u2014 Container overlay: async edges & queues",
+    "caption": "Which edges are queued, and on what machinery? A subset of C2b (the module-wiring view) \u2014 every dotted edge in the architecture, and the machinery under each.",
+    "direction": "right",
+    "opens": "APP",
+    "opens_from": "03-container-module-wiring",
+    "completeness": "subset:03-container-module-wiring",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "REVIEWER",
+      "kind": "actor",
+      "label": "Reviewer",
+      "detail": [
+        "HITL queue; responds in hours\u2013days"
+      ]
+    },
+    {
+      "id": "WEB",
+      "kind": "container",
+      "label": "Review UI",
+      "qualifiers": [
+        "TECH: UNKNOWN"
+      ],
+      "detail": [
+        "One authenticated internal API, no BFF (ADR 0008). SSO against the bank IdP is a HARD requirement, not a nice-to-have (M37). The ONLY UI in Phase 1"
+      ]
+    },
+    {
+      "id": "CONVERSION",
+      "kind": "component",
+      "family": "module-a",
+      "label": "conversion",
+      "detail": [
+        "Conversion (cluster A) \u2014 10 components incl. the Invoke Models seam"
+      ]
+    },
+    {
+      "id": "VALIDATION_CERTIFICATION",
+      "kind": "component",
+      "family": "module-b",
+      "label": "validation-certification",
+      "detail": [
+        "Validation-certification (cluster B) \u2014 5 components; static gate \u2192 device gate \u2192 classify \u2192 certify. Device-gate worker holds NO gateway credential (ADR 0013)"
+      ]
+    },
+    {
+      "id": "POSTGRESQL",
+      "kind": "datastore",
+      "label": "PostgreSQL",
+      "detail": [
+        "WORKING ASSUMPTION (spine C3); dev/CI embedded or containerized, ephemeral-only (D1, M40). Schemas: conversion-state \u00b7 lineage (append-only: app role INSERT/SELECT only, per-conversion hash chain, supersede-not-update \u2014 ADR 0012) \u00b7 outbox+queue (bounded retries, dead-letter quarantine \u2014 M21) \u00b7 judge-response cache (M27, CF7). No cross-lifecycle foreign keys (F4, ADR 0006). Outbox + queues: DB-backed queue acceptable (spine C2); bounded retries, exponential backoff, dead-letter quarantine with alert (M21)"
+      ]
+    },
+    {
+      "id": "OCTANE",
+      "kind": "external",
+      "label": "ALM Octane",
+      "detail": [
+        "At BOTH ends of the pipeline (E5): ingest source AND publish target; asset-versioning UNVERIFIED (M7 held)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "REVIEWER",
+      "to": "WEB",
+      "kind": "async",
+      "label": "human latency (hours-days)"
+    },
+    {
+      "from": "CONVERSION",
+      "to": "POSTGRESQL",
+      "kind": "async",
+      "label": "A1 producer: transactional outbox -> replay queue (ADR 0007)"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "POSTGRESQL",
+      "kind": "async",
+      "label": "A1 consumer: idempotent; redelivery never double-spends device minutes"
+    },
+    {
+      "from": "CONVERSION",
+      "to": "POSTGRESQL",
+      "kind": "async",
+      "label": "A2: human-decision queue (ADR 0007)"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "OCTANE",
+      "kind": "async",
+      "label": "A3: publish certified assets - async idempotent projection (CF3)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "roles": {
+    "p-solo": [
+      {
+        "workspace_writes": [
+          {
+            "path": "src/story.txt",
+            "content": "story v1\n"
+          }
+        ],
+        "run_dir_files": [
+          {
+            "path": "artifacts/parent-debug.json",
+            "as": "debug_report_ref",
+            "content": {
+              "schema_version": "1.4.0",
+              "artifact_type": "debug_report",
+              "failing_test": "story_arc_case",
+              "observed": "v1 arc incomplete",
+              "expected": "arc closes",
+              "suspected_locus": "src/story.txt",
+              "minimal_repro": "read story v1"
+            }
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "p-solo",
+          "to_role": "p-solo",
+          "stage": "p-solo",
+          "stage_status": "rework",
+          "summary": {
+            "text": "arc incomplete; reworking.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "rework-story-arc",
+              "rationale": "deterministic scenario decision 1",
+              "rejected_alternatives": [
+                "alternative-1"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": [],
+          "rework": {
+            "target_role": "p-solo",
+            "stage": "p-solo",
+            "defect_shape": "incomplete arc",
+            "counter": 1
+          }
+        }
+      },
+      {
+        "workspace_writes": [
+          {
+            "path": "src/story.txt",
+            "content": "story v2\n"
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "p-solo",
+          "to_role": "p-solo",
+          "stage": "p-solo",
+          "stage_status": "complete",
+          "summary": {
+            "text": "arc closes in v2.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "accept-arc-v2",
+              "rationale": "deterministic scenario decision 2",
+              "rejected_alternatives": [
+                "alternative-2"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      },
+      {
+        "workspace_writes": [
+          {
+            "path": "src/story.txt",
+            "content": "story v3\n"
+          }
+        ],
+        "run_dir_files": [
+          {
+            "path": "artifacts/child-debug.json",
+            "as": "debug_report_ref",
+            "content": {
+              "schema_version": "1.4.0",
+              "artifact_type": "debug_report",
+              "failing_test": "story_polish_case",
+              "observed": "v2 pacing uneven",
+              "expected": "even pacing",
+              "suspected_locus": "src/story.txt",
+              "minimal_repro": "read story v2"
+            }
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "p-solo",
+          "to_role": "p-solo",
+          "stage": "p-solo",
+          "stage_status": "rework",
+          "summary": {
+            "text": "pacing uneven; reworking in the child run.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "rework-pacing",
+              "rationale": "deterministic scenario decision 3",
+              "rejected_alternatives": [
+                "alternative-3"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": [],
+          "rework": {
+            "target_role": "p-solo",
+            "stage": "p-solo",
+            "defect_shape": "uneven pacing",
+            "counter": 2
+          }
+        }
+      },
+      {
+        "workspace_writes": [
+          {
+            "path": "src/story.txt",
+            "content": "story v4\n"
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "p-solo",
+          "to_role": "p-solo",
+          "stage": "p-solo",
+          "stage_status": "complete",
+          "summary": {
+            "text": "pacing even in v4.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "accept-pacing-v4",
+              "rationale": "deterministic scenario decision 4",
+              "rejected_alternatives": [
+                "alternative-4"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      }
+    ]
+  },
+  "gates": {
+    "p-build": {
+      "exits": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "tool_version": "9.9.4"
+    }
+  }
+}

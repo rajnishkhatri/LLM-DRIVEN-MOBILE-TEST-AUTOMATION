@@ -1,0 +1,17 @@
+{
+  "testId": "ACC-1042",
+  "flowFile": "LoginFlow.yaml",
+  "flowCommit": "sha:8a2f1c... (the committed YAML is the audit pin)",
+  "maestroVersion": "1.40.0",
+  "executionGate": {
+    "runs": 3,
+    "passes": 3,
+    "flakiness": "STABLE",
+    "runtime": "FIXED_INTERPRETER (Maestro runtime interprets committed YAML deterministically)",
+    "selfHealing": "NONE — on locator drift the flow fails; a human edits the YAML and re-commits",
+    "platform": "iOS SIMULATOR (real iOS not supported natively — community tooling required)"
+  },
+  "verdict": "PASS",
+  "auditPin": "flowCommit sha:8a2f1c... — the executable is the committed YAML, interpreted by the pinned Maestro runtime. Readable, diff-able, reproducible.",
+  "_reviewerNote": "O5 is the best determinism/audit story of the interpreter family: the committed YAML IS the auditable artifact, the runtime is fixed and deterministic, and built-in waits cut flakiness. The cost: no runtime self-heal means drift = red test = human edits YAML (medium human effort per release — see §8.7: 8-14 h). The iOS-simulator-only limit is the dealbreaker for this bank's certification tier (real-device iOS needs community tooling; Perfecto doesn't run Maestro). Note the YAML is a SECOND vocabulary alongside TestCaseIR — adopting O5 forks the schema spine, which is why it scores 3/5 on portability despite being OSS. Compare O1 (committed Java, also auditable, but hand-edited) and O3 (interpreted JSON, also TestCaseIR-shaped, but not auditable until materialized). O5 threads 'authored data, interpreted deterministically, artifact stays auditable' — the needle O3 aims for, but at the cost of a separate DSL."
+}

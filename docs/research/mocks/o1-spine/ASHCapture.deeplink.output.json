@@ -1,0 +1,35 @@
+{
+  "honestyTags": [
+    "PROPOSED ADR 0014",
+    "Replan R1 D2",
+    "lives outside spine repo",
+    "F1 does not apply"
+  ],
+  "appVersion": "8.4.0",
+  "targetScreen": "AccountOverview",
+  "proposedRoutes": [
+    {
+      "rank": 1,
+      "url": "erica://accounts/overview",
+      "confidence": 0.85,
+      "reasoning": "Direct lexical match to the target title 'Account Overview' as a sub-route of the known 'erica://accounts' host."
+    },
+    {
+      "rank": 2,
+      "url": "erica://accounts/details",
+      "confidence": 0.62,
+      "reasoning": "A plausible accounts sub-route that may land on the overview/details screen; inferred from the known host pattern."
+    },
+    {
+      "rank": 3,
+      "url": "erica://accountoverview",
+      "confidence": 0.40,
+      "reasoning": "A flattened single-segment route matching the target title; speculative since it does not follow the known host sub-route pattern."
+    }
+  ],
+  "screeningCallSite": "adr-0009:ash-deeplink-proposer-egress",
+  "provenance": {
+    "model": "gpt-4o via Gateway",
+    "proposedAt": "2026-07-29T14:40Z"
+  }
+}

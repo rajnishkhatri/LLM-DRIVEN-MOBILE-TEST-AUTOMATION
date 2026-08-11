@@ -1,0 +1,365 @@
+{
+  "view": {
+    "id": "02-container--structural",
+    "level": "container",
+    "title": "Mobile Test Automation LLM Pipeline - Container view (logical components) \u2014 structural overlay",
+    "caption": "This view is a subset of `02-container` opening `SYS` \u2014 only the structural topology \u2014 orchestration fan-out, handoffs, and the marked entanglement edge. Edge numbers match the primary; see `02-container` for the complete edge set.",
+    "direction": "down",
+    "opens": "SYS",
+    "opens_from": "02-container",
+    "completeness": "subset:02-container",
+    "primary_of": "02-container",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "CC",
+      "kind": "component",
+      "label": "Coordinate Conversion",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Advances each conversion through its explicit state transitions within its retry budgets.",
+        "Maximally unstable: CE = 11, CA = 0, I = 1.00 - the structural weak point, carried to Stage 4 as ADR-3 (central orchestration vs event-driven choreography)."
+      ]
+    },
+    {
+      "id": "ITS",
+      "kind": "component",
+      "label": "Ingest Test Sources",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Acquires manual-test payloads and their source references from Octane, ALM/QC, and Excel.",
+        "One of three trust boundaries that invoke the screening library."
+      ]
+    },
+    {
+      "id": "ITI",
+      "kind": "component",
+      "label": "Interpret Test Intent",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Produces schema-valid TestCaseIR, including control flow, and flags ambiguity rather than resolving it silently.",
+        "Enriches with control flow and step dependencies - the defensible half of pass-1's 'Planner'."
+      ]
+    },
+    {
+      "id": "AUE",
+      "kind": "component",
+      "label": "Acquire UI Evidence",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Captures and prunes page-source and Object Spy evidence from a live Perfecto device.",
+        "One implementation, two callers (human in Phase 1, service in Phase 2). One of three trust boundaries invoking the screening library."
+      ]
+    },
+    {
+      "id": "RE",
+      "kind": "component",
+      "label": "Resolve Elements",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Ranks and validates locator candidates against captured evidence and the object repository.",
+        "Owns the locator cascade - nothing else may know it. Watch item: if VLM grounding is adopted, extract Ground Visually (section 6)."
+      ]
+    },
+    {
+      "id": "GTC",
+      "kind": "component",
+      "label": "Generate Test Code",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Renders Page Objects and Appium Java/TestNG tests from approved IR and locators.",
+        "Growth test: if house-style rework churns independently of code generation, extract Match House Style (section 5)."
+      ]
+    },
+    {
+      "id": "VS",
+      "kind": "component",
+      "label": "Verify Statically",
+      "qualifiers": [
+        "Cluster B"
+      ],
+      "detail": [
+        "Rejects generated code that fails formatting, compilation, lint, or locator-manifest rules.",
+        "Free, fast, deterministic; runs on every generation. One of the three components that 'LLM-free replay' now refers to (section 8)."
+      ]
+    },
+    {
+      "id": "ROD",
+      "kind": "component",
+      "label": "Replay on Devices",
+      "qualifiers": [
+        "Cluster B"
+      ],
+      "detail": [
+        "Executes committed tests K times against pinned Perfecto capability sets.",
+        "The system's dominant cost; inherently flaky; rate-limited by lab capacity. K=3 conversion, K=5 certification."
+      ]
+    },
+    {
+      "id": "CRO",
+      "kind": "component",
+      "label": "Classify Replay Outcome",
+      "qualifiers": [
+        "Cluster B"
+      ],
+      "detail": [
+        "Assigns a rule-based failure class to each run and emits the ReplayReport.",
+        "Must stay deterministic and rule-based; explicitly not LLM work. Owns the failure-class taxonomy enum."
+      ]
+    },
+    {
+      "id": "RL",
+      "kind": "component",
+      "label": "Repair Locators",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Re-grounds locators for heal-eligible failures within a bounded repair budget.",
+        "Budget: 3 static repairs, 3 device retries, then human queue (enforced by the coordinator)."
+      ]
+    },
+    {
+      "id": "CV",
+      "kind": "component",
+      "label": "Certify Conversion",
+      "qualifiers": [
+        "Cluster B (model-bearing since pass 3)"
+      ],
+      "detail": [
+        "Grades assertion fidelity against the original manual expected result, applies the admission gates conjunctively, and issues the certification verdict.",
+        "The one genuinely divergent component in pass 3: gate application is deterministic; fidelity grading is nondeterministic. CE = 4 (was 2), CA = 1, I = 0.80. Growth trigger: re-extract Judge Semantic Fidelity if recalibration decouples from gate-rule change. Carried to Stage 4 as ADR-4."
+      ]
+    },
+    {
+      "id": "RHD",
+      "kind": "component",
+      "label": "Route Human Decisions",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Presents ambiguous and sub-threshold cases for decision and records the outcome attributably.",
+        "Human/identity boundary; balanced CE = 1, CA = 1, I = 0.50."
+      ]
+    },
+    {
+      "id": "RCA",
+      "kind": "component",
+      "label": "Retrieve Conversion Assets",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Supplies the versioned prompts, house rules, and exemplars a conversion step requires.",
+        "Stable; version identity is its whole job. CE = 1, CA = 4, I = 0.20."
+      ]
+    },
+    {
+      "id": "PCA",
+      "kind": "component",
+      "label": "Publish Certified Assets",
+      "qualifiers": [
+        "Cluster B"
+      ],
+      "detail": [
+        "Writes certified locators and tests to the object repository and the exemplar corpus under single-writer discipline.",
+        "Both writes must succeed or neither is visible; balanced CE = 1, CA = 1, I = 0.50."
+      ]
+    },
+    {
+      "id": "IM",
+      "kind": "component",
+      "label": "Invoke Models",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Mediates every model call with versioned prompts, fixed sampling policy, caching, and backoff.",
+        "Single choke point. Stable and abstract: CE = 1, CA = 5, I = 0.17. Cache-key defect (must include model and provider version) carried to Stage 4 as ADR-2. One of three trust boundaries invoking the screening library."
+      ],
+      "role": "model-seam"
+    },
+    {
+      "id": "LIB",
+      "kind": "not-a-component",
+      "label": "screening library",
+      "qualifiers": [
+        "not a component"
+      ],
+      "detail": [
+        "Shared screening library - injection screening plus secret/PII redaction - invoked at all three trust boundaries.",
+        "Demoted from a component at the pass-3 gate; the duplication rule is still satisfied but the boundary is no longer structural, so its three call sites must be asserted by a fitness function (section 4, section 9)."
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "CC",
+      "to": "ITS",
+      "kind": "sync",
+      "ref": 1,
+      "detail": "Coordinate Conversion drives Ingest Test Sources (orchestrator fan-out, CE = 11)."
+    },
+    {
+      "from": "CC",
+      "to": "ITI",
+      "kind": "sync",
+      "ref": 2,
+      "detail": "Coordinate Conversion drives Interpret Test Intent."
+    },
+    {
+      "from": "CC",
+      "to": "AUE",
+      "kind": "sync",
+      "ref": 3,
+      "detail": "Coordinate Conversion drives Acquire UI Evidence."
+    },
+    {
+      "from": "CC",
+      "to": "RE",
+      "kind": "sync",
+      "ref": 4,
+      "detail": "Coordinate Conversion drives Resolve Elements."
+    },
+    {
+      "from": "CC",
+      "to": "GTC",
+      "kind": "sync",
+      "ref": 5,
+      "detail": "Coordinate Conversion drives Generate Test Code."
+    },
+    {
+      "from": "CC",
+      "to": "VS",
+      "kind": "sync",
+      "ref": 6,
+      "detail": "Coordinate Conversion drives Verify Statically."
+    },
+    {
+      "from": "CC",
+      "to": "ROD",
+      "kind": "sync",
+      "ref": 7,
+      "detail": "Coordinate Conversion drives Replay on Devices."
+    },
+    {
+      "from": "CC",
+      "to": "CRO",
+      "kind": "sync",
+      "ref": 8,
+      "detail": "Coordinate Conversion drives Classify Replay Outcome."
+    },
+    {
+      "from": "CC",
+      "to": "RL",
+      "kind": "sync",
+      "ref": 9,
+      "detail": "Coordinate Conversion drives Repair Locators."
+    },
+    {
+      "from": "CC",
+      "to": "CV",
+      "kind": "sync",
+      "ref": 10,
+      "detail": "Coordinate Conversion drives Certify Conversion."
+    },
+    {
+      "from": "CC",
+      "to": "RHD",
+      "kind": "async",
+      "ref": 11,
+      "detail": "Coordinate Conversion routes to Route Human Decisions - the asynchronous edge in the middle of the state machine (section 6)."
+    },
+    {
+      "from": "ITI",
+      "to": "RCA",
+      "kind": "sync",
+      "ref": 16,
+      "detail": "Interpret Test Intent retrieves conversion assets."
+    },
+    {
+      "from": "RE",
+      "to": "RCA",
+      "kind": "sync",
+      "ref": 17,
+      "detail": "Resolve Elements retrieves conversion assets."
+    },
+    {
+      "from": "GTC",
+      "to": "RCA",
+      "kind": "sync",
+      "ref": 18,
+      "detail": "Generate Test Code retrieves conversion assets (exemplars, skeletons)."
+    },
+    {
+      "from": "RL",
+      "to": "RE",
+      "kind": "sync",
+      "ref": 19,
+      "detail": "Repair Locators reuses Resolve Elements - the reuse that justified withdrawing pass-1's Fix Proposer (section 8)."
+    },
+    {
+      "from": "CV",
+      "to": "PCA",
+      "kind": "sync",
+      "ref": 20,
+      "detail": "Certify Conversion hands a passed verdict to Publish Certified Assets."
+    },
+    {
+      "from": "CV",
+      "to": "RCA",
+      "kind": "sync",
+      "ref": 21,
+      "detail": "Certify Conversion retrieves conversion assets - new efferent edge in pass 3."
+    },
+    {
+      "from": "CV",
+      "to": "IM",
+      "kind": "entangled",
+      "ref": 22,
+      "detail": "entanglement: cluster B calls cluster A. Certify Conversion calls Invoke Models to grade fidelity - Dynamic Quantum Entanglement, the one edge crossing from cluster B back into cluster A (section 1a, section 10). Carried to Stage 4 as ADR-4."
+    },
+    {
+      "from": "ITS",
+      "to": "LIB",
+      "kind": "sync",
+      "ref": 23,
+      "detail": "Ingest Test Sources invokes the screening library at its trust boundary (drawn as a dashed boundary edge in the section 10 source; rendered solid here because the source does not assert asynchrony and dashed is reserved for async)."
+    },
+    {
+      "from": "AUE",
+      "to": "LIB",
+      "kind": "sync",
+      "ref": 24,
+      "detail": "Acquire UI Evidence invokes the screening library at its trust boundary."
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bPostgres\\b",
+    "\\bOpenAI\\b",
+    "\\bGPT-",
+    "\\bClaude\\b"
+  ]
+}

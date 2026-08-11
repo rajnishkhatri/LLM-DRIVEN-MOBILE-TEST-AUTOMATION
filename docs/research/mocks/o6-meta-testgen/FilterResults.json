@@ -1,0 +1,38 @@
+{
+  "testId": "ACC-1042",
+  "ensembleSize": 3,
+  "filterPipeline": [
+    { "stage": "STATIC_GATE", "checks": ["format", "mvn compile", "checkstyle", "errorProne", "locatorManifest"] },
+    { "stage": "DEVICE_GATE", "runs": 3, "flakinessThreshold": "STABLE" },
+    { "stage": "COVERAGE_GATE", "rule": "discard if the candidate adds no new statement/branch coverage vs existing suite" }
+  ],
+  "results": [
+    {
+      "candidate": "Candidate-A.java",
+      "staticGate": "PASS",
+      "deviceGate": { "runs": 3, "passes": 3, "flakiness": "STABLE" },
+      "coverageDelta": "+8 branches (login success path)",
+      "verdict": "ACCEPTED",
+      "acceptReason": "builds, stable on device, adds coverage, uses object-repo locators"
+    },
+    {
+      "candidate": "Candidate-B.java",
+      "staticGate": "PASS",
+      "deviceGate": { "runs": 3, "passes": 1, "flakiness": "FLAKY" },
+      "coverageDelta": "+8 branches (same path as A — no marginal coverage)",
+      "verdict": "DISCARDED",
+      "discardReason": "flaky on device (brittle XPath [1]) AND no marginal coverage over A"
+    },
+    {
+      "candidate": "Candidate-C.java",
+      "staticGate": { "compile": "FAIL", "error": "LogoutScreen unresolved type" },
+      "deviceGate": "NOT_RUN",
+      "coverageDelta": "n/a",
+      "verdict": "DISCARDED",
+      "discardReason": "compile failure — no device time spent (the free static-rejection tier)"
+    }
+  ],
+  "survivor": "Candidate-A.java",
+  "humanAcceptance": "PENDING — engineer reviews the survivor; Meta reports 73% of survivors accepted as-is",
+  "_reviewerNote": "This is the 'regenerate-and-filter, never hand-edit' pattern made concrete. Three candidates generated; two discarded by deterministic gates (one at static compile, one at device flakiness); one survivor accepted. The engineer reviews the survivor (≈0.2-0.3 h/test per §8.7) rather than hand-writing it. Crucially: the discards are NOT silent — the filter's accept/reject decisions are labelled data (see PreferenceLabels.json). That is the §8.9 flywheel: the maintenance process IS the data-labelling process. Caveat carried from §8.2: Meta's 73% figure is unit-test-improvement, not mobile-UI green-field — don't over-transfer it. This mock shows the green-field mobile case, where the coverage gate's 'no marginal coverage' rule is what breaks the tie between A and B (both otherwise pass)."
+}

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clean Architecture for Juniors — Silicon Sandwiches</title>
+  <style>
+    :root {
+      --ink: #1a1a1a;
+      --muted: #4a4a4a;
+      --line: #d0d0d0;
+      --paper: #fafafa;
+      --code-bg: #f0f0f0;
+      --accent: #2d4a3e;
+      --sidebar-bg: #f3f5f4;
+      max-width: 42rem;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.05rem;
+      line-height: 1.65;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    header, main, footer {
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem;
+    }
+    header {
+      padding-top: 2.5rem;
+      border-bottom: 1px solid var(--line);
+    }
+    header p.lede {
+      font-size: 1.15rem;
+      color: var(--muted);
+    }
+    h1 {
+      font-size: 1.85rem;
+      line-height: 1.25;
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+    }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2.5rem 0 0.75rem;
+      color: var(--accent);
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 0.35rem;
+    }
+    h3 {
+      font-size: 1.1rem;
+      margin: 1.5rem 0 0.5rem;
+    }
+    p, li { margin: 0.75rem 0; }
+    ul, ol { padding-left: 1.35rem; }
+    a { color: var(--accent); }
+    figure {
+      margin: 1.5rem 0;
+      padding: 0;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    figcaption {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-top: 0.5rem;
+    }
+    pre, code {
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.88rem;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--line);
+      padding: 1rem;
+      overflow-x: auto;
+      line-height: 1.45;
+    }
+    code {
+      background: var(--code-bg);
+      padding: 0.1em 0.3em;
+    }
+    pre code { background: none; padding: 0; }
+    aside.sidebar {
+      background: var(--sidebar-bg);
+      border-left: 4px solid var(--accent);
+      padding: 0.85rem 1rem;
+      margin: 1.25rem 0;
+      font-size: 0.95rem;
+    }
+    aside.sidebar h3 {
+      margin-top: 0;
+      font-size: 1rem;
+    }
+    .cast {
+      font-size: 0.95rem;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0 1.5rem;
+    }
+    footer {
+      border-top: 1px solid var(--line);
+      font-size: 0.9rem;
+      color: var(--muted);
+      padding-bottom: 3rem;
+    }
+    .checklist li { margin: 0.4rem 0; }
+    .footnote {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px dotted var(--line);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Clean Architecture for Juniors</h1>
+    <p class="lede">A mentoring walkthrough with Silicon Sandwiches — franchise sandwich ordering as one modular monolith.</p>
+    <p class="cast">
+      <strong>Running cast:</strong>
+      Entities <code>Order</code>, <code>Offer</code>, <code>FranchiseShop</code> ·
+      Use cases <code>PlaceOrder</code>, <code>ResolveOffer</code> ·
+      Ports <code>OrderGateway</code>, <code>PaymentGateway</code>, <code>OfferGateway</code> ·
+      Adapters <code>SqlOrderGateway</code>, <code>StripePaymentAdapter</code>, <code>SpringPlaceOrderController</code>, <code>OrderPresenter</code> ·
+      Composition root: Spring <code>@Configuration</code>
+    </p>
+  </header>
+
+  <main>
+    <!-- 1. Hook + scream (21) -->
+    <section id="scream">
+      <h2>1. Open the project — what does it scream?</h2>
+      <p>
+        Junior, pretend you just cloned Silicon Sandwiches. You have never heard of the company.
+        You open the top-level packages. What do you see?
+      </p>
+      <p>
+        If you see <code>controllers</code>, <code>services</code>, <code>repositories</code>,
+        the codebase screams <em>Spring</em>. That is the delivery mechanism talking.
+        The business — franchise sandwich ordering — is whispering underneath the stereotypes.
+      </p>
+      <p>
+        Screaming Architecture means the structure shouts the domain on day one.
+        A stranger should hear <em>ordering</em>, <em>offer</em>, <em>payments</em>, <em>franchise</em>
+        before they hear “MVC.”
+      </p>
+      <figure>
+        <img src="diagrams/ss-scream-vs-framework.svg" alt="Side-by-side folder trees: framework packages versus business packages" />
+        <figcaption>Figure 1. Bad screams Spring. Good screams Silicon Sandwiches.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 2. Business rules (20) -->
+    <section id="business-rules">
+      <h2>2. Business rules come first</h2>
+      <p>
+        Before frameworks, before SQL, before JSON: the business.
+        In Silicon Sandwiches, the critical path is Place Order against a resolved offer for a franchise shop.
+      </p>
+      <p>
+        Think in three layers of “truth,” from most stable to most application-specific:
+      </p>
+      <ul>
+        <li>
+          <strong>Entities</strong> — enterprise rules that would still matter if you rewrote the app tomorrow:
+          <code>Order</code>, <code>Offer</code>, <code>FranchiseShop</code>.
+          An order has line items and a total; an offer carries menu and prices for a shop/day;
+          a franchise shop has delivery toggles and locale facts.
+        </li>
+        <li>
+          <strong>Use cases</strong> — application-specific business rules:
+          <code>PlaceOrder</code> validates a customer’s sandwich order against today’s offer and records pickup or delivery;
+          <code>ResolveOffer</code> overlays local deltas on the national baseline.
+        </li>
+        <li>
+          <strong>Request / response models</strong> — plain data crossing the use-case boundary
+          (what Uncle Bob often calls input/output data structures).
+          They are not your JPA entities and not your HTTP DTOs glued to Spring annotations.
+        </li>
+      </ul>
+      <p>
+        If <code>PlaceOrder</code> imports a Spring annotation or a JDBC type, you have already lost.
+        The use case should speak only in domain and port language.
+      </p>
+    </section>
+
+    <!-- 3. Clean Architecture rings + DIP (22) -->
+    <section id="clean-rings">
+      <h2>3. The rings and the Dependency Rule</h2>
+      <p>
+        Draw four concentric circles. Entities in the center. Use cases around them.
+        Interface adapters next. Frameworks and drivers on the outside.
+        Source code dependencies point <em>only inward</em> — toward higher-level policy.
+      </p>
+      <p>
+        Policy and level, in plain English: a policy is a rule that tells the system what to do;
+        its level is how central that rule is to the business.
+        Entities sit at a higher level than use cases; use cases sit higher than Spring controllers and SQL adapters.
+        Lower-level details plug into higher-level policies — never the other way around.
+      </p>
+      <figure>
+        <img src="diagrams/ss-clean-rings.svg" alt="Clean Architecture concentric rings labeled with Silicon Sandwiches names" />
+        <figcaption>Figure 2. Silicon Sandwiches names on the classic rings.</figcaption>
+      </figure>
+      <p>
+        Crossing a boundary uses Dependency Inversion (DIP).
+        <code>PlaceOrder</code> depends on an <code>OrderGateway</code> port that lives with the use cases.
+        <code>SqlOrderGateway</code> implements that port from the outside.
+        At runtime control may flow toward SQL; in the source tree, arrows still point inward.
+      </p>
+      <figure>
+        <img src="diagrams/ss-dip-crossing.svg" alt="DIP: PlaceOrder calls OrderGateway; SqlOrderGateway implements with hollow triangle" />
+        <figcaption>Figure 3. Filled arrows = calls. Hollow triangles = implements (source dependency inward).</figcaption>
+      </figure>
+      <p>
+        Crossing with data: pass simple DTOs / data structures across the boundary —
+        not your ORM rows, not your framework request objects.
+        Controllers translate HTTP into use-case input; presenters translate use-case output into something the UI can bind.
+      </p>
+    </section>
+
+    <!-- 4. Humble Objects (23) -->
+    <section id="humble">
+      <h2>4. Humble Objects — Presenters and Gateways</h2>
+      <p>
+        Some objects are hard to test: browsers, Swing views, JDBC drivers, Stripe’s SDK.
+        The Humble Object pattern says: keep those thin. Put the interesting branching and formatting next door,
+        where unit tests can reach it without a browser or a database.
+      </p>
+      <p>
+        For Place Order, <code>OrderPresenter</code> takes use-case output and builds an <code>OrderViewModel</code>
+        — formatted totals, error messages, flags for “delivery available.”
+        The view binds the ViewModel and stays humble.
+      </p>
+      <figure>
+        <img src="diagrams/ss-humble-presenter.svg" alt="PlaceOrder to OrderPresenter to ViewModel to humble View" />
+        <figcaption>Figure 4. Test the presenter. Baby-sit the view.</figcaption>
+      </figure>
+      <p>
+        Gateways work the same way from the other side.
+        <code>OrderGateway</code> is the port; <code>SqlOrderGateway</code> is the humble (or at least isolated) adapter
+        that knows SQL. Swap the adapter; keep the use case.
+      </p>
+    </section>
+
+    <!-- 5. Boundaries multiply + partial (25+24) -->
+    <section id="boundaries">
+      <h2>5. Boundaries multiply — and you do not need every one on day one</h2>
+      <p>
+        Clean Architecture is not “four rings and stop.”
+        As Silicon Sandwiches grows, you may split streams: a web UI path, a staff tablet path,
+        a batch job that reprints kitchen tickets, a future extraction of the offer-read cache.
+        Each stream can be its own boundary crossing with its own adapters.
+      </p>
+      <p>
+        The mistake is pretending every boundary must exist on Monday.
+        Start with the boundaries that protect the revenue path —
+        <code>PlaceOrder</code> against SQL and against the payment provider —
+        and add rings where change pressure appears.
+      </p>
+      <aside class="sidebar" id="partial-boundary">
+        <h3>Sidebar — Partial boundaries (ch. 24)</h3>
+        <p>
+          You can draw a line and only enforce half of it.
+          Example: keep <code>PlaceOrder</code> free of SQL types, but let the presenter live in the same package for a while.
+          That is a partial boundary — cheaper than a full plugin architecture, still buys you testability of the use case.
+          Just be honest about which side of the line is still porous.
+        </p>
+      </aside>
+    </section>
+
+    <!-- 6. Main (26) -->
+    <section id="main">
+      <h2>6. Main is the dirty little secret</h2>
+      <p>
+        Someone has to create the concrete objects and plug them together.
+        That someone is Main — in our story, a Spring <code>@Configuration</code> composition root.
+        Main is allowed to know everything. The rest of the system is not.
+      </p>
+<pre><code>@Configuration
+class SiliconSandwichesConfig {
+
+  @Bean
+  OrderGateway orderGateway(DataSource ds) {
+    return new SqlOrderGateway(ds);
+  }
+
+  @Bean
+  PaymentGateway paymentGateway(StripeClient stripe) {
+    return new StripePaymentAdapter(stripe);
+  }
+
+  @Bean
+  PlaceOrder placeOrder(OrderGateway orders,
+                        PaymentGateway payments,
+                        OfferGateway offers) {
+    return new PlaceOrder(orders, payments, offers);
+  }
+
+  @Bean
+  OrderPresenter orderPresenter() {
+    return new OrderPresenter();
+  }
+}</code></pre>
+      <p>
+        Notice the direction: Main wires adapters into ports.
+        <code>PlaceOrder</code> never constructs <code>SqlOrderGateway</code> itself.
+      </p>
+    </section>
+
+    <!-- 7. Details at edge (30+32) -->
+    <section id="details">
+      <h2>7. The database and the framework are details</h2>
+      <p>
+        The database is a detail. The web framework is a detail.
+        Both belong at the edge of the system, plugged into ports the business owns.
+      </p>
+      <p>
+        Silicon Sandwiches runs as a modular monolith on one relational database —
+        that is an architecture <em>decision</em>, not a license for <code>PlaceOrder</code> to import Hibernate.
+        SQL lives in <code>SqlOrderGateway</code>. Stripe’s SDK lives in <code>StripePaymentAdapter</code>.
+        Spring MVC lives in <code>SpringPlaceOrderController</code>.
+      </p>
+      <figure>
+        <img src="diagrams/ss-details-at-edge.svg" alt="Business core with ports; Spring, SQL/ORM, and Stripe adapters outside" />
+        <figcaption>Figure 5. Stable policy inside. Volatile plugins outside.</figcaption>
+      </figure>
+      <p>
+        Why bother? Because details change on a different schedule than sandwich rules.
+        You may swap ORMs, upgrade Spring, or replace the payment provider.
+        If those names have leaked into <code>PlaceOrder</code>, every swap becomes a rewrite of the business.
+      </p>
+    </section>
+
+    <!-- 8. Services aren't architecture (27) -->
+    <section id="services">
+      <h2>8. Services are not an architecture</h2>
+      <p>
+        Drawing three boxes labeled Offer Service, Order Service, and Payment Service
+        does not give you Clean Architecture. It gives you a network bill and a distributed debugging hobby.
+      </p>
+      <p>
+        Uncle Bob’s “Kitty” lesson translates cleanly here.
+        Corporate adds a gluten-free surcharge. That rule touches offer pricing, the order line item,
+        and the payment charge amount. If you naively split three deployables, the surcharge becomes
+        a cross-service change with three releases and a coordination meeting.
+      </p>
+      <p>
+        Silicon Sandwiches chose a modular monolith for a reason: one quantum, one relational DB,
+        domain modules (Offer &amp; Franchise Variation, Ordering &amp; Fulfillment, Payments, Location &amp; Mapping).
+        The surcharge is still a design problem — but you do not invent three services just to feel modern.
+      </p>
+      <figure>
+        <img src="diagrams/ss-services-fallacy.svg" alt="Naive services torn by gluten-free surcharge versus modular monolith modules" />
+        <figcaption>Figure 6. A process boundary is not architecture. Cross-cuts still need design.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 9. Test boundary (28) -->
+    <section id="tests">
+      <h2>9. The test boundary</h2>
+      <p>
+        Tests are a first-class client of your architecture.
+        The valuable tests sit against use cases and presenters, using fake gateways —
+        not against Spring’s full context for every assertion.
+      </p>
+<pre><code>@Test
+void placesOrderAgainstResolvedOffer() {
+  var orders = new InMemoryOrderGateway();
+  var payments = new FakePaymentGateway();
+  var offers = new StubOfferGateway(Offer.sampleShopDay());
+  var placeOrder = new PlaceOrder(orders, payments, offers);
+
+  var result = placeOrder.execute(PlaceOrderRequest.turkeyClub());
+
+  assertTrue(result.isOk());
+  assertEquals(1, orders.saved().size());
+}</code></pre>
+      <p>
+        Fragile tests that bind to UI widgets or SQL schemas punish you every time a detail moves.
+        Stable tests bind to the policies: “given this offer, PlaceOrder accepts and charges the right amount.”
+        That is the test boundary — a client that respects the same Dependency Rule as production adapters.
+      </p>
+    </section>
+
+    <!-- 10. Package by component (34) -->
+    <section id="packaging">
+      <h2>10. Package by component — the payoff</h2>
+      <p>
+        Screaming folders were the trailer. Packaging is the feature film.
+        Package by component: one top-level package per deployable-shaped chunk of the business —
+        here, <code>ordering</code>, <code>offer</code>, <code>payments</code>, and friends.
+      </p>
+      <p>
+        Inside <code>ordering</code>, publish a small public API: <code>PlaceOrder</code>, <code>Order</code>, <code>OrderGateway</code>.
+        Keep <code>SqlOrderGateway</code>, <code>SpringPlaceOrderController</code>, <code>OrderPresenter</code>,
+        and the SQL mappers package-private (or otherwise sealed from neighbors).
+        Other modules depend on the API — not on the innards.
+      </p>
+      <figure>
+        <img src="diagrams/ss-package-by-component.svg" alt="Ordering package with public API and package-private adapters" />
+        <figcaption>Figure 7. Neighbors import the public API. Adapters stay in the house.</figcaption>
+      </figure>
+      <p>
+        This is how screaming architecture survives contact with a real team:
+        the package names shout the domain, and the visibility rules keep the Dependency Rule honest.
+      </p>
+    </section>
+
+    <!-- 11. Monday checklist -->
+    <section id="monday">
+      <h2>11. Monday morning checklist</h2>
+      <ol class="checklist">
+        <li>Open the top-level packages. Do they scream Silicon Sandwiches or Spring?</li>
+        <li>Find <code>PlaceOrder</code>. Does it import SQL, Stripe, or Spring Web?</li>
+        <li>Trace <code>OrderGateway</code>: is the port owned by the use-case side, with <code>SqlOrderGateway</code> outside?</li>
+        <li>Is there an <code>OrderPresenter</code> (or equivalent) keeping the view humble?</li>
+        <li>Is Main / <code>@Configuration</code> the only place that news up concrete adapters?</li>
+        <li>Would a gluten-free surcharge force three deployables — or one designed change inside the monolith?</li>
+        <li>Can you unit-test <code>PlaceOrder</code> with fake gateways and no Spring context?</li>
+        <li>Is each domain module a package with a narrow public API?</li>
+      </ol>
+      <p>
+        If you can check those boxes, you are not “using Clean Architecture” as a slogan.
+        You are keeping the sandwich business in charge of its own source code.
+      </p>
+    </section>
+
+    <p class="footnote" id="ch29-footnote">
+      <sup>*</sup> Embedded systems (ch. 29) get a mention only: the same Dependency Rule applies when the “UI” is a device
+      and the “database” is flash — but Silicon Sandwiches is a franchise web/modular-monolith story, so we leave the firmware digression there.
+    </p>
+  </main>
+
+  <footer>
+    <p>
+      Mentoring notes framed around Clean Architecture chapters 20–28, 30, 32, and 34,
+      using the Silicon Sandwiches kata as the running example.
+      Diagrams are hand-authored D2 (not C4 IR).
+    </p>
+  </footer>
+</body>
+</html>

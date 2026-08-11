@@ -1,0 +1,362 @@
+{
+  "artifact_type": "invocation_descriptor_set",
+  "declares": [
+    "claude-code",
+    "cursor",
+    "copilot"
+  ],
+  "rows": [
+    {
+      "agent_selection": "agents-dir",
+      "auth_env_var": "ANTHROPIC_API_KEY",
+      "command_template": "claude -p \"{prompt} {args}\n\nRunner contract (mechanical): your stage is {role}. The run directory is {run_dir}. Before you finish, write a file named handoff.draft directly inside that run directory: one JSON object with exactly these top-level fields \u2014 schema_version 1.4.0 (a string), artifact_type handoff_contract, from_role {role}, to_role {next_role}, stage {role}, stage_status complete (or rework, plus a rework object whose target_role names the stage to send back to), summary (an object: text, plus a provenance object with source role_authored), decisions (at least ONE decision object is required on a completed stage handoff \u2014 for a pure verification stage your accept-or-reject verdict is that decision; each object needs choice, rationale, provenance with source role_authored, and EITHER a non-empty rejected_alternatives array whose every item is a plain non-empty STRING (one sentence of prose per rejected option \u2014 never an object, never a nested field) OR alternatives_considered set to the string none plus a non-empty alternatives_rationale; raw verification observations belong in the summary text, not as extra decisions), gate_outcomes (an empty array; the runner fills it), completion_evidence (an empty array). No other fields. All your other writes must stay inside your role write scopes.\" --agents {agents_file}",
+      "exit_code_map": [
+        {
+          "decision_output": "allow",
+          "tool_exit": 0,
+          "wrapper_exit": 0
+        },
+        {
+          "decision_output": "error",
+          "tool_exit": 1,
+          "wrapper_exit": 1
+        },
+        {
+          "decision_output": "block",
+          "tool_exit": 2,
+          "wrapper_exit": 2
+        },
+        {
+          "decision_output": "block",
+          "tool_exit": 3,
+          "wrapper_exit": 2
+        }
+      ],
+      "harness": "claude-code",
+      "hooks": {
+        "command_template": "gate-wrap --descriptors {descriptors} --harness claude-code -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness claude-code --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role {role}",
+        "events": [
+          "PreToolUse"
+        ],
+        "mount_path": ".claude/settings.json",
+        "request": {
+          "operation": {
+            "default": "modify",
+            "map": [
+              {
+                "from": "Write",
+                "to": "create"
+              },
+              {
+                "from": "Edit",
+                "to": "modify"
+              },
+              {
+                "from": "MultiEdit",
+                "to": "modify"
+              },
+              {
+                "from": "NotebookEdit",
+                "to": "modify"
+              }
+            ],
+            "pointer": "/tool_name"
+          },
+          "paths_pointers": [
+            "/tool_input/file_path",
+            "/tool_input/notebook_path"
+          ]
+        }
+      },
+      "output_parse_mode": "stream-json",
+      "projection": {
+        "targets": [
+          {
+            "args_token": null,
+            "char_cap": null,
+            "format": "json",
+            "kind": "manifest",
+            "path_template": ".claude-plugin/plugin.json"
+          },
+          {
+            "args_token": "$ARGUMENTS",
+            "char_cap": null,
+            "format": "markdown",
+            "front_matter": [
+              {
+                "key": "name",
+                "source": "id"
+              },
+              {
+                "key": "description",
+                "source": "description"
+              },
+              {
+                "key": "stamp",
+                "source": "stamp"
+              }
+            ],
+            "kind": "agent-card",
+            "path_template": "agents/{role}.md"
+          },
+          {
+            "args_token": null,
+            "char_cap": null,
+            "format": "markdown",
+            "front_matter": [
+              {
+                "key": "name",
+                "source": "id"
+              },
+              {
+                "key": "description",
+                "source": "description"
+              },
+              {
+                "key": "stamp",
+                "source": "stamp"
+              }
+            ],
+            "kind": "kernel-skill",
+            "path_template": "skills/sdd-roles/SKILL.md"
+          },
+          {
+            "args_token": null,
+            "char_cap": null,
+            "format": "json",
+            "kind": "mount-copy",
+            "path_template": "hooks/hooks.json"
+          }
+        ]
+      },
+      "resume_semantics": "resume-handle"
+    },
+    {
+      "agent_selection": "rules-dir",
+      "auth_env_var": "CURSOR_API_KEY",
+      "command_template": "agent -p \"{prompt} {args}\n\nRunner contract (mechanical): your stage is {role}. The run directory is {run_dir}. Before you finish, write a file named handoff.draft directly inside that run directory: one JSON object with exactly these top-level fields \u2014 schema_version 1.4.0 (a string), artifact_type handoff_contract, from_role {role}, to_role {next_role}, stage {role}, stage_status complete (or rework, plus a rework object whose target_role names the stage to send back to), summary (an object: text, plus a provenance object with source role_authored), decisions (at least ONE decision object is required on a completed stage handoff \u2014 for a pure verification stage your accept-or-reject verdict is that decision; each object needs choice, rationale, provenance with source role_authored, and EITHER a non-empty rejected_alternatives array whose every item is a plain non-empty STRING (one sentence of prose per rejected option \u2014 never an object, never a nested field) OR alternatives_considered set to the string none plus a non-empty alternatives_rationale; raw verification observations belong in the summary text, not as extra decisions), gate_outcomes (an empty array; the runner fills it), completion_evidence (an empty array). No other fields. All your other writes must stay inside your role write scopes.\" --model {model}",
+      "exit_code_map": [
+        {
+          "decision_output": "allow",
+          "tool_exit": 0,
+          "wrapper_exit": 0
+        },
+        {
+          "decision_output": "error",
+          "tool_exit": 1,
+          "wrapper_exit": 1
+        },
+        {
+          "decision_output": "block",
+          "tool_exit": 2,
+          "wrapper_exit": 2
+        },
+        {
+          "decision_output": "block",
+          "tool_exit": 3,
+          "wrapper_exit": 2
+        }
+      ],
+      "harness": "cursor",
+      "hooks": {
+        "command_template": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role {role}",
+        "events": [
+          "beforeFileEdit"
+        ],
+        "mount_path": ".cursor/hooks.json",
+        "request": {
+          "operation": {
+            "default": "modify",
+            "map": [
+              {
+                "from": "create",
+                "to": "create"
+              },
+              {
+                "from": "edit",
+                "to": "modify"
+              },
+              {
+                "from": "delete",
+                "to": "delete"
+              }
+            ],
+            "pointer": "/kind"
+          },
+          "paths_pointers": [
+            "/file_path"
+          ]
+        }
+      },
+      "output_parse_mode": "text",
+      "projection": {
+        "targets": [
+          {
+            "args_token": "$ARGUMENTS",
+            "char_cap": null,
+            "format": "markdown",
+            "front_matter": [
+              {
+                "key": "name",
+                "source": "id"
+              },
+              {
+                "key": "description",
+                "source": "description"
+              },
+              {
+                "key": "stamp",
+                "source": "stamp"
+              }
+            ],
+            "kind": "agent-card",
+            "path_template": ".claude/agents/{role}.md"
+          },
+          {
+            "args_token": null,
+            "char_cap": null,
+            "format": "markdown",
+            "front_matter": [
+              {
+                "key": "name",
+                "source": "id"
+              },
+              {
+                "key": "description",
+                "source": "description"
+              },
+              {
+                "key": "stamp",
+                "source": "stamp"
+              }
+            ],
+            "kind": "kernel-skill",
+            "path_template": ".claude/skills/sdd-roles/SKILL.md"
+          },
+          {
+            "args_token": null,
+            "char_cap": null,
+            "format": "json",
+            "kind": "mount-copy",
+            "path_template": ".cursor/hooks.json"
+          }
+        ]
+      },
+      "resume_semantics": "chat-restore-only"
+    },
+    {
+      "agent_selection": "dual-target-agents",
+      "auth_env_var": "GH_TOKEN",
+      "command_template": "copilot -p \"{prompt} {args}\n\nRunner contract (mechanical): your stage is {role}. The run directory is {run_dir}. Before you finish, write a file named handoff.draft directly inside that run directory: one JSON object with exactly these top-level fields \u2014 schema_version 1.4.0 (a string), artifact_type handoff_contract, from_role {role}, to_role {next_role}, stage {role}, stage_status complete (or rework, plus a rework object whose target_role names the stage to send back to), summary (an object: text, plus a provenance object with source role_authored), decisions (at least ONE decision object is required on a completed stage handoff \u2014 for a pure verification stage your accept-or-reject verdict is that decision; each object needs choice, rationale, provenance with source role_authored, and EITHER a non-empty rejected_alternatives array whose every item is a plain non-empty STRING (one sentence of prose per rejected option \u2014 never an object, never a nested field) OR alternatives_considered set to the string none plus a non-empty alternatives_rationale; raw verification observations belong in the summary text, not as extra decisions), gate_outcomes (an empty array; the runner fills it), completion_evidence (an empty array). No other fields. All your other writes must stay inside your role write scopes.\" --agent {agent}",
+      "exit_code_map": [
+        {
+          "decision_output": "allow",
+          "tool_exit": 0,
+          "wrapper_exit": 0
+        },
+        {
+          "decision_output": "deny",
+          "tool_exit": 1,
+          "wrapper_exit": 1
+        },
+        {
+          "decision_output": "deny",
+          "tool_exit": 2,
+          "wrapper_exit": 1
+        },
+        {
+          "decision_output": "deny",
+          "tool_exit": 3,
+          "wrapper_exit": 1
+        }
+      ],
+      "harness": "copilot",
+      "hooks": {
+        "command_template": "gate-wrap --descriptors {descriptors} --harness copilot -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness copilot --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role {role}",
+        "events": [
+          "file_write"
+        ],
+        "mount_path": ".github/copilot/hooks.json",
+        "request": {
+          "operation": {
+            "default": "modify",
+            "map": [
+              {
+                "from": "add",
+                "to": "create"
+              },
+              {
+                "from": "update",
+                "to": "modify"
+              },
+              {
+                "from": "remove",
+                "to": "delete"
+              }
+            ],
+            "pointer": "/mode"
+          },
+          "paths_pointers": [
+            "/path"
+          ]
+        }
+      },
+      "output_parse_mode": "text",
+      "projection": {
+        "targets": [
+          {
+            "args_token": "$ARGUMENTS",
+            "char_cap": 30000,
+            "format": "markdown",
+            "front_matter": [
+              {
+                "key": "name",
+                "source": "id"
+              },
+              {
+                "key": "description",
+                "source": "description"
+              },
+              {
+                "key": "stamp",
+                "source": "stamp"
+              }
+            ],
+            "kind": "agent-card",
+            "path_template": ".github/agents/{role}.agent.md"
+          },
+          {
+            "args_token": null,
+            "char_cap": null,
+            "format": "markdown",
+            "front_matter": [
+              {
+                "key": "name",
+                "source": "id"
+              },
+              {
+                "key": "description",
+                "source": "description"
+              },
+              {
+                "key": "stamp",
+                "source": "stamp"
+              }
+            ],
+            "kind": "skill-card",
+            "path_template": ".github/skills/{role}/SKILL.md"
+          },
+          {
+            "args_token": null,
+            "char_cap": null,
+            "format": "json",
+            "kind": "mount-copy",
+            "path_template": ".github/copilot/hooks.json"
+          }
+        ]
+      },
+      "resume_semantics": "per-pr-memory"
+    }
+  ],
+  "schema_version": "1.4.0"
+}

@@ -1,0 +1,6 @@
+{
+  "operation": "delete",
+  "paths": [
+    "_run/handoff.draft"
+  ]
+}

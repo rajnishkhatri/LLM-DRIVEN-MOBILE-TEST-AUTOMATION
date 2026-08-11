@@ -1,0 +1,45 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "decisions": [
+    {
+      "choice": "adopt-plain-text-store",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision 1",
+      "rejected_alternatives": [
+        "alternative-1"
+      ]
+    }
+  ],
+  "from_role": "g-coder",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "g-build",
+      "input_tree_digest": "63a2a3db080d315564b744382e3cb2b73fbb0b06722205bd39b1eb39c91ed9d9",
+      "report_ref": {
+        "path": "reports/golden-green-1-g-build-s002.json",
+        "sha256": "ae2127c651ce94df78f8d5e613a27c38d4203ef7a66a6b88bf33fbf48d28c84b"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.1"
+    }
+  ],
+  "schema_version": "1.4.0",
+  "stage": "g-coder",
+  "stage_status": "complete",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "coder stage complete, build green."
+  },
+  "to_role": "g-checker"
+}

@@ -1,0 +1,45 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "decisions": [
+    {
+      "choice": "accept-arc-v2",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision 2",
+      "rejected_alternatives": [
+        "alternative-2"
+      ]
+    }
+  ],
+  "from_role": "p-solo",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "p-build",
+      "input_tree_digest": "bd2368d406286f99be8f51707da82cb3a0c50b35a71659c341379ce8181436b1",
+      "report_ref": {
+        "path": "reports/p-run-1-p-build-s006.json",
+        "sha256": "197a80afc16b84e1061edffe0abe3b5325d3d2592a32b0cf7376d4e0eb633b0a"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.4"
+    }
+  ],
+  "schema_version": "1.4.0",
+  "stage": "p-solo",
+  "stage_status": "complete",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "arc closes in v2."
+  },
+  "to_role": "p-solo"
+}

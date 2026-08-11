@@ -1,0 +1,8 @@
+{
+  "title": "doctored",
+  "properties": {
+    "claude_settings": {
+      "type": "string"
+    }
+  }
+}

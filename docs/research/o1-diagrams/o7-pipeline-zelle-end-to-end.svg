@@ -1,0 +1,116 @@
+<svg viewBox="0 0 1180 760" xmlns="http://www.w3.org/2000/svg" role="img" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<title>o7 pipeline end to end for the Zelle send-money flow</title>
+<desc>The LLM-bounded authoring arm produces a committed TestCaseIR and locator manifest; a git commit signed by a service principal hands them to the LLM-free spine, where a deterministic IR gate and a version-pinned interpreter run the Zelle flow on Appium/Perfecto and emit a ReplayReport, with a single human evaluator certifying after the run.</desc>
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk"/></marker>
+<style>
+:root{
+  --text-primary:#1a1a1a; --text-secondary:#555; --text-muted:#888;
+  --surface-0:#f7f7f5; --border:#d9d9d6;
+  --blue-bg:#e6effc; --blue-st:#9cc0f0; --blue-tx:#1f4e8c;
+  --teal-bg:#e3f4f1; --teal-st:#93d4c8; --teal-tx:#136457;
+  --amber-bg:#fbf0dd; --amber-st:#e8c98a; --amber-tx:#8a5a12;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --text-primary:#ededed; --text-secondary:#b8b8b8; --text-muted:#8a8a8a;
+    --surface-0:#1c1c1e; --border:#3a3a3d;
+    --blue-bg:#182a44; --blue-st:#3a5f92; --blue-tx:#b9d3f5;
+    --teal-bg:#123430; --teal-st:#2f6b60; --teal-tx:#a6e2d6;
+    --amber-bg:#3a2c12; --amber-st:#7a5c25; --amber-tx:#efcf95;
+  }
+}
+.mk{fill:var(--text-muted)}
+.ln{stroke:var(--text-muted);stroke-width:2;fill:none}
+.lnd{stroke:var(--text-muted);stroke-width:2;fill:none;stroke-dasharray:5 4}
+.t{fill:var(--text-primary);font-size:13px}
+.ts{fill:var(--text-secondary);font-size:11px}
+.th{fill:var(--text-primary);font-size:14px;font-weight:500}
+.tb{fill:var(--text-secondary);font-size:12px;font-weight:500;letter-spacing:.04em}
+.c-blue{fill:var(--blue-bg);stroke:var(--blue-st)}
+.c-teal{fill:var(--teal-bg);stroke:var(--teal-st)}
+.c-amber{fill:var(--amber-bg);stroke:var(--amber-st)}
+.c-blue .th,.c-blue .t{fill:var(--blue-tx)}.c-blue .ts{fill:var(--blue-tx);opacity:.8}
+.c-teal .th,.c-teal .t{fill:var(--teal-tx)}.c-teal .ts{fill:var(--teal-tx);opacity:.8}
+.c-amber .th,.c-amber .t{fill:var(--amber-tx)}.c-amber .ts{fill:var(--amber-tx);opacity:.85}
+</style>
+</defs>
+
+<text x="40" y="34" class="tb">authoring arm — llm-bounded, produces committed artifacts</text>
+<rect x="30" y="46" width="560" height="300" rx="12" fill="var(--surface-0)" stroke="var(--border)"/>
+
+<text x="620" y="34" class="tb">the spine — llm-free from the git commit onward</text>
+<rect x="608" y="46" width="542" height="300" rx="12" fill="var(--surface-0)" stroke="var(--border)"/>
+
+<g class="c-blue">
+<rect x="48" y="70" width="120" height="52" rx="8"/><text x="108" y="92" text-anchor="middle" class="th">ingest</text><text x="108" y="110" text-anchor="middle" class="ts">octane ACC-2087</text>
+<rect x="188" y="70" width="120" height="52" rx="8"/><text x="248" y="92" text-anchor="middle" class="th">A1 parse</text><text x="248" y="110" text-anchor="middle" class="ts">skeleton, det.</text>
+<rect x="328" y="70" width="120" height="52" rx="8"/><text x="388" y="90" text-anchor="middle" class="th">A2 interpret</text><text x="388" y="106" text-anchor="middle" class="ts">det-first,</text><text x="388" y="119" text-anchor="middle" class="ts">llm fallback</text>
+<rect x="468" y="70" width="108" height="52" rx="8"/><text x="522" y="90" text-anchor="middle" class="th">capture +</text><text x="522" y="106" text-anchor="middle" class="th">locators</text><text x="522" y="119" text-anchor="middle" class="ts">det. cascade</text>
+</g>
+
+<line x1="168" y1="96" x2="186" y2="96" class="ln" marker-end="url(#ar)"/>
+<line x1="308" y1="96" x2="326" y2="96" class="ln" marker-end="url(#ar)"/>
+<line x1="448" y1="96" x2="466" y2="96" class="ln" marker-end="url(#ar)"/>
+
+<g class="c-teal">
+<rect x="150" y="170" width="320" height="60" rx="8"/>
+</g>
+<text x="310" y="194" text-anchor="middle" class="th">committed TestCaseIR.json + manifest</text>
+<text x="310" y="214" text-anchor="middle" class="ts">11 steps · irDigest sha:ir:2087:d41c9a…</text>
+<line x1="522" y1="122" x2="522" y2="150" class="ln"/><line x1="522" y1="150" x2="470" y2="150" class="ln"/><line x1="470" y1="150" x2="470" y2="168" class="ln" marker-end="url(#ar)"/>
+
+<g class="c-amber">
+<rect x="150" y="258" width="320" height="70" rx="8"/>
+</g>
+<text x="310" y="280" text-anchor="middle" class="th">git commit — service principal</text>
+<text x="310" y="298" text-anchor="middle" class="ts">svc:conversion-pipeline · R1 gate+dry-run vouches</text>
+<text x="310" y="314" text-anchor="middle" class="ts">novelty flag (R2): known shape → sampled</text>
+<line x1="310" y1="230" x2="310" y2="256" class="ln" marker-end="url(#ar)"/>
+
+<line x1="470" y1="293" x2="606" y2="293" class="lnd" marker-end="url(#ar)"/>
+<text x="500" y="285" class="ts">handoff</text>
+
+<g class="c-blue">
+<rect x="626" y="258" width="150" height="70" rx="8"/><text x="701" y="284" text-anchor="middle" class="th">IR gate</text><text x="701" y="301" text-anchor="middle" class="ts">schema · opcodes ·</text><text x="701" y="315" text-anchor="middle" class="ts">bounded waits · dry-run</text>
+<rect x="796" y="258" width="150" height="70" rx="8"/><text x="871" y="278" text-anchor="middle" class="th">interpreter</text><text x="871" y="295" text-anchor="middle" class="ts">walks IR on</text><text x="871" y="309" text-anchor="middle" class="ts">appium/perfecto</text>
+<rect x="966" y="258" width="166" height="70" rx="8"/><text x="1049" y="278" text-anchor="middle" class="th">verdict</text><text x="1049" y="295" text-anchor="middle" class="ts">ReplayReport · pins</text><text x="1049" y="309" text-anchor="middle" class="ts">irDigest+interpreter</text>
+</g>
+<line x1="776" y1="293" x2="794" y2="293" class="ln" marker-end="url(#ar)"/>
+<line x1="946" y1="293" x2="964" y2="293" class="ln" marker-end="url(#ar)"/>
+
+<text x="626" y="360" class="ts">healPolicy: NONE — a locator miss is a red build, never a runtime repair</text>
+
+<text x="40" y="424" class="tb">the zelle flow the interpreter walks (11 steps, 6 screens)</text>
+<g class="c-teal">
+<rect x="40" y="440" width="150" height="46" rx="8"/><text x="115" y="462" text-anchor="middle" class="t">login screen</text><text x="115" y="477" text-anchor="middle" class="ts">username·pwd·sign in</text>
+<rect x="210" y="440" width="150" height="46" rx="8"/><text x="285" y="462" text-anchor="middle" class="t">home screen</text><text x="285" y="477" text-anchor="middle" class="ts">assert dashboard</text>
+<rect x="380" y="440" width="160" height="46" rx="8"/><text x="460" y="462" text-anchor="middle" class="t">pay &amp; transfers</text><text x="460" y="477" text-anchor="middle" class="ts">tap tab</text>
+<rect x="560" y="440" width="150" height="46" rx="8"/><text x="635" y="462" text-anchor="middle" class="t">zelle screen</text><text x="635" y="477" text-anchor="middle" class="ts">pick recipient</text>
+<rect x="730" y="440" width="160" height="46" rx="8"/><text x="810" y="462" text-anchor="middle" class="t">zelle send</text><text x="810" y="477" text-anchor="middle" class="ts">amount 25.00 · send</text>
+<rect x="910" y="440" width="222" height="46" rx="8"/><text x="1021" y="462" text-anchor="middle" class="t">confirmation</text><text x="1021" y="477" text-anchor="middle" class="ts">"$25.00 sent to Alex Rivera"</text>
+</g>
+<line x1="190" y1="463" x2="208" y2="463" class="ln" marker-end="url(#ar)"/>
+<line x1="360" y1="463" x2="378" y2="463" class="ln" marker-end="url(#ar)"/>
+<line x1="540" y1="463" x2="558" y2="463" class="ln" marker-end="url(#ar)"/>
+<line x1="710" y1="463" x2="728" y2="463" class="ln" marker-end="url(#ar)"/>
+<line x1="890" y1="463" x2="908" y2="463" class="ln" marker-end="url(#ar)"/>
+
+<text x="40" y="546" class="tb">the single human — moved after the run (R4), novelty-sampled (R2)</text>
+<g class="c-amber">
+<rect x="40" y="560" width="1092" height="150" rx="12"/>
+</g>
+<line x1="1049" y1="328" x2="1049" y2="540" class="ln"/><line x1="1049" y1="540" x2="586" y2="540" class="ln"/><line x1="586" y1="540" x2="586" y2="558" class="ln" marker-end="url(#ar)"/>
+
+<text x="70" y="590" class="th">§7 human evaluator — the only human touch in the flow</text>
+<text x="70" y="614" class="t">machine PASS is a precondition, never a certification (CF9)</text>
+<text x="70" y="636" class="ts">R2 routing:  novel shape → mandatory review   ·   known shape → sampled (this run is in the sample)</text>
+<text x="70" y="660" class="t">validated PASS → CERTIFIED, signed by an individual principal (jdoe) — the attribution anchor (M37)</text>
+<text x="70" y="682" class="ts">FAIL → bounded loop back to A2 with error + original intent   ·   PASS → feeds the flywheel</text>
+
+<g class="c-blue"><rect x="820" y="600" width="290" height="90" rx="8"/></g>
+<text x="838" y="624" class="th">audit pin (re-based)</text>
+<text x="838" y="645" class="ts">irDigest + interpreterVersion (git SHAs)</text>
+<text x="838" y="662" class="ts">perfecto server/driver = captured evidence</text>
+<text x="838" y="679" class="ts">cloud AI &amp; self-heal: DISABLED</text>
+</svg>

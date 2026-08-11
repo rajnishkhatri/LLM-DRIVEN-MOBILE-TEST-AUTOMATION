@@ -1,0 +1,17 @@
+{
+  "artifact": "hook_mount",
+  "events": {
+    "beforeFileEdit": [
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role gd-maker",
+        "matcher": "gd-maker"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role gd-checker",
+        "matcher": "gd-checker"
+      }
+    ]
+  },
+  "generated_by": "write-guard mount",
+  "harness": "cursor"
+}

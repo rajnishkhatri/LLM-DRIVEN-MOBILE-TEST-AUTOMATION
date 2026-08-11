@@ -1,0 +1,66 @@
+{
+  "artifact_type": "ir_gate_report",
+  "checks": [
+    {
+      "id": "schemaValid",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "opcodeClosed",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "boundedWaits",
+      "outcome": "fail",
+      "violations": [
+        {
+          "detail": "every step must carry a finite timeoutMs (unbounded wait breaks pass^k determinism)",
+          "pointer": "/steps/4/timeoutMs"
+        },
+        {
+          "detail": "must be a finite integer > 0",
+          "pointer": "/steps/6/timeoutMs"
+        }
+      ]
+    },
+    {
+      "id": "locatorManifest",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "noLiteralCreds",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "ambiguityClear",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "dryRun",
+      "outcome": "pass",
+      "violations": []
+    }
+  ],
+  "contract": "o7-spec-derived.1",
+  "inputs": {
+    "ir_sha256": "2d9582aa7944dd2f998712a3dc448eb19d0ef39f2268ab8476be116cf0d7ba1d",
+    "manifest_sha256": "00213d11fb4f510c6a4b56e0feffc069443aba13825a97385661541c37958a36"
+  },
+  "ir_digest": {
+    "computed": "64eb1c00d8ed62d72d97fb139c5ee6292bbd0e48d6ce867c850532ca2b77d53d",
+    "declared": "64eb1c00d8ed62d72d97fb139c5ee6292bbd0e48d6ce867c850532ca2b77d53d"
+  },
+  "threshold": {
+    "name": "ir_gate_violations_max",
+    "value": 0
+  },
+  "tool": "ir-gate-checker",
+  "tool_version": "1.0.0",
+  "verdict": "red",
+  "violations_total": 2
+}

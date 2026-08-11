@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdd-roles:kernel-config:1.4.0",
+  "title": "KernelConfig",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "arm",
+    "thresholds",
+    "protected",
+    "gate_tool_allowlist",
+    "required_mappings",
+    "speckit_roots",
+    "rework",
+    "gate_runner",
+    "enforcement_tier"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.4.0" },
+    "artifact_type": { "const": "kernel_config" },
+    "arm": { "type": "string", "minLength": 1 },
+    "thresholds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "value"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "value": { "type": "number" }
+        }
+      }
+    },
+    "protected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernel_config",
+        "role_registry",
+        "ledger_dir",
+        "tests_globs",
+        "gate_configs",
+        "harness_enablement",
+        "speckit_constitution"
+      ],
+      "properties": {
+        "kernel_config": { "$ref": "#/$defs/path_set" },
+        "role_registry": { "$ref": "#/$defs/path_set" },
+        "ledger_dir": { "$ref": "#/$defs/path_set" },
+        "tests_globs": { "$ref": "#/$defs/path_set" },
+        "gate_configs": { "$ref": "#/$defs/path_set" },
+        "harness_enablement": { "$ref": "#/$defs/path_set" },
+        "speckit_constitution": {
+          "type": "array",
+          "minItems": 1,
+          "contains": { "const": ".specify/memory/constitution.md" },
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "gate_tool_allowlist": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "required_mappings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "speckit_roots": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "rework": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max"],
+      "properties": {
+        "max": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "gate_runner": { "type": "string", "minLength": 1 },
+    "enforcement_tier": { "enum": ["floor", "strong"] },
+    "gates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/gate_binding" }
+    }
+  },
+  "$defs": {
+    "gate_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "tool", "argv"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "tool": { "type": "string", "minLength": 1 },
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "threshold": { "type": "string", "minLength": 1 }
+      }
+    },
+    "path_set": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

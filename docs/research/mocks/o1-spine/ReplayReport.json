@@ -1,0 +1,26 @@
+{
+  "testId": "ACC-1042",
+  "irVersion": "sha:4f2c91e8...",
+  "codeCommit": "sha:9be1a3f7...",
+  "staticGate": {
+    "format": "PASS",
+    "compile": "PASS",
+    "checkstyle": "PASS",
+    "errorProne": "PASS",
+    "locatorManifest": "PASS",
+    "findings": []
+  },
+  "deviceGate": {
+    "runs": 3,
+    "passes": 3,
+    "flakiness": "STABLE",
+    "pinnedVersions": {
+      "appium": "2.5.1",
+      "driver": "XCUITest 5.12",
+      "device": "iPhone 15 / iOS 17.4"
+    }
+  },
+  "verdict": "CERTIFIED",
+  "classificationOnFailure": null,
+  "auditPin": "codeCommit sha:9be1a3f7... — the executable that produced this verdict is the committed Java at this SHA, reviewable and reproducible."
+}

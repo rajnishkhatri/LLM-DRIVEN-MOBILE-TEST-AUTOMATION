@@ -1,0 +1,214 @@
+{
+  "roles": {
+    "r-coder": [
+      {
+        "workspace_writes": [
+          {
+            "path": "src/feature.txt",
+            "content": "feature v1 (broken)\n"
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "r-coder",
+          "to_role": "r-checker",
+          "stage": "r-coder",
+          "stage_status": "complete",
+          "summary": {
+            "text": "first cut of the feature.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "adopt-feature-skeleton",
+              "rationale": "deterministic scenario decision 1",
+              "rejected_alternatives": [
+                "alternative-1"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      },
+      {
+        "workspace_writes": [
+          {
+            "path": "src/feature.txt",
+            "content": "feature v2 (builds)\n"
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "r-coder",
+          "to_role": "r-checker",
+          "stage": "r-coder",
+          "stage_status": "complete",
+          "summary": {
+            "text": "repaired the build break.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "repair-build-break",
+              "rationale": "deterministic scenario decision 2",
+              "rejected_alternatives": [
+                "alternative-2"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      },
+      {
+        "workspace_writes": [
+          {
+            "path": "src/feature.txt",
+            "content": "feature v3 (hardened)\n"
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "r-coder",
+          "to_role": "r-checker",
+          "stage": "r-coder",
+          "stage_status": "complete",
+          "summary": {
+            "text": "hardened per the defect report.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "harden-per-defect-report",
+              "rationale": "deterministic scenario decision 3",
+              "rejected_alternatives": [
+                "alternative-3"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      }
+    ],
+    "r-checker": [
+      {
+        "run_dir_files": [
+          {
+            "path": "artifacts/debug-report.json",
+            "as": "debug_report_ref",
+            "content": {
+              "schema_version": "1.4.0",
+              "artifact_type": "debug_report",
+              "failing_test": "feature_contract_case",
+              "observed": "v2 output drifts on edge input",
+              "expected": "stable output on edge input",
+              "suspected_locus": "src/feature.txt",
+              "minimal_repro": "run feature over the edge fixture"
+            }
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "r-checker",
+          "to_role": "r-coder",
+          "stage": "r-checker",
+          "stage_status": "rework",
+          "summary": {
+            "text": "edge-input defect found; routing back to the diagnostic role.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "route-defect-to-diagnostic-role",
+              "rationale": "deterministic scenario decision 4",
+              "rejected_alternatives": [
+                "alternative-4"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": [],
+          "rework": {
+            "target_role": "r-coder",
+            "stage": "r-coder",
+            "defect_shape": "edge-input drift",
+            "counter": 1
+          }
+        }
+      },
+      {
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "r-checker",
+          "to_role": "r-coder",
+          "stage": "r-checker",
+          "stage_status": "complete",
+          "summary": {
+            "text": "hardened version verifies clean.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "accept-hardened-version",
+              "rationale": "deterministic scenario decision 5",
+              "rejected_alternatives": [
+                "alternative-5"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      }
+    ]
+  },
+  "gates": {
+    "r-build": {
+      "exits": [
+        1,
+        0,
+        0
+      ],
+      "tool_version": "9.9.2"
+    },
+    "r-tests": {
+      "exits": [
+        0,
+        0
+      ],
+      "tool_version": "9.9.2"
+    }
+  }
+}

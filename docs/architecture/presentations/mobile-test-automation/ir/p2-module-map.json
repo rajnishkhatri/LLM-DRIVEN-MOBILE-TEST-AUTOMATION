@@ -1,0 +1,155 @@
+{
+  "$schema": "../../../../skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "p2-module-map",
+    "level": "container",
+    "title": "P2 \u2014 The repo you'll live in: six Maven modules, one deployable",
+    "caption": "How is the new repository shaped? Six Maven modules, one bootable jar (ADR 0005, five-module reading ratified at PLAN-OK). Cluster modules may depend on spine-contracts only \u2014 the module-boundary rule wired CI-blocking in task zero; screening is a shared library, not a pipeline component. Opens SYS from P1.",
+    "direction": "down",
+    "opens": "SYS",
+    "opens_from": "p1-spine-context",
+    "completeness": "complete",
+    "overlays": "none",
+    "omitted": [
+      {
+        "label": "architecture-tests",
+        "note": "ArchUnit fitness functions F1\u2013F4 + module-boundary + no-gateway-credential rules, CI-blocking from task zero (M18) \u2014 a build artifact, not a runtime module (not shown for brevity)"
+      },
+      {
+        "label": "db/migration + ci/",
+        "note": "Flyway V1 (lineage core + grants) and pipeline-as-code (runner pinned by digest \u2014 M28) land in task zero (not shown for brevity)"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "APP",
+      "kind": "container",
+      "label": "app",
+      "technology": "Spring Boot main",
+      "detail": [
+        "Thin assembly; wiring only. The single deployable \u2014 mvn package yields exactly one bootable jar (ADR 0005)"
+      ]
+    },
+    {
+      "id": "CONV",
+      "kind": "container",
+      "label": "conversion",
+      "technology": "Java 21 Maven module",
+      "family": "module-a",
+      "detail": [
+        "Packages: ingestion (Excel/POI + Octane REST adapters behind one contract \u2014 C1, with deterministic canonicalization + snapshot digest \u2014 M15), hierarchytool (capture, prune, pool identity \u2014 M24)",
+        "Ambiguous steps are flagged in the IR rather than silently resolved"
+      ]
+    },
+    {
+      "id": "VC",
+      "kind": "container",
+      "label": "validation-certification",
+      "technology": "Java 21 Maven module",
+      "family": "module-b",
+      "detail": [
+        "Packages: staticgate, devicegate (worker \u2014 holds no gateway credential, ADR 0013), classification (fixed 7-class taxonomy), replayreport, objectrepo (port + read-only stub \u2014 C5)"
+      ]
+    },
+    {
+      "id": "EVID",
+      "kind": "container",
+      "label": "evidence",
+      "technology": "Java 21 Maven module",
+      "family": "module-c",
+      "detail": [
+        "Packages: lineage (append-only writes, principal, hash chain, supersede reads \u2014 ADR 0012), outbox+queue (ADR 0007), objectstorage (S3 port + MinIO adapter \u2014 ADR 0011), anchoring (job + verification), retention"
+      ]
+    },
+    {
+      "id": "CONTRACTS",
+      "kind": "container",
+      "label": "spine-contracts",
+      "technology": "Java 21 Maven module",
+      "detail": [
+        "The three schema contracts as Java records with Jackson: TestCaseIR, LocatorCandidate, ReplayReport",
+        "JSON Schema exported via victools and committed; drift between record and schema fails CI",
+        "PinnedValue marker enum {REAL, NOT_APPLICABLE, UNPINNABLE_PHASE1(reserved)} (C4/M12); corpusClass (M19); retentionClass (M39)"
+      ]
+    },
+    {
+      "id": "SCREEN",
+      "kind": "not-a-component",
+      "label": "screening",
+      "detail": [
+        "Shared library, not a pipeline component (ADR 0009): injection screening + secret/PII redaction; one-line in-process API, no network; versioned; red-team corpus + regression report (count / source mix / last addition / bypass rate \u2014 M36)",
+        "Flagged payloads quarantine for review; release is a recorded, attributable override (M35/M18)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "APP",
+      "to": "CONV",
+      "kind": "sync",
+      "label": "wires into the deployable",
+      "detail": "Spring wiring; the cluster module ships inside the single bootable jar (ADR 0005)"
+    },
+    {
+      "from": "APP",
+      "to": "VC",
+      "kind": "sync",
+      "label": "wires into the deployable",
+      "detail": "Spring wiring; the cluster module ships inside the single bootable jar (ADR 0005)"
+    },
+    {
+      "from": "APP",
+      "to": "EVID",
+      "kind": "sync",
+      "label": "wires into the deployable",
+      "detail": "Spring wiring; the cluster module ships inside the single bootable jar (ADR 0005)"
+    },
+    {
+      "from": "CONV",
+      "to": "CONTRACTS",
+      "kind": "sync",
+      "label": "compiles against the IR records in",
+      "detail": "Cluster deps \u2192 spine-contracts only (module-boundary rule, task zero); the IR is the only thing that leaves ingestion (F2)"
+    },
+    {
+      "from": "VC",
+      "to": "CONTRACTS",
+      "kind": "sync",
+      "label": "compiles against the IR records in",
+      "detail": "Cluster deps \u2192 spine-contracts only (module-boundary rule, task zero)"
+    },
+    {
+      "from": "EVID",
+      "to": "CONTRACTS",
+      "kind": "sync",
+      "label": "compiles against the IR records in",
+      "detail": "Cluster deps \u2192 spine-contracts only (module-boundary rule, task zero); records living in producer modules was rejected \u2014 it would invert the dependency direction (plan G1)"
+    },
+    {
+      "from": "CONV",
+      "to": "SCREEN",
+      "kind": "sync",
+      "label": "screens ingestion egress + capture output with",
+      "detail": "Call sites 1 and 2 of three: ingestion boundary + hierarchy-capture output, before it is written (ADR 0009 as amended, M35); F3 static half fails CI, runtime half rejects the payload"
+    },
+    {
+      "from": "VC",
+      "to": "SCREEN",
+      "kind": "sync",
+      "label": "screens pulled device artifacts at landing with",
+      "detail": "Call site 3 of three: the device-gate artifact pull at landing (ADR 0009 as amended, M35)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

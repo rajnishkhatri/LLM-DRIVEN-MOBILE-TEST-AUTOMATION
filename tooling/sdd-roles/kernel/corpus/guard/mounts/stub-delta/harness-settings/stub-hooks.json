@@ -1,0 +1,17 @@
+{
+  "artifact": "hook_mount",
+  "events": {
+    "pre_write": [
+      {
+        "command": "{python} -m sdd_roles_validator.gate_wrap --descriptors {descriptors} --harness stub-delta -- {python} -m sdd_roles_validator.guard decide --kernel {kernel} --descriptors {descriptors} --harness stub-delta --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role gd-maker",
+        "matcher": "gd-maker"
+      },
+      {
+        "command": "{python} -m sdd_roles_validator.gate_wrap --descriptors {descriptors} --harness stub-delta -- {python} -m sdd_roles_validator.guard decide --kernel {kernel} --descriptors {descriptors} --harness stub-delta --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role gd-checker",
+        "matcher": "gd-checker"
+      }
+    ]
+  },
+  "generated_by": "write-guard mount",
+  "harness": "stub-delta"
+}

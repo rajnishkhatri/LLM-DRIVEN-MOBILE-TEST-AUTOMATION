@@ -1,0 +1,45 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "decisions": [
+    {
+      "choice": "adopt-solo-baseline",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision 1",
+      "rejected_alternatives": [
+        "alternative-1"
+      ]
+    }
+  ],
+  "from_role": "s-solo",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "s-build",
+      "input_tree_digest": "d27cb9e571a17f80042a10f13828ceeee2ad6a6610571b8e36d4b9700ec2ac81",
+      "report_ref": {
+        "path": "reports/golden-resume-1-s-build-s002.json",
+        "sha256": "0c6515ac13255140461e19250236f077c1e2e99b7b50c9c91c1a7131fbbc7329"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.3"
+    }
+  ],
+  "schema_version": "1.4.0",
+  "stage": "s-solo",
+  "stage_status": "complete",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "solo stage complete."
+  },
+  "to_role": "s-solo"
+}

@@ -1,0 +1,28 @@
+---
+description: Software architecture design principles workspace - guides all discussions and artifacts toward architecture best practices
+alwaysApply: true
+---
+
+# Software Architecture Design Principles Workspace
+
+This workspace is dedicated to studying, discussing, and applying software architecture design principles.
+
+## Scope
+
+All conversations in this workspace should be framed through the lens of software architecture, including but not limited to:
+
+- **SOLID principles** (Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion)
+- **Design patterns** (Creational, Structural, Behavioral)
+- **Architectural styles** (Microservices, Monolith, Event-Driven, Layered, Hexagonal, Clean Architecture, CQRS, etc.)
+- **System design** (Scalability, Availability, Consistency, Partition Tolerance)
+- **Quality attributes** (Performance, Security, Maintainability, Testability, Extensibility)
+- **Coupling & Cohesion** analysis
+- **Domain-Driven Design** (Bounded Contexts, Aggregates, Entities, Value Objects)
+
+## Response Guidelines
+
+- When explaining a principle, include a concise definition, motivation, and a practical code or diagram example.
+- When reviewing code or designs, evaluate them against relevant architecture principles and suggest improvements.
+- Prefer language-agnostic explanations unless the user specifies a technology stack.
+- Use trade-off analysis: every architectural decision has pros and cons — always surface them.
+- Reference well-known sources (e.g., Martin Fowler, Robert C. Martin, Eric Evans, Gregor Hohpe) when relevant.

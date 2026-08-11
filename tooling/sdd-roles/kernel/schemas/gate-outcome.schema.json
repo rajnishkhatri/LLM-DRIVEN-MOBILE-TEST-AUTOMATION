@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdd-roles:gate-outcome:1.4.0",
+  "title": "GateOutcome",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "gate_id",
+    "tool",
+    "tool_version",
+    "exit_code",
+    "input_tree_digest",
+    "attempt_number",
+    "report_ref"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.4.0" },
+    "artifact_type": { "const": "gate_outcome" },
+    "gate_id": { "type": "string", "minLength": 1 },
+    "tool": { "type": "string", "minLength": 1 },
+    "tool_version": { "type": "string", "minLength": 1 },
+    "exit_code": { "type": "integer" },
+    "input_tree_digest": { "type": "string", "minLength": 1 },
+    "threshold": { "$ref": "#/$defs/threshold" },
+    "attempt_number": { "type": "integer", "minimum": 1 },
+    "report_ref": { "$ref": "#/$defs/artifact_ref" }
+  },
+  "$defs": {
+    "threshold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "value": { "type": "number" }
+      }
+    },
+    "artifact_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

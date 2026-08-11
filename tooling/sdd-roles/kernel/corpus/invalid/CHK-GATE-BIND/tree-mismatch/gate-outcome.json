@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "gate_outcome",
+  "gate_id": "crap",
+  "tool": "crap4java",
+  "tool_version": "1.4.2",
+  "exit_code": 0,
+  "input_tree_digest": "9295db0d9444c0902cae9a4e86005bf40fadacc82ca459aadbf89cda0826e583",
+  "attempt_number": 1,
+  "report_ref": {
+    "path": "reports/crap.json",
+    "sha256": "f60d6cc5a39040787b1e3fb60b4a7ef25bbeb73ca4dffb6ae54ed3e4dc7af2af"
+  },
+  "threshold": {
+    "name": "crap_composite",
+    "value": 6
+  }
+}

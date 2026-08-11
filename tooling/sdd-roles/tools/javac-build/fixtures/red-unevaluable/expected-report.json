@@ -1,0 +1,18 @@
+{
+  "artifact_type": "build_report",
+  "contract": "o7-kata-seam.1",
+  "engine": "mvn compile",
+  "errors": [],
+  "errors_total": 0,
+  "inputs": {
+    "pom_sha256": null
+  },
+  "not_evaluable": "no pom.xml at the workspace root",
+  "threshold": {
+    "name": "build_errors_max",
+    "value": 0
+  },
+  "tool": "javac-build",
+  "tool_version": "1.0.0",
+  "verdict": "red"
+}

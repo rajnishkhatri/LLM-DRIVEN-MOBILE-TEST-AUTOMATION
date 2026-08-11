@@ -1,0 +1,154 @@
+{
+  "$schema": "../../../../../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "quantum-map",
+    "level": "container",
+    "title": "Determination 1 — Quantum map: one quantum, three module seams",
+    "caption": "What is the single architecture quantum, and what sits outside it? Opens `Q` from style-decision Determination 1. The three cluster modules (conversion · validation-certification · evidence) are seams inside this one deployable — named on the canvas qualifier and expanded in the node-detail table — not separate quanta. Module-grain edge ownership is C2b in the full diagram set. Async seams inside the quantum are Determination 3. Primary datastore omitted — see omitted note; data topology is Determination 2.",
+    "direction": "right",
+    "opens": "Q",
+    "opens_from": "style-decision",
+    "completeness": "complete",
+    "overlays": "none",
+    "omitted": [
+      {
+        "label": "Primary datastore",
+        "note": "Named in the quantum claim (one deployable + one primary datastore) but not drawn — data placement is Determination 2; residency still needs-input"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "HUMAN",
+      "kind": "actor",
+      "label": "Reviewers / QA engineers",
+      "detail": [
+        "Combined on this sketch; style-decision §6 separates QA engineer (IDE + 2 CLIs, sync) from Reviewer (HITL queue, async hours–days)"
+      ]
+    },
+    {
+      "id": "AUDITOR",
+      "kind": "actor",
+      "label": "Auditor",
+      "detail": [
+        "Read-only export path — must reconstruct from stored evidence alone, without the running system (style-decision §6). Targets the evidence module at module grain; drawn to Q here at quantum grain"
+      ]
+    },
+    {
+      "id": "Q",
+      "kind": "system",
+      "label": "conversion-and-certification runtime",
+      "qualifiers": [
+        "modules: conversion · validation-certification · evidence"
+      ],
+      "detail": [
+        "Quantum 1 of 1 — one deployable + one primary datastore (Determination 1). Modules are cluster seams, not deployment boundaries. Extraction candidates Replay on Devices and cluster C deferred with named revisit triggers. module: conversion (cluster A) — Ingest · Interpret · Acquire Evidence · Resolve · Assets · Generate · Repair · Invoke Models · Route Human Decisions · Coordinate. module: validation-certification (cluster B) — Verify Statically · Replay on Devices · Classify Outcome · Certify · Publish. module: evidence (cluster C) — Preserve Provenance (+ metrics read model)"
+      ],
+      "emphasis": "heaviest"
+    },
+    {
+      "id": "PERFECTO",
+      "kind": "external",
+      "label": "Perfecto device lab",
+      "detail": [
+        "SaaS device lab — outside the quantum; rate-limited (style-decision §2)"
+      ]
+    },
+    {
+      "id": "GATEWAY",
+      "kind": "external",
+      "label": "Orchestrator AI gateway",
+      "detail": [
+        "Outside the quantum; rate-limited (style-decision §2)"
+      ]
+    },
+    {
+      "id": "SOURCES",
+      "kind": "external",
+      "label": "Octane / ALM-QC / Excel",
+      "detail": [
+        "Outside the quantum — ingest and publish integration points rolled into one node on this sketch (style-decision §2)"
+      ]
+    },
+    {
+      "id": "OBJREPO",
+      "kind": "external",
+      "label": "Object repository",
+      "detail": [
+        "Certified locators; single-writer discipline; outside the quantum (style-decision §3)"
+      ]
+    },
+    {
+      "id": "GIT",
+      "kind": "datastore",
+      "label": "Git",
+      "detail": [
+        "Prompts, exemplars, golden set — already decided as the asset store; outside the quantum lifecycle (style-decision §3)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "HUMAN",
+      "to": "Q",
+      "kind": "async",
+      "ref": 1,
+      "detail": "Human review / decisions — async (hours–days); §6 separates QA CLI path (sync) from Reviewer HITL path"
+    },
+    {
+      "from": "AUDITOR",
+      "to": "Q",
+      "kind": "sync",
+      "ref": 2,
+      "detail": "Read-only export — targets the evidence module at module grain (mermaid MC); quantum-grain endpoint here. Not a live dashboard over the running system"
+    },
+    {
+      "from": "Q",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "ref": 3,
+      "detail": "Device runs — sync, rate-limited (lab capacity); async decoupling of replay is Determination 3, not a second quantum"
+    },
+    {
+      "from": "Q",
+      "to": "GATEWAY",
+      "kind": "sync",
+      "ref": 4,
+      "detail": "Model calls — sync, rate-limited"
+    },
+    {
+      "from": "Q",
+      "to": "SOURCES",
+      "kind": "sync",
+      "ref": 5,
+      "detail": "Ingest from / publish to Octane, ALM-QC, Excel — sync"
+    },
+    {
+      "from": "Q",
+      "to": "OBJREPO",
+      "kind": "sync",
+      "ref": 6,
+      "detail": "Writes certified locators — sync, single-writer"
+    },
+    {
+      "from": "Q",
+      "to": "GIT",
+      "kind": "sync",
+      "ref": 7,
+      "detail": "Reads and writes conversion assets (prompts, exemplars, golden set)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bPostgres\\b",
+    "\\bPostgreSQL\\b",
+    "\\bMinIO\\b"
+  ]
+}

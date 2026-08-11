@@ -1,0 +1,23 @@
+{
+  "artifact_type": "crap_report",
+  "contract": "o7-kata-seam.1",
+  "crap": {
+    "max": null,
+    "mean": null,
+    "over_threshold_count": 0,
+    "per_method": []
+  },
+  "engine": "mvn test under the JaCoCo agent (jacoco XML)",
+  "inputs": {
+    "pom_sha256": null
+  },
+  "methods_total": 0,
+  "not_evaluable": "no pom.xml at the workspace root",
+  "threshold": {
+    "name": "crap_composite",
+    "value": 6
+  },
+  "tool": "crap4java",
+  "tool_version": "1.0.0",
+  "verdict": "red"
+}

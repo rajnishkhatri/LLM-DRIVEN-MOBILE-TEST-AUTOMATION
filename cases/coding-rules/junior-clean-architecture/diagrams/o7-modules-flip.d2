@@ -1,0 +1,102 @@
+# Three modules, their guards, and the recorded flip triggers.
+# The monolith is a decision with named exits — not a default.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  guard: {
+    style: {
+      fill: "#FFFFFF"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 4
+    }
+  }
+  trigger: {
+    style: {
+      fill: "#E7E1F1"
+      stroke: "#6A5A9C"
+      font-color: "#453A6B"
+      border-radius: 6
+      stroke-width: 2
+      stroke-dash: 4
+    }
+  }
+  flow: {
+    style: {
+      stroke: "#4A5A59"
+      font-color: "#4A5A59"
+      font-size: 13
+    }
+  }
+}
+
+mono: "ONE DEPLOYABLE — Spring Boot modular monolith, partitioned by cluster" {
+  style: {
+    fill: "#F2F7F6"
+    stroke: "#1F6F6B"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 16
+    bold: true
+  }
+
+  conv: "conversion\n(authoring arm:\ningestion, hierarchy-tool,\nconversion packages)" { class: policy }
+  vc: "validation-certification\n(IR gate, interpreter in the\ndevice-gate worker,\nclassification, certification)" { class: policy }
+  ev: "evidence\n(lineage, read model,\nexecution-plan renderer)" { class: policy }
+
+  conv -> vc: "committed artifacts\nvia published\ninterfaces only" { class: flow }
+  vc -> ev: "reports + lineage" { class: flow }
+}
+
+guards: "CI GUARDS — the structure is enforced, not aspirational" {
+  style: {
+    fill: "#F6F8F7"
+    stroke: "#5B8A85"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 15
+    bold: true
+  }
+  g1: "ArchUnit: modules import each other\nonly via published interface packages" { class: guard }
+  g2: "F1: no model call anywhere in the spine" { class: guard }
+  g3: "one-deployable check: a second\nartifact fails the build" { class: guard }
+  g4: "T02: per-test generated Java in the\nreplay path fails the build" { class: guard }
+  g5: "one-live-driver assertion: a second live\nbackend fails the build until an ADR exists" { class: guard }
+}
+
+triggers: "RECORDED FLIP TRIGGERS — the named exits" {
+  style: {
+    fill: "#FBF9F3"
+    stroke: "#6A5A9C"
+    stroke-dash: 5
+    border-radius: 8
+    font-color: "#453A6B"
+    font-size: 15
+    bold: true
+  }
+  t1: "a fourth source adapter\n→ reopen the plug-in seam\nquestion at ingestion" { class: trigger }
+  t2: "a second concurrent\nreasoning provider\n→ reopen it at the model seam" { class: trigger }
+  t3: "a second LIVE execution\nbackend on the driver seam\n→ reopen the localized\ndriver-seam SPI" { class: trigger }
+  t4: "migration target if a split\never triggers: service-based —\ncut along the module seams\nthat already exist" { class: trigger }
+}
+
+mono -> guards: "held together by" { class: flow }
+guards -> triggers: "revisited only when\na trigger fires" { class: flow }

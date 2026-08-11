@@ -1,0 +1,138 @@
+{
+  "$schema": "../../../../skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "p1-spine-context",
+    "level": "context",
+    "title": "P1 \u2014 The spine in one picture (weeks 0\u20133)",
+    "caption": "What are we building in weeks 0\u20133? One Spring Boot deployable that turns manual-test exports into IR, captures device UI evidence, and replays committed tests into a classified, pinned, auditable verdict \u2014 with no LLM call anywhere. Drill down: P2 (module map), P3 (replay flow); engineer-grade detail in docs/mobile-test-automation-diagrams/.",
+    "direction": "down",
+    "completeness": "complete",
+    "overlays": "none",
+    "omitted": [
+      {
+        "label": "Screening library",
+        "note": "invoked at all three spine call sites \u2014 ingestion egress, hierarchy capture, artifact landing (ADR 0009 as amended, M35); shown in P2 (not shown here for brevity)"
+      },
+      {
+        "label": "CI pipeline",
+        "note": "fitness functions F1\u2013F4 run CI-blocking from task zero (M18); the static gate is shown in P3 (not shown here for brevity)"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "QA",
+      "kind": "actor",
+      "label": "QA engineer",
+      "detail": [
+        "Runs the ingestion CLI and the hierarchy-tool CLI. In the spine the system receives only committed artifacts \u2014 the Copilot-assisted conversion arrives in weeks 3\u20138"
+      ]
+    },
+    {
+      "id": "SYS",
+      "kind": "system",
+      "label": "Mobile Test Automation Spine",
+      "emphasis": "heaviest",
+      "detail": [
+        "One Spring Boot deployable, modular monolith, three cluster modules (ADR 0005) \u2014 the weeks 0\u20133 subset of the Mobile Test Automation LLM Pipeline; lands in a separate new repository (S2)",
+        "The spine contains no LLM call anywhere; the week-3 gate exercises a hand-written test precisely so the pipeline is proven before any generated code reaches it",
+        "Week-3 gate: (a) one hand-written Appium test flows end to end and yields a valid ReplayReport; (b) real source material ingested and recorded REAL_INGESTED in lineage (M19)"
+      ]
+    },
+    {
+      "id": "XLS",
+      "kind": "external",
+      "label": "Excel workbooks",
+      "detail": [
+        "\"The least deterministic input\" \u2014 the M16 week-0 corpus request (10\u201320 representative real workbooks) defines the adapter's effective contract; raw workbooks never enter Git (M35). ALM/QC stays additive later (C1)"
+      ]
+    },
+    {
+      "id": "OCTANE",
+      "kind": "external",
+      "label": "ALM Octane",
+      "detail": [
+        "Ingest source in the spine (REST, API-key auth \u2014 C1); certified-asset publish is weeks 3\u20138 (CF3). SLA: UNKNOWN (pending)"
+      ]
+    },
+    {
+      "id": "PERFECTO",
+      "kind": "external",
+      "label": "Perfecto device lab",
+      "detail": [
+        "Pinned device pools; artifacts produced off-prem, hashed at pull (M9) and screened at landing (M35). INCUMBENT vendor \u2014 SLA: UNKNOWN (pending \u2014 M1 probe)"
+      ]
+    },
+    {
+      "id": "POSTGRESQL",
+      "kind": "datastore",
+      "label": "PostgreSQL",
+      "detail": [
+        "WORKING ASSUMPTION (C3) \u2014 conversion state, append-only lineage (hash-chained, ADR 0012), DB-backed queue/outbox (ADR 0007); swappable if the bank's catalog dictates"
+      ]
+    },
+    {
+      "id": "OBJECT_STORAGE",
+      "kind": "datastore",
+      "label": "object storage",
+      "detail": [
+        "Evidence artifacts behind an S3-compatible port (ADR 0011, BINDING PROBE-PENDING; default = self-operated MinIO). Spine retention deliberately short: 30 days, class SPINE_POC (M39)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "QA",
+      "to": "SYS",
+      "kind": "sync",
+      "label": "runs 2 CLIs against",
+      "detail": "Ingestion CLI + hierarchy-tool CLI, sync"
+    },
+    {
+      "from": "SYS",
+      "to": "XLS",
+      "kind": "sync",
+      "label": "reads workbooks from",
+      "detail": "Excel adapter (Apache POI) behind the shared source-adapter contract (C1)"
+    },
+    {
+      "from": "SYS",
+      "to": "OCTANE",
+      "kind": "sync",
+      "label": "ingests manual tests from",
+      "detail": "Octane REST adapter (API-key auth) behind the same source-adapter contract (C1)"
+    },
+    {
+      "from": "SYS",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "label": "captures evidence + replays tests on",
+      "detail": "Hierarchy-tool capture (getPageSource, Object Spy, pruned tree) + device-gate replay on pinned pools; single-run session tokens (ADR 0013)"
+    },
+    {
+      "from": "SYS",
+      "to": "POSTGRESQL",
+      "kind": "sync",
+      "label": "writes state + lineage in one transaction to",
+      "detail": "Every pipeline action writes its lineage row in the same local transaction as its state change (ADR 0007)"
+    },
+    {
+      "from": "SYS",
+      "to": "OBJECT_STORAGE",
+      "kind": "sync",
+      "label": "lands hashed, screened evidence in",
+      "detail": "Per-artifact SHA-256 at landing (M9); data classification + retention date + retention class on every artifact (M39)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "handoff_contract",
+  "from_role": "coder",
+  "to_role": "cleaner",
+  "stage": "implement",
+  "stage_status": "complete",
+  "summary": {
+    "text": "Implementation complete; both assigned gates green.",
+    "provenance": {
+      "source": "environment_quoted",
+      "fence_id": "4ddd2678073da6335f294864d499080c4b91e2163af34699eea2555499a9143e",
+      "derived_from": [
+        "4ddd2678073da6335f294864d499080c4b91e2163af34699eea2555499a9143e"
+      ]
+    }
+  },
+  "decisions": [
+    {
+      "choice": "adopt-outbox-queue",
+      "rationale": "smallest machinery that satisfies the criteria",
+      "rejected_alternatives": [
+        "broker-based queue"
+      ],
+      "provenance": {
+        "source": "role_authored"
+      }
+    }
+  ],
+  "gate_outcomes": [
+    {
+      "gate_id": "build",
+      "tool": "javac-build",
+      "tool_version": "1.4.2",
+      "exit_code": 0,
+      "input_tree_digest": "d00c55431e9411c230feed61c60bf8b9da519a1a81d214a3e5311cd7b75065c6",
+      "attempt_number": 1,
+      "report_ref": {
+        "path": "reports/build.json",
+        "sha256": "67e5b6532d2dfce2a304a16a1f66cf28c658ffd74d17f8b5e5ff2cbeccd45dff"
+      },
+      "threshold": {
+        "name": "build_errors_max",
+        "value": 0
+      }
+    },
+    {
+      "gate_id": "tests",
+      "tool": "junit-runner",
+      "tool_version": "1.4.2",
+      "exit_code": 0,
+      "input_tree_digest": "d00c55431e9411c230feed61c60bf8b9da519a1a81d214a3e5311cd7b75065c6",
+      "attempt_number": 1,
+      "report_ref": {
+        "path": "reports/tests.json",
+        "sha256": "1ed63b0f91af04502d392eb47053b9f02a215d7f1f09e6fc3172713eff96aa2d"
+      },
+      "threshold": {
+        "name": "tests_failures_max",
+        "value": 0
+      }
+    }
+  ],
+  "completion_evidence": [
+    {
+      "path": "artifacts/impl-notes.md",
+      "sha256": "24c2e8d9d49237fa36211031407f4aa4674385ad858e4f5a2ae3f640a6155a8b",
+      "provenance": {
+        "source": "tool_output",
+        "tool": {
+          "id": "junit-runner",
+          "version": "5.10.0",
+          "invocation_digest": "93400444114800866889c6e998af2d6c752a4f093962b03e8cb2b6315e9f2ab4"
+        }
+      }
+    }
+  ],
+  "fences": [
+    {
+      "fence_id": "4ddd2678073da6335f294864d499080c4b91e2163af34699eea2555499a9143e",
+      "content": "Runner note: build image digest 4f2c, sandbox profile default.",
+      "source_uri": "https://runner.internal/notes/1",
+      "retrieved_at": "2026-08-07T12:00:00Z"
+    }
+  ]
+}

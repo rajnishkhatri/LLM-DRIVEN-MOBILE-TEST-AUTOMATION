@@ -1,0 +1,200 @@
+{
+  "$schema": "../../../../skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "p3-replay-flow",
+    "level": "component",
+    "title": "P3 \u2014 A committed test's journey to the week-3 gate",
+    "caption": "How does a committed test become an auditable verdict? The replay leg of the spine at component grain \u2014 static gate first (seconds, zero device cost), then the queued device gate, then rule-based classification; every hop writes append-only lineage. Opens SYS from P1; gate clause b's ingestion path lives in P2 and the detailed set.",
+    "direction": "right",
+    "opens": "SYS",
+    "opens_from": "p1-spine-context",
+    "completeness": "complete",
+    "overlays": "none",
+    "omitted": [
+      {
+        "label": "Screening library",
+        "note": "every pulled artifact passes screening at landing (M35) \u2014 the library and its three call sites are shown in P2 (not shown here for brevity)"
+      },
+      {
+        "label": "Ingestion CLI + hierarchy tool",
+        "note": "week-3 gate clause b (REAL_INGESTED ingestion from the M16 corpus) runs through the conversion module \u2014 see P2; this view shows clause a's replay leg only"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "GIT",
+      "kind": "datastore",
+      "label": "Git",
+      "detail": [
+        "Holds the committed hand-written Appium reference test (week-3 gate, clause a); its credential resolves through an injected reference from the CI secret store, never a literal (M34)"
+      ]
+    },
+    {
+      "id": "STATIC",
+      "kind": "component",
+      "label": "Static gate",
+      "detail": [
+        "Format, mvn compile, Checkstyle, Error Prone, Thread.sleep ban, locator-manifest rule (manifest-only in the spine; object repository stubbed \u2014 C5). Runs first, completes in seconds, zero device cost"
+      ]
+    },
+    {
+      "id": "QUEUE",
+      "kind": "datastore",
+      "label": "outbox + queue",
+      "detail": [
+        "PostgreSQL-backed queue (C2, ADR 0007): transactional outbox on the producer, SKIP LOCKED consumer; bounded retry cap 3 with backoff, dead-letter quarantine + alert (M21); schema supports async-projection reuse (M17)"
+      ]
+    },
+    {
+      "id": "WORKER",
+      "kind": "component",
+      "label": "Device-gate worker",
+      "detail": [
+        "Idempotent consumer \u2014 redelivery of the same request yields exactly one device run, no double-spent device minutes (ADR 0007)",
+        "Holds NO gateway credential \u2014 the ADR 0013 credential-topology shape from the first commit",
+        "Records the actual execution context alongside the requested set; a mismatch on any pinned facet quarantines with an alert (record-actual, M24)"
+      ]
+    },
+    {
+      "id": "EXEC",
+      "kind": "process",
+      "label": "test-execution process",
+      "detail": [
+        "Separate OS process, spawned per run \u2014 shape committed now, sandbox technology weeks 3\u20138 (ADR 0013); single-run device session token; no long-lived credentials"
+      ]
+    },
+    {
+      "id": "PERFECTO",
+      "kind": "external",
+      "label": "Perfecto device lab",
+      "detail": [
+        "Device acquired from a pinned pool by capability set; TestNG with pinned Appium and driver versions; single run \u2014 the K-run policy is weeks 3\u20138. Smart Reporting formats covered by contract tests so vendor drift fails a test the day it appears (M10)"
+      ]
+    },
+    {
+      "id": "CLASSIFY",
+      "kind": "component",
+      "label": "Classification",
+      "detail": [
+        "Rule-based against the fixed taxonomy (LOCATOR_NOT_FOUND, STALE_ELEMENT, TIMEOUT_SYNC, ASSERTION_MISMATCH, APP_CRASH, DATA_PRECONDITION, ENV_INFRA) \u2014 deterministic, explicitly not LLM work",
+        "An unmapped outcome quarantines with an alert as a status, not an eighth class (M10a); ENV_INFRA re-queues, never counts against the test (M21)"
+      ]
+    },
+    {
+      "id": "LINEAGE",
+      "kind": "datastore",
+      "label": "lineage (append-only)",
+      "role": "lineage-store",
+      "detail": [
+        "Every pipeline action writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the applicable pinning fields (F6), the authenticated principal (M37), and the per-conversion hash-chain link (ADR 0012)",
+        "App role holds INSERT/SELECT only; corrections are superseding appends, never updates (ADR 0012)"
+      ]
+    },
+    {
+      "id": "OBJ",
+      "kind": "datastore",
+      "label": "object storage",
+      "detail": [
+        "Per-artifact SHA-256 recorded at landing, before any downstream read (hash-at-pull, M9); every artifact stored with data classification, retention date, and retention class (M39)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "GIT",
+      "to": "STATIC",
+      "kind": "sync",
+      "label": "supplies the committed test to",
+      "detail": "The committed hand-written Appium test enters the replay pipeline from the repository"
+    },
+    {
+      "from": "STATIC",
+      "to": "QUEUE",
+      "kind": "async",
+      "label": "enqueues a replay request via the outbox into",
+      "detail": "On static-gate pass, the replay request is enqueued via the producer's transactional outbox (C2, ADR 0007) \u2014 one of the two async seams"
+    },
+    {
+      "from": "WORKER",
+      "to": "QUEUE",
+      "kind": "async",
+      "label": "consumes replay requests from",
+      "detail": "SELECT \u2026 FOR UPDATE SKIP LOCKED consumer; idempotency key = replay-request ID"
+    },
+    {
+      "from": "WORKER",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "label": "acquires a pinned-pool device from",
+      "detail": "Acquisition by capability set from the pinned Perfecto pool"
+    },
+    {
+      "from": "WORKER",
+      "to": "EXEC",
+      "kind": "sync",
+      "label": "spawns per device run",
+      "detail": "One test-execution process per run (ADR 0013)"
+    },
+    {
+      "from": "EXEC",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "label": "executes the test on",
+      "detail": "TestNG with pinned Appium; single-run device session token (ADR 0013)"
+    },
+    {
+      "from": "WORKER",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "label": "pulls Smart Reporting artifacts from",
+      "detail": "Video, page source, network capture, screenshot \u2014 pulled after the run"
+    },
+    {
+      "from": "WORKER",
+      "to": "OBJ",
+      "kind": "sync",
+      "label": "lands hashed, screened artifacts in",
+      "detail": "SHA-256 at landing before any read (M9); screening at landing (M35); classification + retention class on every artifact (M39)"
+    },
+    {
+      "from": "WORKER",
+      "to": "CLASSIFY",
+      "kind": "sync",
+      "label": "hands the run outcome to",
+      "detail": "Appium exception types + Perfecto failure reasons feed the deterministic rule table"
+    },
+    {
+      "from": "STATIC",
+      "to": "LINEAGE",
+      "kind": "sync",
+      "label": "writes its lineage row in the same transaction to",
+      "detail": "Gate-run lineage rows also carry the CI-runner environment: runner-image digest + JDK/Maven/pipeline-tool versions (M28)"
+    },
+    {
+      "from": "WORKER",
+      "to": "LINEAGE",
+      "kind": "sync",
+      "label": "writes its lineage row in the same transaction to",
+      "detail": "Actual-vs-requested execution context recorded with any delta explicit (M24); build identity of the worker recorded per emission (M32)"
+    },
+    {
+      "from": "CLASSIFY",
+      "to": "LINEAGE",
+      "kind": "sync",
+      "label": "records the classified, pinned verdict in",
+      "detail": "The ReplayReport validates against the committed schema with the complete applicable pinning set (F6) \u2014 null or absent is never valid for a pinning field; outcome fields support deriving K-of-K later without vendor aggregates (M10b)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

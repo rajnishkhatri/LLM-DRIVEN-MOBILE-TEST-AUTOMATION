@@ -1,0 +1,8 @@
+{
+  "operation": "modify",
+  "paths": [
+    "src/main.py",
+    "gates/thresholds.json",
+    "../x"
+  ]
+}

@@ -1,0 +1,27 @@
+# OKF workspace-binding — TEMPLATE. Copy to <your-repo>/.okf/binding.toml and
+# replace every <fill>; use "<none>" for anything your workspace doesn't have
+# (the skill skips that rule and says so — it never fabricates a path).
+# Key meanings + fill-prompts: binding.schema.md. Flow: FIRST_RUN.md.
+
+[binding]
+conventions_doc        = "<fill>"   # your knowledge-plane rules-of-record doc
+lint_gate              = "<fill>"   # command to run the OKF lint gate
+docs_home              = "<fill>"   # knowledge-plane root, e.g. "docs/"
+recipes_home           = "<fill>"   # topic recipe parent dir, or "<none>"
+authored_research_home = "<fill>"   # authored research bundle, or "<none>"
+evidence_home          = "<fill>"   # excluded evidence tree, or "<none>"
+context_mention_prefix = "<fill>"   # e.g. "@docs/", or "<none>"
+knowledge_globs        = ["<fill>"] # e.g. ["docs/**/*.md"]
+
+[lint]
+declared_bundles  = []              # start with your first bundle, e.g. ["docs/notes"]
+evidence_segments = ["outputs"]
+evidence_suffixes = ["-workspace"]
+run_dir_pattern   = "^run-\\d+$"
+reserved          = ["index.md", "log.md", "README.md"]
+
+[drift]
+code_prefixes    = ["<fill>"]       # top-level paths holding the code your docs describe
+exclude_segments = ["/outputs/"]
+
+# [examples] is optional — workspace-specific illustrations; omit freely.

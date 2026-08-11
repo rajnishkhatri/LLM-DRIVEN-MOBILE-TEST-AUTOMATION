@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "role_registry",
+  "roles": [
+    {
+      "id": "h7-coder",
+      "tag": "maker",
+      "gates": [
+        "g-build"
+      ],
+      "write_scopes": [
+        "src/",
+        "scratch/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "hooked"
+      }
+    },
+    {
+      "id": "h7-checker",
+      "tag": "checker",
+      "gates": [
+        "g-tests"
+      ],
+      "write_scopes": [
+        "src/",
+        "scratch/"
+      ],
+      "diagnostic_capability": true,
+      "invocation": {
+        "prompt": "hooked"
+      }
+    }
+  ],
+  "arms": [
+    {
+      "id": "H2",
+      "roles": [
+        "h7-coder",
+        "h7-checker"
+      ]
+    }
+  ]
+}

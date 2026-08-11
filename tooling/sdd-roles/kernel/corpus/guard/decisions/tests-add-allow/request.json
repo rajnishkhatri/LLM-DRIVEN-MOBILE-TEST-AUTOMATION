@@ -1,0 +1,6 @@
+{
+  "operation": "create",
+  "paths": [
+    "tests/test_new.py"
+  ]
+}

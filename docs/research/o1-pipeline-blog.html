@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Test Pipeline That Can Answer an Auditor — the O1 story</title>
+<style>
+  :root {
+    --ground: #f7f8fa;
+    --panel: #ffffff;
+    --panel-2: #eef1f5;
+    --ink: #1a2027;
+    --ink-soft: #4a5560;
+    --ink-faint: #737f8b;
+    --rule: #d8dee6;
+    --rule-soft: #e6eaef;
+    --accent: #2d6a8e;
+    --accent-soft: #dbe8f0;
+    --good: #3f7d52;
+    --good-bg: #e2efe6;
+    --warn: #9a6a24;
+    --warn-bg: #f3e9d6;
+    --crit: #b0483a;
+    --crit-bg: #f4ddd8;
+    --shadow: 0 1px 2px rgba(20,32,44,.04), 0 4px 16px rgba(20,32,44,.05);
+    --maxw: 860px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0f1418;
+      --panel: #161d23;
+      --panel-2: #1c252c;
+      --ink: #e7ecf1;
+      --ink-soft: #a9b4bf;
+      --ink-faint: #78848f;
+      --rule: #2a343d;
+      --rule-soft: #212a32;
+      --accent: #5fa8cd;
+      --accent-soft: #16323f;
+      --good: #6ab383;
+      --good-bg: #16281c;
+      --warn: #d3aa5e;
+      --warn-bg: #2a2113;
+      --crit: #e0796b;
+      --crit-bg: #2c1713;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px 96px; }
+
+  header.mast {
+    border-bottom: 1px solid var(--rule);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, var(--ground)), var(--ground));
+  }
+  .mast-inner { max-width: var(--maxw); margin: 0 auto; padding: 48px 24px 36px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 4.6vw, 2.7rem); line-height: 1.12; margin: 0 0 12px;
+    font-weight: 800; letter-spacing: -.02em; text-wrap: balance;
+  }
+  .dek { font-size: 1.08rem; color: var(--ink-soft); max-width: 60ch; margin: 0; }
+  .readtime { margin-top: 18px; font-size: .82rem; color: var(--ink-faint); }
+
+  section { margin-top: 56px; }
+  h2 { font-size: 1.45rem; margin: 0 0 14px; font-weight: 750; letter-spacing: -.015em; text-wrap: balance; }
+  p { margin: 0 0 16px; }
+  a { color: var(--accent); }
+  blockquote.pull {
+    margin: 26px 0; padding: 4px 0 4px 22px; border-left: 3px solid var(--accent);
+    font-size: 1.25rem; font-weight: 650; line-height: 1.45; color: var(--ink);
+  }
+  code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: .85em;
+    background: var(--panel-2); padding: .1em .35em; border-radius: 4px; }
+  pre { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .8rem; line-height: 1.5; margin: 0 0 16px; }
+  pre code { background: none; padding: 0; }
+  .snip-label { font-size: .74rem; color: var(--ink-faint); margin: 0 0 4px; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase; }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .7rem;
+    font-weight: 800; letter-spacing: .06em; text-transform: uppercase; vertical-align: middle; }
+  .badge.decided { background: var(--good-bg); color: var(--good); }
+  .badge.proposed { background: var(--warn-bg); color: var(--warn); }
+  .badge.target { background: var(--panel-2); color: var(--ink-faint); font-weight: 700; }
+
+  .vis { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 20px 22px; margin: 22px 0; }
+  .vis .vis-cap { font-size: .82rem; color: var(--ink-faint); margin: 12px 0 0; }
+
+  /* V1 commit firewall */
+  .firewall { display: grid; grid-template-columns: 1fr 74px 1fr; gap: 0; align-items: stretch; }
+  @media (max-width: 640px){ .firewall { grid-template-columns: 1fr; } .fw-wall { min-height: 64px; } }
+  .fw-side { padding: 14px 16px; border-radius: 10px; }
+  .fw-side h4 { margin: 0 0 8px; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; }
+  .fw-side ul { margin: 0; padding-left: 18px; font-size: .87rem; color: var(--ink-soft); }
+  .fw-side li { margin: 4px 0; }
+  .fw-authoring { background: var(--warn-bg); }
+  .fw-authoring h4 { color: var(--warn); }
+  .fw-spine { background: var(--good-bg); }
+  .fw-spine h4 { color: var(--good); }
+  .fw-wall { display: flex; align-items: center; justify-content: center; position: relative; }
+  .fw-wall .brick { writing-mode: vertical-rl; text-orientation: mixed; background: var(--ink);
+    color: var(--ground); font-size: .72rem; font-weight: 800; letter-spacing: .12em;
+    text-transform: uppercase; padding: 14px 6px; border-radius: 6px; }
+  @media (max-width: 640px){ .fw-wall .brick { writing-mode: horizontal-tb; padding: 6px 14px; } }
+
+  /* V2 journey strip */
+  .journey { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+  .stop { flex: 1 1 100px; min-width: 96px; background: var(--panel-2); border: 1px solid var(--rule-soft);
+    border-radius: 10px; padding: 10px 10px 8px; position: relative; }
+  .stop .n { font-size: .7rem; font-weight: 800; color: var(--accent); }
+  .stop .nm { font-size: .82rem; font-weight: 700; line-height: 1.25; margin: 2px 0; }
+  .stop .what { font-size: .72rem; color: var(--ink-faint); line-height: 1.35; }
+  .stop.llm { border-color: color-mix(in srgb, var(--warn) 45%, var(--rule-soft)); }
+  .stop .ai { display: inline-block; margin-top: 4px; font-size: .62rem; font-weight: 800;
+    letter-spacing: .06em; padding: 1px 6px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); }
+  .stop.spinestop { background: var(--good-bg); border-color: color-mix(in srgb, var(--good) 35%, var(--rule-soft)); }
+
+  /* V3 call-site cards */
+  .callsites { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px){ .callsites { grid-template-columns: 1fr; } }
+  .cs { background: var(--panel-2); border: 1px solid var(--rule-soft); border-radius: 12px; padding: 14px 16px; }
+  .cs h4 { margin: 0 0 6px; font-size: .95rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .cs p { margin: 0 0 6px; font-size: .84rem; color: var(--ink-soft); }
+  .cs p b { color: var(--ink); }
+
+  /* V4 warm/cold fork */
+  .fork { text-align: center; }
+  .fork .root { display: inline-block; background: var(--panel-2); border: 1px solid var(--rule);
+    border-radius: 10px; padding: 8px 18px; font-weight: 700; font-size: .9rem; }
+  .fork .stem { width: 2px; height: 18px; background: var(--rule); margin: 0 auto; }
+  .fork .branches { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 0; text-align: left; }
+  @media (max-width: 640px){ .fork .branches { grid-template-columns: 1fr; } }
+  .branch { border-radius: 12px; padding: 14px 16px; }
+  .branch.warm { background: var(--good-bg); }
+  .branch.cold { background: var(--warn-bg); }
+  .branch h4 { margin: 0 0 6px; font-size: .92rem; }
+  .branch.warm h4 { color: var(--good); }
+  .branch.cold h4 { color: var(--warn); }
+  .branch p { margin: 0 0 6px; font-size: .84rem; color: var(--ink-soft); }
+  .branch .share { font-size: .78rem; font-weight: 700; color: var(--ink); }
+
+  /* V5 before/after */
+  .beforeafter { display: grid; grid-template-columns: 1fr 34px 1fr; gap: 10px; align-items: center; }
+  @media (max-width: 700px){ .beforeafter { grid-template-columns: 1fr; } .ba-arrow { transform: rotate(90deg); } }
+  .ba-col h4 { margin: 0 0 6px; font-size: .76rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
+  .ba-col pre { margin: 0; }
+  .ba-arrow { text-align: center; font-size: 1.3rem; color: var(--ink-faint); }
+
+  /* V6 tension scatter (adapted from the six-way comparison doc) */
+  .tension { position: relative; height: 340px; margin-top: 8px; border-radius: 12px;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--good) 10%, var(--panel)) 0%, var(--panel) 45%, color-mix(in srgb, var(--accent) 9%, var(--panel)) 100%);
+    border: 1px solid var(--rule); overflow: hidden; }
+  .tension .axis { position: absolute; color: var(--ink-faint); font-size: .74rem; font-weight: 600; letter-spacing: .04em; }
+  .ax-y { left: 14px; top: 14px; }
+  .ax-x { right: 14px; bottom: 12px; }
+  .frontier { position: absolute; inset: 0; }
+  .dot { position: absolute; transform: translate(-50%,-50%); text-align: center; }
+  .dot .b { width: 13px; height: 13px; border-radius: 50%; background: var(--accent); margin: 0 auto 4px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .dot.good .b { background: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 22%, transparent); }
+  .dot.warnd .b { background: var(--warn); box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 20%, transparent); }
+  .dot.critd .b { background: var(--crit); box-shadow: 0 0 0 4px color-mix(in srgb, var(--crit) 20%, transparent); }
+  .dot .l { font-size: .76rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .dot .sc { font-size: .68rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+  .dot.ghost .b { opacity: .35; box-shadow: none; }
+  .dot.ghost .l, .dot.ghost .sc { opacity: .55; }
+
+  figure.diagram { margin: 22px 0; padding: 14px; border: 1px solid var(--rule); border-radius: 12px;
+    background: #ffffff; text-align: center; }
+  figure.diagram img { max-width: 100%; height: auto; }
+  figure.diagram figcaption { margin-top: 8px; font-size: .84rem; color: #57606a; font-style: italic; }
+
+  .callout { background: var(--crit-bg); border: 1px solid color-mix(in srgb, var(--crit) 30%, var(--rule));
+    border-radius: 12px; padding: 18px 20px; margin: 22px 0; }
+  .callout h3 { margin: 0 0 8px; font-size: 1.02rem; color: var(--crit); }
+  .callout p { font-size: .93rem; margin-bottom: 10px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .spec-pointer { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--rule));
+    border-radius: 12px; padding: 14px 18px; margin: 22px 0; font-size: .93rem; }
+
+  .note { font-size: .84rem; color: var(--ink-faint); margin-top: 12px; border-left: 2px solid var(--rule); padding-left: 12px; }
+
+  footer { margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--rule); font-size: .82rem; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="mast-inner">
+    <p class="eyebrow">Engineering story · Mobile test automation</p>
+    <h1>The Test Pipeline That Can Answer an Auditor</h1>
+    <p class="dek">How a banking team let LLMs write its mobile UI tests — without ever letting one near the run that produces a verdict.</p>
+    <p class="readtime">~10-minute read · August 2026</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="hook">
+<blockquote class="pull">"Show me the executable that produced this verdict, and prove it hasn't changed."</blockquote>
+<p>That is the question a bank auditor asks about an automated test. Not "is your AI clever?" — but "what exactly ran, and can you show me the very bytes?" It sounds dry. It is also where most AI-powered test tools fall silent. If a model decided at runtime which button to tap, or quietly "healed" a failing step, there is no fixed executable to show. The thing that ran existed only for a moment, inside a model's response.</p>
+<p>Teams still want LLMs in their test automation, for a good reason: writing and maintaining UI tests by hand is slow, dull, and endless. This is the story of a pipeline — internally called O1 — that tries to have it both ways: let LLMs do the tedious authoring work, and still hand the auditor a straight answer.</p>
+</section>
+
+<section id="bakeoff">
+<h2>We didn't start with the answer</h2>
+<p>Before anyone wrote a line of this pipeline, six candidate architectures went through a weighted bake-off: the LLM-free spine (O1), a pure runtime interpreter, a hybrid, a vendor tool, a YAML-DSL approach, and Meta's regenerate-and-filter pattern. The scoring context was a bank shipping a monthly app release, so auditability got 20% of the weight and maintainability was elevated to 22%. Those scores are a draft for architecture-board sign-off, using the analyst's weights — not a settled ruling.</p>
+<p>The first pass ended in a near-tie at the top: O6 at 75, O3 at 74, O1 and O5 at 73. O1 was maximally auditable but scored last-place marks on adaptability and on the cost of hand-maintaining static test code. Then the design evolved: a proposal (ADR 0014, still in flight) would automate the authoring side — intake, screen capture, drift repair. A Rev-2 re-grounding of the matrix, scored under the premise that ADR 0014 is accepted, moves O1 from 73 to roughly 88 — a clear lead, but one that exists only with that premise attached. The tie-breaker wasn't a better runtime. It was automating the part that writes the tests.</p>
+
+<div class="vis">
+  <div class="tension">
+    <div class="axis ax-y">▲ audit / determinism (banking-safe)</div>
+    <div class="axis ax-x">adaptability (demo-friendly) ▶</div>
+    <div class="frontier">
+      <div class="dot good ghost" style="left:20%; top:20%;"><div class="b"></div><div class="l">O1 (original)</div><div class="sc">73</div></div>
+      <div class="dot good" style="left:52%; top:14%;"><div class="b"></div><div class="l">O1 + ADR 0014*</div><div class="sc">≈88</div></div>
+      <div class="dot good" style="left:34%; top:16%;"><div class="b"></div><div class="l">O6 Meta-Gen</div><div class="sc">75</div></div>
+      <div class="dot" style="left:33%; top:37%;"><div class="b"></div><div class="l">O5 Maestro</div><div class="sc">73</div></div>
+      <div class="dot" style="left:56%; top:48%;"><div class="b"></div><div class="l">O3 Hybrid</div><div class="sc">74</div></div>
+      <div class="dot warnd" style="left:74%; top:62%;"><div class="b"></div><div class="l">O4 Perfecto</div><div class="sc">62</div></div>
+      <div class="dot critd" style="left:82%; top:78%;"><div class="b"></div><div class="l">O2 Pure interp</div><div class="sc">50</div></div>
+    </div>
+  </div>
+  <p class="vis-cap">The trade-off every option lives on: adaptability against auditability. Faded dot = O1's original position. *The ≈88 score assumes ADR 0014 is accepted; it is currently a proposal. Scores from the <a href="../mobile-test-automation-six-way-comparison.html">six-way comparison</a> — draft for ARB sign-off, analyst's weights.</p>
+</div>
+</section>
+
+<section id="firewall">
+<h2>The trick: a commit firewall</h2>
+<p>Here is the whole idea, stated once. LLMs are allowed to <em>author</em> everything — the test's intermediate representation (a structured JSON description of what the test does), the locators (the technical addresses of on-screen elements), even the final Java code. But nothing an LLM produces can run until a human reviews it and commits it to git. The commit is the handoff. On the far side of that commit sits the replay spine: the machinery that actually executes tests on devices, and it contains no LLM at all. It reads committed files, runs them, and reports.</p>
+<p>That one design move is what answers the auditor. Every verdict the spine produces pins the exact git commit of the code that ran — a field called <code>codeCommit</code> in the run report. "Show me the executable" becomes a one-line git command. "Prove it hasn't changed" is what a commit hash <em>is</em>. And because the spine never modifies a test mid-run (its report carries <code>healsApplied: NONE</code>), what ran is what was reviewed.</p>
+
+<div class="vis">
+  <div class="firewall">
+    <div class="fw-side fw-authoring">
+      <h4>Authoring arm — LLM-bounded</h4>
+      <ul>
+        <li>Cleans up messy test exports</li>
+        <li>Interprets steps into structured IR</li>
+        <li>Resolves element locators</li>
+        <li>Generates Appium Java</li>
+        <li>Output: files, reviewed by a human</li>
+      </ul>
+    </div>
+    <div class="fw-wall"><span class="brick">git commit</span></div>
+    <div class="fw-side fw-spine">
+      <h4>Replay spine — LLM-free</h4>
+      <ul>
+        <li>Compiles &amp; lints committed code</li>
+        <li>Runs it on real devices</li>
+        <li>Pins the commit SHA in every verdict</li>
+        <li>Never calls a model</li>
+        <li>Never self-heals (<code>healsApplied: NONE</code>)</li>
+      </ul>
+    </div>
+  </div>
+  <p class="vis-cap">The commit firewall. AI can write anything on the left; only human-committed files cross to the right.</p>
+</div>
+</section>
+
+<section id="journey">
+<h2>One test's journey</h2>
+<p>Abstractions are cheap, so follow one real test through. ACC-1042 — "Login with valid credentials shows welcome" — arrives as a raw export from Octane, the team's test-management tool, complete with headers, priority fields, and a note telling people not to run it against prod.</p>
+<p>First stop is A0, a proposed intake normalizer <span class="badge proposed">Proposed · ADR 0014</span> whose only job is tidying words: strip the boilerplate, collapse "Sign in" / "log in" / "login" into one canonical phrasing, and carry credential references through untouched. It decides nothing about what the test means.</p>
+
+<div class="vis">
+  <div class="beforeafter">
+    <div class="ba-col">
+      <h4>Before — raw Octane export</h4>
+      <pre><code>=== OCTANE TEST CASE ===
+ID: ACC-1042
+Title: Login with valid credentials shows welcome
+1. Sign in to the app using the test credentials (username/password)</code></pre>
+    </div>
+    <div class="ba-arrow">→</div>
+    <div class="ba-col">
+      <h4>After — NormalizedIntent.json</h4>
+      <pre><code>"normalizedPhrasing": "sign in",
+"phrasingVariantsAbsorbed": ["Sign in", "log in", "login"],
+"screenContextHint": "LoginScreen"</code></pre>
+    </div>
+  </div>
+  <p class="vis-cap">A0's (proposed) before and after, quoted from the mock artifacts. The messy export becomes a clean, structured intent — nothing more.</p>
+</div>
+
+<p>From there, two more stages do the real interpretation. A1, a deterministic parser, splits the intent into the right number of step slots without filling them. A2, the semantic interpreter, fills them in — "sign in" expands into five concrete tap-and-type actions, "verify the welcome banner" becomes a checkable assertion — and its output, <code>TestCaseIR.json</code>, is the first artifact committed to git.</p>
+<p>Next the pipeline needs to know what is actually on the phone's screen. A capture tool dumps the live view hierarchy — every button and field with its technical identifiers — from three independent angles: the full raw dump, a pruned version small enough for a model to read, and the device cloud's own ranked locator suggestions. Locator resolution then matches each English phrase ("the username field") to a concrete locator, trying five sources in strict order, cheapest and most trustworthy first.</p>
+<p>Code generation turns the IR plus locators into ordinary Appium Java (Appium being the standard tool for driving a real mobile app in tests). Two details matter here. The generated code never contains a password: credentials appear only as <code>vault(...)</code> calls, resolved at runtime from a secrets store that hands out short-lived, single-run tokens. And the generation runs offline, once per IR version — there is no model improvising during a test run. An engineer reviews <code>LoginTest.java</code> and commits it. That file is the audit pin.</p>
+<p>Everything after the commit is the spine's territory: a static gate, a device gate, and a verdict — covered two sections down.</p>
+
+<div class="vis">
+  <div class="journey">
+    <div class="stop llm"><span class="n">1</span><div class="nm">A0 Normalizer</div><div class="what">tidies the raw export</div><span class="ai">LLM · proposed</span></div>
+    <div class="stop"><span class="n">2</span><div class="nm">A1 Parser</div><div class="what">structure only, deterministic</div></div>
+    <div class="stop llm"><span class="n">3</span><div class="nm">A2 Interpreter</div><div class="what">meaning; commits the IR</div><span class="ai">LLM fallback</span></div>
+    <div class="stop"><span class="n">4</span><div class="nm">Capture</div><div class="what">dumps the live screen</div></div>
+    <div class="stop llm"><span class="n">5</span><div class="nm">Locators</div><div class="what">cascade, 5 sources</div><span class="ai">LLM fallback</span></div>
+    <div class="stop llm"><span class="n">6</span><div class="nm">Code gen</div><div class="what">IR → Java, human-reviewed</div><span class="ai">LLM</span></div>
+    <div class="stop spinestop"><span class="n">7</span><div class="nm">Static gate</div><div class="what">compile &amp; lint, seconds</div></div>
+    <div class="stop spinestop"><span class="n">8</span><div class="nm">Device gate</div><div class="what">real Perfecto runs</div></div>
+    <div class="stop spinestop"><span class="n">9</span><div class="nm">Verdict</div><div class="what">pins the commit SHA</div></div>
+  </div>
+  <p class="vis-cap">ACC-1042's nine stops. Amber-edged stops can involve an LLM; green stops are the LLM-free spine.</p>
+</div>
+
+<figure class="diagram">
+  <img src="o1-diagrams/04-pipeline-flow/04-pipeline-flow.svg" alt="O1 pipeline end-to-end flow diagram">
+  <figcaption>The whole machine in one diagram: the authoring arm on the left feeds committed artifacts to the spine on the right. The ASH-Capture stages shown are proposed (ADR 0014).</figcaption>
+</figure>
+
+<div class="spec-pointer"><b>Want the full spec?</b> Every stage above has a deeper treatment — schemas, budgets, worked examples, and 22 mock artifacts — in the <a href="o1-pipeline-walkthrough.html">O1 pipeline walkthrough</a>.</div>
+</section>
+
+<section id="callsites">
+<h2>Where the AI actually lives</h2>
+<p>Count them: the entire pipeline invokes an LLM in exactly four places. One is part of the decided base design; the other three belong to the ADR 0014 proposal. Each call site has a guardrail that is not the model's own judgment — a deterministic check that sits between the model's suggestion and anything that happens in the real world.</p>
+
+<div class="vis">
+  <div class="callsites">
+    <div class="cs">
+      <h4>1 · Locator fallback <span class="badge decided">Decided</span></h4>
+      <p>When the deterministic locator sources can't clear a 0.85 confidence floor, a model proposes one — from the captured screen data only.</p>
+      <p><b>Guardrail:</b> human accepts the proposal; the static gate then requires every locator to appear in a committed manifest.</p>
+    </div>
+    <div class="cs">
+      <h4>2 · Discovery proposer <span class="badge proposed">Proposed · ADR 0014</span></h4>
+      <p>For a screen the system has never seen, a model suggests up to 3 next taps to reach it.</p>
+      <p><b>Guardrail:</b> a deterministic validator filters by confidence floor, an action denylist, and strict budgets; the model never touches the device. <b>Open item:</b> the signature re-keying defect (section 8).</p>
+    </div>
+    <div class="cs">
+      <h4>3 · Deep-link proposer <span class="badge proposed">Proposed · ADR 0014</span></h4>
+      <p>A model suggests shortcut URLs to a screen, within a URL scheme parsed from the app binary — it never invents a scheme.</p>
+      <p><b>Guardrail:</b> a deterministic probe confirms each route before it is kept. <b>Open item:</b> the probe's missing URL denylist (section 8).</p>
+    </div>
+    <div class="cs">
+      <h4>4 · Drift-repair re-discovery <span class="badge proposed">Proposed · ADR 0014</span></h4>
+      <p>When an app update breaks a known navigation path, discovery re-runs — scoped to just the broken stretch, reusing call site 2's prompt unchanged.</p>
+      <p><b>Guardrail:</b> same validator and budgets as call site 2 — and it inherits that loop's re-keying defect.</p>
+    </div>
+  </div>
+  <p class="vis-cap">The four LLM call sites. One decided, three proposed; every one is a proposer, never an executor.</p>
+</div>
+
+<p>The decided one deserves a closer look, because it shows the pattern in miniature. In one mock case, the test says "the Forgot Password link" but the actual element is typed as a button — a mismatch that drags every deterministic candidate below the confidence floor. The fallback model reads the captured screen data and answers:</p>
+<p class="snip-label">From LocatorResolution.fallback.output.json</p>
+<pre><code>"proposedLocator": { "strategy": "ACCESSIBILITY_ID", "value": "forgotPasswordButton",
+                     "confidence": 0.91, "source": "LLM-guess" }</code></pre>
+<p>Note what it did not do: it did not tap anything, edit the test, or invent an element. It proposed, with a confidence score and a recorded reason, and a human decides whether the proposal enters the manifest. Every call site follows this proposer-not-executor shape.</p>
+<p>Two more rules apply to all four sites. Every model call routes through a single gateway interface — no stage talks to a model vendor directly, so swapping or auditing models happens in one place. And every point where untrusted text enters a model, or model output re-enters the pipeline, is a named screening checkpoint under the project's injection-defense rules; the three proposed call sites cannot ship until their screening maps are written into ADR 0014.</p>
+
+<figure class="diagram">
+  <img src="o1-diagrams/06-locator-cascade/06-locator-cascade.svg" alt="Locator resolution cascade diagram">
+  <figcaption>The locator cascade: three deterministic sources are tried before any model is consulted.</figcaption>
+</figure>
+</section>
+
+<section id="gates">
+<h2>The gates</h2>
+<p>Once <code>LoginTest.java</code> is committed, two gates stand between it and a verdict. The static gate runs in seconds, on no device at all: formatting, compilation, two lint tools, and a rule that every locator in the code must exist in the committed manifest — so an LLM can't smuggle in an address nobody vetted. Failures loop back to code generation, with a bound on retries. Cheap checks first means bad generations die before they cost a device minute.</p>
+<p>The device gate runs the compiled test on real phones in the Perfecto cloud, K times. Today K=1 — a single run — is the signed-off baseline; moving to 3 or 5 runs (which would let the pipeline measure flakiness) is a later target, and raising K is itself a formally recorded decision. The result is a ReplayReport carrying the verdict, the evidence, and the pinned commit.</p>
+<p>The report doesn't just sit in a database. Verdicts join a tamper-evident lineage chain — each record cryptographically linked to the one before it, so deleting or editing history is detectable — and the run evidence is anchored to immutable object storage. When the auditor asks the opening question, the answer is a chain of artifacts, not a person's recollection.</p>
+<p>And then the part that surprises people: passing both gates does not certify the test. Machine PASS is a precondition. CERTIFIED is granted by a named human being, accountable for the decision — the pipeline's rules (a control called CF9) forbid issuing it mechanically. The machine gathers evidence; a person signs.</p>
+
+<div class="callout">
+  <h3>Why doesn't it self-heal?</h3>
+  <p>Self-healing — a runtime AI that notices a broken element reference and silently fixes it — is the headline feature of many commercial tools. O1's spine refuses it on purpose. A wrong heal doesn't make a test fail; it makes a test <em>pass against a broken app</em>. In banking, that false green is the catastrophic direction: a bug ships wearing a passing test as camouflage.</p>
+  <p>Practitioner audits report that ML element-match healing carries roughly 3× the false-pass rate of simpler fallback strategies, and that around 60% of teams disabled AI self-heal within three months — reported industry figures, not this project's measurements. When O1 breaks, it breaks loudly, and repair happens upstream where a human reviews the diff.</p>
+</div>
+
+<p>The economics still favor this design. Hand-maintaining a hundred-test suite under monthly releases costs on the order of $24k–36k a year in engineer hours; a regenerate-and-review model lands around $8k–14k, shifting the cost from engineer-hours to compute. Both figures are illustrative order-of-magnitude constants from the comparison analysis, not measured actuals — but the structural gap between "engineers hand-edit code" and "engineers review regenerated output" is what the whole authoring arm exists to capture.</p>
+</section>
+
+<section id="ash">
+<h2>The next chapter: ASH-Capture <span class="badge proposed">Proposed · ADR 0014 in flight</span></h2>
+<p>One stage of the journey still needs a human babysitter: capturing screens. Someone has to steer the app to the right screen before the hierarchy tool can dump it. ASH-Capture — short for Automated State-aware Hierarchy capture — is the proposal to remove that person. It is not yet a decision; ADR 0014 is being drafted in a parallel thread, and everything in this section should be read with that badge attached.</p>
+<p>The design keeps a map. Every screen the system has visited becomes a node in a committed ScreenGraph, with the taps that connect screens as edges. Most capture requests should then be boring: the target screen is already on the map, so the system replays the known route — no model involved. That warm path is targeted at roughly 90% of runs, a figure that is explicitly an unmeasured target, not a result. The cold path handles genuinely new screens: a discovery loop where a model proposes the next tap, a deterministic validator filters the proposals, and the survivor is executed — under hard budgets (at most 15 actions, a 10-minute session cap). When discovery fails, a human escape hatch takes over, targeted at under 10% of cases — also unmeasured.</p>
+<p>Here is the discovery proposer thinking, from the mock run where it must find its way from the home screen to the account overview:</p>
+<p class="snip-label">From ASHCapture.discovery.output.json</p>
+<pre><code>{ "rank": 1, "action": { "kind": "TAP", "locator": { "strategy": "ACCESSIBILITY_ID", "value": "accountsTab" } },
+  "confidence": 0.90,
+  "reasoning": "The 'Accounts' tab label directly matches the target screen 'AccountOverview'; ..." }</code></pre>
+<p>A deep-link sub-loop rounds out the proposal: for screens reachable by shortcut URL, the model proposes routes inside the app's already-parsed URL scheme, and a deterministic probe confirms which ones actually land. Confirmed links become the fastest edges on the map.</p>
+<p>The map also has to survive app updates. On each monthly release, every edge flips to "unverified" — nothing is rebuilt upfront. Re-verification happens lazily, the first time a screen is needed: an unchanged screen replays its known steps, its fingerprint matches, and the edge flips back to verified with no model call. A changed screen fails that match, gets marked broken, and triggers a scoped re-discovery from the last known-good screen — repairing one stretch of the map rather than rebuilding it. If ASH-Capture fell over entirely, the spine would keep running off existing captures and a human could always capture manually — the survivability guarantee behind the whole proposal.</p>
+
+<div class="vis">
+  <div class="fork">
+    <div class="root">Capture request: "get me screen X"</div>
+    <div class="stem"></div>
+    <div class="branches">
+      <div class="branch warm">
+        <h4>Warm path — no LLM</h4>
+        <p>Screen X is on the map with a verified route. Graph search picks the cheapest path, replays it, dumps the hierarchy.</p>
+        <p class="share">~90% of runs <span class="badge target">Unmeasured target</span></p>
+      </div>
+      <div class="branch cold">
+        <h4>Cold path — discovery loop</h4>
+        <p>Screen X is new or its route broke. Model proposes taps; validator filters; budgets bound the search. On failure: human escape hatch.</p>
+        <p class="share">Escape hatch &lt;10% <span class="badge target">Unmeasured target</span></p>
+      </div>
+    </div>
+  </div>
+  <p class="vis-cap">ASH-Capture's fork (proposed, ADR 0014). Both percentages are design targets awaiting measurement.</p>
+</div>
+
+<figure class="diagram">
+  <img src="o1-diagrams/05-discovery-loop/05-discovery-loop.svg" alt="ASH-Capture discovery loop diagram">
+  <figcaption>The discovery loop's cycle: propose, validate, execute, check — entered only when a screen isn't on the map. Every node is proposed (ADR 0014).</figcaption>
+</figure>
+</section>
+
+<section id="open">
+<h2>What we haven't solved yet</h2>
+<p>A pitch that hides its defects is a pitch, not an engineering document. Three problems in the ASH-Capture proposal are open, and the team publishes them deliberately — because a design you can trust with an audit is a design that audits itself first.</p>
+<p><b>The signature re-keying defect.</b> The discovery loop decides it has arrived by comparing the landed screen's signature — a structural fingerprint of the screen — against the signature stored from before. But if a screen legitimately changed in the new app release, which is precisely the situation drift repair exists to handle, the landed signature can never equal the stored one. The loop then deterministically burns its entire budget and dumps into the human escape hatch, every single time. Until a re-keying mechanism lets the stored signature be updated, the under-10% escape-hatch target fails at every release by construction. This is the load-bearing open question for the whole automatic-repair story.</p>
+<p><b>The deep-link denylist gap.</b> The validator that filters UI taps has a denylist — it refuses actions like logout, transfer, pay. The deep-link probe has no equivalent for URLs. A proposed route like <code>erica://transfer?...</code> could execute on the device and, if confirmed, persist as the preferred fastest edge on the map. Until a URL allow/deny list ships, the model's own reluctance to propose destructive-looking routes is the only line of defense.</p>
+<p><b>Unmeasured coverage targets.</b> The ~90% warm path, the &lt;10% escape hatch, and the planning assumption that ~20% of screens change per release are all targets or assumptions awaiting a measurement spike. They are falsifiable claims — and the first one is already threatened by the re-keying defect above.</p>
+</section>
+
+<section id="close">
+<h2>Where this goes</h2>
+<p>The comparison's verdict card names the production north-star: keep the spine as the substrate, and make the maintenance model <em>regenerate-and-filter, never hand-maintain</em>. That is the pattern Meta proved with TestGen-LLM, where 73% of filter-surviving candidates were accepted by engineers — a figure from unit-test improvement at Meta, not mobile-UI green-field work, so it travels as encouragement rather than a promise.</p>
+<p>Chapter one — the spine — is decided and walked through end to end. ASH-Capture is chapter two, still a proposal waiting on ADR 0014. Assured generation at scale is chapter three. The auditor's question stays answered through all of them, because the answer was never a clever model. It was a commit.</p>
+<p>Go deeper: the <a href="o1-pipeline-walkthrough.html">full pipeline walkthrough</a>, the <a href="../mobile-test-automation-six-way-comparison.html">six-way comparison</a>, the six lint-passing <a href="o1-diagrams/04-pipeline-flow/04-pipeline-flow.svg">architecture diagrams</a>, and the <a href="mocks/o1-spine/README.md">22-file mock artifact folder</a> that backs every stage of ACC-1042's journey with real data.</p>
+</section>
+
+<footer>
+  <p>A blog-style retelling of the O1 pipeline walkthrough. All pipeline claims are grounded in the <a href="o1-pipeline-walkthrough.html">walkthrough</a> and the <a href="../mobile-test-automation-six-way-comparison.html">six-way comparison</a>; matrix scores and TCO constants are the analyst's draft figures pending ARB sign-off; ASH-Capture and A0 are proposed (ADR 0014 in flight); coverage percentages are unmeasured targets.</p>
+</footer>
+
+</div>
+
+</body>
+</html>

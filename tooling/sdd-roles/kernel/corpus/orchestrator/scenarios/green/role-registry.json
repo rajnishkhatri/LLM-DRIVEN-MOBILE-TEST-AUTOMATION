@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "role_registry",
+  "roles": [
+    {
+      "id": "g-coder",
+      "tag": "maker",
+      "gates": [
+        "g-build"
+      ],
+      "write_scopes": [
+        "src/",
+        "scratch/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "green"
+      }
+    },
+    {
+      "id": "g-checker",
+      "tag": "checker",
+      "gates": [
+        "g-tests"
+      ],
+      "write_scopes": [
+        "src/",
+        "scratch/"
+      ],
+      "diagnostic_capability": true,
+      "invocation": {
+        "prompt": "green"
+      }
+    }
+  ],
+  "arms": [
+    {
+      "id": "G2",
+      "roles": [
+        "g-coder",
+        "g-checker"
+      ]
+    }
+  ]
+}

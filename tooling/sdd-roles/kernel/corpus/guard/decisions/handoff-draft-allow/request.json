@@ -1,0 +1,6 @@
+{
+  "operation": "create",
+  "paths": [
+    "../run-dir/handoff.draft"
+  ]
+}

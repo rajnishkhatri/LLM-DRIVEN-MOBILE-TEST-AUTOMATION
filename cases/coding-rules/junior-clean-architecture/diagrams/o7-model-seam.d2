@@ -1,0 +1,112 @@
+# The one model seam — every LLM call in the system crosses invoke_models.
+# DIP in production: policy names the port; the provider adapter implements it from outside.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  detail: {
+    style: {
+      fill: "#F1E3CE"
+      stroke: "#B0742A"
+      font-color: "#6E4718"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  port: {
+    style: {
+      fill: "#E7E1F1"
+      stroke: "#6A5A9C"
+      font-color: "#453A6B"
+      border-radius: 6
+      stroke-width: 2
+      stroke-dash: 4
+    }
+  }
+  calls: {
+    style: {
+      stroke: "#1F6F6B"
+      font-color: "#4A5A59"
+      font-size: 13
+    }
+  }
+}
+
+callers: "The bounded callers — three in the authoring arm, one at certification" {
+  style: {
+    fill: "#F2F7F6"
+    stroke: "#1F6F6B"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 15
+    bold: true
+  }
+  a2: "A2 semantic fallback\n(when deterministic\ntemplates miss)" { class: policy }
+  loc: "Locator last-resort\n(cascade exhausted\nat authoring time)" { class: policy }
+  ash: "ASH-Capture proposers\n(propose only —\nnever decide)" { class: policy }
+  judge: "Certification fidelity judge\n(one advisory grade per verdict,\ncached, never re-graded —\nadvises the human, ADR 0004)" { class: policy }
+}
+
+seam: "invoke_models\n«the single seam»\ncache key includes\nmodel + provider version" { class: port }
+
+providers: "Providers — swappable detail" {
+  style: {
+    fill: "#FBF7EF"
+    stroke: "#B0742A"
+    stroke-dash: 5
+    border-radius: 8
+    font-color: "#6E4718"
+    font-size: 15
+    bold: true
+  }
+  p1: "reasoning provider\n(today's choice)" { class: detail }
+}
+
+spine: "The replay path\ngate → interpreter →\nclassification → report\nISSUES NO MODEL CALL\n(CI-enforced, not a promise)" {
+  style: {
+    fill: "#DCECE9"
+    stroke: "#1F6F6B"
+    font-color: "#134844"
+    border-radius: 8
+    stroke-width: 3
+    font-size: 14
+    bold: true
+  }
+}
+
+callers.a2 -> seam: { class: calls }
+callers.loc -> seam: { class: calls }
+callers.ash -> seam: { class: calls }
+callers.judge -> seam: { class: calls }
+seam -> providers.p1: "routes, caches,\nversion-stamps" {
+  style: {
+    stroke: "#B0742A"
+    font-color: "#6E4718"
+    font-size: 13
+  }
+}
+spine -> seam: "no edge exists —\nthis arrow is forbidden" {
+  style: {
+    stroke: "#A6402F"
+    stroke-dash: 3
+    font-color: "#A6402F"
+    font-size: 13
+    bold: true
+  }
+}

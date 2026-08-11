@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "handoff_contract",
+  "from_role": "qa",
+  "to_role": "coder",
+  "stage": "implement",
+  "stage_status": "rework",
+  "summary": {
+    "text": "stage summary",
+    "provenance": {
+      "source": "role_authored"
+    }
+  },
+  "decisions": [
+    {
+      "choice": "adopt-x",
+      "rationale": "r",
+      "alternatives_considered": "none",
+      "provenance": {
+        "source": "role_authored"
+      }
+    }
+  ],
+  "gate_outcomes": [],
+  "completion_evidence": [],
+  "rework": {
+    "target_role": "coder",
+    "counter": 1
+  }
+}

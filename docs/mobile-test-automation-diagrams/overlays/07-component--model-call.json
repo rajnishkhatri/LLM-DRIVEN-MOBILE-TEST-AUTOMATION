@@ -1,0 +1,103 @@
+{
+  "view": {
+    "id": "07-component--model-call",
+    "level": "component",
+    "title": "C3a \u2014 Component view: module flow \u2014 model-call overlay",
+    "caption": "This view is a subset of `07-component` opening `APP` \u2014 only the model-call seam and its gateway. Edge numbers match the primary; see `07-component` for the complete edge set.",
+    "direction": "down",
+    "opens": "APP",
+    "opens_from": "07-component",
+    "completeness": "subset:07-component",
+    "overlays": "none",
+    "primary_of": "07-component"
+  },
+  "nodes": [
+    {
+      "id": "INTERPRET_TEST_INTENT",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Interpret Test Intent",
+      "detail": [
+        "Emits TestCaseIR; flags ambiguity"
+      ]
+    },
+    {
+      "id": "INVOKE_MODELS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Invoke Models",
+      "role": "model-seam",
+      "detail": [
+        "THE model seam (ADR 0001): P1 Copilot impl / P2 gateway impl, config-selected. Cache key incl. model+provider version (ADR 0002). P2 edge tags = runtime call exists in Phase 2 only; the seam and its callers exist from the first commit (F1)"
+      ]
+    },
+    {
+      "id": "RESOLVE_ELEMENTS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Resolve Elements",
+      "detail": [
+        "Owns the locator cascade. Octane locator lookup STUBBED IN SPINE (C5)"
+      ]
+    },
+    {
+      "id": "GENERATE_TEST_CODE",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Generate Test Code",
+      "detail": [
+        "Page Objects + Appium Java/TestNG"
+      ]
+    },
+    {
+      "id": "REPAIR_LOCATORS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Repair Locators",
+      "detail": [
+        "Bounded re-grounding"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "INTERPRET_TEST_INTENT",
+      "to": "INVOKE_MODELS",
+      "kind": "sync",
+      "ref": 17,
+      "detail": "P2"
+    },
+    {
+      "from": "RESOLVE_ELEMENTS",
+      "to": "INVOKE_MODELS",
+      "kind": "sync",
+      "ref": 18,
+      "detail": "P2"
+    },
+    {
+      "from": "GENERATE_TEST_CODE",
+      "to": "INVOKE_MODELS",
+      "kind": "sync",
+      "ref": 19,
+      "detail": "P2"
+    },
+    {
+      "from": "REPAIR_LOCATORS",
+      "to": "INVOKE_MODELS",
+      "kind": "sync",
+      "ref": 20,
+      "detail": "P2"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

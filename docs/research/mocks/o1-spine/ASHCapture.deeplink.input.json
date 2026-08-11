@@ -1,0 +1,39 @@
+{
+  "honestyTags": [
+    "PROPOSED ADR 0014",
+    "Replan R1 D2",
+    "lives outside spine repo",
+    "F1 does not apply"
+  ],
+  "appVersion": "8.4.0",
+  "graphVersion": "sha:graph:3b2c7e8f...",
+  "staticParse": {
+    "platform": "IOS",
+    "scheme": "erica",
+    "hosts": ["erica://accounts", "erica://payments", "erica://home"],
+    "note": "iOS yields scheme + associated domains only; routes are in code, not statically parseable."
+  },
+  "targetScreen": "AccountOverview",
+  "targetSignature": {
+    "skeletonHash": "h_acctov_9c1d",
+    "titleAnchor": "Account Overview"
+  },
+  "appDocsSummary": {
+    "informationArchitecture": [
+      { "screenTitle": "Login", "deepLinkHint": "none (root)" },
+      { "screenTitle": "Home", "deepLinkHint": "erica://home" },
+      { "screenTitle": "Accounts", "deepLinkHint": "erica://accounts" },
+      { "screenTitle": "Account Overview", "deepLinkHint": "unknown — candidate for discovery" },
+      { "screenTitle": "Payments & Activity", "deepLinkHint": "erica://payments" }
+    ],
+    "source": "app release notes v8.4.0 + screen titles auto-discovered from graph"
+  },
+  "knownDeepLinkEdges": [
+    { "to": "HomeScreen", "url": "erica://home", "status": "VERIFIED" },
+    { "to": "AccountsScreen", "url": "erica://accounts", "status": "VERIFIED" }
+  ],
+  "maxProposalsK": 3,
+  "urlDenylist": [],
+  "urlDenylistNote": "KNOWN GAP (Replan R1 D1): no URL denylist currently enforced on the probe. The LLM should self-restrain from proposing destructive routes, but the real fix is a Lane-2 ADR 0014 URL allow/deny-list.",
+  "screeningCallSite": "adr-0009:ash-deeplink-proposer-egress"
+}

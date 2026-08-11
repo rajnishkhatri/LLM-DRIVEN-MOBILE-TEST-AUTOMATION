@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "kernel_config",
+  "arm": "C",
+  "thresholds": [
+    {
+      "name": "build_errors_max",
+      "value": 0
+    },
+    {
+      "name": "tests_failures_max",
+      "value": 0
+    },
+    {
+      "name": "crap_composite",
+      "value": 6
+    },
+    {
+      "name": "mutation_score_min",
+      "value": 0.85
+    },
+    {
+      "name": "ir_gate_violations_max",
+      "value": 0
+    }
+  ],
+  "protected": {
+    "kernel_config": [
+      ".sdd-roles/kernel-config.json"
+    ],
+    "role_registry": [
+      ".sdd-roles/role-registry.json"
+    ],
+    "ledger_dir": [
+      ".sdd-roles/ledger/"
+    ],
+    "tests_globs": [
+      "tests/**",
+      "src/test/**"
+    ],
+    "gate_configs": [
+      ".sdd-roles/gates/**"
+    ],
+    "harness_enablement": [
+      "harness-settings/**"
+    ],
+    "speckit_constitution": [
+      ".specify/memory/constitution.md"
+    ]
+  },
+  "gate_tool_allowlist": [
+    "javac-build",
+    "junit-runner",
+    "crap4java",
+    "mutate4java",
+    "ir-gate-checker"
+  ],
+  "required_mappings": [
+    "handoff_contract",
+    "stage_ledger_entry"
+  ],
+  "speckit_roots": [
+    ".specify/",
+    "specs/"
+  ],
+  "rework": {
+    "max": 3
+  },
+  "gate_runner": "sdd-roles-gate-runner",
+  "enforcement_tier": "floor",
+  "gates": [
+    {
+      "id": "build",
+      "tool": "javac-build",
+      "argv": [
+        "{javac_build}",
+        "--workspace",
+        "{workspace}",
+        "--report",
+        "{report}"
+      ],
+      "threshold": "build_errors_max"
+    },
+    {
+      "id": "tests",
+      "tool": "junit-runner",
+      "argv": [
+        "{junit_runner}",
+        "--workspace",
+        "{workspace}",
+        "--report",
+        "{report}"
+      ],
+      "threshold": "tests_failures_max"
+    },
+    {
+      "id": "crap",
+      "tool": "crap4java",
+      "argv": [
+        "{crap4java}",
+        "--workspace",
+        "{workspace}",
+        "--report",
+        "{report}"
+      ],
+      "threshold": "crap_composite"
+    },
+    {
+      "id": "mutation",
+      "tool": "mutate4java",
+      "argv": [
+        "{mutate4java}",
+        "--workspace",
+        "{workspace}",
+        "--report",
+        "{report}"
+      ],
+      "threshold": "mutation_score_min"
+    },
+    {
+      "id": "ir-gate",
+      "tool": "ir-gate-checker",
+      "argv": [
+        "{python}",
+        "{sdd_roles_root}/tools/ir-gate-checker/ir_gate_checker.py",
+        "check",
+        "--ir",
+        "{workspace}/ir/testcase-ir.json",
+        "--manifest",
+        "{workspace}/ir/locator-manifest.json",
+        "--report",
+        "{report}"
+      ],
+      "threshold": "ir_gate_violations_max"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "roles": {
+    "u8-coder": [
+      {
+        "guarded_writes": [
+          {
+            "path": "tests/test_base.py",
+            "mode": "edit",
+            "content": "def test_base():\n    assert False  # tampered\n"
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "u8-coder",
+          "to_role": "u8-coder",
+          "stage": "u8-coder",
+          "stage_status": "complete",
+          "summary": {
+            "text": "coder claims complete; the rogue tests write landed.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "claim-complete-despite-tamper",
+              "rationale": "deterministic scenario decision for u8-coder",
+              "rejected_alternatives": [
+                "alternative-x"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      }
+    ]
+  },
+  "gates": {
+    "g-build": {
+      "exits": [
+        0
+      ],
+      "tool_version": "9.9.1"
+    }
+  }
+}

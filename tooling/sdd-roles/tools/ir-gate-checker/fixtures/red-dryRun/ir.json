@@ -1,0 +1,85 @@
+{
+  "healPolicy": "NONE",
+  "irDigest": "8fce57be18f9dbd22df826762000c954a0b667d4bf045030efe6713dd7854f33",
+  "schemaVersion": "o7-derived.1",
+  "steps": [
+    {
+      "opcode": "LAUNCH",
+      "syncAfter": "WAIT_FOR_IDLE",
+      "timeoutMs": 15000
+    },
+    {
+      "opcode": "TYPE",
+      "syncAfter": "NONE",
+      "target": {
+        "locatorRef": "loc-username"
+      },
+      "timeoutMs": 5000,
+      "value": "alex.rivera"
+    },
+    {
+      "opcode": "TYPE",
+      "sensitive": true,
+      "syncAfter": "NONE",
+      "target": {
+        "locatorRef": "loc-passcode"
+      },
+      "timeoutMs": 5000,
+      "value": {
+        "vaultRef": "zelledemo/alex-rivera"
+      }
+    },
+    {
+      "opcode": "TAP",
+      "syncAfter": "WAIT_FOR_IDLE",
+      "target": {
+        "locatorRef": "loc-login-submit"
+      },
+      "timeoutMs": 8000,
+      "value": "tap-payload"
+    },
+    {
+      "opcode": "WAIT",
+      "syncAfter": "WAIT_FOR_IDLE",
+      "timeoutMs": 10000
+    },
+    {
+      "opcode": "TAP",
+      "syncAfter": "WAIT_FOR_IDLE",
+      "target": {
+        "locatorRef": "loc-nav-send-money"
+      },
+      "timeoutMs": 8000
+    },
+    {
+      "opcode": "TYPE",
+      "syncAfter": "NONE",
+      "target": {
+        "locatorRef": "loc-amount-field"
+      },
+      "timeoutMs": 5000,
+      "value": "25.00"
+    },
+    {
+      "opcode": "TAP",
+      "syncAfter": "WAIT_FOR_IDLE",
+      "target": {
+        "locatorRef": "loc-send-confirm"
+      },
+      "timeoutMs": 8000
+    },
+    {
+      "assertion": {
+        "expected": "Money sent",
+        "kind": "TEXT_EQUALS"
+      },
+      "opcode": "ASSERT",
+      "syncAfter": "NONE",
+      "target": {
+        "locatorRef": "loc-confirmation-banner"
+      },
+      "timeoutMs": 8000
+    }
+  ],
+  "testCaseId": "ACC-2087-zelle-send-money"
+}

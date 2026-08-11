@@ -1,0 +1,113 @@
+{
+  "$schema": "../../../references/ir-schema.md",
+  "view": {
+    "id": "01-context",
+    "level": "context",
+    "title": "Silicon Sandwiches - Context view",
+    "caption": "The whole. Silicon Sandwiches' online ordering system, its five user types, and its external dependencies. The single system box drawn here is opened in the Container view.",
+    "direction": "down",
+    "completeness": "complete",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "CUST",
+      "kind": "actor",
+      "label": "Customer",
+      "detail": ["mobile/web ordering", "(thousands today, millions bet)"]
+    },
+    {
+      "id": "OWNER",
+      "kind": "actor",
+      "label": "Franchise owner",
+      "detail": ["shop settings, local daily promos"]
+    },
+    {
+      "id": "STAFF",
+      "kind": "actor",
+      "label": "Shop staff",
+      "detail": ["fulfil orders, in-shop POS"]
+    },
+    {
+      "id": "CORP",
+      "kind": "actor",
+      "label": "Corporate promo author",
+      "detail": ["national daily promos"]
+    },
+    {
+      "id": "DRV",
+      "kind": "actor",
+      "label": "Driver",
+      "detail": ["delivery + collect-on-delivery"]
+    },
+    {
+      "id": "SYS",
+      "kind": "system",
+      "label": "Silicon Sandwiches Online Ordering System",
+      "detail": [
+        "ACCEPTED: modular monolith, ONE architecture quantum",
+        "(opened in the Container view)"
+      ],
+      "emphasis": "heaviest"
+    },
+    {
+      "id": "MAPX",
+      "kind": "external",
+      "label": "External mapping services xN",
+      "detail": ["several, interchangeable; directions + live traffic"]
+    },
+    {
+      "id": "PGW",
+      "kind": "external",
+      "label": "Stripe payment gateway - PROVISIONAL",
+      "detail": [
+        "direct tokenization required; contract/tier/SLA pending",
+        "(risk cells 4 and 5 remain HIGH)"
+      ],
+      "family": "evidence-gap"
+    },
+    {
+      "id": "POSX",
+      "kind": "external",
+      "label": "In-shop POS terminals",
+      "detail": [
+        "franchise-owned, plausibly heterogeneous",
+        "(needs-input:data-constraints)"
+      ]
+    },
+    {
+      "id": "PDEV",
+      "kind": "external",
+      "label": "On-delivery payment devices"
+    },
+    {
+      "id": "DDEV",
+      "kind": "external",
+      "label": "Driver devices",
+      "detail": ["dispatch notifications"]
+    }
+  ],
+  "edges": [
+    { "from": "CUST",  "to": "SYS",  "kind": "sync",  "label": "browse offer, place order, pay online" },
+    { "from": "OWNER", "to": "SYS",  "kind": "sync",  "label": "configure shop, author local promos" },
+    { "from": "STAFF", "to": "SYS",  "kind": "sync",  "label": "progress orders, record POS payment" },
+    { "from": "CORP",  "to": "SYS",  "kind": "sync",  "label": "publish national promos" },
+    { "from": "DRV",   "to": "SYS",  "kind": "sync",  "label": "settle payment on delivery" },
+    { "from": "SYS",   "to": "MAPX", "kind": "sync",  "label": "directions + traffic (sync, degradable to no-traffic)" },
+    { "from": "SYS",   "to": "PGW",  "kind": "sync",  "label": "online payment auth (sync, NO degraded mode)" },
+    { "from": "SYS",   "to": "POSX", "kind": "sync",  "label": "in-shop payment records (direction assumed; push-vs-pull pending)" },
+    { "from": "SYS",   "to": "PDEV", "kind": "sync",  "label": "on-delivery payment (contract-level integration assumed)" },
+    { "from": "SYS",   "to": "DDEV", "kind": "async", "label": "dispatch notification (async push)" }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bPostgres\\b"
+  ]
+}

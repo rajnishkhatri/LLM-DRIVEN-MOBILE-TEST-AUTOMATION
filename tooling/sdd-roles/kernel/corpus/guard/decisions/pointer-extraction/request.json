@@ -1,0 +1,10 @@
+{
+  "write": {
+    "mode": "edit",
+    "targets": [
+      {
+        "file": "tests/test_base.py"
+      }
+    ]
+  }
+}

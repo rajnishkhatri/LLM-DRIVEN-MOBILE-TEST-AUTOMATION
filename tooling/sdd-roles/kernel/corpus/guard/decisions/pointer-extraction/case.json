@@ -1,0 +1,10 @@
+{
+  "role": "gd-maker",
+  "stdin": "request.json",
+  "argv_extra": [
+    "--descriptors",
+    "{orchestrator}/descriptors-stub.json",
+    "--harness",
+    "stub-delta"
+  ]
+}

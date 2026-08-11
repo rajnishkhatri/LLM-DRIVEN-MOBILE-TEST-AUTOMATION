@@ -1,0 +1,62 @@
+{
+  "artifact_type": "ir_gate_report",
+  "checks": [
+    {
+      "id": "schemaValid",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "opcodeClosed",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "boundedWaits",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "locatorManifest",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "noLiteralCreds",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "ambiguityClear",
+      "outcome": "fail",
+      "violations": [
+        {
+          "detail": "ambiguous step must be resolved before commit, never at replay",
+          "pointer": "/steps/6/ambiguous"
+        }
+      ]
+    },
+    {
+      "id": "dryRun",
+      "outcome": "pass",
+      "violations": []
+    }
+  ],
+  "contract": "o7-spec-derived.1",
+  "inputs": {
+    "ir_sha256": "5aa2a8be6b2cff7bc9099383ef120e22dab1e1d7b90f009a4b7a352044f25138",
+    "manifest_sha256": "00213d11fb4f510c6a4b56e0feffc069443aba13825a97385661541c37958a36"
+  },
+  "ir_digest": {
+    "computed": "e5fcc12f0a13620e9bf6aa829c8b2e69f9c6e3d2d2d719d613eeebd26c6d610c",
+    "declared": "e5fcc12f0a13620e9bf6aa829c8b2e69f9c6e3d2d2d719d613eeebd26c6d610c"
+  },
+  "threshold": {
+    "name": "ir_gate_violations_max",
+    "value": 0
+  },
+  "tool": "ir-gate-checker",
+  "tool_version": "1.0.0",
+  "verdict": "red",
+  "violations_total": 1
+}

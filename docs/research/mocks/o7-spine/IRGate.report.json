@@ -1,0 +1,20 @@
+{
+  "testId": "ACC-2087",
+  "irDigest": "sha:ir:2087:d41c9a...",
+  "manifestDigest": "sha:loc:2087:7e3a...",
+  "interpreterVersion": "sha:interp:9f0c22...",
+  "gateVersion": "sha:gate:1f4c8b...",
+  "gatedAt": "2026-08-05T10:08Z",
+  "checks": {
+    "schemaValid":     { "status": "PASS", "tool": "victools-exported TestCaseIR v2 schema", "details": "11 steps valid" },
+    "opcodeClosed":    { "status": "PASS", "tool": "opcode-whitelist (internal)", "details": "11/11 actions in {TAP,TYPE,SWIPE,WAIT,ASSERT,LAUNCH,NAVIGATE}" },
+    "boundedWaits":    { "status": "PASS", "tool": "bounded-wait-linter (internal)", "details": "11/11 steps carry explicit timeoutMs; 0 unbounded/implicit waits" },
+    "locatorManifest": { "status": "PASS", "tool": "locator-manifest-linter (internal)", "details": "10/10 IR-referenced locators present in manifest; 0 orphans" },
+    "noLiteralCreds":  { "status": "PASS", "tool": "secret-scan (internal)", "details": "inputData uses ${testData.*}/vault: refs only; 0 literal secrets" },
+    "ambiguityClear":  { "status": "PASS", "tool": "ambiguity-flag-consumer (internal)", "details": "0 unresolved ambiguityFlags; step-3 recipient-selection flag resolved by A2" },
+    "dryRun":          { "status": "PASS", "tool": "no-device dry-run (internal)", "details": "all 11 steps resolvable against committed captured hierarchy; no device used" }
+  },
+  "findings": [],
+  "decision": "PROCEED_TO_DEVICE_GATE",
+  "auditPin": "gateVersion sha:gate:1f4c8b... over irDigest sha:ir:2087:d41c9a... — the IR gate is deterministic; this verdict is reviewable and reproducible by re-running the gate at these SHAs."
+}

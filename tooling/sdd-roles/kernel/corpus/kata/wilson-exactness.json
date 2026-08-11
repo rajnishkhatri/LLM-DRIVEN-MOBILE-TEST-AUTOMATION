@@ -1,0 +1,69 @@
+{
+  "cases": [
+    {
+      "hi": 602,
+      "k": 0,
+      "lo": 0,
+      "n": 60,
+      "rate": 0
+    },
+    {
+      "hi": 2015,
+      "k": 6,
+      "lo": 466,
+      "n": 60,
+      "rate": 1000
+    },
+    {
+      "hi": 3179,
+      "k": 12,
+      "lo": 1182,
+      "n": 60,
+      "rate": 2000
+    },
+    {
+      "hi": 6227,
+      "k": 30,
+      "lo": 3773,
+      "n": 60,
+      "rate": 5000
+    },
+    {
+      "hi": 7144,
+      "k": 36,
+      "lo": 4736,
+      "n": 60,
+      "rate": 6000
+    },
+    {
+      "hi": 7438,
+      "k": 38,
+      "lo": 5068,
+      "n": 60,
+      "rate": 6333
+    },
+    {
+      "hi": 9534,
+      "k": 54,
+      "lo": 7985,
+      "n": 60,
+      "rate": 9000
+    },
+    {
+      "hi": 10000,
+      "k": 60,
+      "lo": 9398,
+      "n": 60,
+      "rate": 10000
+    },
+    {
+      "hi": 10000,
+      "k": 0,
+      "lo": 0,
+      "n": 0,
+      "rate": 0
+    }
+  ],
+  "note": "known (k,n) -> committed widened-integer Wilson bounds; the selftest recomputes and asserts equality (S4 exactness).",
+  "scale": 10000
+}

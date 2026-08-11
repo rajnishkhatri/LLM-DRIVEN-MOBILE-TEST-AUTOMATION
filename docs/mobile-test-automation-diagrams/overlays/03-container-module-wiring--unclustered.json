@@ -1,0 +1,115 @@
+{
+  "view": {
+    "id": "03-container-module-wiring--unclustered",
+    "level": "container",
+    "title": "C2b \u2014 Container drill-down: module wiring \u2014 unclustered overlay",
+    "caption": "This view is a subset of `03-container-module-wiring` opening `APP` \u2014 only the edges owned by `unclustered`. Edge numbers match the primary; see `03-container-module-wiring` for the complete edge set.",
+    "direction": "right",
+    "opens": "APP",
+    "opens_from": "03-container-module-wiring",
+    "completeness": "subset:03-container-module-wiring",
+    "overlays": "none",
+    "primary_of": "03-container-module-wiring"
+  },
+  "nodes": [
+    {
+      "id": "QA",
+      "kind": "actor",
+      "label": "QA engineer"
+    },
+    {
+      "id": "APP",
+      "kind": "container",
+      "label": "Spring Boot modular monolith",
+      "technology": "Spring Boot modular monolith",
+      "detail": [
+        "Module boundaries are the three clusters, NOT the blueprint's five pipeline stages (ADR 0005). Drawn opaque in C2a; opened at module grain in C2b and at component grain in C3a"
+      ]
+    },
+    {
+      "id": "REVIEWER",
+      "kind": "actor",
+      "label": "Reviewer"
+    },
+    {
+      "id": "WEB",
+      "kind": "container",
+      "label": "Review UI",
+      "qualifiers": [
+        "TECH: UNKNOWN"
+      ],
+      "detail": [
+        "One authenticated internal API, no BFF (ADR 0008). SSO against the bank IdP is a HARD requirement, not a nice-to-have (M37). The ONLY UI in Phase 1"
+      ]
+    },
+    {
+      "id": "LEAD",
+      "kind": "actor",
+      "label": "Delivery lead"
+    },
+    {
+      "id": "TEST_EXECUTION",
+      "kind": "process",
+      "label": "test-execution process",
+      "detail": [
+        "Test-execution process, spawned per device run. Separate OS process \u2014 shape committed NOW, sandbox technology weeks 3\u20138 (ADR 0013). NO long-lived credentials; single-run device session token; NEVER the gateway credential. Static capability rules gate entry (supplement, not the control)"
+      ]
+    },
+    {
+      "id": "PERFECTO",
+      "kind": "external",
+      "label": "Perfecto device lab",
+      "detail": [
+        "Same standing as the C1 node-detail table (E1/E2). INCUMBENT vendor \u2014 MSA on file, unread (E1); flows run on mock/synthetic data (E2); NOT covered by E3"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "QA",
+      "to": "APP",
+      "kind": "sync",
+      "ref": 1,
+      "detail": "2 CLIs (ingestion + hierarchy-tool), no BFF (ADR 0008)"
+    },
+    {
+      "from": "REVIEWER",
+      "to": "WEB",
+      "kind": "async",
+      "ref": 2,
+      "detail": "Review queue; human latency, hours\u2013days"
+    },
+    {
+      "from": "LEAD",
+      "to": "WEB",
+      "kind": "sync",
+      "ref": 3,
+      "detail": "Read-only metrics dashboard"
+    },
+    {
+      "from": "WEB",
+      "to": "APP",
+      "kind": "sync",
+      "ref": 4,
+      "detail": "One authenticated internal API; SSO against bank IdP (M37)"
+    },
+    {
+      "from": "TEST_EXECUTION",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "ref": 17,
+      "detail": "Single-run device session token; expires with the run (ADR 0013)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

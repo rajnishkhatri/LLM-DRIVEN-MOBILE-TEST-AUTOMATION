@@ -1,0 +1,9 @@
+{
+  "artifact_type": "debug_report",
+  "expected": "stable output on edge input",
+  "failing_test": "feature_contract_case",
+  "minimal_repro": "run feature over the edge fixture",
+  "observed": "v2 output drifts on edge input",
+  "schema_version": "1.4.0",
+  "suspected_locus": "src/feature.txt"
+}

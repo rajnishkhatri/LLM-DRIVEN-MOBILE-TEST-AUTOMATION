@@ -1,0 +1,14 @@
+{
+  "command": "gate-wrap",
+  "args": [
+    "--descriptors",
+    "<KERNEL>/descriptors/invocation-descriptors.json",
+    "--harness",
+    "nope",
+    "--",
+    "<PY>",
+    "-c",
+    "raise SystemExit(0)"
+  ],
+  "expected_exit": 1
+}

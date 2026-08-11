@@ -1,0 +1,88 @@
+# Screaming Architecture — bad (framework folders) vs good (business folders).
+# Silicon Sandwiches cast. Side-by-side folder trees.
+
+vars: {
+  d2-config: {
+    layout-engine: dagre
+  }
+}
+
+direction: right
+
+title: "Does your codebase scream Silicon Sandwiches — or Spring?" {
+  shape: text
+  near: top-center
+  style: {
+    font-size: 20
+    bold: true
+  }
+}
+
+bad: "Bad — screams the framework" {
+  style: {
+    fill: "#f5e6e6"
+    stroke: "#8b3a3a"
+    font-size: 15
+    bold: true
+  }
+
+  tree: "com.siliconsandwiches/\n  controllers/\n  services/\n  repositories/\n  entities/\n  dto/\n  config/" {
+    shape: text
+    style: {
+      font-size: 14
+      font: mono
+    }
+  }
+
+  note: "A stranger sees Spring stereotypes,\nnot sandwich ordering." {
+    shape: text
+    style: {
+      font-size: 12
+      italic: true
+    }
+  }
+}
+
+good: "Good — screams the business" {
+  style: {
+    fill: "#e6f5e8"
+    stroke: "#2d6a3e"
+    font-size: 15
+    bold: true
+  }
+
+  tree: "com.siliconsandwiches/\n  ordering/\n  offer/\n  payments/\n  franchise/\n  mapping/" {
+    shape: text
+    style: {
+      font-size: 14
+      font: mono
+    }
+  }
+
+  note: "A stranger hears: place orders,\nresolve offers, collect payment." {
+    shape: text
+    style: {
+      font-size: 12
+      italic: true
+    }
+  }
+}
+
+bad -> good: "prefer →" {
+  style: {
+    stroke: "#2d6a3e"
+    font-size: 14
+    bold: true
+  }
+}
+
+caption: "Chapter 21 — Screaming Architecture:\ntop-level structure should shout the domain,\nnot the delivery mechanism." {
+  shape: rectangle
+  near: bottom-center
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 13
+  }
+}

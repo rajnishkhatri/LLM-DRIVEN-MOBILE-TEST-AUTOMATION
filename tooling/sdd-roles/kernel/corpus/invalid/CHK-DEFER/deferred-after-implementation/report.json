@@ -1,0 +1,12 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK-CHAIN",
+      "phase": "item-2",
+      "outcome": "deferred",
+      "artifact": "",
+      "json_pointer": "",
+      "detail": "run-directory check: prev-entry digest chain (build item 2)"
+    }
+  ]
+}

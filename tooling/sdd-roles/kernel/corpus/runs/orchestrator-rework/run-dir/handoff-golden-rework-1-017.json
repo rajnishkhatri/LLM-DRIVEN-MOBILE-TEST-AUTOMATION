@@ -1,0 +1,45 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "decisions": [
+    {
+      "choice": "accept-hardened-version",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision 5",
+      "rejected_alternatives": [
+        "alternative-5"
+      ]
+    }
+  ],
+  "from_role": "r-checker",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "r-tests",
+      "input_tree_digest": "06f72a2fe545af792b0bf7e4b7236fa6051441d7d15a278e5eac3c29cb524f65",
+      "report_ref": {
+        "path": "reports/golden-rework-1-r-tests-s016.json",
+        "sha256": "02892529ad6ce496ffb593d322bd398ea58895e00c0a36fa098a19ad1847df96"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.2"
+    }
+  ],
+  "schema_version": "1.4.0",
+  "stage": "r-checker",
+  "stage_status": "complete",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "hardened version verifies clean."
+  },
+  "to_role": "r-coder"
+}

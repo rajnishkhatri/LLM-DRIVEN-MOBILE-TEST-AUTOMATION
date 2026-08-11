@@ -1,0 +1,236 @@
+{
+  "ablation": {
+    "c_minus_cdbg_pp10k": 2000,
+    "intervals_nonoverlap": true
+  },
+  "arms": [
+    {
+      "arm": "A",
+      "crap_max": 5,
+      "decisional": true,
+      "handoff_schema_failures": 0,
+      "insufficient_data": false,
+      "k": 12,
+      "mutation_score_mean10k": 5000,
+      "n": 60,
+      "rate10k": 2000,
+      "tamper_events": 0,
+      "tokens_mean": 10000,
+      "tokens_sum": 600000,
+      "wall_clock_ms_sum": 30000000,
+      "wilson_hi10k": 3179,
+      "wilson_lo10k": 1182
+    },
+    {
+      "arm": "B",
+      "crap_max": 5,
+      "decisional": true,
+      "handoff_schema_failures": 0,
+      "insufficient_data": false,
+      "k": 36,
+      "mutation_score_mean10k": 7000,
+      "n": 60,
+      "rate10k": 6000,
+      "tamper_events": 0,
+      "tokens_mean": 15000,
+      "tokens_sum": 900000,
+      "wall_clock_ms_sum": 30000000,
+      "wilson_hi10k": 7144,
+      "wilson_lo10k": 4736
+    },
+    {
+      "arm": "C",
+      "crap_max": 5,
+      "decisional": true,
+      "handoff_schema_failures": 0,
+      "insufficient_data": false,
+      "k": 60,
+      "mutation_score_mean10k": 9000,
+      "n": 60,
+      "rate10k": 10000,
+      "tamper_events": 0,
+      "tokens_mean": 28000,
+      "tokens_sum": 1680000,
+      "wall_clock_ms_sum": 30000000,
+      "wilson_hi10k": 10000,
+      "wilson_lo10k": 9398
+    },
+    {
+      "arm": "C-dbg",
+      "crap_max": 5,
+      "decisional": false,
+      "handoff_schema_failures": 0,
+      "insufficient_data": false,
+      "k": 48,
+      "mutation_score_mean10k": 8000,
+      "n": 60,
+      "rate10k": 8000,
+      "tamper_events": 0,
+      "tokens_mean": 26000,
+      "tokens_sum": 1560000,
+      "wall_clock_ms_sum": 30000000,
+      "wilson_hi10k": 8818,
+      "wilson_lo10k": 6821
+    }
+  ],
+  "artifact_type": "kata_verdict",
+  "b_beats_a": true,
+  "c_earns_six_roles": true,
+  "criteria": [
+    {
+      "id": "C_i_a",
+      "operands": [
+        {
+          "name": "rate_c",
+          "value": 10000
+        },
+        {
+          "name": "rate_a",
+          "value": 2000
+        },
+        {
+          "name": "margin_required",
+          "value": 1000
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "C_i_b",
+      "operands": [
+        {
+          "name": "wilson_lo_c",
+          "value": 9398
+        },
+        {
+          "name": "wilson_hi_a",
+          "value": 3179
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "C_ii",
+      "operands": [
+        {
+          "name": "tokens_c",
+          "value": 1680000
+        },
+        {
+          "name": "tokens_a",
+          "value": 600000
+        },
+        {
+          "name": "ratio_max",
+          "value": 3
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "C_iii",
+      "operands": [
+        {
+          "name": "rate_c",
+          "value": 10000
+        },
+        {
+          "name": "rate_b",
+          "value": 6000
+        },
+        {
+          "name": "margin_required",
+          "value": 500
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "B_pp",
+      "operands": [
+        {
+          "name": "rate_b",
+          "value": 6000
+        },
+        {
+          "name": "rate_a",
+          "value": 2000
+        },
+        {
+          "name": "margin_required",
+          "value": 500
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "B_tokens",
+      "operands": [
+        {
+          "name": "tokens_b",
+          "value": 900000
+        },
+        {
+          "name": "tokens_a",
+          "value": 600000
+        },
+        {
+          "name": "ratio_max",
+          "value": 2
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "kill_pp",
+      "operands": [
+        {
+          "name": "rate_a",
+          "value": 2000
+        },
+        {
+          "name": "rate_c",
+          "value": 10000
+        },
+        {
+          "name": "within_pp",
+          "value": 500
+        }
+      ],
+      "passed": false
+    },
+    {
+      "id": "kill_tokens",
+      "operands": [
+        {
+          "name": "tokens_a",
+          "value": 600000
+        },
+        {
+          "name": "tokens_c",
+          "value": 1680000
+        },
+        {
+          "name": "token_num",
+          "value": 1
+        },
+        {
+          "name": "token_den",
+          "value": 2
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "decision_reason": "six-roles-earned",
+  "input_digest": "20df78f056a150bd0030185162a7de708d88a1a7b2e98cc5790b3bfc59d2ffb8",
+  "kill_rule_triggered": false,
+  "plan_stamp": "sdd-roles 1.4.0 kata:a6f56755e9b0",
+  "prereg_digest": "a25c8688038b0ebc45d796288324790c7c7fc12f4532dcd3ed39e2755a5711ce",
+  "scale": 10000,
+  "schema_version": "1.4.0",
+  "tamper_fail": false,
+  "wilson_z_den": 2500,
+  "wilson_z_num": 9604,
+  "winner": "C"
+}

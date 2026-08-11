@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "invocation_descriptor_set",
+  "declares": [
+    "claude-code",
+    "cursor",
+    "copilot"
+  ],
+  "rows": [
+    {
+      "harness": "claude-code",
+      "command_template": "claude -p {prompt} --agents {agents_file}",
+      "agent_selection": "agents-dir",
+      "auth_env_var": "ANTHROPIC_API_KEY",
+      "resume_semantics": "resume-handle",
+      "output_parse_mode": "stream-json",
+      "hooks": {
+        "events": [
+          "PreToolUse"
+        ],
+        "mount_path": ".claude/settings.json",
+        "command_template": "gate-wrap --descriptors {descriptors} --harness claude-code -- write-guard decide --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role {role}",
+        "request": {
+          "paths_pointers": [
+            "/tool_input/file_path",
+            "/tool_input/notebook_path"
+          ],
+          "operation": {
+            "pointer": "/tool_name",
+            "map": [
+              {
+                "from": "Write",
+                "to": "create"
+              },
+              {
+                "from": "Edit",
+                "to": "modify"
+              },
+              {
+                "from": "MultiEdit",
+                "to": "modify"
+              },
+              {
+                "from": "NotebookEdit",
+                "to": "modify"
+              }
+            ],
+            "default": "modify"
+          }
+        }
+      },
+      "projection": {
+        "targets": [
+          {
+            "kind": "agent-card",
+            "path_template": "agents/{role}.md",
+            "format": "markdown",
+            "char_cap": null,
+            "args_token": null
+          }
+        ],
+        "watermark": true
+      },
+      "exit_code_map": [
+        {
+          "tool_exit": 0,
+          "decision_output": "allow",
+          "wrapper_exit": 0
+        },
+        {
+          "tool_exit": 1,
+          "decision_output": "error",
+          "wrapper_exit": 1
+        },
+        {
+          "tool_exit": 2,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        },
+        {
+          "tool_exit": 3,
+          "decision_output": "block",
+          "wrapper_exit": 2
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "debug_report_ref": {
+    "path": "artifacts/parent-debug.json",
+    "sha256": "15ef9fefb93468ead363aab11a72c97adc68e25500d9da4b5b563b3bc55fce7a"
+  },
+  "decisions": [
+    {
+      "choice": "rework-story-arc",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision 1",
+      "rejected_alternatives": [
+        "alternative-1"
+      ]
+    }
+  ],
+  "from_role": "p-solo",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "p-build",
+      "input_tree_digest": "032a8424ab35eab021afd035091e77fbf9281ca9b5cdd39aa64facf449bb5470",
+      "report_ref": {
+        "path": "reports/p-run-1-p-build-s002.json",
+        "sha256": "c9b058cd5e5ef4604527fe4ba9d513f851fb1b707734d0ba72398c9b3a8d2563"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.4"
+    }
+  ],
+  "rework": {
+    "counter": 1,
+    "defect_shape": "incomplete arc",
+    "stage": "p-solo",
+    "target_role": "p-solo"
+  },
+  "schema_version": "1.4.0",
+  "stage": "p-solo",
+  "stage_status": "rework",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "arc incomplete; reworking."
+  },
+  "to_role": "p-solo"
+}

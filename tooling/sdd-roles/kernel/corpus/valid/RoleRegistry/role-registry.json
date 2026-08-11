@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "role_registry",
+  "roles": [
+    {
+      "id": "solo",
+      "tag": "maker",
+      "gates": [
+        "build",
+        "tests",
+        "crap",
+        "mutation"
+      ],
+      "write_scopes": [
+        "src/",
+        "tests/"
+      ],
+      "diagnostic_capability": true
+    },
+    {
+      "id": "specifier",
+      "tag": "maker",
+      "gates": [],
+      "write_scopes": [
+        "specs/"
+      ],
+      "diagnostic_capability": false
+    },
+    {
+      "id": "architect",
+      "tag": "maker",
+      "gates": [],
+      "write_scopes": [
+        "docs/adr/"
+      ],
+      "diagnostic_capability": false
+    },
+    {
+      "id": "coder",
+      "tag": "maker",
+      "gates": [
+        "build",
+        "tests"
+      ],
+      "write_scopes": [
+        "src/"
+      ],
+      "diagnostic_capability": false
+    },
+    {
+      "id": "cleaner",
+      "tag": "maker",
+      "gates": [
+        "crap"
+      ],
+      "write_scopes": [
+        "src/"
+      ],
+      "diagnostic_capability": false
+    },
+    {
+      "id": "hardener",
+      "tag": "checker",
+      "gates": [
+        "mutation"
+      ],
+      "write_scopes": [],
+      "diagnostic_capability": false
+    },
+    {
+      "id": "qa",
+      "tag": "checker",
+      "gates": [
+        "tests"
+      ],
+      "write_scopes": [],
+      "diagnostic_capability": true
+    },
+    {
+      "id": "maker3",
+      "tag": "maker",
+      "gates": [
+        "build",
+        "tests",
+        "crap"
+      ],
+      "write_scopes": [
+        "src/"
+      ],
+      "diagnostic_capability": false
+    },
+    {
+      "id": "checker3",
+      "tag": "checker",
+      "gates": [
+        "tests",
+        "mutation"
+      ],
+      "write_scopes": [],
+      "diagnostic_capability": true
+    }
+  ],
+  "arms": [
+    {
+      "id": "A",
+      "roles": [
+        "solo"
+      ]
+    },
+    {
+      "id": "B",
+      "roles": [
+        "specifier",
+        "maker3",
+        "checker3"
+      ]
+    },
+    {
+      "id": "C",
+      "roles": [
+        "specifier",
+        "architect",
+        "coder",
+        "cleaner",
+        "hardener",
+        "qa"
+      ]
+    },
+    {
+      "id": "C-dbg",
+      "roles": [
+        "specifier",
+        "architect",
+        "coder",
+        "cleaner",
+        "hardener"
+      ],
+      "ablation": "diagnostic-debug"
+    }
+  ]
+}

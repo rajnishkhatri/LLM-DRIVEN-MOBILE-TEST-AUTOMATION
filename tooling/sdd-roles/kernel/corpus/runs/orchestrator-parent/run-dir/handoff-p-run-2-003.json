@@ -1,0 +1,55 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "debug_report_ref": {
+    "path": "artifacts/child-debug.json",
+    "sha256": "23a0bcc55cd30c4dd7c28e27c54550f44a6750ffc9069a78e9f8baf1d20017eb"
+  },
+  "decisions": [
+    {
+      "choice": "rework-pacing",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision 3",
+      "rejected_alternatives": [
+        "alternative-3"
+      ]
+    }
+  ],
+  "from_role": "p-solo",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "p-build",
+      "input_tree_digest": "309f0054aaed0952214902ea952d36b937be11eed94f56442d8b64e11eaf15e9",
+      "report_ref": {
+        "path": "reports/p-run-2-p-build-s002.json",
+        "sha256": "783147abc69ea27262191a4bf7b8c24a10db4af3c635f3e995c5a721ccea9465"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.4"
+    }
+  ],
+  "rework": {
+    "counter": 2,
+    "defect_shape": "uneven pacing",
+    "stage": "p-solo",
+    "target_role": "p-solo"
+  },
+  "schema_version": "1.4.0",
+  "stage": "p-solo",
+  "stage_status": "rework",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "pacing uneven; reworking in the child run."
+  },
+  "to_role": "p-solo"
+}

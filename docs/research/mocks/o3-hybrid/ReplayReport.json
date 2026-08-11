@@ -1,0 +1,37 @@
+{
+  "testId": "ACC-1042",
+  "irVersion": "sha:4f2c91e8...",
+  "irDigest": "sha256:7c3f2a9b...",
+  "codeCommit": null,
+  "staticGate": null,
+  "interpreterRun": {
+    "runs": 3,
+    "passes": 2,
+    "flakiness": "FLAKY",
+    "healsApplied": [
+      {
+        "stepIndex": 4,
+        "from": "ACCESSIBILITY_ID:loginButton",
+        "to": "XPATH://XCUIElementTypeButton[@name='Login']",
+        "confidence": 0.60,
+        "reason": "LOCATOR_NOT_FOUND",
+        "humanConfirm": "REQUIRED_AND_PENDING",
+        "screenshotCorroborated": true,
+        "blockedBy": "healConfidenceFloor=0.90 (0.60 < 0.90) AND humanConfirmOnCriticalPaths contains 'auth'"
+      }
+    ],
+    "pinnedVersions": {
+      "appium": "2.5.1",
+      "driver": "XCUITest 5.12",
+      "device": "iPhone 15 / iOS 17.4"
+    }
+  },
+  "verdict": "PASSED_WITH_HEALS_PENDING_CONFIRM",
+  "classificationOnFailure": null,
+  "auditCaveat": "Interpreted run — not a certified verdict. Materialize to committed code (export-on-success) and re-enter the spine's static gate before any compliance use.",
+  "lineage": {
+    "hashChainAnchor": "sha256:prev... -> sha256:7c3f2a9b... (ADR 0012)",
+    "healEvents": 1
+  },
+  "_reviewerNote": "Contrast with O2: the SAME heal attempt (step 4, loginButton -> XPath fallback) is BLOCKED here by healPolicy — confidence 0.60 < floor 0.90, AND 'auth' is in humanConfirmOnCriticalPaths, AND screenshot corroboration is recorded. The verdict is 'PASSED_WITH_HEALS_PENDING_CONFIRM', not a clean 'PASS'. This is the §8.8 R1/R2/R3 controls made visible in the artifact: the wrong-heal that O2 silently accepted is here surfaced, gated, and lineage-recorded. The auditCaveat is the §7.4 honesty boundary — interpreted runs are not certified verdicts."
+}

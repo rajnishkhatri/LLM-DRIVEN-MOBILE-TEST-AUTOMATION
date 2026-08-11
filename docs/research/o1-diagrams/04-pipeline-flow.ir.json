@@ -1,0 +1,156 @@
+{
+  "$schema": "../../../skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "04-pipeline-flow",
+    "level": "container",
+    "title": "O1 Pipeline - End-to-end flow",
+    "caption": "The end-to-end pipeline as a process flow. The authoring arm (A0 -> A1 -> A2 -> ASH-Capture -> locator resolution -> code gen) is LLM-bounded; the spine (static gate -> device gate -> verdict) is LLM-free and consumes only committed artifacts. Two bounded loops: static-gate repair and ASH-Capture discovery. The flywheel closes the loop on accept. ASH-Capture stages are PROPOSED (ADR 0014 in flight).",
+    "direction": "down",
+    "opens": "Pipeline",
+    "opens_from": "01-context",
+    "completeness": "complete",
+    "overlays": "none",
+    "key": true
+  },
+  "nodes": [
+    {
+      "id": "A0",
+      "kind": "process",
+      "label": "A0 Normalizer (LLM)",
+      "detail": [
+        "PROPOSED this session",
+        "free-form English / manual script -> NormalizedIntent",
+        "does NOT produce TestCaseIR; F1 flywheel does not apply",
+        "concrete mocks: NormalizedIntent.input.txt -> NormalizedIntent.prompt.md -> NormalizedIntent.json"
+      ],
+      "role": "model-seam",
+      "family": "module-a"
+    },
+    {
+      "id": "A1",
+      "kind": "process",
+      "label": "A1 Parser (deterministic)",
+      "detail": ["structure only; splits into N steps, raw intent per step", "does NOT fill action/locator/assertion/controlFlow", "concrete mock: TestCaseIR.skeleton.json"]
+    },
+    {
+      "id": "A2",
+      "kind": "process",
+      "label": "A2 Semantic Interpreter",
+      "detail": [
+        "deterministic-first, LLM fallback",
+        "expands steps, normalizes navigation, extracts loops, flags ambiguity",
+        "emits committed TestCaseIR.json",
+        "concrete mock: TestCaseIR.json (the committed handoff to the spine)"
+      ],
+      "role": "model-seam",
+      "family": "module-a"
+    },
+    {
+      "id": "ASH",
+      "kind": "process",
+      "label": "ASH-Capture",
+      "detail": [
+        "PROPOSED ADR 0014",
+        "drives app to screenContext, dumps hierarchy (pageSource + pruned + objectSpy)",
+        "commits NavigationManifest + ScreenGraph edges",
+        "concrete mocks: ASHCapture.discovery.*, ASHCapture.deeplink.*, ASHCapture.driftrepair.input.json; see 05-discovery-loop for the internal runtime cycle"
+      ],
+      "role": "model-seam",
+      "family": "module-a"
+    },
+    {
+      "id": "LOC",
+      "kind": "process",
+      "label": "Locator resolution",
+      "detail": [
+        "deterministic cascade: accessibility id > id > class chain > xpath",
+        "sources: OBJECT_REPO > PAGE_SOURCE > OBJECT_SPY > VLM > LLM-guess",
+        "emits LocatorCandidate.manifest.json",
+        "concrete mocks: LocatorResolution.fallback.{input.json,prompt.md,output.json} (the LLM fallback path); see 06-locator-cascade for the full cascade"
+      ]
+    },
+    {
+      "id": "CG",
+      "kind": "process",
+      "label": "Code generation (LLM, offline)",
+      "detail": [
+        "IR + manifest -> Appium Java (page objects, BaseTest)",
+        "credentials via vault() calls, never literals",
+        "emits committed LoginTest.java (the audit pin)",
+        "concrete mock: LoginTest.java"
+      ],
+      "role": "model-seam",
+      "family": "module-a"
+    },
+    {
+      "id": "SG",
+      "kind": "process",
+      "label": "Static gate",
+      "detail": [
+        "THE SPINE BEGINS - LLM-free from here",
+        "format, mvn compile, Checkstyle, Error Prone, locator-manifest rule",
+        "FAIL -> loop back to code gen (bounded)",
+        "concrete mock: StaticGate.report.json"
+      ],
+      "family": "module-b"
+    },
+    {
+      "id": "DG",
+      "kind": "process",
+      "label": "Device gate",
+      "detail": ["Perfecto; K=1 signed-off baseline (K=3/5 weeks-3-8+ target - raising K is a CF6 recorded decision)", "flakiness: STABLE / FLAKY / UNKNOWN"]
+    },
+    {
+      "id": "VR",
+      "kind": "process",
+      "label": "Verdict (ReplayReport)",
+      "detail": [
+        "pins codeCommit SHA (the audit pin)",
+        "verdict CERTIFIED only if static PASS + device STABLE",
+        "healsApplied: NONE (spine does not self-heal)",
+        "concrete mock: ReplayReport.json"
+      ]
+    },
+    {
+      "id": "HE",
+      "kind": "process",
+      "label": "Human evaluator",
+      "detail": ["validates result against original input intent", "PASS -> flywheel; FAIL -> loop back to A0 with error"]
+    },
+    {
+      "id": "FW",
+      "kind": "datastore",
+      "label": "Flywheel",
+      "detail": [
+        "accepted locators -> object repository",
+        "accepted exemplars -> prompt library",
+        "accept/reject labels -> preference training data (O6 ensemble)"
+      ],
+      "role": "lineage-store"
+    }
+  ],
+  "edges": [
+    { "from": "A0",  "to": "A1",  "kind": "sync", "label": "NormalizedIntent" },
+    { "from": "A1",  "to": "A2",  "kind": "sync", "label": "partial TestCaseIR skeleton" },
+    { "from": "A2",  "to": "ASH", "kind": "sync", "label": "committed TestCaseIR.json" },
+    { "from": "ASH", "to": "LOC", "kind": "sync", "label": "hierarchy dumps" },
+    { "from": "LOC", "to": "CG",  "kind": "sync", "label": "LocatorCandidate.manifest.json" },
+    { "from": "CG",  "to": "SG",  "kind": "sync", "label": "committed LoginTest.java" },
+    { "from": "SG",  "to": "DG",  "kind": "sync", "label": "all checks PASS" },
+    { "from": "SG",  "to": "CG",  "kind": "sync", "label": "FAIL -> repair (bounded)" },
+    { "from": "DG",  "to": "VR",  "kind": "sync", "label": "K runs tallied" },
+    { "from": "VR",  "to": "HE",  "kind": "sync", "label": "ReplayReport" },
+    { "from": "HE",  "to": "FW",  "kind": "sync", "label": "accept -> feed flywheel" },
+    { "from": "HE",  "to": "A0",  "kind": "sync", "label": "FAIL -> loop back with error + intent" }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b"
+  ]
+}

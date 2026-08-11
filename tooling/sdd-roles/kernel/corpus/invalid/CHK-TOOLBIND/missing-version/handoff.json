@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "handoff_contract",
+  "from_role": "coder",
+  "to_role": "cleaner",
+  "stage": "implement",
+  "stage_status": "in_progress",
+  "summary": {
+    "text": "tool-derived summary",
+    "provenance": {
+      "source": "tool_output",
+      "tool": {
+        "id": "junit-runner",
+        "invocation_digest": "702f28b0d47c0b8a84028113b90b7f761195070ce69b05645c0a9ace5f16c94c"
+      }
+    }
+  },
+  "decisions": [
+    {
+      "choice": "adopt-outbox-queue",
+      "rationale": "smallest machinery that satisfies the criteria",
+      "rejected_alternatives": [
+        "broker-based queue"
+      ],
+      "provenance": {
+        "source": "role_authored"
+      }
+    }
+  ],
+  "gate_outcomes": [],
+  "completion_evidence": []
+}

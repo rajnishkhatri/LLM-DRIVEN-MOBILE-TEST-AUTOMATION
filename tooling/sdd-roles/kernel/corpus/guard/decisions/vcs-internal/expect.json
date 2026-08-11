@@ -1,0 +1,4 @@
+{
+  "exit_code": 2,
+  "stdout": "block VCS_INTERNAL .git/hooks/pre-commit\n"
+}

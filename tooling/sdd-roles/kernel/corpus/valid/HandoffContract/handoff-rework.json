@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "handoff_contract",
+  "from_role": "hardener",
+  "to_role": "qa",
+  "stage": "verify",
+  "stage_status": "rework",
+  "summary": {
+    "text": "Two surviving mutants; routing to diagnosis.",
+    "provenance": {
+      "source": "role_authored"
+    }
+  },
+  "decisions": [
+    {
+      "choice": "route-to-diagnostic-role",
+      "rationale": "smallest machinery that satisfies the criteria",
+      "rejected_alternatives": [
+        "retry-blind-fix"
+      ],
+      "provenance": {
+        "source": "role_authored"
+      }
+    }
+  ],
+  "gate_outcomes": [
+    {
+      "gate_id": "tests",
+      "tool": "junit-runner",
+      "tool_version": "1.4.2",
+      "exit_code": 2,
+      "input_tree_digest": "d00c55431e9411c230feed61c60bf8b9da519a1a81d214a3e5311cd7b75065c6",
+      "attempt_number": 1,
+      "report_ref": {
+        "path": "reports/tests-fail.json",
+        "sha256": "d3caef0af6d094284ac0ad2ec7e0b824f35315ee64d2ea727d2aa50cf66ba9c3"
+      },
+      "threshold": {
+        "name": "tests_failures_max",
+        "value": 0
+      }
+    }
+  ],
+  "completion_evidence": [],
+  "rework": {
+    "target_role": "qa",
+    "counter": 1,
+    "defect_shape": "surviving-mutant",
+    "surviving_mutants": [
+      "MUT-17",
+      "MUT-23"
+    ]
+  },
+  "debug_report_ref": {
+    "path": "debug-report.json",
+    "sha256": "5f658772d9aa99310d6528b98339d86691b3f1dc107133b61b6eb16fa6d106b6"
+  }
+}

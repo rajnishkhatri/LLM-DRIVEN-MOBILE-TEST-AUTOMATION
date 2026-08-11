@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "debug_report",
+  "failing_test_id": "BankOcrTest#recognizesAllZeros",
+  "observed": "returned 8 for the zero glyph",
+  "expected": "returns 0 for the zero glyph",
+  "suspected_locus": "src/main/GlyphTable.java:42",
+  "minimal_repro": "parse('nine-segment zero glyph') == 0"
+}

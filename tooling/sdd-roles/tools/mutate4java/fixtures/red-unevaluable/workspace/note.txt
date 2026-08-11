@@ -1,0 +1,3 @@
+This workspace deliberately carries no pom.xml. The mutation gate must fail
+closed (red with a not_evaluable reason), never green, when it cannot
+evaluate the workspace.

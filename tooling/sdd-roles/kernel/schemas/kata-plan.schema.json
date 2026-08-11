@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdd-roles:kata-plan:1.4.0",
+  "title": "KataPlan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "stamp",
+    "registry_digest",
+    "prereg_digest",
+    "reps",
+    "arms",
+    "instances",
+    "gates",
+    "cells",
+    "plan_digest"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.4.0" },
+    "artifact_type": { "const": "kata_plan" },
+    "stamp": { "type": "string", "minLength": 1 },
+    "registry_digest": { "type": "string", "minLength": 1 },
+    "prereg_digest": { "type": "string", "minLength": 1 },
+    "reps": { "type": "integer", "minimum": 1 },
+    "arms": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "instances": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/instance" }
+    },
+    "gates": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "cells": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/cell" }
+    },
+    "plan_digest": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "instance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "source_kata", "protected_tests"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "family": {
+          "enum": ["greenfield-tdd", "legacy-refactor", "seeded-bugfix"]
+        },
+        "source_kata": { "type": "string", "minLength": 1 },
+        "protected_tests": { "type": "boolean" }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cell_id", "arm", "instance", "rep", "bindings"],
+      "properties": {
+        "cell_id": { "type": "string", "minLength": 1 },
+        "arm": { "type": "string", "minLength": 1 },
+        "instance": { "type": "string", "minLength": 1 },
+        "rep": { "type": "integer", "minimum": 0 },
+        "bindings": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/role_binding" }
+        }
+      }
+    },
+    "role_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "model", "prompt"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 },
+        "prompt": { "type": "string", "minLength": 1 },
+        "agent": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

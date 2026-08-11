@@ -1,0 +1,22 @@
+{
+  "command": "role-emit",
+  "args": [
+    "verify",
+    "--kernel",
+    "<KERNEL>",
+    "--descriptors",
+    "../../../orchestrator/descriptors-stub.json",
+    "--harness",
+    "stub-epsilon",
+    "--registry",
+    "../../common/role-registry.json",
+    "--bodies",
+    "../../common/bodies",
+    "--out",
+    "./drifted-tree"
+  ],
+  "expected_exit": 2,
+  "expect_stdout_contains": [
+    "drift pack/kernel.md"
+  ]
+}

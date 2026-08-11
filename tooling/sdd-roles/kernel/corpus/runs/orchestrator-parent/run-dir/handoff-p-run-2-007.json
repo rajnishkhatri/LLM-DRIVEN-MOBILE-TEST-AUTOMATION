@@ -1,0 +1,45 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "decisions": [
+    {
+      "choice": "accept-pacing-v4",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision 4",
+      "rejected_alternatives": [
+        "alternative-4"
+      ]
+    }
+  ],
+  "from_role": "p-solo",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "p-build",
+      "input_tree_digest": "8583ababf25241db5d1a8b730e705cdf12df09d7cc9cf877b6700630ccf660e9",
+      "report_ref": {
+        "path": "reports/p-run-2-p-build-s006.json",
+        "sha256": "ded25826c168b8d3183d0b7f6883107375e0e3abc3e297e13585fa0f027327bc"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.4"
+    }
+  ],
+  "schema_version": "1.4.0",
+  "stage": "p-solo",
+  "stage_status": "complete",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "pacing even in v4."
+  },
+  "to_role": "p-solo"
+}

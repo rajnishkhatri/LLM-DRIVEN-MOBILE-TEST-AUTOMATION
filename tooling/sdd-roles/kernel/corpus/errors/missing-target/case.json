@@ -1,0 +1,8 @@
+{
+  "command": "contract-lint",
+  "args": [
+    "validate",
+    "./does-not-exist"
+  ],
+  "expected_exit": 1
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "role_registry",
+  "roles": [
+    {
+      "id": "r-coder",
+      "tag": "maker",
+      "gates": [
+        "r-build"
+      ],
+      "write_scopes": [
+        "src/",
+        "scratch/"
+      ],
+      "diagnostic_capability": true,
+      "invocation": {
+        "prompt": "rework"
+      }
+    },
+    {
+      "id": "r-checker",
+      "tag": "checker",
+      "gates": [
+        "r-tests"
+      ],
+      "write_scopes": [
+        "src/",
+        "scratch/"
+      ],
+      "diagnostic_capability": false,
+      "invocation": {
+        "prompt": "rework"
+      }
+    }
+  ],
+  "arms": [
+    {
+      "id": "R2",
+      "roles": [
+        "r-coder",
+        "r-checker"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdd-roles:speckit-mapping:1.4.0",
+  "title": "SpecKitMapping",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "artifact_type", "mappings"],
+  "properties": {
+    "schema_version": { "const": "1.4.0" },
+    "artifact_type": { "const": "speckit_mapping" },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifact_type", "target_path"],
+        "properties": {
+          "artifact_type": { "type": "string", "minLength": 1 },
+          "target_path": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

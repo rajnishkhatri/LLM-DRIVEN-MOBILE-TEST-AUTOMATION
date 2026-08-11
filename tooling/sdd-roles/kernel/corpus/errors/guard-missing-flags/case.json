@@ -1,0 +1,5 @@
+{
+  "command": "write-guard",
+  "args": ["decide", "--workspace", "."],
+  "expected_exit": 1
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "../../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "ch16-independence-grid",
+    "level": "component",
+    "title": "Ch.16 Independence - layers x use-cases grid (illustrative order system)",
+    "caption": "An illustrative order-processing system decomposed along BOTH axes at once: horizontal layers (UI / application rules / domain rules) and vertical use cases (AddOrder, DeleteOrder, TrackOrder). The TrackOrder column is NEW - it adds a fresh column of components and touches none of the existing cells. No edges cross columns: use cases are decoupled from each other. No edges cross rows outside a column: layers are decoupled from each other. This is the grid Clean Architecture Ch.16 asks for.",
+    "direction": "down",
+    "opens": "ORDSYS",
+    "opens_from": "01-context",
+    "completeness": "complete",
+    "overlays": "none",
+    "omitted": [
+      {"label": "Database access layer", "note": "each use case would also own a thin DB-access component; omitted here to keep the grid legible - the decoupling lesson is unchanged"}
+    ]
+  },
+  "nodes": [
+    { "id": "A_UI",  "kind": "component", "label": "AddOrder UI",          "detail": ["layer: UI (changes when UX changes)", "use case: AddOrder"] },
+    { "id": "A_APP", "kind": "component", "label": "AddOrder app rules",   "detail": ["layer: application-specific rules (input validation)", "use case: AddOrder"] },
+    { "id": "A_DOM", "kind": "component", "label": "AddOrder domain rules","detail": ["layer: application-independent domain rules (pricing)", "use case: AddOrder"] },
+
+    { "id": "D_UI",  "kind": "component", "label": "DeleteOrder UI",          "detail": ["layer: UI", "use case: DeleteOrder"] },
+    { "id": "D_APP", "kind": "component", "label": "DeleteOrder app rules",   "detail": ["layer: application-specific rules (cancellation workflow)", "use case: DeleteOrder"] },
+    { "id": "D_DOM", "kind": "component", "label": "DeleteOrder domain rules","detail": ["layer: domain rules (cancellation policy)", "use case: DeleteOrder"] },
+
+    { "id": "T_UI",  "kind": "component", "label": "TrackOrder UI",          "family": "module-c", "detail": ["layer: UI", "use case: TrackOrder (NEW column)", "new file - no existing component edited"] },
+    { "id": "T_APP", "kind": "component", "label": "TrackOrder app rules",   "family": "module-c", "detail": ["layer: application-specific rules (query validation)", "use case: TrackOrder (NEW column)", "new file - no existing component edited"] },
+    { "id": "T_DOM", "kind": "component", "label": "TrackOrder domain rules","family": "module-c", "detail": ["layer: domain rules (shipment lookup)", "use case: TrackOrder (NEW column)", "new file - no existing component edited"] }
+  ],
+  "edges": [
+    { "from": "A_UI",  "to": "A_APP", "kind": "sync", "label": "submits order form to" },
+    { "from": "A_APP", "to": "A_DOM", "kind": "sync", "label": "delegates pricing to" },
+    { "from": "D_UI",  "to": "D_APP", "kind": "sync", "label": "submits cancellation to" },
+    { "from": "D_APP", "to": "D_DOM", "kind": "sync", "label": "delegates policy to" },
+    { "from": "T_UI",  "to": "T_APP", "kind": "sync", "label": "submits tracking query to" },
+    { "from": "T_APP", "to": "T_DOM", "kind": "sync", "label": "delegates shipment lookup to" }
+  ],
+  "forbidden_facts": [
+    "\\bOracle\\b",
+    "\\bMySQL\\b",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "us-east",
+    "eu-west",
+    "99\\.99"
+  ]
+}

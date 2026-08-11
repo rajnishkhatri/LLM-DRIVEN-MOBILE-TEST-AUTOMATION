@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "handoff_contract",
+  "from_role": "coder",
+  "to_role": "cleaner",
+  "stage": "implement",
+  "stage_status": "in_progress",
+  "summary": {
+    "text": "stage summary",
+    "provenance": {
+      "source": "role_authored"
+    }
+  },
+  "decisions": [
+    {
+      "choice": "adopt-outbox-queue",
+      "rationale": "smallest machinery that satisfies the criteria",
+      "rejected_alternatives": [
+        "broker-based queue"
+      ]
+    }
+  ],
+  "gate_outcomes": [],
+  "completion_evidence": []
+}

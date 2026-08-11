@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "role_registry",
+  "roles": [
+    {
+      "id": "gd-maker",
+      "tag": "maker",
+      "gates": [
+        "g-build"
+      ],
+      "write_scopes": [
+        "src/",
+        "scratch/"
+      ],
+      "diagnostic_capability": false
+    },
+    {
+      "id": "gd-checker",
+      "tag": "checker",
+      "gates": [
+        "g-tests"
+      ],
+      "write_scopes": [
+        "src/",
+        "tests/"
+      ],
+      "diagnostic_capability": true
+    }
+  ],
+  "arms": [
+    {
+      "id": "GD1",
+      "roles": [
+        "gd-maker",
+        "gd-checker"
+      ]
+    }
+  ]
+}

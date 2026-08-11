@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "speckit_mapping",
+  "mappings": [
+    {
+      "artifact_type": "handoff_contract",
+      "target_path": "specs/roles/handoffs/"
+    },
+    {
+      "artifact_type": "stage_ledger_entry",
+      "target_path": ".specify/ledger/"
+    },
+    {
+      "artifact_type": "debug_report",
+      "target_path": "specs/roles/debug/"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "command": "gate-wrap",
+  "args": [
+    "--descriptors",
+    "<KERNEL>/descriptors/invocation-descriptors.json",
+    "--harness",
+    "copilot"
+  ],
+  "expected_exit": 1
+}

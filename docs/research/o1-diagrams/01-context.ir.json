@@ -1,0 +1,97 @@
+{
+  "$schema": "../../../skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "01-context",
+    "level": "context",
+    "title": "O1 Test-Automation Pipeline - Context view",
+    "caption": "The whole. The O1 pipeline (LLM-free deterministic replay of committed code), its two human roles, and its external dependencies. The single system box drawn here is opened in the Container view.",
+    "direction": "down",
+    "completeness": "complete",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "QA",
+      "kind": "actor",
+      "label": "QA engineer",
+      "detail": ["runs ingestion CLI, reviews and commits generated artifacts"]
+    },
+    {
+      "id": "Auditor",
+      "kind": "actor",
+      "label": "Auditor",
+      "detail": ["audits verdicts and tamper-evident lineage"]
+    },
+    {
+      "id": "Pipeline",
+      "kind": "system",
+      "label": "O1 Test-Automation Pipeline",
+      "detail": [
+        "ACCEPTED: LLM-free deterministic replay of committed code (blueprint-revision-v2)",
+        "north-star production posture; O3 hybrid is the proposed POC",
+        "(opened in the Container view)",
+        "22 concrete mock artifacts (ingestion -> capture -> resolution -> codegen -> gates -> verdict, incl. all 4 LLM call sites) live under docs/research/mocks/o1-spine/ - see the Mock Artifact Index"
+      ],
+      "emphasis": "heaviest"
+    },
+    {
+      "id": "Octane",
+      "kind": "external",
+      "label": "Octane / ALM / Excel",
+      "detail": ["manual test script sources", "free-form English or structured steps"]
+    },
+    {
+      "id": "Gateway",
+      "kind": "external",
+      "label": "Orchestrator AI gateway",
+      "detail": [
+        "all LLM calls route through one ChatModel interface (blueprint-revision-v2)",
+        "no direct model vendor SDKs anywhere"
+      ]
+    },
+    {
+      "id": "Perfecto",
+      "kind": "external",
+      "label": "Perfecto device cloud",
+      "detail": ["pinned device pool, Appium 2, Smart Reporting"]
+    },
+    {
+      "id": "LocalDevices",
+      "kind": "external",
+      "label": "Local device farms",
+      "detail": ["xctools (iOS sim) and adb (Android) for local capture/replay"]
+    },
+    {
+      "id": "VAULT",
+      "kind": "external",
+      "label": "Secret vault",
+      "detail": ["short-lived single-run session tokens (ADR 0013)", "no long-lived creds held by workers"]
+    },
+    {
+      "id": "GIT",
+      "kind": "external",
+      "label": "Git repository",
+      "detail": ["system of record for committed IR / Java / manifests / graph"]
+    }
+  ],
+  "edges": [
+    { "from": "QA",   "to": "Pipeline",   "kind": "sync", "label": "ingests manual tests, reviews and commits artifacts" },
+    { "from": "Auditor",  "to": "Pipeline",   "kind": "sync", "label": "audits verdicts and lineage chain" },
+    { "from": "Pipeline",  "to": "Octane",   "kind": "sync", "label": "pulls manual test scripts" },
+    { "from": "Pipeline",  "to": "Gateway",    "kind": "sync", "label": "routes all LLM calls (authoring arm only)" },
+    { "from": "Pipeline",  "to": "Perfecto",   "kind": "sync", "label": "runs tests on cloud devices (device gate)" },
+    { "from": "Pipeline",  "to": "LocalDevices",   "kind": "sync", "label": "captures hierarchy and runs tests on local devices" },
+    { "from": "Pipeline",  "to": "VAULT", "kind": "sync", "label": "resolves credentials at runtime" },
+    { "from": "Pipeline",  "to": "GIT",   "kind": "sync", "label": "commits IR / Java / manifests / graph" }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b"
+  ]
+}

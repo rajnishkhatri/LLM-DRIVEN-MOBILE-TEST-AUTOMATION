@@ -1,0 +1,107 @@
+# The humble split at the device edge — testable logic vs thin device glue.
+# Everything that can be tested without a device, is. The humble remainder stays thin.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  detail: {
+    style: {
+      fill: "#F1E3CE"
+      stroke: "#B0742A"
+      font-color: "#6E4718"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  test: {
+    style: {
+      fill: "#FFFFFF"
+      stroke: "#2E7D5B"
+      font-color: "#1E5940"
+      border-radius: 4
+    }
+  }
+  flow: {
+    style: {
+      stroke: "#4A5A59"
+      font-color: "#4A5A59"
+      font-size: 13
+    }
+  }
+}
+
+testable: "TESTABLE SIDE — no device needed" {
+  style: {
+    fill: "#F2F7F6"
+    stroke: "#1F6F6B"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 15
+    bold: true
+  }
+  step: "step semantics\nopcode dispatch,\ncascade order,\ntimeout bookkeeping" { class: policy }
+  cls: "classification rules\nexception → one of the\nfixed 7 classes" { class: policy }
+  gatechecks: "the 7 IR-gate checks\n+ the no-device dry-run" { class: policy }
+}
+
+harness: "What exercises it — without one device minute" {
+  style: {
+    fill: "#F6F8F7"
+    stroke: "#2E7D5B"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#1E5940"
+    font-size: 15
+    bold: true
+  }
+  corpus: "IR-conformance corpus\none case per opcode +\nassertion kind + cascade-miss\n+ each taxonomy trigger.\nNo interpreterVersion is pinned\nwithout a corpus-green run." { class: test }
+  seamtest: "seam-contract test\nany driver behind the seam\nmust satisfy it" { class: test }
+}
+
+humble: "HUMBLE SIDE — thin, no decisions" {
+  style: {
+    fill: "#FBF7EF"
+    stroke: "#B0742A"
+    stroke-dash: 5
+    border-radius: 8
+    font-color: "#6E4718"
+    font-size: 15
+    bold: true
+  }
+  drv: "driver adapter\ntranslates seam calls\ninto Appium java-client calls" { class: detail }
+  dev: "Perfecto session\nreal iPhone, real app,\nreal network" { class: detail }
+}
+
+harness.corpus -> testable.step: "proves" { class: flow }
+harness.corpus -> testable.cls: { class: flow }
+harness.seamtest -> humble.drv: "constrains" { class: flow }
+testable.step -> humble.drv: "speaks the seam" { class: flow }
+humble.drv -> humble.dev: { style.stroke: "#B0742A" }
+
+note: "If a pipeline change needs a device to be tested,\nask which side of this line the logic is stranded on." {
+  shape: rectangle
+  near: bottom-center
+  style: {
+    fill: "#FFFFFF"
+    stroke: "#8FA6A2"
+    stroke-dash: 4
+    font-color: "#4A5A59"
+    font-size: 13
+  }
+}

@@ -1,0 +1,101 @@
+# Package by component — ordering package public API + package-private innards.
+# Silicon Sandwiches Ordering module.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+title: "Package by component — Ordering" {
+  shape: text
+  near: top-center
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+ordering: "com.siliconsandwiches.ordering  (component package)" {
+  style: {
+    fill: "#e8eef5"
+    stroke: "#4a4a4a"
+    font-size: 16
+    bold: true
+  }
+
+  api: "Public API (what neighbors may import)" {
+    style: {
+      fill: "#ffffff"
+      stroke: "#2d6a3e"
+      font-size: 14
+      bold: true
+    }
+
+    place_api: "PlaceOrder  «use case»" {
+      style.fill: "#f5f5f5"
+    }
+    order_entity: "Order  «entity»" {
+      style.fill: "#f5f5f5"
+    }
+    gateway_port: "OrderGateway  «port»" {
+      style: {
+        fill: "#f5f5f5"
+        stroke-dash: 3
+      }
+    }
+  }
+
+  private: "Package-private innards (neighbors must not import)" {
+    style: {
+      fill: "#dcdcdc"
+      stroke: "#8b3a3a"
+      font-size: 14
+      bold: true
+    }
+
+    presenter: "OrderPresenter" {
+      style.fill: "#ffffff"
+    }
+    sql: "SqlOrderGateway" {
+      style.fill: "#ffffff"
+    }
+    controller: "SpringPlaceOrderController" {
+      style.fill: "#ffffff"
+    }
+    helpers: "validators, mappers, SQL…" {
+      style.fill: "#ffffff"
+    }
+  }
+}
+
+neighbors: "Other modules (offer, payments, …)\n→ depend only on the public API" {
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 14
+  }
+}
+
+neighbors -> ordering.api: "allowed"
+neighbors -> ordering.private: "forbidden" {
+  style: {
+    stroke: "#8b3a3a"
+    stroke-dash: 3
+  }
+  style.stroke: "#8b3a3a"
+}
+
+caption: "Chapter 34 — one component = one top-level package. Hide adapters and helpers; publish use cases, entities, and ports." {
+  shape: rectangle
+  near: bottom-center
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 14
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "artifact_type": "kata_workload",
+  "instances": [
+    {
+      "family": "greenfield-tdd",
+      "id": "greenfield-1",
+      "protected_tests": false,
+      "source_kata": "mars-rover"
+    },
+    {
+      "family": "greenfield-tdd",
+      "id": "greenfield-2",
+      "protected_tests": false,
+      "source_kata": "bank-ocr"
+    },
+    {
+      "family": "greenfield-tdd",
+      "id": "greenfield-3",
+      "protected_tests": false,
+      "source_kata": "roman-numerals"
+    },
+    {
+      "family": "greenfield-tdd",
+      "id": "greenfield-4",
+      "protected_tests": false,
+      "source_kata": "bowling-game"
+    },
+    {
+      "family": "legacy-refactor",
+      "id": "legacy-1",
+      "protected_tests": false,
+      "source_kata": "gilded-rose"
+    },
+    {
+      "family": "legacy-refactor",
+      "id": "legacy-2",
+      "protected_tests": false,
+      "source_kata": "trivia"
+    },
+    {
+      "family": "legacy-refactor",
+      "id": "legacy-3",
+      "protected_tests": false,
+      "source_kata": "tennis-refactoring"
+    },
+    {
+      "family": "legacy-refactor",
+      "id": "legacy-4",
+      "protected_tests": false,
+      "source_kata": "yatzy"
+    },
+    {
+      "family": "seeded-bugfix",
+      "id": "bugfix-1",
+      "protected_tests": true,
+      "source_kata": "date-range-overlap"
+    },
+    {
+      "family": "seeded-bugfix",
+      "id": "bugfix-2",
+      "protected_tests": true,
+      "source_kata": "rpn-calculator"
+    },
+    {
+      "family": "seeded-bugfix",
+      "id": "bugfix-3",
+      "protected_tests": true,
+      "source_kata": "word-wrap"
+    },
+    {
+      "family": "seeded-bugfix",
+      "id": "bugfix-4",
+      "protected_tests": true,
+      "source_kata": "shopping-cart-discount"
+    }
+  ],
+  "provenance_note": "RESOLVED 2026-08-09 (item 3, live-leg + kata study plan): the 12 source_kata values are the real katas, and each has a built workspace at tooling/sdd-roles/kata-workspaces/<id>/ with its baseline gate states recorded and mechanically verified (kata-workspaces/README.md). Family structure, instance ids and protected_tests are UNCHANGED from the pre-registered placeholder workload \u2014 12 instances x 5 reps x 4 arms = 240 cells. Java sources are original code modelling each named kata, not vendored upstream copies.",
+  "schema_version": "1.4.0"
+}

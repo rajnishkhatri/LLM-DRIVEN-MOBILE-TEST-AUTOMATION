@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "kernel_config",
+  "arm": "R2",
+  "thresholds": [
+    {
+      "name": "stub_threshold",
+      "value": 0
+    }
+  ],
+  "protected": {
+    "kernel_config": [
+      ".sdd-roles/kernel-config.json"
+    ],
+    "role_registry": [
+      ".sdd-roles/role-registry.json"
+    ],
+    "ledger_dir": [
+      "ledger/"
+    ],
+    "tests_globs": [
+      "tests/**"
+    ],
+    "gate_configs": [
+      "gates/**"
+    ],
+    "harness_enablement": [
+      "harness-settings/**"
+    ],
+    "speckit_constitution": [
+      ".specify/memory/constitution.md"
+    ]
+  },
+  "gate_tool_allowlist": [
+    "stub-gate-tool"
+  ],
+  "required_mappings": [
+    "handoff_contract",
+    "stage_ledger_entry"
+  ],
+  "speckit_roots": [
+    ".specify/",
+    "specs/"
+  ],
+  "rework": {
+    "max": 3
+  },
+  "gate_runner": "sdd-roles-gate-runner",
+  "enforcement_tier": "floor",
+  "gates": [
+    {
+      "id": "r-build",
+      "tool": "stub-gate-tool",
+      "argv": [
+        "{python}",
+        "{fixture_dir}/stubs/gate_stub.py",
+        "--scenario",
+        "{fixture_dir}/scenarios/rework/scenario.json",
+        "--gate",
+        "{gate}",
+        "--attempt",
+        "{attempt}",
+        "--workspace",
+        "{workspace}",
+        "--run-dir",
+        "{run_dir}",
+        "--report",
+        "{report}"
+      ],
+      "threshold": "stub_threshold"
+    },
+    {
+      "id": "r-tests",
+      "tool": "stub-gate-tool",
+      "argv": [
+        "{python}",
+        "{fixture_dir}/stubs/gate_stub.py",
+        "--scenario",
+        "{fixture_dir}/scenarios/rework/scenario.json",
+        "--gate",
+        "{gate}",
+        "--attempt",
+        "{attempt}",
+        "--workspace",
+        "{workspace}",
+        "--run-dir",
+        "{run_dir}",
+        "--report",
+        "{report}"
+      ],
+      "threshold": "stub_threshold"
+    }
+  ]
+}

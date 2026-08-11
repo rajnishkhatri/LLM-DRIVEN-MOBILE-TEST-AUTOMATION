@@ -1,0 +1,66 @@
+{
+  "artifact_type": "ir_gate_report",
+  "checks": [
+    {
+      "id": "schemaValid",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "opcodeClosed",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "boundedWaits",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "locatorManifest",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "noLiteralCreds",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "ambiguityClear",
+      "outcome": "pass",
+      "violations": []
+    },
+    {
+      "id": "dryRun",
+      "outcome": "fail",
+      "violations": [
+        {
+          "detail": "LAUNCH step requires value",
+          "pointer": "/steps/0/value"
+        },
+        {
+          "detail": "TAP step must not carry value",
+          "pointer": "/steps/3/value"
+        }
+      ]
+    }
+  ],
+  "contract": "o7-spec-derived.1",
+  "inputs": {
+    "ir_sha256": "609a70e3a9a16f16585d9547350fa19cc0750a95c5135c3031968215bc2852a9",
+    "manifest_sha256": "00213d11fb4f510c6a4b56e0feffc069443aba13825a97385661541c37958a36"
+  },
+  "ir_digest": {
+    "computed": "8fce57be18f9dbd22df826762000c954a0b667d4bf045030efe6713dd7854f33",
+    "declared": "8fce57be18f9dbd22df826762000c954a0b667d4bf045030efe6713dd7854f33"
+  },
+  "threshold": {
+    "name": "ir_gate_violations_max",
+    "value": 0
+  },
+  "tool": "ir-gate-checker",
+  "tool_version": "1.0.0",
+  "verdict": "red",
+  "violations_total": 2
+}

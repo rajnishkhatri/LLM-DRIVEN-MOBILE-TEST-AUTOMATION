@@ -1,0 +1,24 @@
+{
+  "artifact_type": "tests_report",
+  "contract": "o7-kata-seam.1",
+  "counts": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 0
+  },
+  "engine": "mvn test (surefire XML)",
+  "failing": [],
+  "failures_total": 0,
+  "inputs": {
+    "pom_sha256": null
+  },
+  "not_evaluable": "no pom.xml at the workspace root",
+  "threshold": {
+    "name": "tests_failures_max",
+    "value": 0
+  },
+  "tool": "junit-runner",
+  "tool_version": "1.0.0",
+  "verdict": "red"
+}

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AppiumAUT>
+  <XCUIElementTypeApplication name="BankApp" label="BankApp" type="Application">
+    <XCUIElementTypeWindow type="Window" enabled="true" visible="true">
+      <XCUIElementTypeStatusBar type="StatusBar" enabled="true" visible="true">
+        <XCUIElementTypeStaticText name="9:41 AM" label="9:41 AM" type="StaticText" enabled="true" visible="true"/>
+        <XCUIElementTypeStaticText name="5G" label="5G" type="StaticText" enabled="true" visible="true"/>
+      </XCUIElementTypeStatusBar>
+      <XCUIElementTypeOther type="Other" enabled="true" visible="true">
+        <XCUIElementTypeNavigationBar name="Login" label="Login" type="NavigationBar" enabled="true" visible="true">
+          <XCUIElementTypeStaticText name="Login" label="Login" type="StaticText" enabled="true" visible="true"/>
+        </XCUIElementTypeNavigationBar>
+        <XCUIElementTypeScrollView type="ScrollView" enabled="true" visible="true">
+          <XCUIElementTypeOther type="Other" enabled="true" visible="true">
+            <XCUIElementTypeImage type="Image" name="bankLogo" label="Bank Logo" enabled="true" visible="true"/>
+            <XCUIElementTypeStaticText name="signInHeading" label="Sign in to your account" type="StaticText" enabled="true" visible="true"/>
+            <XCUIElementTypeTextField type="TextField" name="usernameField" label="Username" value="" enabled="true" visible="true" placeholder="Username"/>
+            <XCUIElementTypeStaticText name="usernameLabel" label="Username" type="StaticText" enabled="true" visible="true"/>
+            <XCUIElementTypeSecureTextField type="SecureTextField" name="passwordField" label="Password" value="" enabled="true" visible="true" placeholder="Password"/>
+            <XCUIElementTypeStaticText name="passwordLabel" label="Password" type="StaticText" enabled="true" visible="true"/>
+            <XCUIElementTypeButton type="Button" name="loginButton" label="Login" enabled="true" visible="true"/>
+            <XCUIElementTypeButton type="Button" name="forgotPasswordButton" label="Forgot Password?" enabled="true" visible="true"/>
+            <XCUIElementTypeStaticText name="versionText" label="v3.2.1" type="StaticText" enabled="true" visible="true"/>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeScrollView>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeWindow>
+  </XCUIElementTypeApplication>
+</AppiumAUT>

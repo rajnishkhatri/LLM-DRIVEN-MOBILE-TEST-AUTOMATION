@@ -1,0 +1,8 @@
+{
+  "role": "gd-maker",
+  "stdin": "request.json",
+  "argv_extra": [
+    "--run-dir",
+    "{workspace}/_run"
+  ]
+}

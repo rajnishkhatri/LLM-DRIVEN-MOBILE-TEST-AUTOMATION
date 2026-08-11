@@ -1,0 +1,92 @@
+{
+  "sourceSystem": "octane",
+  "sourceId": "ACC-1042",
+  "title": "Login with valid credentials shows welcome",
+  "preconditions": ["app freshly installed", "on the login screen"],
+  "testData": { "username": "vault:user_qa", "password": "vault:pass_qa" },
+  "platforms": ["IOS", "ANDROID"],
+  "provenance": { "irVersion": "sha:4f2c91e8...", "generatedAt": "2026-07-29T15:10Z" },
+
+  "irDigest": "sha256:7c3f2a9b...",
+
+  "retryBudgetPerStep": 3,
+
+  "steps": [
+    {
+      "index": 0, "intent": "tap the username field", "action": "TAP",
+      "target": {
+        "naturalReference": "the username field", "elementType": "field",
+        "resolvedLocators": [
+          { "strategy": "ACCESSIBILITY_ID", "value": "usernameField", "confidence": 0.98, "source": "OBJECT_REPO" },
+          { "strategy": "XPATH", "value": "//XCUIElementTypeTextField[1]", "confidence": 0.55, "source": "PAGE_SOURCE" }
+        ],
+        "screenContext": "LoginScreen"
+      },
+      "inputData": null, "assertion": null, "controlFlow": null, "ambiguityFlags": [],
+      "timeoutMs": 8000
+    },
+    {
+      "index": 1, "intent": "type the username", "action": "TYPE",
+      "target": {
+        "naturalReference": "the username field", "elementType": "field",
+        "resolvedLocators": [
+          { "strategy": "ACCESSIBILITY_ID", "value": "usernameField", "confidence": 0.98, "source": "OBJECT_REPO" }
+        ],
+        "screenContext": "LoginScreen"
+      },
+      "inputData": "${testData.username}", "assertion": null, "controlFlow": null, "ambiguityFlags": [],
+      "timeoutMs": 8000
+    },
+    {
+      "index": 2, "intent": "tap the password field", "action": "TAP",
+      "target": {
+        "naturalReference": "the password field", "elementType": "field",
+        "resolvedLocators": [
+          { "strategy": "ACCESSIBILITY_ID", "value": "passwordField", "confidence": 0.98, "source": "OBJECT_REPO" }
+        ],
+        "screenContext": "LoginScreen"
+      },
+      "inputData": null, "assertion": null, "controlFlow": null, "ambiguityFlags": [],
+      "timeoutMs": 8000
+    },
+    {
+      "index": 3, "intent": "type the password", "action": "TYPE",
+      "target": {
+        "naturalReference": "the password field", "elementType": "field",
+        "resolvedLocators": [
+          { "strategy": "ACCESSIBILITY_ID", "value": "passwordField", "confidence": 0.98, "source": "OBJECT_REPO" }
+        ],
+        "screenContext": "LoginScreen"
+      },
+      "inputData": "${testData.password}", "assertion": null, "controlFlow": null, "ambiguityFlags": [],
+      "timeoutMs": 8000
+    },
+    {
+      "index": 4, "intent": "tap the Login button", "action": "TAP",
+      "target": {
+        "naturalReference": "the Login button", "elementType": "button",
+        "resolvedLocators": [
+          { "strategy": "ACCESSIBILITY_ID", "value": "loginButton", "confidence": 0.97, "source": "OBJECT_REPO" },
+          { "strategy": "XPATH", "value": "//XCUIElementTypeButton[1]", "confidence": 0.41, "source": "PAGE_SOURCE" }
+        ],
+        "screenContext": "LoginScreen"
+      },
+      "inputData": null, "assertion": null, "controlFlow": null, "ambiguityFlags": [],
+      "timeoutMs": 8000
+    },
+    {
+      "index": 5, "intent": "assert the welcome banner appears", "action": "ASSERT",
+      "target": {
+        "naturalReference": "the welcome banner", "elementType": "text",
+        "resolvedLocators": [
+          { "strategy": "ACCESSIBILITY_ID", "value": "welcomeBanner", "confidence": 0.95, "source": "OBJECT_REPO" }
+        ],
+        "screenContext": "HomeScreen"
+      },
+      "inputData": null,
+      "assertion": { "kind": "TEXT_EQUALS", "expected": "Welcome, QA User", "aiValidationPrompt": null },
+      "controlFlow": null, "ambiguityFlags": [],
+      "timeoutMs": 12000
+    }
+  ]
+}

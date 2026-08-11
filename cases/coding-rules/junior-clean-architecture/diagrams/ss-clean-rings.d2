@@ -1,0 +1,94 @@
+# Clean Architecture — concentric rings with Silicon Sandwiches labels.
+# Real container nesting (geometry from ch22-clean-architecture-rings.d2).
+
+title: "Clean Architecture — Silicon Sandwiches rings" {
+  shape: text
+  near: top-center
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+frameworks: "Frameworks & Drivers" {
+  style: {
+    fill: "#9e9e9e"
+    stroke: "#4a4a4a"
+    border-radius: 80
+    font-size: 18
+    bold: true
+  }
+
+  frameworks_role: "Spring, SQL/ORM, Stripe SDK, UI" {
+    shape: text
+    style: {
+      font-size: 14
+      italic: true
+    }
+  }
+
+  adapters: "Interface Adapters" {
+    style: {
+      fill: "#bdbdbd"
+      stroke: "#4a4a4a"
+      border-radius: 70
+      font-size: 17
+      bold: true
+    }
+
+    adapters_role: "SpringPlaceOrderController,\nOrderPresenter, SqlOrderGateway,\nStripePaymentAdapter" {
+      shape: text
+      style: {
+        font-size: 13
+        italic: true
+      }
+    }
+
+    usecases: "Use Cases" {
+      style: {
+        fill: "#dcdcdc"
+        stroke: "#4a4a4a"
+        border-radius: 60
+        font-size: 16
+        bold: true
+      }
+
+      usecases_role: "PlaceOrder, ResolveOffer" {
+        shape: text
+        style: {
+          font-size: 13
+          italic: true
+        }
+      }
+
+      entities: "Entities" {
+        style: {
+          fill: "#f5f5f5"
+          stroke: "#4a4a4a"
+          border-radius: 50
+          font-size: 15
+          bold: true
+        }
+
+        entities_role: "Order, Offer,\nFranchiseShop" {
+          shape: text
+          style: {
+            font-size: 13
+            italic: true
+          }
+        }
+      }
+    }
+  }
+}
+
+caption: "The Dependency Rule:\nsource code dependencies point only inward,\ntoward higher-level policies (Entities & Use Cases)." {
+  shape: rectangle
+  near: bottom-center
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 15
+  }
+}

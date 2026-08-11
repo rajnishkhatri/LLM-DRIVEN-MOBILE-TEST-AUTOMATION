@@ -1,0 +1,6 @@
+{
+  "description": "SDD role conveyor catalog; roles: 9; arms: 4",
+  "name": "sdd-roles",
+  "stamp": "sdd-roles 1.4.0 catalog:cabd69051aa2",
+  "version": "1.4.0"
+}

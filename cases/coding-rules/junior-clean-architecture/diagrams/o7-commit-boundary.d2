@@ -1,0 +1,103 @@
+# The commit boundary — what crosses, and in which form.
+# Plain committed data crosses; nothing else does. The handoff is a git commit, not a call.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  detail: {
+    style: {
+      fill: "#F1E3CE"
+      stroke: "#B0742A"
+      font-color: "#6E4718"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  artifact: {
+    style: {
+      fill: "#E7E1F1"
+      stroke: "#6A5A9C"
+      font-color: "#453A6B"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  flow: {
+    style: {
+      stroke: "#4A5A59"
+      font-color: "#4A5A59"
+      font-size: 13
+    }
+  }
+  banned: {
+    style: {
+      stroke: "#A6402F"
+      stroke-dash: 3
+      font-color: "#A6402F"
+      font-size: 13
+      bold: true
+    }
+  }
+}
+
+armside: "Authoring arm\n(may call models,\nbounded + screened)" {
+  style: {
+    fill: "#FBF7EF"
+    stroke: "#B0742A"
+    stroke-dash: 5
+    border-radius: 8
+    font-color: "#6E4718"
+    font-size: 15
+    bold: true
+  }
+  work: "drafts, prompts,\nmodel responses,\ncaptured hierarchies,\nconfidence scores" { class: detail }
+}
+
+crossing: "WHAT CROSSES — committed, screened, digest-pinned data" {
+  style: {
+    fill: "#FBF9F3"
+    stroke: "#6A5A9C"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#453A6B"
+    font-size: 15
+    bold: true
+  }
+  ir: "TestCaseIR.json\nthe executable —\n11 steps for the Zelle flow,\nirDigest = its SHA" { class: artifact }
+  man: "LocatorCandidate\nmanifest\nevery locator the IR\nmay ever touch" { class: artifact }
+  sig: "commit principal:\nsvc:conversion-pipeline\nhash-chain link written\nin the same transaction" { class: artifact }
+}
+
+spineside: "The spine\n(LLM-free,\ndeterministic)" {
+  style: {
+    fill: "#F2F7F6"
+    stroke: "#1F6F6B"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 15
+    bold: true
+  }
+  gate: "IR gate\nreads ONLY\ncommitted artifacts" { class: policy }
+}
+
+armside.work -> crossing.ir: "distilled into" { class: flow }
+armside.work -> crossing.man: { class: flow }
+crossing.ir -> spineside.gate: { class: flow }
+crossing.man -> spineside.gate: { class: flow }
+armside.work -> spineside.gate: "NEVER — no draft, prompt,\nor model output crosses raw" { class: banned }

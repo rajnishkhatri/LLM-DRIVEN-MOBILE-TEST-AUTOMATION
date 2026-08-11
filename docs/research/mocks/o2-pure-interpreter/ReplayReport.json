@@ -1,0 +1,29 @@
+{
+  "testId": "ACC-1042",
+  "irVersion": "sha:4f2c91e8...",
+  "irDigest": "sha256:7c3f2a9b...",
+  "codeCommit": null,
+  "staticGate": null,
+  "interpreterRun": {
+    "runs": 1,
+    "passes": 1,
+    "flakiness": "UNKNOWN",
+    "healsApplied": [
+      {
+        "stepIndex": 4,
+        "from": "ACCESSIBILITY_ID:loginButton",
+        "to": "XPATH://XCUIElementTypeButton[1]",
+        "reason": "LOCATOR_NOT_FOUND"
+      }
+    ],
+    "pinnedVersions": {
+      "appium": "2.5.1",
+      "driver": "XCUITest 5.12",
+      "device": "iPhone 15 / iOS 17.4"
+    }
+  },
+  "verdict": "PASS",
+  "classificationOnFailure": null,
+  "auditCaveat": null,
+  "_reviewerNote": "DANGER — this is the R1 silent-wrong-heal case made concrete. Step 4 healed from the a11y-id 'loginButton' to '//XCUIElementTypeButton[1]' at confidence 0.41 with no floor, no screenshot corroboration, no human confirm, and no neverHeal guard. If [1] happened to be a 'Sign Up' or 'Forgot Password' button on a build where Login was renamed, the test would still PASS and the verdict would read clean — a false green on an auth-critical flow. Compare O3, where healPolicy.healConfidenceFloor=0.90 + humanConfirmOnCriticalPaths=['auth'] + screenshotCorroborated=true would have blocked this heal and forced a human look. O2 has none of those controls; that is why it is compliance-fatal if mistaken for production."
+}

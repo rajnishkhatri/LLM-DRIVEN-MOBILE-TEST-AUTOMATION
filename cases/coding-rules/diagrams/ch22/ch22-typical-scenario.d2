@@ -1,0 +1,143 @@
+# Typical request scenario across the boundaries (after Fig 22.2).
+# Every hollow-triangle (implements) edge points INTO the inner container:
+# the Dependency Rule made visible.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+title: "A typical scenario — request flow across the boundaries" {
+  shape: text
+  near: top-center
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+outer: "Interface Adapters / Frameworks (outer circles)" {
+  style: {
+    fill: "#dcdcdc"
+    stroke: "#4a4a4a"
+    font-size: 18
+    bold: true
+  }
+
+  controller: "Controller" {
+    style.fill: "#ffffff"
+  }
+  presenter: "Presenter" {
+    style.fill: "#ffffff"
+  }
+  view_model: "View Model" {
+    style.fill: "#ffffff"
+  }
+  view: "View" {
+    style.fill: "#ffffff"
+  }
+  data_access: "Data Access" {
+    style.fill: "#ffffff"
+  }
+}
+
+inner: "Use Cases + Entities (inner circles)" {
+  style: {
+    fill: "#f5f5f5"
+    stroke: "#4a4a4a"
+    font-size: 18
+    bold: true
+  }
+
+  input: "«interface»\nInput Boundary" {
+    style: {
+      fill: "#ffffff"
+      stroke-dash: 3
+    }
+  }
+  interactor: "Use Case Interactor" {
+    style.fill: "#ffffff"
+  }
+  output: "«interface»\nOutput Boundary" {
+    style: {
+      fill: "#ffffff"
+      stroke-dash: 3
+    }
+  }
+  dai: "«interface»\nData Access Interface" {
+    style: {
+      fill: "#ffffff"
+      stroke-dash: 3
+    }
+  }
+  entities: "Entities" {
+    style.fill: "#ffffff"
+  }
+}
+
+database: "Database" {
+  shape: cylinder
+  style.fill: "#ffffff"
+}
+
+outer.controller -> inner.input: "passes Input Data"
+
+inner.interactor -> inner.input: "implements" {
+  target-arrowhead: {
+    shape: triangle
+    style.filled: false
+  }
+  style.stroke-dash: 4
+}
+
+inner.interactor -> inner.output: "passes Output Data"
+
+outer.presenter -> inner.output: "implements" {
+  target-arrowhead: {
+    shape: triangle
+    style.filled: false
+  }
+  style.stroke-dash: 4
+}
+
+outer.presenter -> outer.view_model: "builds"
+outer.view -> outer.view_model: "reads"
+
+inner.interactor -> inner.dai: "uses"
+
+outer.data_access -> inner.dai: "implements" {
+  target-arrowhead: {
+    shape: triangle
+    style.filled: false
+  }
+  style.stroke-dash: 4
+}
+
+outer.data_access -> database: "queries"
+
+inner.interactor -> inner.entities: "orchestrates"
+
+legend: "Legend\nfilled arrow = flow of control / calls\nhollow triangle = implements (source dependency, opposes control flow)" {
+  shape: rectangle
+  near: bottom-left
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 14
+  }
+}
+
+annotation: "Every hollow-triangle edge points into the inner container:\nsource dependencies obey the Dependency Rule even where\ncontrol flows outward at runtime." {
+  shape: rectangle
+  near: bottom-right
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 14
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "locators": [
+    {
+      "candidates": [
+        {
+          "strategy": "id",
+          "value": "username_id"
+        },
+        {
+          "strategy": "xpath",
+          "value": "//*[@resource-id='username']"
+        }
+      ],
+      "ref": "loc-username"
+    },
+    {
+      "candidates": [
+        {
+          "strategy": "id",
+          "value": "passcode_id"
+        },
+        {
+          "strategy": "xpath",
+          "value": "//*[@resource-id='passcode']"
+        }
+      ],
+      "ref": "loc-passcode"
+    },
+    {
+      "candidates": [
+        {
+          "strategy": "id",
+          "value": "login-submit_id"
+        },
+        {
+          "strategy": "xpath",
+          "value": "//*[@resource-id='login-submit']"
+        }
+      ],
+      "ref": "loc-login-submit"
+    },
+    {
+      "candidates": [
+        {
+          "strategy": "id",
+          "value": "nav-send-money_id"
+        },
+        {
+          "strategy": "xpath",
+          "value": "//*[@resource-id='nav-send-money']"
+        }
+      ],
+      "ref": "loc-nav-send-money"
+    },
+    {
+      "candidates": [
+        {
+          "strategy": "id",
+          "value": "amount-field_id"
+        },
+        {
+          "strategy": "xpath",
+          "value": "//*[@resource-id='amount-field']"
+        }
+      ],
+      "ref": "loc-amount-field"
+    },
+    {
+      "candidates": [
+        {
+          "strategy": "id",
+          "value": "send-confirm_id"
+        },
+        {
+          "strategy": "xpath",
+          "value": "//*[@resource-id='send-confirm']"
+        }
+      ],
+      "ref": "loc-send-confirm"
+    },
+    {
+      "candidates": [
+        {
+          "strategy": "id",
+          "value": "confirmation-banner_id"
+        },
+        {
+          "strategy": "xpath",
+          "value": "//*[@resource-id='confirmation-banner']"
+        }
+      ],
+      "ref": "loc-confirmation-banner"
+    }
+  ]
+}

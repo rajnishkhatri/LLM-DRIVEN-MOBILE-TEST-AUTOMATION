@@ -1,0 +1,24 @@
+{
+  "artifact_type": "tests_report",
+  "contract": "o7-kata-seam.1",
+  "counts": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 3
+  },
+  "engine": "mvn test (surefire XML)",
+  "failing": [],
+  "failures_total": 0,
+  "inputs": {
+    "pom_sha256": "7dec1c0c19c7408dc181edebe34ec8223b3b3981335a475ff3e497e38259738b"
+  },
+  "not_evaluable": null,
+  "threshold": {
+    "name": "tests_failures_max",
+    "value": 0
+  },
+  "tool": "junit-runner",
+  "tool_version": "1.0.0",
+  "verdict": "green"
+}

@@ -1,0 +1,25 @@
+{
+  "artifact_type": "build_report",
+  "contract": "o7-kata-seam.1",
+  "engine": "mvn compile",
+  "errors": [
+    {
+      "col": 21,
+      "line": 5,
+      "message": "';' expected",
+      "path": "src/main/java/fx/Broken.java"
+    }
+  ],
+  "errors_total": 1,
+  "inputs": {
+    "pom_sha256": "96a5653480904952bcdbc57ad334d093cdca3b9089ae08e68febd5e9050421e3"
+  },
+  "not_evaluable": null,
+  "threshold": {
+    "name": "build_errors_max",
+    "value": 0
+  },
+  "tool": "javac-build",
+  "tool_version": "1.0.0",
+  "verdict": "red"
+}

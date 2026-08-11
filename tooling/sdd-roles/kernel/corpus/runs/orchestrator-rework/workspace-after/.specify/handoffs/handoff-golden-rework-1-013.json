@@ -1,0 +1,45 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "decisions": [
+    {
+      "choice": "harden-per-defect-report",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision 3",
+      "rejected_alternatives": [
+        "alternative-3"
+      ]
+    }
+  ],
+  "from_role": "r-coder",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "r-build",
+      "input_tree_digest": "c7c306a14a12e62e51aa43081d4b52ed48e098f427b2ad220e3ea44535a94711",
+      "report_ref": {
+        "path": "reports/golden-rework-1-r-build-s012.json",
+        "sha256": "05410d21bf9c7d79e3b24b930b61c60c2225b5ca1898bb115b056f85c03a5578"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.2"
+    }
+  ],
+  "schema_version": "1.4.0",
+  "stage": "r-coder",
+  "stage_status": "complete",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "hardened per the defect report."
+  },
+  "to_role": "r-checker"
+}

@@ -1,0 +1,7 @@
+{
+  "check_id": "CHK-GENESIS",
+  "phase": "item-2",
+  "expected": "fail",
+  "exit_code": 2,
+  "json_pointer": "/parent_run"
+}

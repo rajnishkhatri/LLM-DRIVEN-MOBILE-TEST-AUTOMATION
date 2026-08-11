@@ -1,0 +1,48 @@
+{
+  "testId": "ACC-1042",
+  "title": "Login with valid credentials shows welcome",
+  "platforms": ["IOS", "ANDROID"],
+  "perfectoScriptlessFormat": "rel-26.2",
+  "steps": [
+    {
+      "step": 1,
+      "naturalLanguage": "On the Login screen, tap the username field",
+      "semanticMatch": "field labeled 'Username' on screen 'Login'",
+      "action": "TAP"
+    },
+    {
+      "step": 2,
+      "naturalLanguage": "Type the QA username into the username field",
+      "semanticMatch": "field labeled 'Username' on screen 'Login'",
+      "action": "TYPE",
+      "credentialRef": "vault:user_qa"
+    },
+    {
+      "step": 3,
+      "naturalLanguage": "Tap the password field",
+      "semanticMatch": "field labeled 'Password' on screen 'Login'",
+      "action": "TAP"
+    },
+    {
+      "step": 4,
+      "naturalLanguage": "Type the QA password into the password field",
+      "semanticMatch": "field labeled 'Password' on screen 'Login'",
+      "action": "TYPE",
+      "credentialRef": "vault:pass_qa"
+    },
+    {
+      "step": 5,
+      "naturalLanguage": "Tap the Login button",
+      "semanticMatch": "button labeled 'Login' on screen 'Login'",
+      "action": "TAP"
+    },
+    {
+      "step": 6,
+      "naturalLanguage": "Verify the welcome banner shows 'Welcome, QA User'",
+      "semanticMatch": "text 'Welcome' on screen 'Home'",
+      "action": "VISUAL_TEXT_VALIDATION",
+      "expected": "Welcome, QA User"
+    }
+  ],
+  "_reviewerNote": "No traditional locators (accessibility-id, xpath). Perfecto's semantic+visual matching resolves 'field labeled Username on screen Login' internally — the resolution logic is vendor-proprietary and not inspectable. This is the black-box: the bank cannot see HOW a natural-language step maps to an element, only THAT it did. Compare O1/O3 where resolvedLocators carry confidence + source and are auditable. The export below (ExportedAppiumTest.js) is the rel-26.2 escape hatch that re-materializes this into inspectable code."
+}

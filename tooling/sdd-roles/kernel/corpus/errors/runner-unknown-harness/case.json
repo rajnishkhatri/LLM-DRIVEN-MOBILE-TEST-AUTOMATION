@@ -1,0 +1,15 @@
+{
+  "command": "gate-runner",
+  "args": [
+    "run",
+    "--kernel", "<KERNEL>",
+    "--workspace", ".",
+    "--run-dir", "./rd",
+    "--config", "<KERNEL>/corpus/orchestrator/scenarios/green/kernel-config.json",
+    "--registry", "<KERNEL>/corpus/orchestrator/scenarios/green/role-registry.json",
+    "--descriptors", "<KERNEL>/corpus/orchestrator/descriptors-stub.json",
+    "--harness", "no-such-harness",
+    "--run-id", "err-2"
+  ],
+  "expected_exit": 1
+}

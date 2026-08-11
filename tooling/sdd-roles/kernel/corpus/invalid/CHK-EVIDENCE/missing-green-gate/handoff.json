@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "handoff_contract",
+  "from_role": "coder",
+  "to_role": "cleaner",
+  "stage": "implement",
+  "stage_status": "complete",
+  "summary": {
+    "text": "stage summary",
+    "provenance": {
+      "source": "role_authored"
+    }
+  },
+  "decisions": [
+    {
+      "choice": "adopt-outbox-queue",
+      "rationale": "smallest machinery that satisfies the criteria",
+      "rejected_alternatives": [
+        "broker-based queue"
+      ],
+      "provenance": {
+        "source": "role_authored"
+      }
+    }
+  ],
+  "gate_outcomes": [
+    {
+      "gate_id": "build",
+      "tool": "javac-build",
+      "tool_version": "1.4.2",
+      "exit_code": 0,
+      "input_tree_digest": "d00c55431e9411c230feed61c60bf8b9da519a1a81d214a3e5311cd7b75065c6",
+      "attempt_number": 1,
+      "report_ref": {
+        "path": "reports/build.json",
+        "sha256": "67e5b6532d2dfce2a304a16a1f66cf28c658ffd74d17f8b5e5ff2cbeccd45dff"
+      },
+      "threshold": {
+        "name": "build_errors_max",
+        "value": 0
+      }
+    }
+  ],
+  "completion_evidence": []
+}

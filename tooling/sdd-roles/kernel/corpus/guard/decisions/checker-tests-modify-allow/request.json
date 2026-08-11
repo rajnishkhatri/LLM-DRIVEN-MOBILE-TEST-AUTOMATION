@@ -1,0 +1,6 @@
+{
+  "operation": "modify",
+  "paths": [
+    "tests/test_base.py"
+  ]
+}

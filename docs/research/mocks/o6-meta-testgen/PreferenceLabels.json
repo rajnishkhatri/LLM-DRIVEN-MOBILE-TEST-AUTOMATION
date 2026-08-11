@@ -1,0 +1,38 @@
+{
+  "testId": "ACC-1042",
+  "generatedAt": "2026-07-29T15:10Z",
+  "modelAndVersion": "copilot/gpt-5-codex (pinned, cache key per ADR 0002)",
+  "labels": [
+    {
+      "candidate": "Candidate-A.java",
+      "label": "ACCEPT",
+      "reason": "builds, stable on device (3/3), adds +8 branch coverage, object-repo locators",
+      "humanReview": "PENDING",
+      "preferenceSignal": "positive — preferred over B (more robust locators) and C (compiles)"
+    },
+    {
+      "candidate": "Candidate-B.java",
+      "label": "REJECT_FLAKY",
+      "reason": "1/3 device passes; brittle positional XPath",
+      "humanReview": "NOT_REQUIRED (deterministic filter discarded)",
+      "preferenceSignal": "negative — brittle-XPath pattern is a failure-class base rate (LOCATOR_NOT_FOUND on OEM skins)"
+    },
+    {
+      "candidate": "Candidate-C.java",
+      "label": "REJECT_COMPILE",
+      "reason": "references non-existent page object; compile failure",
+      "humanReview": "NOT_REQUIRED (static gate discarded)",
+      "preferenceSignal": "negative — hallucinated type; base rate for 'LLM invents a page object' failure class"
+    }
+  ],
+  "flywheelOutputs": {
+    "exemplars": "Candidate-A joins the golden set on human acceptance",
+    "preferencePairs": "A > B (robustness), A > C (compilability) — feeds the Phase-2 preference model",
+    "failureClassBaseRates": {
+      "LOCATOR_NOT_FOUND_brittle_xpath": 1,
+      "COMPILE_hallucinated_type": 1,
+      "STABLE_object_repo": 1
+    }
+  },
+  "_reviewerNote": "This is the §8.9 flywheel made into an artifact. The accept/reject decisions are NOT throwaway — they are labelled training data: (1) the survivor becomes a golden exemplar; (2) A>B and A>C are preference pairs for the Phase-2 model; (3) the failure-class counts calibrate the Phase-2 judge's TPR/TNR. This is the decisive strategic difference from O2/O4: the maintenance effort COMPOUNDS into the Phase-2 asset base instead of evaporating. O2's runtime heals are ephemeral (no committed diff, no record); O4's adaptations are vendor-owned (the bank gives the asset to Perfecto). O6's filter outcomes are owned, labelled, and reusable. That is why §8.9 rates O6 'Highest' on flywheel value and why the production recommendation is O1-substrate + O6-maintenance."
+}

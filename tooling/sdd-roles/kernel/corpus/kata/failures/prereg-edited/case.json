@@ -1,0 +1,21 @@
+{
+  "command": "kata",
+  "args": [
+    "analyze",
+    "--kernel",
+    "<KERNEL>",
+    "--plan",
+    "../../plan.json",
+    "--prereg",
+    "./preregistration.json",
+    "--results",
+    "../../results-six-roles.json",
+    "--out",
+    "./out-verdict.json"
+  ],
+  "expected_exit": 2,
+  "expect_stderr_contains": [
+    "does not match its own constants"
+  ],
+  "expect_no_out_dir": "out-verdict.json"
+}

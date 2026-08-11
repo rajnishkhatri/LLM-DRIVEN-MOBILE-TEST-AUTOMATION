@@ -1,0 +1,487 @@
+{
+  "$schema": "../../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "07-component",
+    "level": "component",
+    "title": "C3a \u2014 Component view: module flow",
+    "caption": "How does a conversion move through the 16 components? This view opens the APP container from C2a (whose module-grain wiring is C2b) \u2014 all sixteen components in their three modules. Flow only \u2014 screening edges are C3b, provenance edges are C3c. Canvas carries numbered edge refs; the full claim lives in the edge-detail table keyed by number.",
+    "direction": "down",
+    "opens": "APP",
+    "opens_from": "02-container",
+    "completeness": "complete",
+    "overlays": "auto"
+  },
+  "nodes": [
+    {
+      "id": "QA",
+      "kind": "actor",
+      "label": "QA engineer",
+      "detail": [
+        "IDE + 2 CLIs. In P1 the conversion reasoning happens in THIS actor's IDE (Copilot, ADR 0001); the system receives only committed artifacts"
+      ]
+    },
+    {
+      "id": "REVIEWER",
+      "kind": "actor",
+      "label": "Reviewer",
+      "detail": [
+        "HITL queue; responds in hours\u2013days"
+      ]
+    },
+    {
+      "id": "AUDITOR",
+      "kind": "actor",
+      "label": "Auditor",
+      "detail": [
+        "Must reconstruct verdicts from stored evidence alone, without access to the running system (ADR 0008)"
+      ]
+    },
+    {
+      "id": "LEAD",
+      "kind": "actor",
+      "label": "Delivery lead",
+      "detail": [
+        "Read-only metrics"
+      ]
+    },
+    {
+      "id": "COORDINATE_CONVERSION",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Coordinate Conversion",
+      "detail": [
+        "State machine + retry budgets; CE=11, CA=0 (ADR 0003). Repair budgets: 3 static, 3 device"
+      ]
+    },
+    {
+      "id": "INGEST_TEST_SOURCES",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Ingest Test Sources",
+      "detail": [
+        "Adapters: Excel + Octane now, ALM/QC later (C1). Hash-at-ingest snapshot digest (M15)"
+      ]
+    },
+    {
+      "id": "INTERPRET_TEST_INTENT",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Interpret Test Intent",
+      "detail": [
+        "Emits TestCaseIR; flags ambiguity"
+      ]
+    },
+    {
+      "id": "ACQUIRE_UI_EVIDENCE",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Acquire UI Evidence",
+      "detail": [
+        "Hierarchy tool: page source, Object Spy, pruned tree. Records device + pool identity; off-pool captures flagged (M24)"
+      ]
+    },
+    {
+      "id": "RESOLVE_ELEMENTS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Resolve Elements",
+      "detail": [
+        "Owns the locator cascade. Octane locator lookup STUBBED IN SPINE (C5)"
+      ]
+    },
+    {
+      "id": "RETRIEVE_CONVERSION_ASSETS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Retrieve Conversion Assets",
+      "detail": [
+        "Versioned prompts, house rules, exemplars"
+      ]
+    },
+    {
+      "id": "GENERATE_TEST_CODE",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Generate Test Code",
+      "detail": [
+        "Page Objects + Appium Java/TestNG"
+      ]
+    },
+    {
+      "id": "REPAIR_LOCATORS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Repair Locators",
+      "detail": [
+        "Bounded re-grounding"
+      ]
+    },
+    {
+      "id": "INVOKE_MODELS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Invoke Models",
+      "role": "model-seam",
+      "detail": [
+        "THE model seam (ADR 0001): P1 Copilot impl / P2 gateway impl, config-selected. Cache key incl. model+provider version (ADR 0002). P2 edge tags = runtime call exists in Phase 2 only; the seam and its callers exist from the first commit (F1)"
+      ]
+    },
+    {
+      "id": "ROUTE_HUMAN_DECISIONS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Route Human Decisions",
+      "detail": [
+        "Authenticated; every decision attributed to an individual principal (M37)"
+      ]
+    },
+    {
+      "id": "VERIFY_STATICALLY",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Verify Statically",
+      "detail": [
+        "Free, fast, deterministic. Capability rules gate generated code (ADR 0013)"
+      ]
+    },
+    {
+      "id": "REPLAY_ON_DEVICES",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Replay on Devices",
+      "detail": [
+        "K runs, pinned pools; dominant cost. Spawns the separate execution process, single-run token, NO gateway credential (ADR 0013). Records ACTUAL context beside requested; pinned-facet mismatch quarantines (M24)"
+      ]
+    },
+    {
+      "id": "CLASSIFY_REPLAY_OUTCOME",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Classify Replay Outcome",
+      "detail": [
+        "Rule-based taxonomy; unmapped outcome quarantines, never defaults (M10a)"
+      ]
+    },
+    {
+      "id": "CERTIFY_CONVERSION",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Certify Conversion",
+      "detail": [
+        "Grades fidelity + applies gates conjunctively; grade is ADVISORY to a human certifier (CF9). Custody-before-certify: every reference must resolve locally first (CF1)"
+      ]
+    },
+    {
+      "id": "PUBLISH_CERTIFIED_ASSETS",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Publish Certified Assets",
+      "detail": [
+        "Single-writer; certify-locally, publish-async (CF3)"
+      ]
+    },
+    {
+      "id": "PRESERVE_PROVENANCE",
+      "kind": "component",
+      "family": "module-c",
+      "label": "Preserve Provenance",
+      "role": "lineage-store",
+      "detail": [
+        "Append-only hash-chained lineage, CA=13 (ADR 0012); + metrics read model + auditor export (ADR 0008, CF11)"
+      ]
+    },
+    {
+      "id": "PERFECTO",
+      "kind": "external",
+      "family": "faded",
+      "label": "Perfecto device lab",
+      "detail": [
+        "Drawn faded for location only; detail lives in the C2 tables"
+      ]
+    },
+    {
+      "id": "GATEWAY",
+      "kind": "external",
+      "family": "faded",
+      "label": "Orchestrator AI gateway",
+      "detail": [
+        "Drawn faded for location only; detail lives in the C2 tables"
+      ]
+    },
+    {
+      "id": "OCTANE",
+      "kind": "external",
+      "family": "faded",
+      "label": "ALM Octane",
+      "detail": [
+        "Drawn faded for location only; detail lives in the C2 tables"
+      ]
+    },
+    {
+      "id": "GIT",
+      "kind": "datastore",
+      "label": "Git",
+      "detail": [
+        "Drawn faded for location only; detail lives in the C2 tables. Prompts / exemplars / golden set / test code; version identity is free"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "QA",
+      "to": "INGEST_TEST_SOURCES",
+      "kind": "sync",
+      "ref": 1,
+      "detail": "ingestion CLI"
+    },
+    {
+      "from": "QA",
+      "to": "ACQUIRE_UI_EVIDENCE",
+      "kind": "sync",
+      "ref": 2,
+      "detail": "hierarchy-tool CLI"
+    },
+    {
+      "from": "REVIEWER",
+      "to": "ROUTE_HUMAN_DECISIONS",
+      "kind": "async",
+      "ref": 3,
+      "detail": "review-queue UI"
+    },
+    {
+      "from": "AUDITOR",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "ref": 4,
+      "detail": "versioned export"
+    },
+    {
+      "from": "LEAD",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "ref": 5,
+      "detail": "metrics"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "INGEST_TEST_SOURCES",
+      "kind": "sync",
+      "ref": 6,
+      "detail": "acquire source"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "INTERPRET_TEST_INTENT",
+      "kind": "sync",
+      "ref": 7,
+      "detail": "interpret"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "ACQUIRE_UI_EVIDENCE",
+      "kind": "sync",
+      "ref": 8,
+      "detail": "capture evidence"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "RESOLVE_ELEMENTS",
+      "kind": "sync",
+      "ref": 9,
+      "detail": "resolve locators"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "GENERATE_TEST_CODE",
+      "kind": "sync",
+      "ref": 10,
+      "detail": "generate"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "VERIFY_STATICALLY",
+      "kind": "sync",
+      "ref": 11,
+      "detail": "static gate"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "CLASSIFY_REPLAY_OUTCOME",
+      "kind": "sync",
+      "ref": 12,
+      "detail": "classify"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "REPAIR_LOCATORS",
+      "kind": "sync",
+      "ref": 13,
+      "detail": "repair (bounded)"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "CERTIFY_CONVERSION",
+      "kind": "sync",
+      "ref": 14,
+      "detail": "certify"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "REPLAY_ON_DEVICES",
+      "kind": "async",
+      "ref": 15,
+      "detail": "A1: replay request"
+    },
+    {
+      "from": "COORDINATE_CONVERSION",
+      "to": "ROUTE_HUMAN_DECISIONS",
+      "kind": "async",
+      "ref": 16,
+      "detail": "A2: escalate"
+    },
+    {
+      "from": "INTERPRET_TEST_INTENT",
+      "to": "INVOKE_MODELS",
+      "kind": "sync",
+      "ref": 17,
+      "detail": "P2"
+    },
+    {
+      "from": "RESOLVE_ELEMENTS",
+      "to": "INVOKE_MODELS",
+      "kind": "sync",
+      "ref": 18,
+      "detail": "P2"
+    },
+    {
+      "from": "GENERATE_TEST_CODE",
+      "to": "INVOKE_MODELS",
+      "kind": "sync",
+      "ref": 19,
+      "detail": "P2"
+    },
+    {
+      "from": "REPAIR_LOCATORS",
+      "to": "INVOKE_MODELS",
+      "kind": "sync",
+      "ref": 20,
+      "detail": "P2"
+    },
+    {
+      "from": "INTERPRET_TEST_INTENT",
+      "to": "RETRIEVE_CONVERSION_ASSETS",
+      "kind": "sync",
+      "ref": 21,
+      "detail": "retrieves conversion assets"
+    },
+    {
+      "from": "RESOLVE_ELEMENTS",
+      "to": "RETRIEVE_CONVERSION_ASSETS",
+      "kind": "sync",
+      "ref": 22,
+      "detail": "retrieves conversion assets"
+    },
+    {
+      "from": "GENERATE_TEST_CODE",
+      "to": "RETRIEVE_CONVERSION_ASSETS",
+      "kind": "sync",
+      "ref": 23,
+      "detail": "retrieves conversion assets"
+    },
+    {
+      "from": "REPAIR_LOCATORS",
+      "to": "RESOLVE_ELEMENTS",
+      "kind": "sync",
+      "ref": 24,
+      "detail": "re-run cascade"
+    },
+    {
+      "from": "CERTIFY_CONVERSION",
+      "to": "INVOKE_MODELS",
+      "kind": "entangled",
+      "ref": 25,
+      "detail": "ENTANGLEMENT: fidelity grade (ADR 0004)"
+    },
+    {
+      "from": "CERTIFY_CONVERSION",
+      "to": "RETRIEVE_CONVERSION_ASSETS",
+      "kind": "sync",
+      "ref": 26,
+      "detail": "retrieves conversion assets"
+    },
+    {
+      "from": "CERTIFY_CONVERSION",
+      "to": "PUBLISH_CERTIFIED_ASSETS",
+      "kind": "sync",
+      "ref": 27,
+      "detail": "publish on PASS"
+    },
+    {
+      "from": "INGEST_TEST_SOURCES",
+      "to": "OCTANE",
+      "kind": "sync",
+      "ref": 28,
+      "detail": "ingest"
+    },
+    {
+      "from": "ACQUIRE_UI_EVIDENCE",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "ref": 29,
+      "detail": "live capture"
+    },
+    {
+      "from": "REPLAY_ON_DEVICES",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "ref": 30,
+      "detail": "K device runs"
+    },
+    {
+      "from": "INVOKE_MODELS",
+      "to": "GATEWAY",
+      "kind": "sync",
+      "ref": 31,
+      "detail": "P2 model calls"
+    },
+    {
+      "from": "RESOLVE_ELEMENTS",
+      "to": "OCTANE",
+      "kind": "sync",
+      "ref": 32,
+      "detail": "locator lookup (stub)"
+    },
+    {
+      "from": "PUBLISH_CERTIFIED_ASSETS",
+      "to": "OCTANE",
+      "kind": "async",
+      "ref": 33,
+      "detail": "A3: write-back"
+    },
+    {
+      "from": "RETRIEVE_CONVERSION_ASSETS",
+      "to": "GIT",
+      "kind": "sync",
+      "ref": 34,
+      "detail": "versioned assets"
+    },
+    {
+      "from": "PUBLISH_CERTIFIED_ASSETS",
+      "to": "GIT",
+      "kind": "sync",
+      "ref": 35,
+      "detail": "grow exemplar + golden set"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

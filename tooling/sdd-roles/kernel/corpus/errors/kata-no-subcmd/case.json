@@ -1,0 +1,5 @@
+{
+  "command": "kata",
+  "args": [],
+  "expected_exit": 1
+}

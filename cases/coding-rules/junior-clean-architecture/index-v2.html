@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clean Architecture for Juniors — Silicon Sandwiches</title>
+<style>
+  :root {
+    /* ---- warm paper neutrals ---- */
+    --paper:      #F5F1E7;
+    --paper-2:    #EEE8DA;   /* raised panels */
+    --paper-edge: #E2DAC6;   /* hairlines on paper */
+    --ink:        #1B2A2B;   /* deep ink-teal, body text */
+    --ink-soft:   #4A5A59;   /* secondary text */
+    --ink-faint:  #7A8683;   /* captions */
+
+    /* ---- meaning colors (the ring key) ---- */
+    --policy:      #1F6F6B;  /* stable policy — entities & use cases (inner rings) */
+    --policy-wash: #DCECE9;
+    --detail:      #B0742A;  /* volatile detail — frameworks, SQL, vendors (outer ring) */
+    --detail-wash: #F1E3CE;
+    --port:        #6A5A9C;  /* the boundary — ports, models, seams */
+    --port-wash:   #E7E1F1;
+    --human:       #495C77;  /* judgement call — the architect decides */
+
+    --pass:       #2E7D5B;
+    --fail:       #A6402F;
+
+    --accent:     var(--policy);
+    --rule:       #D8CFBB;
+
+    --measure: 66ch;
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "Menlo", Consolas, "Liberation Mono", monospace;
+
+    --shadow: 0 1px 2px rgba(27,42,43,.06), 0 8px 24px rgba(27,42,43,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #14201F;
+      --paper-2:    #1B2B29;
+      --paper-edge: #263A37;
+      --ink:        #E7EBE7;
+      --ink-soft:   #AEBCB8;
+      --ink-faint:  #7E908B;
+      --policy:     #6FC9C0;
+      --policy-wash:#17332F;
+      --detail:     #E0A65A;
+      --detail-wash:#33280F;
+      --port:       #A99AD6;
+      --port-wash:  #241E38;
+      --human:      #8BA3C4;
+      --pass:       #6BC79A;
+      --fail:       #E48374;
+      --rule:       #2A3D39;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  /* explicit toggle overrides — must win both directions */
+  :root[data-theme="light"] {
+    --paper:#F5F1E7;--paper-2:#EEE8DA;--paper-edge:#E2DAC6;--ink:#1B2A2B;--ink-soft:#4A5A59;--ink-faint:#7A8683;
+    --policy:#1F6F6B;--policy-wash:#DCECE9;--detail:#B0742A;--detail-wash:#F1E3CE;--port:#6A5A9C;--port-wash:#E7E1F1;
+    --human:#495C77;--pass:#2E7D5B;--fail:#A6402F;--rule:#D8CFBB;
+    --shadow:0 1px 2px rgba(27,42,43,.06),0 8px 24px rgba(27,42,43,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper:#14201F;--paper-2:#1B2B29;--paper-edge:#263A37;--ink:#E7EBE7;--ink-soft:#AEBCB8;--ink-faint:#7E908B;
+    --policy:#6FC9C0;--policy-wash:#17332F;--detail:#E0A65A;--detail-wash:#33280F;--port:#A99AD6;--port-wash:#241E38;
+    --human:#8BA3C4;--pass:#6BC79A;--fail:#E48374;--rule:#2A3D39;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* faint survey-grid texture on the ground */
+  body::before {
+    content:""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(var(--paper-edge) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-edge) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: .28;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 80%);
+  }
+
+  .measure { max-width: var(--measure); margin-left: auto; margin-right: auto; }
+
+  /* ---------- masthead ---------- */
+  header.mast {
+    max-width: 1000px; margin: 0 auto; padding: 64px 24px 28px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--policy); margin: 0 0 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow::before {
+    content:""; width: 34px; height: 2px; background: var(--policy); display:inline-block;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 700; line-height: 1.05;
+    font-size: clamp(2.4rem, 6vw, 4.1rem); margin: 0 0 .35em; letter-spacing: -.01em;
+    text-wrap: balance; color: var(--ink);
+  }
+  .dek {
+    font-family: var(--serif); font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    line-height: 1.4; color: var(--ink-soft); max-width: 44ch; text-wrap: balance;
+    font-style: italic; margin: 0 0 26px;
+  }
+  .byline {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    letter-spacing: .04em; border-top: 1px solid var(--rule);
+    padding-top: 14px; display:flex; gap: 18px 26px; flex-wrap: wrap;
+  }
+  .byline b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- the running cast ---------- */
+  .cast-card {
+    max-width: 1000px; margin: 18px auto 0; background: var(--paper-2);
+    border: 1px solid var(--paper-edge); border-radius: 12px; padding: 18px 22px;
+    box-shadow: var(--shadow);
+    font-family: var(--mono); font-size: 12.5px; line-height: 2.1; color: var(--ink-soft);
+  }
+  .cast-card .clabel {
+    text-transform: uppercase; letter-spacing: .14em; font-size: 11px;
+    color: var(--ink-faint); display: block; margin-bottom: 4px;
+  }
+  .cast-pill {
+    display: inline-block; padding: 2px 10px; border-radius: 999px; margin: 0 6px 4px 0;
+    font-weight: 600; white-space: nowrap; border: 1px solid;
+  }
+  .cast-pill.policy { background: var(--policy-wash); color: var(--policy); border-color: var(--policy); }
+  .cast-pill.port   { background: var(--port-wash);   color: var(--port);   border-color: var(--port); }
+  .cast-pill.detail { background: var(--detail-wash); color: var(--detail); border-color: var(--detail); }
+
+  /* ---------- body typography ---------- */
+  main { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  p { margin: 0 0 1.15em; }
+
+  h2 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.01em;
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem); line-height: 1.12;
+    margin: 2.2em 0 .1em; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .5em; color: var(--policy); font-weight: 500;
+    letter-spacing: .1em; vertical-align: middle; margin-right: .8em;
+    border: 1px solid var(--policy); border-radius: 3px; padding: .18em .5em;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.16rem;
+    margin: 1.9em 0 .3em; color: var(--ink); letter-spacing: -.005em;
+  }
+  .lede { font-size: 1.28rem; line-height: 1.5; color: var(--ink);
+    font-family: var(--serif); }
+  .lede b { color: var(--policy); }
+  a { color: var(--policy); text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 700; }
+  code {
+    font-family: var(--mono); font-size: .84em;
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 4px; padding: .08em .38em; color: var(--ink);
+    white-space: nowrap;
+  }
+  pre {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 10px; padding: 18px 20px; overflow-x: auto;
+    box-shadow: var(--shadow); margin: 1.5em 0;
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.55; color: var(--ink);
+  }
+  pre code { background: none; border: none; padding: 0; white-space: pre; font-size: inherit; }
+  pre .cm { color: var(--ink-faint); font-style: italic; }
+
+  .drop::first-letter {
+    font-family: var(--serif); float: left; font-size: 3.7em; line-height: .78;
+    padding: .06em .12em 0 0; color: var(--policy); font-weight: 700;
+  }
+
+  ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--policy); }
+
+  /* ---------- the ring key (persistent legend) ---------- */
+  .key {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    margin: 0; padding: 10px 24px;
+  }
+  .key-inner {
+    max-width: 1000px; margin: 0 auto; display: flex; gap: 8px 22px;
+    flex-wrap: wrap; align-items: center;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .02em;
+  }
+  .key-inner .klabel { color: var(--ink-faint); text-transform: uppercase; letter-spacing:.12em; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+  .sw { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .sw.policy { background: var(--policy); }
+  .sw.detail { background: var(--detail); }
+  .sw.port   { background: var(--port-wash); border: 1.5px dashed var(--port); }
+  .sw.human  { background: var(--human); }
+
+  /* ---------- figure bands (break the measure) ---------- */
+  figure { margin: 2.4em 0; padding: 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  .fig-card {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 12px; padding: 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  .fig-card img {
+    display: block; width: 100%; height: auto;
+    background: #fff; border-radius: 8px; border: 1px solid var(--paper-edge);
+  }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    margin-top: 12px; line-height: 1.5; letter-spacing: .01em;
+    max-width: 74ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--policy); background: var(--policy-wash);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 1.6em 0;
+    font-size: .98rem;
+  }
+  .callout .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--policy); display:block; margin-bottom: 6px; font-weight: 600;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout.pitfall { border-left-color: var(--fail); background: color-mix(in srgb, var(--fail) 9%, transparent); }
+  .callout.pitfall .tag { color: var(--fail); }
+  .callout.port { border-left-color: var(--port); background: var(--port-wash); border-left-style: dashed; }
+  .callout.port .tag { color: var(--port); }
+  .callout.story { border-left-color: var(--human); background: color-mix(in srgb, var(--human) 10%, transparent); }
+  .callout.story .tag { color: var(--human); }
+
+  /* dialogue aside */
+  .dialogue {
+    border: 1px dashed var(--rule); border-radius: 10px; padding: 16px 20px;
+    margin: 1.6em 0; font-size: .98rem; background: color-mix(in srgb, var(--paper-2) 55%, transparent);
+  }
+  .dialogue .who {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; font-weight: 700; margin-right: .6em;
+  }
+  .dialogue .who.jr { color: var(--detail); }
+  .dialogue .who.sr { color: var(--policy); }
+  .dialogue p { margin: .5em 0; }
+
+  /* ---------- tables ---------- */
+  .table-wrap { overflow-x: auto; margin: 1.8em 0; border-radius: 10px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--paper-2); font-size: .95rem; }
+  caption { text-align: left; font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint); padding: 0 0 10px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--paper-edge); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600; background: color-mix(in srgb, var(--paper-2) 60%, var(--paper)); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .owner-pill {
+    display:inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .owner-pill.policy { background: var(--policy-wash); color: var(--policy); border:1px solid var(--policy); }
+  .owner-pill.detail { background: var(--detail-wash); color: var(--detail); border:1px solid var(--detail); }
+  .owner-pill.port   { background: var(--port-wash); color: var(--port); border:1px solid var(--port); }
+  .owner-pill.human  { background: color-mix(in srgb,var(--human) 16%, transparent); color: var(--human); border:1px solid var(--human); }
+  .owner-pill.pass   { background: color-mix(in srgb,var(--pass) 14%, transparent); color: var(--pass); border:1px solid var(--pass); }
+  .owner-pill.fail   { background: color-mix(in srgb,var(--fail) 12%, transparent); color: var(--fail); border:1px dashed var(--fail); }
+
+  /* ---------- section rule ---------- */
+  .rule-orn { display: flex; align-items: center; gap: 16px; margin: 3em 0 0; color: var(--rule); }
+  .rule-orn::before, .rule-orn::after { content:""; height: 1px; background: var(--rule); flex: 1; }
+  .rule-orn span { font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: var(--ink-faint); }
+
+  /* ---------- pull quote ---------- */
+  .pull {
+    font-family: var(--serif); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.28;
+    color: var(--ink); font-style: italic; text-wrap: balance;
+    border-top: 2px solid var(--policy); border-bottom: 2px solid var(--policy);
+    padding: .7em 0; margin: 1.8em 0;
+  }
+  .pull b { font-style: normal; color: var(--policy); }
+
+  /* checklist */
+  .checklist li { margin: .5em 0; }
+  .checklist .cksec {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-faint); list-style: none; margin: 1.2em 0 .4em -1.3em; font-weight: 600;
+  }
+
+  .footnote {
+    font-size: .85rem; color: var(--ink-faint); margin-top: 2.4em;
+    padding-top: 1em; border-top: 1px dotted var(--rule); max-width: var(--measure);
+    margin-left: auto; margin-right: auto;
+  }
+
+  /* footer */
+  footer {
+    max-width: 1000px; margin: 60px auto 0; padding: 26px 24px 40px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+  footer b { color: var(--ink-soft); }
+
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    header.mast { padding-top: 40px; }
+    .key-inner { font-size: 11px; gap: 6px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <p class="eyebrow">Mentoring Series&nbsp;·&nbsp;Clean Architecture&nbsp;·&nbsp;Silicon Sandwiches Kata</p>
+  <h1>Clean Architecture for Juniors</h1>
+  <p class="dek">A mentoring walkthrough with Silicon Sandwiches — franchise sandwich ordering as one modular monolith that screams its own business.</p>
+  <div class="byline">
+    <span><b>Audience</b> Junior developers &amp; their mentors</span>
+    <span><b>Reading time</b> ~25 min</span>
+    <span><b>Grounded in</b> Clean Architecture ch. 16–28, 30, 32, 34</span>
+    <span><b>Kata</b> Silicon Sandwiches, modular monolith</span>
+  </div>
+  <div class="cast-card">
+    <span class="clabel">The running cast — one color per ring</span>
+    <span class="cast-pill policy">Order</span>
+    <span class="cast-pill policy">Offer</span>
+    <span class="cast-pill policy">FranchiseShop</span>
+    <span class="cast-pill policy">PlaceOrder</span>
+    <span class="cast-pill policy">ResolveOffer</span>
+    <span class="cast-pill port">OrderGateway</span>
+    <span class="cast-pill port">PaymentGateway</span>
+    <span class="cast-pill port">OfferGateway</span>
+    <span class="cast-pill detail">SqlOrderGateway</span>
+    <span class="cast-pill detail">StripePaymentAdapter</span>
+    <span class="cast-pill detail">SpringPlaceOrderController</span>
+    <span class="cast-pill detail">OrderPresenter</span>
+    <span class="cast-pill detail">Spring @Configuration root</span>
+  </div>
+</header>
+
+<div class="key">
+  <div class="key-inner">
+    <span class="klabel">How to read the colours:</span>
+    <span class="chip"><span class="sw policy"></span> Stable policy — inner rings</span>
+    <span class="chip"><span class="sw port"></span> The boundary — ports &amp; models</span>
+    <span class="chip"><span class="sw detail"></span> Volatile detail — outer ring</span>
+    <span class="chip"><span class="sw human"></span> Judgement call</span>
+  </div>
+</div>
+
+<main>
+
+  <div class="measure">
+    <p class="lede drop" style="margin-top:2em">Junior, pretend you just cloned Silicon Sandwiches. You have never heard of the company. You open the top-level packages, and in the next thirty seconds the codebase will tell you what it worships. This post is about making sure the answer is <b>sandwiches</b> — not Spring, not SQL, not Stripe — and about the small set of disciplines that keep it that way as the system grows.</p>
+
+    <p>Everything below runs on one example: Silicon Sandwiches, a franchise sandwich-ordering business built as a <strong>modular monolith</strong>. The cast stays fixed — entities like <code>Order</code> and <code>Offer</code>, use cases like <code>PlaceOrder</code>, ports like <code>OrderGateway</code>, adapters like <code>SqlOrderGateway</code> — and every chapter-level idea gets grounded in it. The colours in the sticky key above are the honest map of the whole post:</p>
+
+    <p class="pull">Amber may depend on teal — <b>never the reverse</b>. The volatile outer ring plugs into the stable core through the violet boundary. Every rule in this post is a corollary of that one sentence.</p>
+  </div>
+
+  <div class="rule-orn"><span>PART ONE · THE HEART</span></div>
+
+  <!-- ================= 01 SCREAM ================= -->
+  <section id="scream">
+    <div class="measure">
+      <h2><span class="num">01</span>Open the project — what does it scream?</h2>
+      <p>If the top level says <code>controllers</code>, <code>services</code>, <code>repositories</code>, the codebase screams <em>Spring</em>. That is the delivery mechanism talking, and the business — franchise sandwich ordering — is whispering underneath the stereotypes.</p>
+      <p>Screaming Architecture has a precise noun behind it, and it isn't "the domain" in general. Ivar Jacobson's old thesis is that an architecture is a structure that supports the <strong>use cases</strong> of the system — the things it lets people <em>do</em>. A house plan reveals foyer, kitchen, dining before it reveals brick versus cedar; a repository plan should surface <code>PlaceOrder</code> and <code>ResolveOffer</code> as load-bearing names before anyone meets a framework. And the claim is exclusive: you only get <em>one</em> organizing principle. If the structure is organized around Spring's stereotypes, it is — by definition — not organized around your use cases.</p>
+
+      <h3>The true-believer trap</h3>
+      <p>Why do junior repos come out framework-shaped? Because framework documentation is written by true believers, from a let-the-framework-do-everything posture. Follow the Spring getting-started guide faithfully and it will happily annotate everything down to the <code>Order</code> entity — that is precisely how a framework takes over an architecture. The prescribed stance is a skeptical eye and a two-part question you should ask of <em>every</em> framework and library:</p>
+      <div class="callout">
+        <span class="tag">Decision test — the framework pair</span>
+        <p><strong>How should I use it — and how should I protect myself from it?</strong> For Silicon Sandwiches the protection strategy is nameable and auditable: Spring annotations are quarantined to <code>SpringPlaceOrderController</code> and the <code>@Configuration</code> composition root. <code>PlaceOrder</code>, <code>ResolveOffer</code>, <code>Order</code>, <code>Offer</code>, and <code>FranchiseShop</code> compile with <em>zero</em> Spring imports. Ask the same pair of any new receipt-printing or menu-templating library: which adapter wall keeps it away from the use cases?</p>
+      </div>
+
+      <h3>The web is an I/O device</h3>
+      <p>Here is a claim stronger than "frameworks are details": <em>being delivered over the web at all</em> is a detail. The web is a delivery mechanism — an I/O device — and the core should be ignorant of it. The litmus: <code>SpringPlaceOrderController</code> should be the only code that knows sandwiches are ordered over HTTP. The franchise could add an in-store kiosk, a phone-order console for shop staff, or a delivery-partner API tomorrow, and each would be just another driver invoking <code>PlaceOrder</code> with a request model and rendering the result through an <code>OrderPresenter</code>. If adding a kiosk would force changes <em>inside</em> <code>PlaceOrder</code>, the web has quietly become your architecture.</p>
+      <p>This is also the real purpose of the whole exercise: <strong>keeping options open</strong>. A use-case-centered structure lets you build and demo <code>PlaceOrder</code> and <code>ResolveOffer</code> against in-memory gateways while the database and payment-provider decisions are still open — the way a house architect proves the rooms are usable before the owner picks brick or cedar. A good architecture is the one that lets you change your mind late, cheaply.</p>
+
+      <div class="dialogue">
+        <p><span class="who jr">New hire, day one</span> "I've read the <code>ordering</code> and <code>offer</code> packages. I can explain how an order gets validated against today's offer, and how payment flows through a <code>PaymentGateway</code>. But… where are the controllers? Is this a website or an app?"</p>
+        <p><span class="who sr">Mentor</span> "You just passed the onboarding test. You know every use case and you still can't tell how the system is delivered — that's the scream working. The controllers are an outer-ring detail. You can meet them next week."</p>
+      </div>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/ss-scream-vs-framework.svg" alt="Side-by-side folder trees: framework packages versus business packages" />
+      </div>
+      <figcaption><b>Figure 1 · Bad screams Spring; good screams Silicon Sandwiches.</b> The good tree surfaces PlaceOrder and ResolveOffer as top-level, load-bearing names — a stranger can recite what a customer can do before ever meeting a framework stereotype.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <p>One last link, which we'll cash in properly in section 10: <strong>testability is the proof the scream is real.</strong> If the architecture is about use cases and the frameworks are at arm's length, then every use case is unit-testable with no web server running and no database connected. The contrapositive is the lie detector — if you need Spring booted to test a business rule, the scream is fake, whatever the folders say.</p>
+    </div>
+  </section>
+
+  <!-- ================= 02 BUSINESS RULES ================= -->
+  <section id="business-rules">
+    <div class="measure">
+      <h2><span class="num">02</span>Business rules come first</h2>
+      <p>Before frameworks, before SQL, before JSON: the business. In Silicon Sandwiches the critical path is Place Order against a resolved offer for a franchise shop. But "business rules" is not one undifferentiated blob — the inner rings split it in two, and there is a test for which half a rule belongs to.</p>
+
+      <h3>The abacus test — entities</h3>
+      <p>A rule belongs to the enterprise core only if it would still make or save the business money <strong>with no computer at all</strong> — executed by hand, by a clerk with an abacus. Those are <em>Critical Business Rules</em>, and the data they can't work without is <em>Critical Business Data</em>. The two are inextricably bound, and binding them together in one module is exactly what an <strong>Entity</strong> is.</p>
+      <p>Run it on the cast: "an <code>Order</code>'s total is the sum of its line items priced from the resolved <code>Offer</code>" still makes money if the franchise manager tallies it on a paper pad — entity. A <code>FranchiseShop</code> that doesn't deliver refuses delivery orders whether or not software exists — entity. Note what an entity is <em>not</em>: it isn't "a class," and it is emphatically not "a thing my ORM annotates." Any module that binds critical data to its critical rules qualifies, in any language.</p>
+
+      <h3>The automation discriminator — use cases</h3>
+      <p>What makes a rule <em>application-specific</em> instead? It makes or saves money only by defining how an <strong>automated system</strong> operates — it would be meaningless in a manual environment. Give <code>PlaceOrder</code> a gating rule of exactly that shape: <em>the system will not accept payment until <code>ResolveOffer</code> has produced today's <code>Offer</code> for that shop, and the shop's delivery toggle has been checked against the customer's pickup-or-delivery choice.</em> A paper-menu shop needs no such rule; it exists only because there is a screen flow to sequence. That's why it lives in <code>PlaceOrder</code>, not in <code>Order</code>.</p>
+      <p>The relationship between the two layers is choreography with one-way hearing: the use case decides how and when the entities' rules get invoked — it orchestrates, the entities embody — and the entities have <strong>zero knowledge</strong> of the use cases driving them. That's what makes them reusable: the same <code>Order</code> and <code>Offer</code> could serve a kiosk app, a catering bulk-order app, or a back-office tool tomorrow; <code>PlaceOrder</code> belongs only to the customer-ordering application.</p>
+    </div>
+
+    <div class="table-wrap measure" style="max-width:var(--measure)">
+      <table>
+        <caption>The abacus test, applied to Silicon Sandwiches</caption>
+        <thead><tr><th>Rule</th><th>Works on paper?</th><th>Home</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Order total = line items priced from the resolved Offer, minus discounts</td>
+            <td>Yes — a clerk with an abacus can run it</td>
+            <td><span class="owner-pill policy">Entity · Order</span></td>
+          </tr>
+          <tr>
+            <td>Refuse payment until today's Offer is resolved and the delivery toggle matches the customer's choice</td>
+            <td>No — only meaningful in an automated flow</td>
+            <td><span class="owner-pill policy">Use case · PlaceOrder</span></td>
+          </tr>
+          <tr>
+            <td>Render totals as locale-formatted currency on the confirmation</td>
+            <td>Not a business rule at all — presentation</td>
+            <td><span class="owner-pill detail">Adapter · OrderPresenter</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="measure">
+      <h3>Request and response models — and a subtler trap</h3>
+      <p>Plain data crosses the use-case boundary: request and response models that are not your JPA rows and not your HTTP DTOs. The obvious mistake is deriving them from <code>HttpRequest</code>-shaped framework types. The subtler temptation is putting <strong>references to entities inside them</strong>, because the models and the entities share so much data. Resist it: they exist for different purposes and change for different reasons, and coupling them buys you <em>tramp data</em> — fields hauled through layers that never read them — and conditional sprawl. (Inside <code>PlaceOrder</code>, holding an <code>Order</code> and an <code>Offer</code> among its working data is fine. Handing them <em>across</em> the boundary is not.)</p>
+<pre><code>record PlaceOrderRequest(String shopId, List&lt;LineItem&gt; items,
+                         boolean deliveryRequested) {}
+
+record PlaceOrderResponse(String orderId, MoneyAmount total,
+                          String readyTime) {}
+<span class="cm">// Plain fields only. Deliberately: no Order reference, no Spring import.</span></code></pre>
+      <div class="callout">
+        <span class="tag">Decision test — delivery blindness</span>
+        <p>Hand someone <code>PlaceOrder</code>'s spec and ask: <em>web or kiosk?</em> If they can tell, the use case is leaking. A well-formed use case names the data in and the data out and never describes how the system appears to the user — from its text you cannot tell whether the app ships on the web, a thick client, a console, or as a headless service.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 03 RINGS + DIP ================= -->
+  <section id="clean-rings">
+    <div class="measure">
+      <h2><span class="num">03</span>The rings and the Dependency Rule</h2>
+      <p>Draw four concentric circles: entities in the center, use cases around them, interface adapters next, frameworks and drivers outside. Source-code dependencies point <em>only inward</em>, toward higher-level policy. (Four is a schematic, not a law — you may need more rings; the invariants are inward-pointing dependencies and rising abstraction toward the center.)</p>
+      <p>The rule is stricter than "arrows point inward." It is a rule about <strong>names</strong>: nothing in an inner circle may mention the name of anything declared in an outer circle — no function, no class, no variable. And it extends to <em>data formats</em>: the classic sin is the database row structure, the convenient object your persistence framework returns from a query. Pass that row inward and the use case silently knows about the database. The corollary decision test: data crosses a boundary in the form most convenient for the <strong>inner</strong> circle — <code>OrderGateway</code> accepts and returns order-shaped structures convenient to <code>PlaceOrder</code>, never a result row from the <code>orders</code> table.</p>
+      <p>The check is grep-able. Open <code>PlaceOrder</code>'s imports: if <code>SqlOrderGateway</code>, <code>StripePaymentAdapter</code>, or any Spring or JDBC name appears, the rule is broken — regardless of how the diagram looks.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/ss-clean-rings.svg" alt="Clean Architecture concentric rings labeled with Silicon Sandwiches names" />
+      </div>
+      <figcaption><b>Figure 2 · Silicon Sandwiches names on the classic rings.</b> Teal at the center, amber at the edge, violet ports on the line between them.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>Level is distance from I/O — and the two graphs</h3>
+      <p>"Policy and level" gets a measurable definition: a policy's <strong>level is its distance from the system's inputs and outputs</strong>. The farther from both, the higher the level; the policies that manage I/O are the lowest in the system. <code>ResolveOffer</code>'s overlay of local price deltas onto the national menu baseline is the code farthest from any HTTP request or SQL row — the central transform of the sandwich business, the highest-level policy on the path.</p>
+      <p>Now the subtle part. Order data <em>flows</em> <code>SpringPlaceOrderController → PlaceOrder → SqlOrderGateway</code>, but the source arrows must not trace that pipeline. Data flow and source dependency are <strong>different graphs</strong>, and the art is decoupling dependencies from data flow and coupling them to level: both edges point <em>into</em> the use case. Code that "runs fine" with high-level policy directly calling the low-level read and write helpers is still wrong architecture — the arrows trace the data path downhill instead of pointing at the policy.</p>
+      <p>Why does level matter? Change asymmetry. Low-level policy near the I/O changes frequently, urgently, and for unimportant reasons — a Stripe API version bump, a Spring upgrade. High-level policy changes rarely, and only when the sandwich business itself changes. Architecture is grouping the things that change for the same reasons at the same times, then arranging the groups so every import statement points from lower level to higher. The payoff is containment: urgent churn at the edges never disturbs the important center.</p>
+
+      <h3>DIP — what it actually targets</h3>
+      <p>Crossing a boundary uses the Dependency Inversion Principle, and juniors routinely over-read it as "never depend on anything concrete." Unrealistic — every system leans on concrete platform facilities. DIP's real target is <strong>volatile</strong> concretions: the modules your team is actively developing and changing weekly. <code>PlaceOrder</code> may freely use <code>BigDecimal</code> for the total and <code>java.time</code> for the pickup window; it must never name <code>SqlOrderGateway</code>. Interfaces are the safe thing to point at because they are inherently less volatile than implementations — every interface change forces all implementations to change, but implementation changes usually leave the interface alone. A good port earns its keep by <em>staying still</em>: adding caching inside <code>SqlOrderGateway</code> should never ripple into the port that <code>PlaceOrder</code> sees.</p>
+      <p>In review, DIP compresses to four don'ts:</p>
+      <ul>
+        <li><strong>Don't refer</strong> to volatile concrete classes — point at interfaces.</li>
+        <li><strong>Don't derive</strong> from them — in a statically typed language, inheritance is the strongest, most rigid source relationship there is.</li>
+        <li><strong>Don't override</strong> concrete functions — you don't shed their dependencies, you inherit them. Implement <code>PaymentGateway</code> fresh rather than subclassing <code>StripePaymentAdapter</code> to tweak the charge path.</li>
+        <li><strong>Don't <code>new</code></strong> volatile concretes in inner code — creation is itself a source dependency on the concrete class, which is why factories and the composition root exist.</li>
+      </ul>
+      <p>And a liberating footnote: DIP violations can never be fully eliminated, only <strong>swept into a small number of concrete components</strong> and kept apart from the rest. That dustpan has a name. We meet it in section 07.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/ss-dip-crossing.svg" alt="DIP: PlaceOrder calls OrderGateway; SqlOrderGateway implements with hollow triangle" />
+      </div>
+      <figcaption><b>Figure 3 · Filled arrows = calls; hollow triangles = implements.</b> At runtime control flows toward SQL; in the source tree, every arrow still points inward.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>The round trip — including the port the original post never drew</h3>
+      <p>The persistence side is only half the story. The same inversion happens on the <em>delivery</em> side, where it is easier to get wrong: flow of control runs controller → use case → presenter, yet the use case is forbidden from naming the presenter. The fix is an <strong>output port</strong> — an output-boundary interface declared alongside the use case, which the presenter implements from outside:</p>
+<pre><code><span class="cm">// Owned by the use-case ring:</span>
+interface PlaceOrderOutputPort {
+  void present(PlaceOrderResponse response);
+}
+
+class PlaceOrder {
+  private final OrderGateway orders;
+  private final PaymentGateway payments;
+  private final PlaceOrderOutputPort output;   <span class="cm">// never "OrderPresenter"</span>
+
+  void execute(PlaceOrderRequest request) {
+    <span class="cm">// ...direct the entities, load and save through the ports...</span>
+    output.present(response);
+  }
+}
+
+<span class="cm">// Outer ring:</span>
+class OrderPresenter implements PlaceOrderOutputPort { ... }</code></pre>
+    </div>
+
+    <div class="table-wrap measure" style="max-width:var(--measure)">
+      <table>
+        <caption>The typical-scenario round trip, in Silicon Sandwiches clothes</caption>
+        <thead><tr><th>Textbook role</th><th>Our cast member</th><th>Ring</th></tr></thead>
+        <tbody>
+          <tr><td>Controller</td><td><code>SpringPlaceOrderController</code></td><td><span class="owner-pill detail">adapter</span></td></tr>
+          <tr><td>Input boundary</td><td><code>PlaceOrder</code>'s input port</td><td><span class="owner-pill port">boundary</span></td></tr>
+          <tr><td>Use-case interactor</td><td><code>PlaceOrder</code></td><td><span class="owner-pill policy">use case</span></td></tr>
+          <tr><td>Entities</td><td><code>Order</code>, <code>Offer</code>, <code>FranchiseShop</code></td><td><span class="owner-pill policy">entity</span></td></tr>
+          <tr><td>Data-access interface</td><td><code>OrderGateway</code>, <code>OfferGateway</code></td><td><span class="owner-pill port">boundary</span></td></tr>
+          <tr><td>Output boundary</td><td><code>PlaceOrderOutputPort</code></td><td><span class="owner-pill port">boundary</span></td></tr>
+          <tr><td>Presenter → view model → view</td><td><code>OrderPresenter</code> → <code>OrderViewModel</code> → humble view</td><td><span class="owner-pill detail">adapter</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="measure">
+      <h3>What the rings buy you: five independences</h3>
+      <p>Clean Architecture is the merger of a family — Hexagonal / Ports &amp; Adapters, DCI, BCE — all pursuing separation of concerns by layers. Any system that honors the rings gets five verifiable properties, which turn "we use Clean Architecture" from a slogan into an acceptance test. For Silicon Sandwiches: could a staff-tablet UI replace the web UI without touching <code>PlaceOrder</code>? Could the relational store become a document store behind one new adapter? Can <code>Order</code> and <code>Offer</code> be exercised with no Spring context and no Stripe sandbox? Independent of frameworks, testable in isolation, independent of the UI, independent of the database, independent of any external agency. Five yeses mean the rings are real.</p>
+    </div>
+  </section>
+
+  <div class="rule-orn"><span>PART TWO · THE SEAMS</span></div>
+
+  <!-- ================= 04 HUMBLE ================= -->
+  <section id="humble">
+    <div class="measure">
+      <h2><span class="num">04</span>Humble Objects — presenters, gateways, and friends</h2>
+      <p>Some objects are hard to test: browsers, device views, JDBC drivers, Stripe's SDK. The Humble Object pattern says: keep those thin, and move the interesting branching and formatting next door where unit tests can reach it. But the pattern is bigger than a testing convenience — it was identified by <em>unit testers</em> (Meszaros' xUnit patterns), and the split they kept making turned out to land exactly on architectural boundaries. That gives you a detector, not just a pattern:</p>
+      <p class="pull">Wherever you find yourself carving out a hard-to-test lump, you have probably found an <b>architectural boundary</b> — and the traffic across it should be a simple data structure.</p>
+
+      <h3>The view-model completeness test</h3>
+      <p>When is the presenter <em>done</em>? When every single thing the application controls on screen appears in the view model as a <strong>string, a boolean, or an enum</strong>. Dates arrive as date objects and leave as formatted strings. Money arrives as a currency value and leaves as <code>"$12.40"</code>. Button labels are strings; grayed-out states are booleans; tables of numbers become tables of pre-formatted strings. If the view has to compute, format, or decide <em>anything</em> — a color, a format, an enabled state — the presenter isn't finished.</p>
+<pre><code>class OrderViewModel {
+  String totalText;             <span class="cm">// "$12.40" — already formatted</span>
+  boolean discountApplied;      <span class="cm">// highlight the Offer line?</span>
+  String placeOrderButtonLabel; <span class="cm">// "Place order"</span>
+  boolean placeOrderEnabled;    <span class="cm">// false when the FranchiseShop is closed</span>
+  List&lt;String&gt; lineItems;       <span class="cm">// pre-formatted, one string per row</span>
+}</code></pre>
+      <p>The view binds those fields to widgets and does nothing else. Test the presenter; baby-sit the view.</p>
+
+      <h3>There is no such thing as an ORM</h3>
+      <p>An object, from its user's point of view, is a set of operations with hidden data. A data structure is public data with no behavior. You cannot map what you cannot see — so Hibernate does not map objects. It loads <em>data structures</em> from relational tables; a better name would be <strong>data mapper</strong>. The consequence is placement: the mapper and its row-shaped classes belong in the database layer, behind the gateway, forming a second humble boundary. If <code>SqlOrderGateway</code> is built on Hibernate, the mapped row classes stay package-private beside the SQL; <code>Order</code> — the entity with behavior — is reconstructed from that data on the way in. <code>PlaceOrder</code> cannot tell whether Hibernate exists. The persistence framework never gets to define your domain model.</p>
+
+      <h3>Gateways answer business questions, one method each</h3>
+      <p>A gateway is not a generic data hatch. It is a polymorphic interface with one method per create, read, update, or delete operation the application <em>actually performs</em> — each named for the business question it answers, taking domain-typed arguments. Bad: <code>findOrders(criteria)</code>, or anything taking a query string — that's the database sneaking back in through a hole in the wall. Good: <code>ordersPlacedToday(shop)</code>, <code>unpaidOrdersOlderThan(cutoff)</code>, <code>offersActiveFor(shop, day)</code>. Each method exists because <code>PlaceOrder</code> or <code>ResolveOffer</code> asks that exact question; <code>SqlOrderGateway</code> turns each one into SQL out of sight. This is what "no SQL in the use cases" actually means in code.</p>
+
+      <h3>Service boundaries get the same treatment — in both directions</h3>
+      <p>The pattern extends to external services. Outbound, <code>StripePaymentAdapter</code> is the humble half: <code>PlaceOrder</code> produces a plain payment-request structure (amount, order reference, shop id) and the adapter alone knows how Stripe wants it serialized. Inbound is the half people forget: when Stripe calls back with a payment result, a <strong>service listener</strong> reduces that vendor payload to a plain payment-outcome structure <em>before</em> it reaches application code — so a change in Stripe's webhook format never ripples past the adapter layer.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/ss-humble-presenter.svg" alt="PlaceOrder to OrderPresenter to ViewModel to humble View" />
+      </div>
+      <figcaption><b>Figure 4 · Test the presenter; baby-sit the view.</b> The view model that crosses is strings, booleans, and enums — nothing the view could get wrong.</figcaption>
+    </figure>
+
+    <div class="table-wrap measure" style="max-width:var(--measure)">
+      <table>
+        <caption>The humble boundaries of Silicon Sandwiches</caption>
+        <thead><tr><th>Boundary</th><th>Testable side</th><th>Humble side</th><th>What crosses</th></tr></thead>
+        <tbody>
+          <tr><td>UI</td><td><code>OrderPresenter</code></td><td>the view</td><td><code>OrderViewModel</code></td></tr>
+          <tr><td>Persistence</td><td><code>PlaceOrder</code> + <code>OrderGateway</code></td><td><code>SqlOrderGateway</code> + its data-mapper rows</td><td>order data</td></tr>
+          <tr><td>Payments</td><td><code>PlaceOrder</code> + <code>PaymentGateway</code></td><td><code>StripePaymentAdapter</code> + callback listener</td><td>payment request / outcome</td></tr>
+          <tr><td>Web</td><td><code>PlaceOrder</code></td><td><code>SpringPlaceOrderController</code></td><td>request model</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="measure">
+      <div class="callout pitfall">
+        <span class="tag">Pitfall — the class that is neither</span>
+        <p>Every class should land in one of two buckets: <strong>humble and thin</strong>, or <strong>logic-bearing and unit-tested</strong>. (The interactor is emphatically not humble — it holds the application's rules — yet it stays fully testable because its gateways can be stubbed.) The failure mode is the class that is neither: <code>SpringPlaceOrderController</code> quietly growing an if-statement about whether delivery is allowed. That logic is now stranded on the humble side, invisible to the fast suite. Move it into <code>PlaceOrder</code> or <code>OrderPresenter</code> — whichever boundary it belongs to — one "tiny" if-statement <em>before</em> it becomes a habit.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 05 BOUNDARIES ================= -->
+  <section id="boundaries">
+    <div class="measure">
+      <h2><span class="num">05</span>Boundaries multiply — and each one has a price tag</h2>
+      <p>Clean Architecture is not "four rings and stop." As Silicon Sandwiches grows you may split streams — a web path, a staff-tablet path, a kitchen-ticket batch job, a future extraction of the offer-read cache. Each stream is its own boundary crossing with its own adapters, and the highest-level policy sits at the apex where the streams meet: <code>PlaceOrder</code> at the top, with the customer-conversation stream (<code>SpringPlaceOrderController</code>, <code>OrderPresenter</code>) on one side, the persistence stream (<code>SqlOrderGateway</code>) on another, and <code>StripePaymentAdapter</code> joining as a third.</p>
+      <p>But a <em>full</em> architectural boundary is expensive: reciprocal polymorphic interfaces, input/output data structures in both directions, independently compilable and deployable components on each side. So the chapter-grade question isn't "boundaries: yes or no?" — it's <strong>which strength of line, where, and when</strong>.</p>
+
+      <h3>Anatomy: four strengths of the same line</h3>
+      <p>At runtime, a boundary crossing is just a function on one side calling a function on the other and passing data. What a boundary actually manages is <strong>source-code dependencies</strong> — the things that force recompiles and redeploys. The strength ladder runs: source-level separation inside one executable (the monolith — invisible at deployment, fully real in the source tree), separately deployable components (jars), local processes, and services. Threads, note well, are not on the ladder: they schedule execution; they are not architectural boundaries.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <svg viewBox="0 0 920 330" role="img" aria-labelledby="fbl-t">
+          <title id="fbl-t">The boundary strength ladder: source-level, deployment component, local process, and service — crossing cost rises at each rung while the port stays the same.</title>
+          <defs>
+            <marker id="ahb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--ink-faint)"/></marker>
+          </defs>
+          <text x="30" y="34" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">THE BOUNDARY STRENGTH LADDER · same line, four prices</text>
+
+          <g font-family="var(--sans)">
+            <rect x="30" y="60" width="195" height="150" rx="10" fill="var(--policy-wash)" stroke="var(--policy)" stroke-width="1.6"/>
+            <text x="46" y="86" font-family="var(--mono)" font-size="10.5" fill="var(--policy)" font-weight="700">1 · SOURCE-LEVEL</text>
+            <text x="46" y="112" font-size="13.5" font-weight="700" fill="var(--ink)">Modular monolith</text>
+            <text x="46" y="136" font-size="12" fill="var(--ink-soft)">one executable; line</text>
+            <text x="46" y="152" font-size="12" fill="var(--ink-soft)">lives in the source tree</text>
+            <text x="46" y="196" font-family="var(--mono)" font-size="10.5" fill="var(--policy)" font-weight="700">cost: function call — chatty is free</text>
+
+            <rect x="255" y="60" width="195" height="150" rx="10" fill="var(--policy-wash)" stroke="var(--policy)" stroke-width="1.2"/>
+            <text x="271" y="86" font-family="var(--mono)" font-size="10.5" fill="var(--policy)" font-weight="700">2 · DEPLOYMENT</text>
+            <text x="271" y="112" font-size="13.5" font-weight="700" fill="var(--ink)">Component / jar</text>
+            <text x="271" y="136" font-size="12" fill="var(--ink-soft)">independently buildable</text>
+            <text x="271" y="152" font-size="12" fill="var(--ink-soft)">&amp; deployable units</text>
+            <text x="271" y="196" font-family="var(--mono)" font-size="10.5" fill="var(--policy)" font-weight="700">cost: function call / IPC</text>
+
+            <rect x="480" y="60" width="195" height="150" rx="10" fill="var(--detail-wash)" stroke="var(--detail)" stroke-width="1.2"/>
+            <text x="496" y="86" font-family="var(--mono)" font-size="10.5" fill="var(--detail)" font-weight="700">3 · LOCAL PROCESS</text>
+            <text x="496" y="112" font-size="13.5" font-weight="700" fill="var(--ink)">Same box, own pid</text>
+            <text x="496" y="136" font-size="12" fill="var(--ink-soft)">marshal, decode,</text>
+            <text x="496" y="152" font-size="12" fill="var(--ink-soft)">context-switch</text>
+            <text x="496" y="196" font-family="var(--mono)" font-size="10.5" fill="var(--detail)" font-weight="700">cost: limit the chattiness</text>
+
+            <rect x="705" y="60" width="185" height="150" rx="10" fill="var(--detail-wash)" stroke="var(--detail)" stroke-width="1.6"/>
+            <text x="721" y="86" font-family="var(--mono)" font-size="10.5" fill="var(--detail)" font-weight="700">4 · SERVICE</text>
+            <text x="721" y="112" font-size="13.5" font-weight="700" fill="var(--ink)">Over the network</text>
+            <text x="721" y="136" font-size="12" fill="var(--ink-soft)">independent of source</text>
+            <text x="721" y="152" font-size="12" fill="var(--ink-soft)">and binaries entirely</text>
+            <text x="721" y="196" font-family="var(--mono)" font-size="10.5" fill="var(--detail)" font-weight="700">cost: ms per crossing</text>
+          </g>
+
+          <g stroke="var(--ink-faint)" stroke-width="1.3">
+            <line x1="225" y1="135" x2="253" y2="135" marker-end="url(#ahb)"/>
+            <line x1="450" y1="135" x2="478" y2="135" marker-end="url(#ahb)"/>
+            <line x1="675" y1="135" x2="703" y2="135" marker-end="url(#ahb)"/>
+          </g>
+
+          <rect x="30" y="240" width="860" height="34" rx="8" fill="var(--port-wash)" stroke="var(--port)" stroke-width="1" stroke-dasharray="4 3"/>
+          <text x="46" y="262" font-family="var(--mono)" font-size="11.5" fill="var(--port)" font-weight="700">CONSTANT AT EVERY RUNG: the OrderGateway port signature — only the wiring in Main changes</text>
+          <text x="30" y="302" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">threads are not on this ladder — they schedule execution, they do not draw structure · higher rungs punish chatty ports</text>
+        </svg>
+      </div>
+      <figcaption><b>Figure 5 · Same line, four prices.</b> Silicon Sandwiches sits on rung 1 by choice. Today PlaceOrder can chat with OfferGateway per line item for free; if the offer cache is ever extracted to rung 4, that same crossing costs milliseconds — the port's shape (coarse-grained, batch-friendly) decides whether promotion is survivable.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <p>Two corollaries of the ladder. First, design ports as if they might one day be promoted — a crossing that is chatty across a function call is fatal across a network. Second, high-level code must never contain the name, address, or URI of anything below it: locating Stripe is the business of <code>StripePaymentAdapter</code> and the composition root, never of <code>PlaceOrder</code>.</p>
+
+      <h3>Partial boundaries — three named placeholders</h3>
+      <p>When a full boundary costs too much, the answer isn't "no boundary." Three cheaper constructions hold the place, each one rung down in cost <em>and</em> in decay resistance:</p>
+      <ul>
+        <li><strong>Skip the last step.</strong> Do all the separation work — reciprocal interfaces, both-direction data structures — but compile and deploy both sides as one component. Full design cost, no release-management burden. This is "design the ordering module fully separable, ship one jar wired by the <code>@Configuration</code> root."</li>
+        <li><strong>One-dimensional boundary.</strong> A Strategy-style interface inverting the dependency in one direction only. <code>OrderGateway</code> with its lone <code>SqlOrderGateway</code> is exactly this — the inversion is in place, but only discipline stops the adapter from reaching back into <code>PlaceOrder</code>'s internals through a backchannel.</li>
+        <li><strong>Facade.</strong> A class that lists the services as methods and forwards to hidden classes — sacrificing even the inversion. A <code>PaymentGateway</code> written as a mere facade over Stripe classes leaves <code>PlaceOrder</code> <em>transitively</em> recompiling whenever the Stripe SDK moves. That trap is what <code>StripePaymentAdapter</code> exists to avoid.</li>
+      </ul>
+      <div class="callout port">
+        <span class="tag">Honesty rule</span>
+        <p>A partial boundary is held shut by discipline, not by the compiler. That's an acceptable trade — <em>if you say it out loud.</em> Be honest about which side of the line is still porous, and re-check it whenever the team changes.</p>
+      </div>
+
+      <h3>When to draw the line: the inflection point</h3>
+      <p>A fully implemented boundary is expensive; a boundary you skipped is <em>very</em> expensive to add later, even with comprehensive tests and refactoring discipline. So the decision isn't YAGNI-versus-overengineering settled once at kickoff. You watch. You keep a list of boundaries-in-waiting — for us, the staff-tablet path and the kitchen-ticket batch job around <code>PlaceOrder</code> — and you look for the first friction caused by a line's absence: the day a <code>FranchiseShop</code> delivery-toggle change ripples through <code>SpringPlaceOrderController</code> and <code>OrderPresenter</code> together. That's the inflection point, where building the boundary becomes cheaper than continuing to live without it. Draw it then — not sooner, not much later — and re-weigh the list often.</p>
+      <p>The flip side is that an <em>early</em> line buys you a <em>late</em> decision. The famous version of this story is FitNesse's: a single data-access interface let the team run on stubs, then in-memory, then flat files, through more than a year of feature work — and the database decision eventually deferred itself into nonexistence, until the one customer who wanted a real RDBMS got a new derivative of the interface working in about a day. Our <code>InMemoryOrderGateway</code> is the same instrument: Silicon Sandwiches could build and demo the whole ordering flow before any schema exists, with <code>SqlOrderGateway</code> written the day the decision actually comes due.</p>
+
+      <h3>The asymmetry test</h3>
+      <p>What do boundaries actually buy? The plugin argument, in one question you can ask of any pair in the cast: <strong>who can break whom — and is that the direction you want?</strong> ReSharper's source depends on Visual Studio's, so nothing ReSharper's team ships can disturb Visual Studio, while Visual Studio could disable ReSharper at will. <code>StripePaymentAdapter</code> is ReSharper to <code>PlaceOrder</code>'s Visual Studio: a Stripe SDK upgrade can never break the ordering rules, while a change to the <code>PaymentGateway</code> port rightly forces the adapter to adapt. Correct — because payment providers change for reasons that have nothing to do with how a sandwich is priced. Boundaries live where axes of change live: the Single Responsibility Principle, operating at architecture scale.</p>
+
+      <div class="callout story">
+        <span class="tag">Two war stories — the premature boundary</span>
+        <p><strong>Company P</strong> webified a desktop product with a three-tier topology built for server farms. Every domain object was instantiated in every tier, so adding one field meant touching three tiers, four message protocols, eight handlers, three executables — and every system they ever sold ran on <em>one server</em>, paying the marshaling tax for a farm that never existed. <strong>Company W</strong>'s architect imposed enterprise SoA on a small fleet-management shop: adding a contact field meant registry lookups and message schemas, and testing anything meant booting a parade of services plus the bus. The shared lesson: coupling to <em>premature</em> decisions — ones driven by nothing in the use cases — multiplies human effort enormously. Three-tier is a topology, not an architecture. Hold this thought for section 09.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 06 INDEPENDENCE ================= -->
+  <section id="independence">
+    <div class="measure">
+      <h2><span class="num">06</span>Independence — the decoupling-mode ladder</h2>
+      <p>Section 05 priced the boundary; this section decides how much to pay <em>today</em>. The rungs have proper names — <strong>decoupling modes</strong> — and they are rungs on one ladder, not competing religions:</p>
+    </div>
+
+    <div class="table-wrap measure" style="max-width:var(--measure)">
+      <table>
+        <caption>Decoupling modes for Silicon Sandwiches</caption>
+        <thead><tr><th>Mode</th><th>Components talk via</th><th>What changes for us</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="owner-pill policy">Source-level</span></td>
+            <td>function calls, one address space</td>
+            <td>Nothing — today's modular monolith. Ordering calls the offer module through <code>OfferGateway</code> as a plain method call.</td>
+          </tr>
+          <tr>
+            <td><span class="owner-pill port">Deployment-level</span></td>
+            <td>function calls or IPC across deployable units</td>
+            <td>The offer module ships as its own jar; the <code>ResolveOffer</code> side rebuilds without touching ordering.</td>
+          </tr>
+          <tr>
+            <td><span class="owner-pill detail">Service-level</span></td>
+            <td>data structures over the network</td>
+            <td><code>OfferGateway</code> backed by a networked adapter. <code>PlaceOrder</code>'s source is identical in every row of this table.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="measure">
+      <p>The default stance is a concrete decision rule: <strong>decouple to the point where a service <em>could</em> be formed — then stay in one address space as long as you can.</strong> <code>PaymentGateway</code> and <code>OfferGateway</code> already pass only plain data structures, so a networked adapter can be swapped in behind the same port from the <code>@Configuration</code> root. That is "service-ready." Until lunch-rush read traffic on <code>ResolveOffer</code> actually outgrows the box, there is no network hop, no serialization, no distributed-debugging bill. Defaulting to service-level because the diagram looks modern fails on two counts: it is expensive in development time, and it paradoxically yields <em>coarser</em> decoupling — no matter how micro the services get, the boundaries are never fine-grained enough.</p>
+      <p>And the mode is <strong>reversible — in both directions</strong>, which almost nobody teaches. A good architecture lets a system be born a monolith in a single file, grow into independently deployable units, grow further into services, and <em>slide back down</em> when operational needs decline. If a national franchise expansion spikes traffic, Silicon Sandwiches promotes the offer module to a service by rewiring one adapter binding in the composition root; if the expansion fizzles, it slides back in-process the same way. <code>Order</code>, <code>Offer</code>, <code>PlaceOrder</code>, and <code>ResolveOffer</code> never learn which rung they are running on.</p>
+
+      <h3>What one structure must support</h3>
+      <p>Why all this ceremony? Because one component structure has to satisfy four masters at once: the system's <strong>use cases</strong> (make intent visible at the top level — the scream), its <strong>operation</strong> (lunch-rush <code>ResolveOffer</code> reads have a different load profile than steady <code>PlaceOrder</code> writes; isolation keeps the replicate-the-hot-path option open), its <strong>development</strong> (Conway's law — the ordering team and the offer team stop stepping on each other once the slices are decoupled), and its <strong>deployment</strong> (immediately runnable after build, with the <code>@Configuration</code> root as the master component that starts and wires everything — no ritual of hand-tweaked property files per shop).</p>
+
+      <h3>True versus accidental duplication</h3>
+      <p>Independence has a price juniors pay backwards: they unify things that merely <em>look</em> alike. The distinction: <strong>true duplication</strong> means every change to one copy necessitates the same change to the other. <strong>Accidental duplication</strong> is two things that resemble each other today but change at different rates, for different reasons — and unifying them couples them, which is far harder to undo than tolerating the resemblance. The place-order screen and a kitchen-ticket reprint screen may share a layout today; resist extracting the shared component, because menus and kitchen tickets evolve for different reasons. Horizontally: the row <code>SqlOrderGateway</code> reads looks a lot like the order-confirmation view, and the temptation is to pass it straight up. Instead <code>OrderPresenter</code> copies fields into an <code>OrderViewModel</code> — cheap insurance for layer decoupling.</p>
+      <div class="callout">
+        <span class="tag">Decision test</span>
+        <p>Before unifying two similar-looking pieces of code, ask: <em>when one changes, must the other change with it, always?</em> If the answer is anything but yes, the duplication is accidental — leave it alone.</p>
+      </div>
+      <p>Finally, use cases are the second axis of division: thin <strong>vertical slices</strong> cutting through the horizontal layers. <code>PlaceOrder</code> owns a slice — its controller, its use case, its presenter, its use of the gateways — and <code>ResolveOffer</code> owns its own slice; they share knowledge only through the entities. When a cancel-order or catering pre-order use case arrives, it lands as a <em>new slice beside</em> <code>PlaceOrder</code>, not as edits inside it. New features become additive, not surgical.</p>
+    </div>
+  </section>
+
+  <!-- ================= 07 MAIN ================= -->
+  <section id="main">
+    <div class="measure">
+      <h2><span class="num">07</span>Main is the dirty little secret</h2>
+      <p>Someone has to create the concrete objects and plug them together. That someone is Main — in our story, the Spring <code>@Configuration</code> composition root. Main is allowed to know everything; the rest of the system is not. Remember section 03's footnote: DIP violations can't be eliminated, only swept into a small number of concrete components. Main is the dustpan — the dirtiest of the dirty components, and that is its job description, not an insult.</p>
+<pre><code>@Configuration
+class SiliconSandwichesConfig {
+
+  @Bean
+  OrderGateway orderGateway(DataSource ds) {
+    return new SqlOrderGateway(ds);
+  }
+
+  @Bean
+  PaymentGateway paymentGateway(StripeClient stripe) {
+    return new StripePaymentAdapter(stripe);
+  }
+
+  @Bean
+  PlaceOrder placeOrder(OrderGateway orders,
+                        PaymentGateway payments,
+                        OfferGateway offers) {
+    return new PlaceOrder(orders, payments, offers);
+  }
+}</code></pre>
+      <p>Notice the direction: Main wires adapters into ports; <code>PlaceOrder</code> never constructs <code>SqlOrderGateway</code> itself. Now the parts the compact version leaves out.</p>
+
+      <h3>Nothing depends on Main</h3>
+      <p>Main has a precise structural definition: it is the lowest-level policy, the initial entry point, and nothing — other than the operating system — depends on it. Every source arrow points <em>out of</em> Main into the core; none point back. Its lifecycle is create everything, wire everything, hand control to the high-level policy, and get out of the way. A junior can verify this mechanically: search the codebase for references to the config class. The only caller should be the bootstrap itself.</p>
+
+      <h3>The DI framework stops at Main's door</h3>
+      <p>Here is the rule that turns the composition root from "the place where Spring lives" into "the fence that keeps Spring out of everywhere else": the Dependency-Injection framework is itself a detail, so its machinery operates <strong>only inside Main</strong>. The framework injects into Main; from there, dependencies are distributed <em>normally</em> — plain constructor arguments, no <code>@Autowired</code>, no <code>@Component</code>, no annotation of any kind on <code>PlaceOrder</code>, <code>ResolveOffer</code>, <code>Order</code>, or <code>Offer</code>. The proof-test: you can <code>new PlaceOrder(fakeOrders, fakePayments, fakeOffers)</code> in a plain unit test with no Spring context at all. If a use case can't be constructed without booting Spring, the framework has leaked past Main.</p>
+
+      <h3>Main is a plugin — so have several</h3>
+      <p>Because Main sits behind a boundary and nothing depends on it, Main behaves like a <strong>plugin to the application</strong> — and you can have as many as you have configurations. One for Dev, one for Test, one for Production; even one per country or jurisdiction, each setting its own initial conditions and standing offers while <code>PlaceOrder</code> and <code>ResolveOffer</code> stay byte-for-byte identical in every deployment. Seen this way, the configuration problem mostly dissolves: configuration is a swappable plugin, never a branch (<code>if (env == PROD)</code>) inside business code.</p>
+    </div>
+
+    <div class="table-wrap measure" style="max-width:var(--measure)">
+      <table>
+        <caption>Three Mains, one core</caption>
+        <thead><tr><th>Port</th><th>Dev root</th><th>Test root</th><th>Prod root</th></tr></thead>
+        <tbody>
+          <tr><td><code>OrderGateway</code></td><td>in-memory fake</td><td>recording fake</td><td><code>SqlOrderGateway</code></td></tr>
+          <tr><td><code>PaymentGateway</code></td><td>no-op</td><td>recording fake</td><td><code>StripePaymentAdapter</code></td></tr>
+          <tr><td><code>OfferGateway</code></td><td>seeded in-memory</td><td>scripted stub</td><td>SQL-backed adapter</td></tr>
+          <tr><td colspan="4" style="text-align:center"><span class="owner-pill policy">PlaceOrder · ResolveOffer — identical in every column</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="measure">
+      <h3>The keeper of the dirty strings</h3>
+      <p>Raw literals, resource handles, and flavor data gather in Main and travel inward as constructed values. The bread and topping catalogs, the printable menu labels, the JDBC URL behind <code>SqlOrderGateway</code>, the API credentials behind <code>StripePaymentAdapter</code> — all loaded by the composition root and passed in. The audit question: could a franchise rename "hoagie roll" to "baguette" without touching a single core class? If not, a dirty string escaped Main. And for the single most volatile class in the system, Main can protect even itself: select the <code>PaymentGateway</code> implementation by name from a properties file, so a new payment adapter is a config edit rather than a recompile of the root.</p>
+      <div class="callout pitfall">
+        <span class="tag">Pitfall — plumbing yes, policy no</span>
+        <p>Main may legitimately own low-level plumbing: the HTTP listener, the raw-input dispatch, seeding the opening menu and standing offers at startup. What it must never own is anything policy-shaped — no pricing, no offer arithmetic, no delivery decisions. Main lays the table; <code>PlaceOrder</code> and <code>ResolveOffer</code> cook. And don't try to keep Main "clean" and abstract — abstracting Main just smears its dirt into the core.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule-orn"><span>PART THREE · THE DETAILS</span></div>
+
+  <!-- ================= 08 DETAILS ================= -->
+  <section id="details">
+    <div class="measure">
+      <h2><span class="num">08</span>The database and the framework are details</h2>
+      <p>The database is a detail. The web framework is a detail. Both belong at the edge, plugged into ports the business owns. But start with the distinction that keeps the slogan from being misread:</p>
+      <p class="pull">The <b>data model</b> is architecturally significant. The <b>database</b> is a doorknob.</p>
+      <p>The <em>structure</em> you give your data — the shape of an <code>Order</code>, how <code>FranchiseShop</code> variations attach to a menu item — is architecture, and <code>PlaceOrder</code> and <code>ResolveOffer</code> depend on it deeply. The database is merely the utility that shuttles that data on and off storage: necessary, replaceable, and not what the building is about. "The database is a detail" never meant schema design doesn't matter. It means Postgres versus MySQL versus a document store is a doorknob decision, made behind <code>SqlOrderGateway</code>.</p>
+      <p>Why do databases feel more important than that? Five decades of slow rotating disks, where a read cost a million processor cycles — forcing indexes, caches, and query languages, which is all a database is: machinery for moving data between disk and RAM. Run the thought experiment: if all data lived in RAM, would you organize it as tables queried by SQL? No — you'd use lists, trees, hash tables. And you already do: when <code>PlaceOrder</code> runs, it works with an <code>Order</code> holding a list of line items and a resolved <code>Offer</code> — in-memory structures. The tables behind <code>SqlOrderGateway</code> exist only because bits must survive between lunches. When the lunch-rush lookup gets slow, the fix is indexes or caching <em>inside</em> the gateway adapters; <code>ResolveOffer</code>'s code does not change. Storage performance is legitimate — and fully encapsulable.</p>
+
+      <h3>The asymmetric marriage</h3>
+      <p>Framework adoption is a one-directional marriage: you make a huge, long-term commitment; the author makes none back. Framework authors solve <em>their</em> problems — Spring's authors have never heard of a turkey club — and their integration advice maximizes your coupling, because coupling costs them nothing and locks you in. Four named risks, worth reciting as a checklist: (1) the framework wants into your innermost circle — base classes and annotations on your entities; (2) your product matures past the framework's facilities and it starts fighting you; (3) the framework evolves in directions you don't need, and features you relied on vanish; (4) a better one appears and you can't switch.</p>
+      <p>The escape mechanism is concrete, not a vague ideal: when a framework asks you to derive your business objects from its base classes, refuse — <strong>derive proxies instead</strong>, and keep the proxies in components that plug in. If the ORM wants an annotated, framework-derived order class, the answer is a package-private row type inside <code>SqlOrderGateway</code> mapped to a plain <code>Order</code>:</p>
+<pre><code><span class="cm">// ✗ The anti-pattern — the framework in the innermost circle:</span>
+@Entity @Table(name = "orders")
+class Order { @Id Long id; @OneToMany List&lt;OrderLineRow&gt; lines; ... }
+
+<span class="cm">// ✓ The proxy stays in the plugin; rows never travel:</span>
+class SqlOrderGateway implements OrderGateway {
+  <span class="cm">// package-private, invisible to the rest of the system</span>
+  @Entity @Table(name = "orders")
+  static class OrderRow { @Id Long id; ... }
+
+  public Order find(OrderId id) {
+    OrderRow row = em.find(OrderRow.class, id.value());
+    return toOrder(row);   <span class="cm">// plain entity out; the row stays home</span>
+  }
+}</code></pre>
+      <p>"Rows and tables must not travel" is a named architectural error, not a style preference: let a row type escape <code>SqlOrderGateway</code> and a column rename becomes a change to <code>PlaceOrder</code> and possibly to what <code>OrderPresenter</code> formats. Knowledge of the tabular form of the data belongs in the lowest-level utilities of the outer circles, nowhere above.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/ss-details-at-edge.svg" alt="Business core with ports; Spring, SQL/ORM, and Stripe adapters outside" />
+      </div>
+      <figcaption><b>Figure 6 · Stable policy inside; volatile plugins outside.</b> Details change on a different schedule than sandwich rules — and the ports keep the schedules from coupling.</figcaption>
+    </figure>
+
+    <div class="table-wrap measure" style="max-width:var(--measure)">
+      <table>
+        <caption>Married, dating, or just a doorknob?</caption>
+        <thead><tr><th>Cast member</th><th>Relationship</th><th>Terms</th></tr></thead>
+        <tbody>
+          <tr><td><code>Order</code>, <code>Offer</code>, <code>PlaceOrder</code></td><td><span class="owner-pill policy">The family</span></td><td>Sign nothing, ever</td></tr>
+          <tr><td>Java standard library</td><td><span class="owner-pill human">Married</span></td><td>An explicit vow, taken knowingly, for the life of the app</td></tr>
+          <tr><td>Spring · ORM · Stripe SDK</td><td><span class="owner-pill detail">Dating</span></td><td>Confined to the controller, the gateways' adapters, and the <code>@Configuration</code> root — breakup papers touch only the edge</td></tr>
+          <tr><td>RDBMS vendor</td><td><span class="owner-pill detail">Doorknob</span></td><td>Swappable behind <code>SqlOrderGateway</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="measure">
+      <div class="callout story">
+        <span class="tag">War story — when the checkbox wins</span>
+        <p>Uncle Bob fought for years to keep an RDBMS out of a system that didn't need one — and lost, because customers simply <em>expected</em> a relational database as a checkbox item, driven by vendor marketing rather than any rational use. The lesson he drew isn't "fight harder." It's that irrational external forces — customer checklists, corporate mandates — are real, and the architecture win is not winning the technology fight but <strong>making the technology a side-plugin so the fight doesn't matter</strong>. If franchise corporate mandates an enterprise database because procurement says so, the mandate lands entirely inside <code>SqlOrderGateway</code>, and the core never learns which vendor won.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 09 SERVICES ================= -->
+  <section id="services">
+    <div class="measure">
+      <h2><span class="num">09</span>Services are not an architecture</h2>
+      <p>Drawing three boxes labeled Offer Service, Order Service, and Payment Service does not give you Clean Architecture. It gives you a network bill and a distributed-debugging hobby. The chapter's test is quotably precise: architecture is defined by boundaries that separate high-level policy from low-level detail and follow the Dependency Rule — <strong>a service that merely separates one behavior from another is an expensive function call</strong>, not an architectural element.</p>
+
+      <h3>The decoupling fallacy, mechanically</h3>
+      <p>"But services are strongly decoupled!" — at the level of individual variables, yes. They remain coupled by the <strong>data they exchange</strong>. Picture the naive split passing an order record between the three services, and corporate adds a gluten-free surcharge: a new field on that shared record. Every service touching the amount must change, and all three must agree whether the surcharge applies per line item or per order. Coupling to the record is indirect coupling to each other — one field, three coordinated releases, and the "independent" teams were never independent, just distributed. (The companion jab: a service interface is no more formal, and no better-defined, than a function interface. The <code>OrderGateway</code> signature is exactly as rigorous as a REST schema.)</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/ss-services-fallacy.svg" alt="Naive services torn by gluten-free surcharge versus modular monolith modules" />
+      </div>
+      <figcaption><b>Figure 7 · A process boundary is not architecture.</b> The cross-cutting surcharge tears through every naive service at once — the shape most vulnerable to the next feature.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>The actual fix: component-based design</h3>
+      <p>The Kitty lesson doesn't end at the diagnosis — there is a cure, and it's the Open-Closed Principle at deployment granularity. Keep the shared pricing logic in an abstract base; extract the feature-specific part into its own component that overrides it via Strategy or Template Method; let a factory — wired from the outer ring — instantiate the concrete classes. Shipping the surcharge then means <em>adding a jar</em>, not editing the fleet:</p>
+<pre><code><span class="cm">// The stable abstraction ResolveOffer prices against:</span>
+abstract class SurchargePolicy {
+  abstract MoneyAmount surchargeFor(LineItem item, FranchiseShop shop);
+}
+
+<span class="cm">// The new feature — its own component, dropped onto the load path:</span>
+class GlutenFreeSurcharge extends SurchargePolicy {
+  MoneyAmount surchargeFor(LineItem item, FranchiseShop shop) { ... }
+}
+
+<span class="cm">// Wired by a factory in the @Configuration root. PlaceOrder, OrderGateway,</span>
+<span class="cm">// SqlOrderGateway, StripePaymentAdapter: untouched, un-redeployed.</span></code></pre>
+    </div>
+
+    <div class="table-wrap measure" style="max-width:var(--measure)">
+      <table>
+        <caption>Change footprint of the gluten-free surcharge</caption>
+        <thead><tr><th>Touchpoint</th><th>Naive 3-service split</th><th>Component-based monolith</th></tr></thead>
+        <tbody>
+          <tr><td>Offer pricing</td><td><span class="owner-pill fail">changed + released</span></td><td><span class="owner-pill pass">new jar added</span></td></tr>
+          <tr><td>Order line item</td><td><span class="owner-pill fail">changed + released</span></td><td><span class="owner-pill pass">untouched</span></td></tr>
+          <tr><td>Payment charge</td><td><span class="owner-pill fail">changed + released</span></td><td><span class="owner-pill pass">untouched</span></td></tr>
+          <tr><td>UI</td><td><span class="owner-pill fail">changed</span></td><td><span class="owner-pill detail">controller only — the tick-box</span></td></tr>
+          <tr><td>Coordination</td><td><span class="owner-pill fail">3-team release meeting</span></td><td><span class="owner-pill pass">none</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="measure">
+      <h3>Boundaries run through services, not between them</h3>
+      <p>The chapter's punchline inversion: even when you <em>do</em> extract a service, the architectural boundary is not the HTTP hop. If Silicon Sandwiches one day extracts Payments, the boundary is still the <code>PaymentGateway</code> port that <code>PlaceOrder</code> depends on, with <code>StripePaymentAdapter</code> on the far side — the same line whether both sides share a JVM or sit in different pods. Services are deployment and communication units; the architecture lives in the component structure <em>inside</em> them. You can't outsource boundary-drawing to the network — the work is still waiting for you inside each box.</p>
+      <p>That yields a three-way grading scheme for the services you'll meet in the wild: (1) a single component wholly surrounded by an architectural boundary — a Payments extraction sitting entirely behind <code>PaymentGateway</code>; (2) a composite of several components separated by internal boundaries that obey the Dependency Rule — an Ordering service that keeps its controller, use case, gateway, and presenter properly layered inside; (3) a service so coupled to its clients — shared row shapes, shared interpretation — that it has no architectural significance at all. Type 3 is supposed to be rare. Experience says otherwise.</p>
+      <div class="callout pitfall">
+        <span class="tag">Pitfall — the org chart draws the boxes</span>
+        <p>The scalability pitch — one dev-ops team per service, scale by adding services — quietly converges on <em>one microservice per programmer</em>, because the org chart, not the domain, drew the boxes. Silicon Sandwiches with four developers does not need four services. Module ownership inside the monolith (one dev owns ordering, another owns offers) buys the same autonomy without betting the architecture on it — and without the surcharge forcing those "independent" teams into one coordinated release anyway.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule-orn"><span>PART FOUR · KEEPING IT HONEST</span></div>
+
+  <!-- ================= 10 TESTS ================= -->
+  <section id="tests">
+    <div class="measure">
+      <h2><span class="num">10</span>The test boundary</h2>
+      <p>Tests are not outside the system, watching. They are a first-class component of it — and architecturally they have a precise address: <strong>the outermost circle</strong>. Tests follow the Dependency Rule perfectly — always depending inward, maximally detailed and concrete, with nothing in the system depending on them. They are independently deployable (to CI, never to a live shop), and they are the most isolated component in the architecture. In a sense they are what <code>SqlOrderGateway</code> aspires to be: all arrows out, zero arrows in — the model of what every component should look like. And from this vantage the taxonomy wars dissolve: unit, integration, acceptance, Cucumber — architecturally, all tests are the same. A three-line TDD test of <code>Order</code>'s surcharge math and a scenario reading "a franchisee orders a gluten-free BLT downtown" occupy the identical spot in the dependency graph. The dress code differs; the address is the same.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <svg viewBox="0 0 920 340" role="img" aria-labelledby="ftr-t">
+          <title id="ftr-t">Tests form the outermost ring around frameworks, adapters, use cases, and entities, with every dependency arrow pointing inward and none pointing back out.</title>
+          <defs>
+            <marker id="aht" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--ink-soft)"/></marker>
+          </defs>
+          <text x="30" y="34" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">THE OUTERMOST CIRCLE · every arrow points inward, none point back</text>
+
+          <rect x="60" y="60" width="800" height="240" rx="16" fill="none" stroke="var(--detail)" stroke-width="1.6" stroke-dasharray="7 5"/>
+          <text x="84" y="88" font-family="var(--mono)" font-size="11" fill="var(--detail)" font-weight="700">TESTS — most concrete, nothing depends on them, deploy to CI only</text>
+
+          <rect x="130" y="106" width="660" height="170" rx="13" fill="var(--detail-wash)" stroke="var(--detail)" stroke-width="1.3"/>
+          <text x="152" y="132" font-family="var(--mono)" font-size="11" fill="var(--detail)" font-weight="700">FRAMEWORKS &amp; ADAPTERS · SpringPlaceOrderController · SqlOrderGateway · StripePaymentAdapter · OrderPresenter</text>
+
+          <rect x="210" y="150" width="500" height="105" rx="11" fill="var(--policy-wash)" stroke="var(--policy)" stroke-width="1.4"/>
+          <text x="232" y="176" font-family="var(--mono)" font-size="11" fill="var(--policy)" font-weight="700">USE CASES · PlaceOrder · ResolveOffer</text>
+
+          <rect x="300" y="192" width="320" height="46" rx="9" fill="var(--policy)" opacity="0.92"/>
+          <text x="460" y="220" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--paper)" font-weight="700">ENTITIES · Order · Offer · FranchiseShop</text>
+
+          <g stroke="var(--ink-soft)" stroke-width="1.4" fill="none">
+            <line x1="95" y1="180" x2="126" y2="180" marker-end="url(#aht)"/>
+            <line x1="170" y1="200" x2="206" y2="200" marker-end="url(#aht)"/>
+            <line x1="250" y1="214" x2="296" y2="214" marker-end="url(#aht)"/>
+          </g>
+          <text x="30" y="326" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">tests may reach any ring directly — but always inward, through the testing API, never through the GUI</text>
+        </svg>
+      </div>
+      <figcaption><b>Figure 8 · Tests are a system component with an address.</b> Outermost ring: depends on everything, depended on by nothing. Treating them as "outside the design" is how they come out fragile.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>The Fragile Tests Problem makes the <em>system</em> rigid</h3>
+      <p>Here is the full failure mechanism, not just the bruise. A suite that verifies business rules by driving the GUI — log in, navigate the menu screens, assert on the checkout page — is coupled to the most volatile thing in the system. Marketing asks to reorder the menu navigation for a promo, and a thousand tests about <code>Offer</code> pricing break, though no pricing rule changed. Then comes the perverse second-order effect: the team starts <em>refusing reasonable changes</em> to protect the suite. Tests that were meant to enable change end up vetoing it. And a suite too expensive to maintain eventually gets thrown away — taking your regression safety with it.</p>
+
+      <h3>Structural coupling — the deepest form</h3>
+      <p>The subtler variant: a test class for every production class, a test method for every production method. Any refactor of production structure now forces mass test edits. The deeper reason this is fatal: tests and production code need to evolve in <strong>opposite directions</strong> — tests grow ever more concrete and specific (more sandwich scenarios, more shop-by-shop variations), while production code grows ever more abstract and general. Structural coupling welds them together and blocks both evolutions.</p>
+
+      <h3>The Testing API</h3>
+      <p>The prescribed mechanism has a name the original post never used. Build a dedicated API that the tests use to verify every business rule — a superset of the interactors and adapters the real UI uses, with deliberate superpowers: skip security, bypass expensive resources like the database, force the system into particular testable states. Its purpose is to <strong>hide the structure of the application from the tests</strong>, so each side can evolve freely:</p>
+<pre><code><span class="cm">// ✗ Structurally coupled: mirrors PlaceOrder, breaks on refactor</span>
+@Test void execute_happyPath_callsGatewaySaveThenPresent() { ... }
+
+<span class="cm">// ✓ Through the ordering test API: states the rule, hides the structure</span>
+@Test
+void turkeyClubIsPricedFromTuesdaysOffer() {
+  testApi.seedOffer(Offer.sampleShopDay());     <span class="cm">// no SQL, no SqlOrderGateway</span>
+  testApi.forcePaymentSettled();                <span class="cm">// no Stripe sandbox</span>
+
+  var receipt = testApi.placeOrder("turkey club");
+
+  assertEquals("$12.40", receipt.totalText());
+}</code></pre>
+      <div class="callout port">
+        <span class="tag">Deployment rule — superpowers need their own boundary</span>
+        <p>An API that can skip security and mark payments settled must never ride along with production wiring. Keep the testing API and the dangerous parts of its implementation in a separate, independently deployable test-support component that the franchise build simply never contains — so there is no code path by which a live shop could mark an <code>Order</code> paid without going through <code>StripePaymentAdapter</code>.</p>
+      </div>
+      <p>The fake-gateway unit test from the original post still stands — it is the ground floor of this pattern, and, as promised in section 01, it is also the lie detector for the scream:</p>
+<pre><code>@Test
+void placesOrderAgainstResolvedOffer() {
+  var orders = new InMemoryOrderGateway();
+  var payments = new FakePaymentGateway();
+  var offers = new StubOfferGateway(Offer.sampleShopDay());
+  var placeOrder = new PlaceOrder(orders, payments, offers);
+
+  var result = placeOrder.execute(PlaceOrderRequest.turkeyClub());
+
+  assertTrue(result.isOk());
+  assertEquals(1, orders.saved().size());
+}</code></pre>
+      <p>No Spring context, no schema, no sandbox. The day this test needs the <code>@Configuration</code> root to boot, the architecture stopped screaming — whatever the folders say.</p>
+    </div>
+  </section>
+
+  <!-- ================= 11 PACKAGING ================= -->
+  <section id="packaging">
+    <div class="measure">
+      <h2><span class="num">11</span>Package by component — the payoff</h2>
+      <p>Screaming folders were the trailer; packaging is the feature film. But before choosing a style, meet the forces. Which classes belong in one component is governed by three named principles in permanent tension: <strong>REP</strong> — what is reused together must be released together (a component deserves a version number and release notes, so consumers decide when to adopt); <strong>CCP</strong> — gather what changes for the same reasons at the same times, so one requirement means one redeploy (the SRP restated for components); and <strong>CRP</strong> — don't force dependents to inherit recompile-and-redeploy pain from classes they never use (the ISP for components — mostly telling you what <em>not</em> to group). REP and CCP grow components; CRP shrinks them. The right position moves with maturity: a young, single-team Silicon Sandwiches belongs at the CCP corner — optimize for develop-ability — sliding toward REP/CRP only when a second franchise product actually starts reusing the offer module.</p>
+      <p>Three more component principles police the arrows between them. <strong>ADP</strong>: keep the dependency graph acyclic — one cycle and the components on it <em>fuse</em> into a super-component that must build, test, and release in lockstep (the "morning-after syndrome": you leave working code at night and find it broken because someone upstream moved). Two named repairs: invert the offending edge with DIP — which is exactly what <code>PaymentGateway</code> does, a port owned by the ordering side with <code>StripePaymentAdapter</code> implementing from outside — or extract a new component both sides depend on, say shared money and menu-pricing types. <strong>SDP</strong>: depend in the direction of stability — and note that stability means <em>hard to move</em> (many inbound dependents), not "rarely changing." The signature violation: someone hangs a dependency on your deliberately flexible component and makes it rigid without touching a line of your code. <strong>SAP</strong>: stable components must be abstract, so stability doesn't harden into rigidity. SDP + SAP is DIP restated at component scale.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <svg viewBox="0 0 920 430" role="img" aria-labelledby="fms-t">
+          <title id="fms-t">The Main Sequence plot of abstractness against instability, with the Silicon Sandwiches cast plotted: ports and entities near the abstract-stable corner, adapters near the concrete-unstable corner, and the SQL schema in the Zone of Pain.</title>
+          <text x="30" y="32" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">THE MAIN SEQUENCE · where the cast lives on the A/I plot</text>
+
+          <!-- axes -->
+          <line x1="90" y1="380" x2="880" y2="380" stroke="var(--ink-faint)" stroke-width="1.3"/>
+          <line x1="90" y1="380" x2="90" y2="60" stroke="var(--ink-faint)" stroke-width="1.3"/>
+          <text x="485" y="416" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">Instability I = fan-out / (fan-in + fan-out)  →  1</text>
+          <text x="52" y="220" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)" transform="rotate(-90 52 220)">Abstractness A  →  1</text>
+
+          <!-- zones -->
+          <circle cx="90" cy="380" r="120" fill="color-mix(in srgb, var(--fail) 12%, transparent)"/>
+          <text x="112" y="352" font-family="var(--mono)" font-size="10.5" fill="var(--fail)" font-weight="700">ZONE OF PAIN</text>
+          <circle cx="880" cy="60" r="110" fill="color-mix(in srgb, var(--ink-faint) 14%, transparent)"/>
+          <text x="742" y="92" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)" font-weight="700">ZONE OF USELESSNESS</text>
+
+          <!-- main sequence -->
+          <line x1="90" y1="60" x2="880" y2="380" stroke="var(--policy)" stroke-width="2" stroke-dasharray="8 5"/>
+          <text x="418" y="200" font-family="var(--mono)" font-size="10.5" fill="var(--policy)" font-weight="700" transform="rotate(22 430 210)">the Main Sequence · D = |A + I − 1|</text>
+
+          <!-- points -->
+          <g font-family="var(--mono)" font-size="11">
+            <circle cx="168" cy="92" r="7" fill="var(--port)"/>
+            <text x="184" y="88" fill="var(--port)" font-weight="700">OrderGateway · PaymentGateway · Order</text>
+            <text x="184" y="104" fill="var(--ink-faint)" font-size="10">abstract, depended-on, no outbound arrows — (A≈1, I≈0)</text>
+
+            <circle cx="790" cy="352" r="7" fill="var(--detail)"/>
+            <text x="546" y="332" fill="var(--detail)" font-weight="700">SqlOrderGateway · StripePaymentAdapter</text>
+            <text x="546" y="348" fill="var(--ink-faint)" font-size="10">concrete &amp; irresponsible — depended on only by Main (A≈0, I≈1)</text>
+
+            <circle cx="862" cy="374" r="7" fill="var(--human)"/>
+            <text x="700" y="402" fill="var(--human)" font-weight="700">@Configuration root — maximally unstable, correctly</text>
+
+            <circle cx="122" cy="360" r="7" fill="var(--fail)"/>
+            <text x="140" y="378" fill="var(--fail)" font-weight="700">SQL schema — concrete, volatile, depended-on: hide it behind a port</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption><b>Figure 9 · Good components hug the diagonal.</b> The SQL schema is the canonical Zone-of-Pain resident — the metric-level argument for why it hides behind <code>SqlOrderGateway</code>. D = |A + I − 1| is a per-component health number you can track across releases.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>The packaging ladder — and the newcomer's shortcut</h3>
+      <p>Chapter 34 walks the same Place Order use case through four styles. <em>Package by layer</em>: three big horizontal buckets, quick to start, endorsed by tutorials — and screaming nothing. <em>Package by feature</em>: vertical slices that scream the domain, better. <em>Ports and adapters</em>: the inside/outside split with domain names in the ubiquitous language. <em>Package by component</em>: one coarse business area's logic <em>and</em> persistence bundled behind one clean interface, UI kept outside. What separates them in practice is a war story: an eager new hire finds <code>SqlOrderGateway</code> already registered as a bean and wires it straight into <code>SpringPlaceOrderController</code> for a quick order-status page — skipping <code>PlaceOrder</code> and every rule it enforces about resolved offers. The dependency graph stays acyclic; every arrow still points "down"; and the business layer has been silently bypassed. That <em>relaxed layered architecture</em> is occasionally intended (CQRS does it deliberately) but is usually decay — typically discovered the first time a team visualizes its real dependency graph.</p>
+    </div>
+
+    <div class="table-wrap measure" style="max-width:var(--measure)">
+      <table>
+        <caption>Four styles, one shortcut: controller → SqlOrderGateway directly</caption>
+        <thead><tr><th>Style</th><th>Top level screams</th><th>The shortcut…</th></tr></thead>
+        <tbody>
+          <tr><td>Package by layer</td><td>the stack</td><td><span class="owner-pill fail">compiles</span></td></tr>
+          <tr><td>Package by feature</td><td>the domain</td><td><span class="owner-pill fail">compiles</span></td></tr>
+          <tr><td>Ports &amp; adapters</td><td>the domain</td><td><span class="owner-pill fail">compiles</span></td></tr>
+          <tr><td>Package by component</td><td>the domain</td><td><span class="owner-pill pass">does not compile</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="measure">
+      <h3>Organization versus encapsulation</h3>
+      <p>Why does only the last row hold? Because of the sharpest argument in the chapter: <strong>if every type is public, packages are folders</strong> — an organization scheme, not encapsulation — and all four styles become syntactically identical: same types, same arrows, four costumes on the same layered architecture. The corrective is precise. In every style there is a small set of types that genuinely needs <code>public</code> — in package by component, just the component's interface: <code>PlaceOrder</code>, <code>Order</code>, <code>OrderGateway</code>. Everything else — <code>SqlOrderGateway</code>, <code>SpringPlaceOrderController</code>, <code>OrderPresenter</code>, the SQL mappers — goes package-private, and now the <em>compiler</em>, not a code review, guarantees nobody instantiates the innards. "Controllers never touch SQL adapters" stops being a review comment and becomes a compile error. Fewer public types, fewer possible dependencies. (The only escape hatch is reflection. Don't.)</p>
+      <p>That's the top tier of a three-tier enforcement ranking: discipline and code review (proudly claimed, erased by the first deadline), post-compile checks with rules like "types in <code>**/web</code> must not see <code>**/data</code>" (workable, but the feedback loop fires after the pressure has done its work), and the compiler itself — the author's preference for monoliths in one source tree. If you instead split into a two-tree domain/infrastructure build, watch for the named trap: the <strong>Périphérique anti-pattern</strong> — with all adapters in one infrastructure tree, one adapter can ring-road around the domain and call another adapter directly, like the Paris ring road skipping the city. <code>SpringPlaceOrderController</code> calling <code>SqlOrderGateway</code>, both living comfortably in the same tree, is exactly that road.</p>
+      <div class="callout">
+        <span class="tag">Mentor's aside — the map is earned, not drawn</span>
+        <p>One counterintuitive claim to close the loop: the component diagram cannot be designed top-down on day one. It says little about what the app <em>does</em> — it is a map of buildability, molded to isolate volatility so cosmetic churn never touches high-value policy. With no code, you know nothing about common closure or reuse, and a day-one decomposition would almost certainly produce cycles. The ordering/offer/payments map is <em>earned</em>: CCP co-locates what changes together, CRP starts to matter as reuse appears, ADP repairs cycles as they surface. The graph jitters and grows with the system — and this year's partitioning may be legitimately wrong next year. One more payoff, aligned with our monolith stance: well-defined components in a monolith are the stepping stone to services. If payments must someday become its own service, that is a change of decoupling mode — not a redesign.</p>
+      </div>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/ss-package-by-component.svg" alt="Ordering package with public API and package-private adapters" />
+      </div>
+      <figcaption><b>Figure 10 · Neighbors import the public API; adapters stay in the house.</b> The package names shout the domain, and the visibility rules keep the Dependency Rule honest.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= 12 CHECKLIST ================= -->
+  <section id="monday">
+    <div class="measure">
+      <h2><span class="num">12</span>Monday morning checklist</h2>
+      <p>Print this one. Each check traces back to a section above — and every one of them is falsifiable, not a vibe.</p>
+      <ol class="checklist">
+        <li class="cksec">The scream (01–02)</li>
+        <li>Open the top-level packages. Do they scream Silicon Sandwiches — or Spring?</li>
+        <li>Could a new hire learn every use case from the repo and still not know whether we ship web, kiosk, or console?</li>
+        <li>Run the abacus test on a rule you touched this week: entity, use case, or presentation — and is it filed there?</li>
+        <li class="cksec">The rings (03)</li>
+        <li>Grep <code>PlaceOrder</code>'s imports. Any SQL, Stripe, or Spring names? Any framework-generated data formats (rows, request objects) crossing inward?</li>
+        <li>Does the use case talk to the presenter through an output port it owns — or does it name <code>OrderPresenter</code>?</li>
+        <li>Any <code>new SqlOrderGateway(...)</code> outside the composition root? Any subclassing of a volatile concrete class?</li>
+        <li class="cksec">The seams (04–07)</li>
+        <li>Is every view-model field a string, boolean, or enum? Does the view decide anything?</li>
+        <li>Do the gateways answer named business questions — or expose a generic <code>findBy(criteria)</code> hatch?</li>
+        <li>For each partial boundary: do we know which side is porous, and what friction signal would trigger the upgrade?</li>
+        <li>Could each port survive promotion to a process or service — or is it too chatty to ever leave the JVM?</li>
+        <li>Is the <code>@Configuration</code> root the only place that news up adapters — and could you build a second Main for a new jurisdiction without touching the core?</li>
+        <li class="cksec">The details (08–09)</li>
+        <li>Do any ORM row types travel above <code>SqlOrderGateway</code>? Do any entities extend framework base classes?</li>
+        <li>Would a gluten-free surcharge ship as a new component wired in Main — or as three coordinated releases?</li>
+        <li class="cksec">Keeping it honest (10–11)</li>
+        <li>Can you unit-test <code>PlaceOrder</code> with fakes and no Spring context? Do business-rule tests drive the GUI anywhere?</li>
+        <li>Does the test suite mirror production structure class-for-class — or speak through a testing API?</li>
+        <li>Is each domain module a package with a narrow public API, with adapters package-private — so the newcomer's shortcut <em>does not compile</em>?</li>
+      </ol>
+      <p>If you can check those boxes, you are not "using Clean Architecture" as a slogan. You are keeping the sandwich business in charge of its own source code.</p>
+
+      <p class="pull">The business rules are the reason the system exists. Everything else — the web, the database, the framework, even the tests — <b>plugs in</b>.</p>
+    </div>
+
+    <p class="footnote" id="ch29-footnote">
+      <sup>*</sup> Embedded systems (ch. 29) get a mention only: the same Dependency Rule applies when the "UI" is a device
+      and the "database" is flash — but Silicon Sandwiches is a franchise web/modular-monolith story, so we leave the firmware digression there.
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  <p><b>About this walkthrough.</b> Mentoring notes framed around Clean Architecture chapters 16–28, 30, 32, and 34, using the Silicon Sandwiches kata as the running example throughout. Deepened from the coding-rules concept notes in this bundle (screaming architecture, business rules, policy &amp; level, DIP, humble objects, boundaries &amp; their anatomy, partial boundaries, independence, the Main component, database &amp; framework details, services, the test boundary, components, cohesion &amp; coupling, and the missing chapter).</p>
+  <p><b>Diagrams.</b> Figures 1–4, 6, 7, and 10 are hand-authored D2 (not C4 IR), unchanged from the first edition. Figures 5, 8, and 9 are new inline illustrations for this edition.</p>
+  <p><b>Editions.</b> This is the second edition (<code>index-v2.html</code>). The original single-column edition is preserved unchanged as <code>index.html</code>.</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "check_id": "CHK-SCHEMA",
+  "phase": "v1",
+  "expected": "fail",
+  "exit_code": 2,
+  "json_pointer": "/roles/0/arms"
+}

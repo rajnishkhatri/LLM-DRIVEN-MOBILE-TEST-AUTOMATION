@@ -1,0 +1,9 @@
+{
+  "artifact_type": "debug_report",
+  "expected": "even pacing",
+  "failing_test": "story_polish_case",
+  "minimal_repro": "read story v2",
+  "observed": "v2 pacing uneven",
+  "schema_version": "1.4.0",
+  "suspected_locus": "src/story.txt"
+}

@@ -1,0 +1,39 @@
+{
+  "honestyTags": [
+    "PROPOSED ADR 0014",
+    "Replan R1 D2",
+    "lives outside spine repo",
+    "F1 does not apply"
+  ],
+  "appVersion": "8.4.0",
+  "loopState": {
+    "currentScreen": "HomeScreen",
+    "targetScreen": "AccountOverview",
+    "stepBudgetRemaining": 12
+  },
+  "proposedActions": [
+    {
+      "rank": 1,
+      "action": { "kind": "TAP", "locator": { "strategy": "ACCESSIBILITY_ID", "value": "accountsTab" } },
+      "confidence": 0.90,
+      "reasoning": "The 'Accounts' tab label directly matches the target screen 'AccountOverview'; highest probability of one-hop navigation."
+    },
+    {
+      "rank": 2,
+      "action": { "kind": "TAP", "locator": { "strategy": "ACCESSIBILITY_ID", "value": "hamburgerMenu" } },
+      "confidence": 0.62,
+      "reasoning": "The Menu button likely reveals a navigation drawer containing an Account Overview entry; indirect but plausible."
+    },
+    {
+      "rank": 3,
+      "action": { "kind": "TAP", "locator": { "strategy": "ACCESSIBILITY_ID", "value": "paymentsTab" } },
+      "confidence": 0.48,
+      "reasoning": "The 'Payments & Activity' tab is adjacent to accounts in typical banking IA; may lead to AccountOverview via a secondary hop."
+    }
+  ],
+  "screeningCallSite": "adr-0009:ash-discovery-proposer-egress",
+  "provenance": {
+    "model": "gpt-4o via Gateway",
+    "proposedAt": "2026-07-29T14:32Z"
+  }
+}

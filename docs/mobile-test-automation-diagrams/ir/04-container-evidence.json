@@ -1,0 +1,122 @@
+{
+  "$schema": "../../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "04-container-evidence",
+    "level": "container",
+    "title": "C2c \u2014 Container overlay: evidence & provenance flows",
+    "caption": "Where do snapshots, artifacts, lineage, and anchors go? A subset of C2b (the module-wiring view) \u2014 only the elements and edges that carry evidence, lineage, snapshots, and anchors.",
+    "direction": "right",
+    "opens": "APP",
+    "opens_from": "03-container-module-wiring",
+    "completeness": "subset:03-container-module-wiring",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "AUDITOR",
+      "kind": "actor",
+      "label": "Auditor",
+      "detail": [
+        "Must reconstruct verdicts from stored evidence alone, without access to the running system (ADR 0008)"
+      ]
+    },
+    {
+      "id": "CONVERSION",
+      "kind": "component",
+      "family": "module-a",
+      "label": "conversion",
+      "detail": [
+        "Conversion (cluster A) \u2014 10 components incl. the Invoke Models seam"
+      ]
+    },
+    {
+      "id": "VALIDATION_CERTIFICATION",
+      "kind": "component",
+      "family": "module-b",
+      "label": "validation-certification",
+      "detail": [
+        "Validation-certification (cluster B) \u2014 5 components; static gate \u2192 device gate \u2192 classify \u2192 certify. Device-gate worker holds NO gateway credential (ADR 0013)"
+      ]
+    },
+    {
+      "id": "EVIDENCE",
+      "kind": "component",
+      "family": "module-c",
+      "label": "evidence",
+      "detail": [
+        "Evidence (cluster C) \u2014 Preserve Provenance + metrics read model + auditor export"
+      ]
+    },
+    {
+      "id": "POSTGRESQL",
+      "kind": "datastore",
+      "label": "PostgreSQL",
+      "detail": [
+        "WORKING ASSUMPTION (spine C3); dev/CI embedded or containerized, ephemeral-only (D1, M40). Schemas: conversion-state \u00b7 lineage (append-only: app role INSERT/SELECT only, per-conversion hash chain, supersede-not-update \u2014 ADR 0012) \u00b7 outbox+queue (bounded retries, dead-letter quarantine \u2014 M21) \u00b7 judge-response cache (M27, CF7). No cross-lifecycle foreign keys (F4, ADR 0006)"
+      ]
+    },
+    {
+      "id": "OBJECT_STORAGE",
+      "kind": "datastore",
+      "label": "object storage",
+      "detail": [
+        "Evidence object storage behind an S3-compatible port (ADR 0011). Dev/CI: containerized MinIO; production BINDING PROBE-PENDING (week-0 platform probe; default = self-operated MinIO). Write-once / object-lock REQUIRED \u2014 ADR 0012's precondition, deployment-checked. Holds: classified artifacts + retention classes (M39) \u00b7 canonicalized source snapshots (M15) \u00b7 lineage chain anchors (ADR 0012). Envelope encryption + crypto-shredding before the first audit-retained artifact (ADR 0011 as amended)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "CONVERSION",
+      "to": "POSTGRESQL",
+      "kind": "sync",
+      "label": "state + lineage, same local txn (ADR 0007)"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "POSTGRESQL",
+      "kind": "sync",
+      "label": "state + lineage, same local txn (ADR 0007)"
+    },
+    {
+      "from": "EVIDENCE",
+      "to": "POSTGRESQL",
+      "kind": "sync",
+      "label": "append-only lineage writes + read-model reads"
+    },
+    {
+      "from": "CONVERSION",
+      "to": "OBJECT_STORAGE",
+      "kind": "sync",
+      "label": "canonicalized source snapshots (M15)"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "OBJECT_STORAGE",
+      "kind": "sync",
+      "label": "classified artifacts + retention class (ADR 0006, M39)"
+    },
+    {
+      "from": "EVIDENCE",
+      "to": "OBJECT_STORAGE",
+      "kind": "sync",
+      "label": "chain-head anchors at interval (ADR 0012)"
+    },
+    {
+      "from": "AUDITOR",
+      "to": "EVIDENCE",
+      "kind": "sync",
+      "label": "read-only versioned export; itself an attributable lineage event (CF11)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "view": {
+    "id": "03-container-module-wiring--module-b",
+    "level": "container",
+    "title": "C2b \u2014 Container drill-down: module wiring \u2014 module-b overlay",
+    "caption": "This view is a subset of `03-container-module-wiring` opening `APP` \u2014 only the edges owned by `module-b`. Edge numbers match the primary; see `03-container-module-wiring` for the complete edge set.",
+    "direction": "right",
+    "opens": "APP",
+    "opens_from": "03-container-module-wiring",
+    "completeness": "subset:03-container-module-wiring",
+    "overlays": "none",
+    "primary_of": "03-container-module-wiring"
+  },
+  "nodes": [
+    {
+      "id": "VALIDATION_CERTIFICATION",
+      "kind": "component",
+      "family": "module-b",
+      "label": "validation-certification",
+      "detail": [
+        "Validation-certification (cluster B) \u2014 5 components; static gate \u2192 device gate \u2192 classify \u2192 certify. Device-gate worker holds NO gateway credential (ADR 0013)"
+      ]
+    },
+    {
+      "id": "POSTGRESQL",
+      "kind": "datastore",
+      "label": "PostgreSQL",
+      "detail": [
+        "WORKING ASSUMPTION (spine C3); dev/CI embedded or containerized, ephemeral-only (D1, M40). Schemas: conversion-state \u00b7 lineage (append-only: app role INSERT/SELECT only, per-conversion hash chain, supersede-not-update \u2014 ADR 0012) \u00b7 outbox+queue (bounded retries, dead-letter quarantine \u2014 M21) \u00b7 judge-response cache (M27, CF7). No cross-lifecycle foreign keys (F4, ADR 0006)"
+      ]
+    },
+    {
+      "id": "OBJECT_STORAGE",
+      "kind": "datastore",
+      "label": "object storage",
+      "detail": [
+        "Evidence object storage behind an S3-compatible port (ADR 0011). Dev/CI: containerized MinIO; production BINDING PROBE-PENDING (week-0 platform probe; default = self-operated MinIO). Write-once / object-lock REQUIRED \u2014 ADR 0012's precondition, deployment-checked. Holds: classified artifacts + retention classes (M39) \u00b7 canonicalized source snapshots (M15) \u00b7 lineage chain anchors (ADR 0012). Envelope encryption + crypto-shredding before the first audit-retained artifact (ADR 0011 as amended)"
+      ]
+    },
+    {
+      "id": "SECRETS_STORE",
+      "kind": "datastore",
+      "label": "secrets store",
+      "detail": [
+        "Interim: CI secret store; the vault is named by the M33 controls-baseline read \u2014 PENDING. All credentials resolved by injected reference, never literals (M34/CF8)"
+      ]
+    },
+    {
+      "id": "GIT",
+      "kind": "datastore",
+      "label": "Git",
+      "detail": [
+        "Prompts / exemplars / golden set / test code; version identity is free"
+      ]
+    },
+    {
+      "id": "TEST_EXECUTION",
+      "kind": "process",
+      "label": "test-execution process",
+      "detail": [
+        "Test-execution process, spawned per device run. Separate OS process \u2014 shape committed NOW, sandbox technology weeks 3\u20138 (ADR 0013). NO long-lived credentials; single-run device session token; NEVER the gateway credential. Static capability rules gate entry (supplement, not the control)"
+      ]
+    },
+    {
+      "id": "PERFECTO",
+      "kind": "external",
+      "label": "Perfecto device lab",
+      "detail": [
+        "Same standing as the C1 node-detail table (E1/E2). INCUMBENT vendor \u2014 MSA on file, unread (E1); flows run on mock/synthetic data (E2); NOT covered by E3"
+      ]
+    },
+    {
+      "id": "GATEWAY",
+      "kind": "external",
+      "label": "Orchestrator AI gateway",
+      "detail": [
+        "Same standing as the C1 node-detail table (E4). Model providers hosted INSIDE the bank \u2014 prompts never leave (E4); version-report contract UNVERIFIED (M5 held)"
+      ]
+    },
+    {
+      "id": "OCTANE",
+      "kind": "external",
+      "label": "ALM Octane",
+      "detail": [
+        "Same standing as the C1 node-detail table (E5). At BOTH ends of the pipeline (E5): ingest source AND publish target; asset-versioning UNVERIFIED (M7 held)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "POSTGRESQL",
+      "kind": "sync",
+      "ref": 7,
+      "detail": "State + lineage, same local transaction (ADR 0007)"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "OBJECT_STORAGE",
+      "kind": "sync",
+      "ref": 10,
+      "detail": "Classified artifacts + retention class (ADR 0006, M39)"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "SECRETS_STORE",
+      "kind": "sync",
+      "ref": 13,
+      "detail": "Perfecto + test-account credentials, by injected reference (M34)"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "GIT",
+      "kind": "sync",
+      "ref": 15,
+      "detail": "Grow exemplar + golden set"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "TEST_EXECUTION",
+      "kind": "sync",
+      "ref": 16,
+      "detail": "Spawn per device run (ADR 0013)"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "ref": 18,
+      "detail": "Pool + artifact pull; dominant cost"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "GATEWAY",
+      "kind": "sync",
+      "ref": 20,
+      "detail": "Fidelity grade (ADR 0004); from day one"
+    },
+    {
+      "from": "VALIDATION_CERTIFICATION",
+      "to": "OCTANE",
+      "kind": "async",
+      "ref": 22,
+      "detail": "A3: publish certified assets (CF3); never a verdict precondition"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

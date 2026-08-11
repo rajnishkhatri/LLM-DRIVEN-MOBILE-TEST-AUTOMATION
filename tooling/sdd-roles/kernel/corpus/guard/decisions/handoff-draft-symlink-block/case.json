@@ -1,0 +1,5 @@
+{
+  "role": "gd-maker",
+  "stdin": "request.json",
+  "setup": "handoff-symlink-escape"
+}

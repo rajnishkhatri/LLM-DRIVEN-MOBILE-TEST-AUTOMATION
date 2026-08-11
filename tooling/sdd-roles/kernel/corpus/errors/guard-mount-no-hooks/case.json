@@ -1,0 +1,11 @@
+{
+  "command": "write-guard",
+  "args": [
+    "mount",
+    "--descriptors", "../../orchestrator/descriptors-stub.json",
+    "--harness", "stub-epsilon",
+    "--registry", "../../guard/common/role-registry.json",
+    "--out", "./out"
+  ],
+  "expected_exit": 1
+}

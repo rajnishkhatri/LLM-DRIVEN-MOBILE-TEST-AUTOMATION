@@ -1,0 +1,42 @@
+{
+  "artifact_type": "crap_report",
+  "contract": "o7-kata-seam.1",
+  "crap": {
+    "max": 2.0,
+    "mean": 1.33,
+    "over_threshold_count": 0,
+    "per_method": [
+      {
+        "complexity": 1,
+        "coverage": 1.0,
+        "crap": 1.0,
+        "method": "fx.Calc#<init>()V"
+      },
+      {
+        "complexity": 1,
+        "coverage": 1.0,
+        "crap": 1.0,
+        "method": "fx.Calc#add(II)I"
+      },
+      {
+        "complexity": 2,
+        "coverage": 1.0,
+        "crap": 2.0,
+        "method": "fx.Calc#isPositive(I)Z"
+      }
+    ]
+  },
+  "engine": "mvn test under the JaCoCo agent (jacoco XML)",
+  "inputs": {
+    "pom_sha256": "012d9e6a93020c03a89b6c4bdb51748d8733909cc6059700bf0833db6a987d71"
+  },
+  "methods_total": 3,
+  "not_evaluable": null,
+  "threshold": {
+    "name": "crap_composite",
+    "value": 6
+  },
+  "tool": "crap4java",
+  "tool_version": "1.0.0",
+  "verdict": "green"
+}

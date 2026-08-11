@@ -1,0 +1,45 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "decisions": [
+    {
+      "choice": "adopt-guarded-write-path",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision for h7-coder",
+      "rejected_alternatives": [
+        "alternative-x"
+      ]
+    }
+  ],
+  "from_role": "h7-coder",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "g-build",
+      "input_tree_digest": "f83d6dd1887dce00f9e9d08d5881de3f1abfcc88f30a2e65c3fa25c0fa7d2f1d",
+      "report_ref": {
+        "path": "reports/golden-hooked-1-g-build-s002.json",
+        "sha256": "ae2127c651ce94df78f8d5e613a27c38d4203ef7a66a6b88bf33fbf48d28c84b"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.1"
+    }
+  ],
+  "schema_version": "1.4.0",
+  "stage": "h7-coder",
+  "stage_status": "complete",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "coder stage complete; tamper attempt was blocked live."
+  },
+  "to_role": "h7-checker"
+}

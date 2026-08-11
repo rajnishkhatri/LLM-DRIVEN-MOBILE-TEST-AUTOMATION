@@ -1,0 +1,115 @@
+# Policy level as distance from I/O — the o7 altitude map.
+# The farther a policy sits from inputs/outputs, the higher its level.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: up
+
+classes: {
+  policy: {
+    style: {
+      fill: "#DCECE9"
+      stroke: "#1F6F6B"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  detail: {
+    style: {
+      fill: "#F1E3CE"
+      stroke: "#B0742A"
+      font-color: "#6E4718"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  mid: {
+    style: {
+      fill: "#EDF3F1"
+      stroke: "#5B8A85"
+      font-color: "#134844"
+      border-radius: 6
+      stroke-width: 2
+    }
+  }
+  up: {
+    style: {
+      stroke: "#4A5A59"
+      font-color: "#4A5A59"
+      font-size: 13
+    }
+  }
+}
+
+high: "HIGHEST LEVEL — farthest from any I/O" {
+  style: {
+    fill: "#F2F7F6"
+    stroke: "#1F6F6B"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 15
+    bold: true
+  }
+  inv: "The certification invariants\nclosed opcodes · bounded waits · healPolicy NONE\nreviewed artifact = executed artifact\na verdict needs a named human" { class: policy }
+}
+
+middle: "MIDDLE — the pipeline's own policies" {
+  style: {
+    fill: "#F6F8F7"
+    stroke: "#5B8A85"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#134844"
+    font-size: 15
+    bold: true
+  }
+  gate: "IR gate rules" { class: mid }
+  interp: "interpreter step semantics" { class: mid }
+  cls: "classification rules" { class: mid }
+  canon: "canonicalization rules" { class: mid }
+}
+
+low: "LOWEST LEVEL — the policies that manage I/O" {
+  style: {
+    fill: "#FBF7EF"
+    stroke: "#B0742A"
+    stroke-width: 2
+    border-radius: 8
+    font-color: "#6E4718"
+    font-size: 15
+    bold: true
+  }
+  poi: "Excel / POI\nreader" { class: detail }
+  octane: "Octane REST\nadapter" { class: detail }
+  appium: "Appium java-client\ndriver adapter" { class: detail }
+  s3: "S3-port evidence\nstore adapter" { class: detail }
+  cli: "review CLIs /\nauditor export" { class: detail }
+}
+
+low.poi -> middle.canon: { class: up }
+low.octane -> middle.canon: { class: up }
+low.appium -> middle.interp: { class: up }
+low.s3 -> middle.cls: { class: up }
+low.cli -> middle.gate: { class: up }
+middle.canon -> high.inv: { class: up }
+middle.gate -> high.inv: { class: up }
+middle.interp -> high.inv: { class: up }
+middle.cls -> high.inv: { class: up }
+
+note: "Every source arrow points UP toward higher policy.\nData flows down and back up at runtime —\nthe import graph must not follow it." {
+  shape: rectangle
+  near: bottom-center
+  style: {
+    fill: "#FFFFFF"
+    stroke: "#8FA6A2"
+    stroke-dash: 4
+    font-color: "#4A5A59"
+    font-size: 13
+  }
+}

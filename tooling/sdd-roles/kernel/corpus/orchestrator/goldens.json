@@ -1,0 +1,74 @@
+{
+  "clock": "fixed:2026-08-07T12:00:00Z",
+  "sets": [
+    {
+      "golden": "orchestrator-green",
+      "scenario": "green",
+      "runs": [
+        {
+          "run_id": "golden-green-1",
+          "harness": "stub-alpha"
+        }
+      ]
+    },
+    {
+      "golden": "orchestrator-rework",
+      "scenario": "rework",
+      "runs": [
+        {
+          "run_id": "golden-rework-1",
+          "harness": "stub-beta"
+        }
+      ]
+    },
+    {
+      "golden": "orchestrator-parent",
+      "scenario": "parent",
+      "runs": [
+        {
+          "run_id": "p-run-1",
+          "harness": "stub-alpha"
+        },
+        {
+          "run_id": "p-run-2",
+          "harness": "stub-alpha",
+          "parent": "p-run-1"
+        }
+      ]
+    },
+    {
+      "golden": "orchestrator-resume",
+      "scenario": "resume",
+      "resume_set": true,
+      "runs": [
+        {
+          "run_id": "golden-resume-1",
+          "harness": "stub-gamma"
+        }
+      ]
+    },
+    {
+      "golden": "orchestrator-hooked",
+      "scenario": "hooked",
+      "mount": "stub-delta",
+      "runs": [
+        {
+          "run_id": "golden-hooked-1",
+          "harness": "stub-delta"
+        }
+      ]
+    },
+    {
+      "golden": "orchestrator-unhooked",
+      "scenario": "unhooked",
+      "runs": [
+        {
+          "run_id": "golden-unhooked-1",
+          "harness": "stub-epsilon",
+          "expected_exit": 2
+        }
+      ],
+      "red_check": "CHK-SCOPE"
+    }
+  ]
+}

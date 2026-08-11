@@ -1,0 +1,19 @@
+{
+  "testId": "ACC-1042",
+  "perfectoRelease": "26.2",
+  "executionMode": "SCRIPTLESS_INTERPRETED",
+  "exportedToAppiumJS": "sha:export-1c4d... (the audit bridge — see ExportedAppiumTest.js)",
+  "deviceGate": {
+    "runs": 3,
+    "passes": 3,
+    "flakiness": "STABLE",
+    "semanticValidationsApplied": 6,
+    "visualValidationsApplied": 1,
+    "pinnedDevice": "iPhone 15 / iOS 17.4 (Perfecto cloud)"
+  },
+  "verdict": "PASS",
+  "vendorInternals": "OPAQUE — Perfecto's semantic+visual matching resolved each natural-language step internally; the resolution confidence, candidate set, and fallback chain are not exposed in the report.",
+  "license": "Perfecto license applies; cost is license-dominated and not modelable from this artifact.",
+  "auditPin": "export sha:export-1c4d... (the committed Appium JS export) — the interpreted run itself has no inspectable executable; only the export does.",
+  "_reviewerNote": "Compare O1's ReplayReport: there, codeCommit pins the exact committed Java that ran. Here, the interpreted run has NO inspectable executable — the audit pin is the EXPORT, which is a separate artifact the bank must remember to generate and commit. If the export step is skipped, the bank has a PASS verdict with no inspectable executable at all — which is the O2 problem wearing a vendor badge. The §8.2 weakness ('interpreter internals are a black box') is visible here: the report says PASS but cannot show HOW. The bank auditor's question — 'show me the executable that produced this verdict' — is answerable only via the export, not the run."
+}

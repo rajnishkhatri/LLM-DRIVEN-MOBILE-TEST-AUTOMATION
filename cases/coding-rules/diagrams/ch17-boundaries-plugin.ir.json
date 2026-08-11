@@ -1,0 +1,49 @@
+{
+  "$schema": "../../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "ch17-boundaries-plugin",
+    "level": "container",
+    "title": "Ch.17 Boundaries - plugin architecture (illustrative wiki system)",
+    "caption": "An illustrative wiki system (FitNesse-style) partitioned into a core and plugins. The core business rules OWN the WikiPage interface; every plugin (the UI, the page stores, the web framework) IMPLEMENTS that interface and DEPENDS ON the core. Every arrow points TOWARD the core - the core has zero outgoing dependencies. This is the asymmetric plugin relationship: a plugin cannot break the core, the core can swap any plugin at will. The boundary is drawn across the inheritance arrows just below the core's interface - the same boundary that let FitNesse defer the database decision for 18 months and ultimately abandon it.",
+    "direction": "down",
+    "opens": "WIKI",
+    "opens_from": "01-context",
+    "completeness": "complete",
+    "overlays": "none",
+    "omitted": [
+      {"label": "In-memory page store", "note": "a third WikiPage implementation used during early development; omitted here - it is the same plugin shape as the file and SQL stores"}
+    ]
+  },
+  "nodes": [
+    { "id": "USER",  "kind": "actor",     "label": "Wiki user",                "detail": ["edits and views wiki pages"] },
+
+    { "id": "CORE",  "kind": "container",  "label": "Wiki business rules",       "technology": "TECH: UNKNOWN", "detail": ["the core - the 'host'", "OWNS the WikiPage interface (save / load)", "highest-level policy - most protected", "zero outgoing dependencies - immune to any plugin change"], "emphasis": "heaviest" },
+
+    { "id": "UI",    "kind": "container",  "label": "Web UI",                    "technology": "TECH: UNKNOWN", "detail": ["plugin - depends on the core", "could be swapped for a console or client-server UI without touching the core"] },
+
+    { "id": "FSDB",  "kind": "container",  "label": "File system page store",    "technology": "TECH: UNKNOWN", "detail": ["plugin - implements WikiPage", "persists pages to flat files", "the choice FitNesse eventually kept"] },
+
+    { "id": "SQLDB", "kind": "container",  "label": "SQL page store",           "technology": "TECH: UNKNOWN", "family": "module-c", "detail": ["plugin - implements WikiPage", "an alternative a customer once plugged in for a SQL database", "swappable - the core does not know it exists"] },
+
+    { "id": "FWK",   "kind": "container",  "label": "Web framework",            "technology": "TECH: UNKNOWN", "detail": ["plugin - depends on the core's plugin points", "a detail the core is protected from (Ch.32 territory)"] }
+  ],
+  "edges": [
+    { "from": "USER",  "to": "UI",   "kind": "sync", "label": "edits and views pages in" },
+    { "from": "UI",    "to": "CORE", "kind": "sync", "label": "renders pages via" },
+    { "from": "FSDB",  "to": "CORE", "kind": "sync", "label": "implements WikiPage for" },
+    { "from": "SQLDB", "to": "CORE", "kind": "sync", "label": "implements WikiPage for" },
+    { "from": "FWK",   "to": "CORE", "kind": "sync", "label": "plugs into" }
+  ],
+  "forbidden_facts": [
+    "\\bOracle\\b",
+    "\\bMySQL\\b",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "us-east",
+    "eu-west",
+    "99\\.99"
+  ]
+}

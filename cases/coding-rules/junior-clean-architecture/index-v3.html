@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clean Architecture in Practice — the o7 Pipeline</title>
+<style>
+  :root {
+    /* ---- warm paper neutrals ---- */
+    --paper:      #F5F1E7;
+    --paper-2:    #EEE8DA;
+    --paper-edge: #E2DAC6;
+    --ink:        #1B2A2B;
+    --ink-soft:   #4A5A59;
+    --ink-faint:  #7A8683;
+
+    /* ---- meaning colors (the sticky key) ---- */
+    --policy:      #1F6F6B;
+    --policy-wash: #DCECE9;
+    --detail:      #B0742A;
+    --detail-wash: #F1E3CE;
+    --port:        #6A5A9C;
+    --port-wash:   #E7E1F1;
+    --human:       #495C77;
+
+    --pass:       #2E7D5B;
+    --fail:       #A6402F;
+
+    --accent:     var(--policy);
+    --rule:       #D8CFBB;
+
+    --measure: 66ch;
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "Menlo", Consolas, "Liberation Mono", monospace;
+
+    --shadow: 0 1px 2px rgba(27,42,43,.06), 0 8px 24px rgba(27,42,43,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #14201F;
+      --paper-2:    #1B2B29;
+      --paper-edge: #263A37;
+      --ink:        #E7EBE7;
+      --ink-soft:   #AEBCB8;
+      --ink-faint:  #7E908B;
+      --policy:     #6FC9C0;
+      --policy-wash:#17332F;
+      --detail:     #E0A65A;
+      --detail-wash:#33280F;
+      --port:       #A99AD6;
+      --port-wash:  #241E38;
+      --human:      #8BA3C4;
+      --pass:       #6BC79A;
+      --fail:       #E48374;
+      --rule:       #2A3D39;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#F5F1E7;--paper-2:#EEE8DA;--paper-edge:#E2DAC6;--ink:#1B2A2B;--ink-soft:#4A5A59;--ink-faint:#7A8683;
+    --policy:#1F6F6B;--policy-wash:#DCECE9;--detail:#B0742A;--detail-wash:#F1E3CE;--port:#6A5A9C;--port-wash:#E7E1F1;
+    --human:#495C77;--pass:#2E7D5B;--fail:#A6402F;--rule:#D8CFBB;
+    --shadow:0 1px 2px rgba(27,42,43,.06),0 8px 24px rgba(27,42,43,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper:#14201F;--paper-2:#1B2B29;--paper-edge:#263A37;--ink:#E7EBE7;--ink-soft:#AEBCB8;--ink-faint:#7E908B;
+    --policy:#6FC9C0;--policy-wash:#17332F;--detail:#E0A65A;--detail-wash:#33280F;--port:#A99AD6;--port-wash:#241E38;
+    --human:#8BA3C4;--pass:#6BC79A;--fail:#E48374;--rule:#2A3D39;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body::before {
+    content:""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(var(--paper-edge) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-edge) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: .28;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 80%);
+  }
+
+  .measure { max-width: var(--measure); margin-left: auto; margin-right: auto; }
+
+  header.mast { max-width: 1000px; margin: 0 auto; padding: 64px 24px 28px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--policy); margin: 0 0 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow::before { content:""; width: 34px; height: 2px; background: var(--policy); display:inline-block; }
+  h1 {
+    font-family: var(--serif); font-weight: 700; line-height: 1.05;
+    font-size: clamp(2.4rem, 6vw, 4.1rem); margin: 0 0 .35em; letter-spacing: -.01em;
+    text-wrap: balance; color: var(--ink);
+  }
+  .dek {
+    font-family: var(--serif); font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    line-height: 1.4; color: var(--ink-soft); max-width: 46ch; text-wrap: balance;
+    font-style: italic; margin: 0 0 26px;
+  }
+  .byline {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    letter-spacing: .04em; border-top: 1px solid var(--rule);
+    padding-top: 14px; display:flex; gap: 18px 26px; flex-wrap: wrap;
+  }
+  .byline b { color: var(--ink-soft); font-weight: 600; }
+
+  .cast-card {
+    max-width: 1000px; margin: 18px auto 0; background: var(--paper-2);
+    border: 1px solid var(--paper-edge); border-radius: 12px; padding: 18px 22px;
+    box-shadow: var(--shadow);
+    font-family: var(--mono); font-size: 12.5px; line-height: 2.1; color: var(--ink-soft);
+  }
+  .cast-card .clabel {
+    text-transform: uppercase; letter-spacing: .14em; font-size: 11px;
+    color: var(--ink-faint); display: block; margin-bottom: 4px;
+  }
+  .cast-pill {
+    display: inline-block; padding: 2px 10px; border-radius: 999px; margin: 0 6px 4px 0;
+    font-weight: 600; white-space: nowrap; border: 1px solid;
+  }
+  .cast-pill.policy { background: var(--policy-wash); color: var(--policy); border-color: var(--policy); }
+  .cast-pill.port   { background: var(--port-wash);   color: var(--port);   border-color: var(--port); }
+  .cast-pill.detail { background: var(--detail-wash); color: var(--detail); border-color: var(--detail); }
+  .cast-pill.human  { background: color-mix(in srgb,var(--human) 16%, transparent); color: var(--human); border-color: var(--human); }
+
+  main { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  p { margin: 0 0 1.15em; }
+
+  h2 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.01em;
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem); line-height: 1.12;
+    margin: 2.2em 0 .1em; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .5em; color: var(--policy); font-weight: 500;
+    letter-spacing: .1em; vertical-align: middle; margin-right: .8em;
+    border: 1px solid var(--policy); border-radius: 3px; padding: .18em .5em;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.16rem;
+    margin: 1.9em 0 .3em; color: var(--ink); letter-spacing: -.005em;
+  }
+  .lede { font-size: 1.28rem; line-height: 1.5; color: var(--ink); font-family: var(--serif); }
+  .lede b { color: var(--policy); }
+  a { color: var(--policy); text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 700; }
+  code {
+    font-family: var(--mono); font-size: .84em;
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 4px; padding: .08em .38em; color: var(--ink);
+    white-space: nowrap;
+  }
+  pre {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 10px; padding: 18px 20px; overflow-x: auto;
+    box-shadow: var(--shadow); margin: 1.5em 0;
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.55; color: var(--ink);
+  }
+  pre code { background: none; border: none; padding: 0; white-space: pre; font-size: inherit; }
+  pre .cm { color: var(--ink-faint); font-style: italic; }
+
+  .drop::first-letter {
+    font-family: var(--serif); float: left; font-size: 3.7em; line-height: .78;
+    padding: .06em .12em 0 0; color: var(--policy); font-weight: 700;
+  }
+
+  ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--policy); }
+
+  .key {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    margin: 0; padding: 10px 24px;
+  }
+  .key-inner {
+    max-width: 1000px; margin: 0 auto; display: flex; gap: 8px 22px;
+    flex-wrap: wrap; align-items: center;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .02em;
+  }
+  .key-inner .klabel { color: var(--ink-faint); text-transform: uppercase; letter-spacing:.12em; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+  .sw { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .sw.policy { background: var(--policy); }
+  .sw.detail { background: var(--detail); }
+  .sw.port   { background: var(--port-wash); border: 1.5px dashed var(--port); }
+  .sw.human  { background: var(--human); }
+
+  figure { margin: 2.4em 0; padding: 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  .fig-card {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 12px; padding: 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  .fig-card img {
+    display: block; width: 100%; height: auto;
+    background: #fff; border-radius: 8px; border: 1px solid var(--paper-edge);
+  }
+  .fig-card.fig-tall img { max-width: 560px; margin: 0 auto; }
+  .fig-card.fig-mid img { max-width: 760px; margin: 0 auto; }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    margin-top: 12px; line-height: 1.5; letter-spacing: .01em;
+    max-width: 74ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  .callout {
+    border-left: 3px solid var(--policy); background: var(--policy-wash);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 1.6em 0;
+    font-size: .98rem;
+  }
+  .callout .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--policy); display:block; margin-bottom: 6px; font-weight: 600;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout.pitfall { border-left-color: var(--fail); background: color-mix(in srgb, var(--fail) 9%, transparent); }
+  .callout.pitfall .tag { color: var(--fail); }
+  .callout.port { border-left-color: var(--port); background: var(--port-wash); border-left-style: dashed; }
+  .callout.port .tag { color: var(--port); }
+  .callout.story { border-left-color: var(--human); background: color-mix(in srgb, var(--human) 10%, transparent); }
+  .callout.story .tag { color: var(--human); }
+  .callout.proposed {
+    border-left-color: var(--port); border-left-style: dashed;
+    background: color-mix(in srgb, var(--port) 7%, transparent);
+    border-top: 1px dashed color-mix(in srgb, var(--port) 40%, transparent);
+    border-bottom: 1px dashed color-mix(in srgb, var(--port) 40%, transparent);
+    border-right: 1px dashed color-mix(in srgb, var(--port) 40%, transparent);
+    border-radius: 0 8px 8px 0;
+  }
+  .callout.proposed .tag { color: var(--port); }
+
+  .dialogue {
+    border: 1px dashed var(--rule); border-radius: 10px; padding: 16px 20px;
+    margin: 1.6em 0; font-size: .98rem; background: color-mix(in srgb, var(--paper-2) 55%, transparent);
+  }
+  .dialogue .who {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; font-weight: 700; margin-right: .6em;
+  }
+  .dialogue .who.jr { color: var(--detail); }
+  .dialogue .who.sr { color: var(--policy); }
+  .dialogue .who.aud { color: var(--human); }
+  .dialogue p { margin: .5em 0; }
+
+  .table-wrap { overflow-x: auto; margin: 1.8em 0; border-radius: 10px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--paper-2); font-size: .95rem; }
+  caption { text-align: left; font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint); padding: 0 0 10px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--paper-edge); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600; background: color-mix(in srgb, var(--paper-2) 60%, var(--paper)); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .owner-pill {
+    display:inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .owner-pill.policy { background: var(--policy-wash); color: var(--policy); border:1px solid var(--policy); }
+  .owner-pill.detail { background: var(--detail-wash); color: var(--detail); border:1px solid var(--detail); }
+  .owner-pill.port   { background: var(--port-wash); color: var(--port); border:1px solid var(--port); }
+  .owner-pill.human  { background: color-mix(in srgb,var(--human) 16%, transparent); color: var(--human); border:1px solid var(--human); }
+  .owner-pill.pass   { background: color-mix(in srgb,var(--pass) 14%, transparent); color: var(--pass); border:1px solid var(--pass); }
+  .owner-pill.fail   { background: color-mix(in srgb,var(--fail) 12%, transparent); color: var(--fail); border:1px dashed var(--fail); }
+  .owner-pill.proposed { background: transparent; color: var(--port); border:1px dashed var(--port); }
+
+  .rule-orn { display: flex; align-items: center; gap: 16px; margin: 3em 0 0; color: var(--rule); }
+  .rule-orn::before, .rule-orn::after { content:""; height: 1px; background: var(--rule); flex: 1; }
+  .rule-orn span { font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: var(--ink-faint); }
+
+  .pull {
+    font-family: var(--serif); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.28;
+    color: var(--ink); font-style: italic; text-wrap: balance;
+    border-top: 2px solid var(--policy); border-bottom: 2px solid var(--policy);
+    padding: .7em 0; margin: 1.8em 0;
+  }
+  .pull b { font-style: normal; color: var(--policy); }
+
+  .checklist li { margin: .5em 0; }
+  .checklist .cksec {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-faint); list-style: none; margin: 1.2em 0 .4em -1.3em; font-weight: 600;
+  }
+
+  .footnote {
+    font-size: .85rem; color: var(--ink-faint); margin-top: 2.4em;
+    padding-top: 1em; border-top: 1px dotted var(--rule); max-width: var(--measure);
+    margin-left: auto; margin-right: auto;
+  }
+
+  footer {
+    max-width: 1000px; margin: 60px auto 0; padding: 26px 24px 40px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+  footer b { color: var(--ink-soft); }
+
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    header.mast { padding-top: 40px; }
+    .key-inner { font-size: 11px; gap: 6px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <p class="eyebrow">Mentoring Series&nbsp;·&nbsp;Clean Architecture&nbsp;·&nbsp;The o7 Pipeline</p>
+  <h1>Clean Architecture in Practice — the o7 Pipeline</h1>
+  <p class="dek">A mentoring walkthrough of the bank's test-certification pipeline: how one committed artifact becomes a certified verdict on a real device, and the disciplines that keep every step honest.</p>
+  <div class="byline">
+    <span><b>Audience</b> Anyone joining, reviewing, or curious about the o7 pipeline</span>
+    <span><b>Reading time</b> ~35 min</span>
+    <span><b>Grounded in</b> the o7 spec + decision records ADR&nbsp;0001–0017</span>
+    <span><b>Running case</b> Zelle send-money, test <code>ACC-2087</code></span>
+  </div>
+  <div class="cast-card">
+    <span class="clabel">The running cast — one color per ring</span>
+    <span class="cast-pill policy">TestCaseIR</span>
+    <span class="cast-pill policy">IR&nbsp;gate</span>
+    <span class="cast-pill policy">Interpreter</span>
+    <span class="cast-pill policy">Classification</span>
+    <span class="cast-pill policy">ReplayReport</span>
+    <span class="cast-pill policy">Lineage&nbsp;chain</span>
+    <span class="cast-pill port">invoke_models</span>
+    <span class="cast-pill port">Driver&nbsp;seam</span>
+    <span class="cast-pill port">S3&nbsp;port</span>
+    <span class="cast-pill port">adapter&nbsp;contract</span>
+    <span class="cast-pill detail">Excel/POI</span>
+    <span class="cast-pill detail">Octane&nbsp;REST</span>
+    <span class="cast-pill detail">Appium&nbsp;java-client</span>
+    <span class="cast-pill detail">Perfecto</span>
+    <span class="cast-pill detail">Spring&nbsp;Boot</span>
+    <span class="cast-pill human">section-7&nbsp;evaluator</span>
+    <span class="cast-pill human">svc:conversion-pipeline</span>
+  </div>
+</header>
+
+<div class="key">
+  <div class="key-inner">
+    <span class="klabel">How to read the colours:</span>
+    <span class="chip"><span class="sw policy"></span> Stable policy — the pipeline's own rules</span>
+    <span class="chip"><span class="sw port"></span> The boundary — seams, ports &amp; committed artifacts</span>
+    <span class="chip"><span class="sw detail"></span> Volatile detail — vendors, frameworks, formats</span>
+    <span class="chip"><span class="sw human"></span> A person or principal</span>
+  </div>
+</div>
+
+<main>
+
+  <div class="measure">
+    <p class="lede drop" style="margin-top:2em">Welcome to the o7 team. Before your first ticket, we're going to walk one banking test — <b>send $25 by Zelle</b> — through the entire pipeline, from an Octane test case to a certified verdict on a real iPhone in the Perfecto cloud. Along the way you'll meet every architectural discipline this codebase runs on. None of them are decoration. Each one exists because an auditor, a determinism guarantee, or a 2&nbsp;a.m. incident demanded it.</p>
+
+    <p>Two things before we start. First, o7 is a <strong>fork, not a rewrite</strong>: its parent pipeline, o1, generates per-test Java from an LLM and executes that; o7 deletes the code-generation stage and executes the committed <code>TestCaseIR</code> directly with a version-pinned interpreter. Both pipelines are live today. Second, everything in this post is drawn from the team's real design record — the o7 spec and decision records ADR&nbsp;0001 through 0017. Where the design is decided, I'll show you the decision. Where something is still <em>proposed</em>, I'll say so out loud.</p>
+
+    <div class="callout story">
+      <span class="tag">Status, honestly</span>
+      <p>The o7 spec is a Stage-2 DRAFT awaiting the owner's sign-off gate, and its two founding decision records — ADR&nbsp;0016 (the interpreter) and ADR&nbsp;0017 (keeping the modular monolith) — are at <strong>Proposed</strong> status, flipping to Accepted at that same gate. ADR&nbsp;0011 (evidence storage) is Proposed pending a week-0 platform probe. Everything else cited here is Accepted. This post describes the design as specified; nothing in it is invented beyond what those records say, and section&nbsp;14 is explicitly the place where ideas that are <em>not</em> in the record live.</p>
+    </div>
+
+    <p class="pull">Amber may depend on teal — <b>never the reverse</b>. Volatile detail plugs into stable policy across a violet boundary. Every rule in this post is a corollary of that one sentence.</p>
+  </div>
+
+  <div class="rule-orn"><span>PART ONE · THE MAP</span></div>
+
+  <!-- ================= 01 SCREAM ================= -->
+  <section id="scream">
+    <div class="measure">
+      <h2><span class="num">01</span>Open the repo — what does it scream?</h2>
+      <p>Clone the pipeline repository and read only the top-level module names. You will see three: <code>conversion</code>, <code>validation-certification</code>, <code>evidence</code>. Inside them, the five recorded stage packages — <code>ingestion</code>, <code>hierarchy-tool</code>, <code>conversion</code>, <code>replay</code>, <code>certification</code> — plus the evidence module's provenance and read model. (Under o7, the <code>replay</code> package's <em>contents</em> changed: ADR&nbsp;0016 replaced the old static gate and TestNG runner with the IR gate and the interpreter. The stage was replaced; the partitioning wasn't.) Without opening a single class you already know what this system does: it converts test sources, validates and certifies them, and keeps evidence. That is not an accident. It is the result of a fight the design record won on purpose.</p>
+      <p>The original blueprint proposed five modules named after <em>pipeline stages</em> — a technical partitioning. ADR&nbsp;0005 rejected that shape because stage-shaped modules are the kind that pull a monolith toward a layered sinkhole, and repartitioned the system along its three <strong>characteristic clusters</strong> instead, demoting the stage names to packages inside them. The repo's structure now announces the business of the system — certified test conversion — rather than its plumbing.</p>
+      <p>Contrast the repo you have probably seen elsewhere: <code>controllers/</code>, <code>services/</code>, <code>repositories/</code>, <code>config/</code>, <code>utils/</code>. That repo screams its framework. A stranger can tell you it's a Spring app and nothing else. Ours screams its use cases, and the framework is deliberately kept where you can't hear it.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card fig-mid">
+        <img src="diagrams/o7-scream.svg" alt="Side-by-side comparison: a framework-shaped repository with controllers, services, repositories packages versus o7's three business modules — conversion, validation-certification, evidence — with pipeline-stage packages inside" />
+      </div>
+      <figcaption><b>Figure 1 · Bad screams Spring; good screams certified test conversion.</b> The three module names are the stage-1 characteristic clusters from ADR&nbsp;0005; the blueprint's five stage names survive only as packages inside them.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>The framework pair — how o7 answers it</h3>
+      <p>Every framework deserves two questions: <em>how do I use it, and how do I protect myself from it?</em> o7's runtime is a Spring Boot modular monolith — that's a real marriage, recorded consciously in the design record, not an accident of a starter template. The protection is nameable: Spring wires the modules together at the composition root, DI selects which implementation sits behind each seam by configuration, and the pipeline's own policy code — the IR gate's checks, the interpreter's step semantics, the classification rules — compiles without caring that Spring exists. The same posture holds for Appium: the interpreter speaks to a <code>Driver</code> seam it owns; only the adapter behind that seam knows the vendor client's names.</p>
+      <div class="dialogue">
+        <p><span class="who jr">New hire, day one</span> "I've read <code>conversion</code> and <code>validation-certification</code>. I can explain how a test case becomes a committed IR and how the IR gets certified. But where's the web layer? Is there even a UI?"</p>
+        <p><span class="who sr">Mentor</span> "You just passed onboarding. There's a small review queue UI and two CLIs — outer-ring details you'll meet in section&nbsp;12. You learned the whole business without them, which is exactly the point."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 02 TWO HALVES ================= -->
+  <section id="two-halves">
+    <div class="measure">
+      <h2><span class="num">02</span>Two halves, one commit</h2>
+      <p>Now the whole system on one page. o7 is built as <strong>two halves with a git commit between them</strong>. The left half — the <em>authoring arm</em> — is allowed to consult an LLM, in three bounded places, to help turn a messy human-written test case into a precise committed artifact. The right half — the <em>spine</em> — consumes only committed, screened, gated artifacts, and its <strong>replay path</strong> — gate, interpreter, classification, report — is LLM-free by construction: not one model call anywhere in it. (Exactly one model touch exists past the commit — certification's <em>advisory</em> fidelity grade, and the record is precise about its bounds; sections&nbsp;06 and&nbsp;12.) The handoff between the halves is not an API call. It is a <strong>commit</strong>: a <code>TestCaseIR.json</code> and its locator manifest, signed, hash-chained, and content-addressed.</p>
+      <p>This is the deepest boundary in the system, and it was drawn exactly where the axis of change lies. The authoring arm changes when sources, models, and capture tooling change — often, and for messy reasons. The spine changes when the bank's certification policy changes — rarely, and for important reasons. Things that change for different reasons at different rates live on opposite sides of a line, and the traffic across the line is plain committed data.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card fig-tall">
+        <img src="diagrams/o7-two-halves.svg" alt="The o7 pipeline end to end: the LLM-bounded authoring arm (ingestion, A1 parser, A2 semantic interpreter, hierarchy capture) flows into the commit — TestCaseIR plus locator manifest signed by a service principal — then into the spine, whose replay path (IR gate, interpreter over Appium/Perfecto, classification, ReplayReport) is LLM-free, ending at the post-run human evaluator" />
+      </div>
+      <figcaption><b>Figure 2 · The whole pipeline, top to bottom.</b> Follow the Zelle test down this page: authored above the commit, executed below it, certified by a person at the end. The replay path below the commit issues no model call.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <p>Keep this figure in your head; the rest of the post walks down it. And note the last box: the pipeline ends at a <em>person</em>. The interpreter's machine <code>PASS</code> is a precondition for certification — it is never the certification. That rule has a name in the spec (CF9), it is enforced at the database level (M37), and section&nbsp;12 is devoted to it.</p>
+      <div class="callout">
+        <span class="tag">Why the boundary is a commit, not a call</span>
+        <p>A call is an instant; a commit is an <strong>artifact</strong>. Because the handoff is a committed file with a digest, the spine's whole audit story reduces to two values: <code>irDigest</code> — the SHA of what was reviewed — and <code>interpreterVersion</code> — the SHA of what executed it. "What ran?" has a two-value answer. ADR&nbsp;0017 calls preserving that two-value answer the strategic asset of the design, and declines any structure that would add a third runtime variable to it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 03 BUSINESS RULES ================= -->
+  <section id="business-rules">
+    <div class="measure">
+      <h2><span class="num">03</span>The heart: which rules are the business?</h2>
+      <p>Strip away every framework and vendor and ask: what would the bank still insist on if this pipeline were run by clerks with paper folders? That question sorts o7's rules into layers, and the sort explains the entire shape of the system.</p>
+
+      <h3>The paper test</h3>
+      <p>Run it on our rules. <em>A certification verdict must be signed by an accountable, named individual</em> — a paper bank would demand the same signature on a paper form. <em>Evidence must be kept, tamper-evident, reconstructible years later</em> — true of paper audit files long before software. <em>A certified test must mean the same thing every time it is checked</em> — a clerk re-running a checklist expects the same outcome from the same inputs. These are the enterprise-critical rules. They would make or save the bank money — and keep it out of regulatory trouble — with no computer at all. In the code they live as the <strong>certification invariants</strong>: a named human on every verdict, an unbroken lineage chain, determinism by construction.</p>
+      <p>One level down sit the rules that only make sense because the pipeline is automated: <em>an IR must pass seven machine checks before a device minute is spent; an exhausted locator cascade hard-fails the run; a novel test shape routes to mandatory human review.</em> No paper process needs these — they exist to govern an automated flow. They are the pipeline's application rules, and they live in the IR gate, the interpreter, and the novelty router.</p>
+      <p>And at the edge: Octane's REST shapes, Excel workbook quirks, Appium capabilities, Perfecto session tokens, S3 bucket semantics, Spring wiring. Vendors and mechanisms. Important, volatile, and — architecturally — details.</p>
+    </div>
+
+    <div class="table-wrap measure" style="max-width:var(--measure)">
+      <table>
+        <caption>The paper test, applied to o7</caption>
+        <thead><tr><th>Rule</th><th>Survives on paper?</th><th>Home</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>A verdict requires a named, accountable individual — a catch-all "system" signer is invalid</td>
+            <td>Yes — paper certification worked this way for a century</td>
+            <td><span class="owner-pill policy">Invariant · CF9 + M37</span></td>
+          </tr>
+          <tr>
+            <td>Evidence is append-only, chained, reconstructible</td>
+            <td>Yes — the paper audit file</td>
+            <td><span class="owner-pill policy">Invariant · lineage</span></td>
+          </tr>
+          <tr>
+            <td>Reject an IR whose steps carry no finite timeout</td>
+            <td>No — only an automated replay needs it</td>
+            <td><span class="owner-pill policy">Application rule · IR&nbsp;gate</span></td>
+          </tr>
+          <tr>
+            <td>Route never-seen-before test shapes to mandatory review</td>
+            <td>No — it governs an automated commit flow</td>
+            <td><span class="owner-pill policy">Application rule · novelty router</span></td>
+          </tr>
+          <tr>
+            <td>Serialize a locator as an Appium capability; open a Perfecto session</td>
+            <td>Not a business rule at all</td>
+            <td><span class="owner-pill detail">Detail · driver adapter</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="measure">
+      <h3>A data structure is not an object — and o7 exploits the difference</h3>
+      <p>Here is a distinction that will pay your salary for years. An <em>object</em> exposes behavior and hides data. A <em>data structure</em> exposes data and has no behavior. They are opposites, and confusing them is how architectures rot. o7's central design move is built on keeping them apart: <code>TestCaseIR</code> is a pure data structure — eleven steps of plain fields, no methods, no cleverness — and the <strong>interpreter</strong> is the object that gives it meaning. The data is committed, reviewed, screened, digest-pinned; the behavior is versioned, audited once, and pinned separately. Review the data per test; audit the behavior once as infrastructure. That split <em>is</em> the o7 thesis: the reviewed artifact becomes the executed artifact, because the executable is data.</p>
+      <div class="callout pitfall">
+        <span class="tag">Pitfall — "let's add a helper method to the IR"</span>
+        <p>The day someone adds <code>TestCaseIR.execute()</code> or even <code>TestCaseIR.resolveLocator()</code>, the boundary between reviewed-data and audited-behavior starts to dissolve: behavior begins riding along with the per-test artifact, and "what ran" stops being a two-value answer. The IR stays a dumb record. The interpreter stays the only thing that acts on it. If you feel the urge for a helper, it belongs in the interpreter's module, not on the IR.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 04 POLICY LEVEL ================= -->
+  <section id="policy-level">
+    <div class="measure">
+      <h2><span class="num">04</span>Policy and level — the altitude map</h2>
+      <p>"High level" and "low level" get thrown around loosely. Here they have a precise meaning: a policy's <strong>level is its distance from the system's inputs and outputs</strong>. The code that touches Excel bytes, Appium sessions, and S3 buckets is the lowest-level policy in o7 — not because it is easy, but because it manages I/O. The certification invariants are the highest — they are the farthest from any I/O and would survive every vendor in the stack being replaced.</p>
+      <p>The discipline is that <strong>source-code dependencies point from low level to high level</strong> — every import climbs the altitude map — even though <em>data</em> flows down and back up at runtime. A Zelle workbook's bytes flow from POI up through canonicalization into an IR and back down through the driver adapter to a device; the import graph must not trace that journey. The Excel reader imports the canonicalization contract. The driver adapter imports the seam interface. Nothing in the middle imports either of them.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card fig-mid">
+        <img src="diagrams/o7-policy-altitude.svg" alt="Three altitude bands: at the bottom, I/O-managing adapters (Excel/POI, Octane REST, Appium driver, S3 port adapter, review CLIs); in the middle, the pipeline's own policies (IR gate rules, interpreter step semantics, classification rules, canonicalization rules); at the top, the certification invariants. Every arrow points upward" />
+      </div>
+      <figcaption><b>Figure 3 · Level = distance from I/O, and every source arrow points up.</b> Perfecto can change its driver schedule, Octane can change its API, and the top box does not recompile.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>Why altitude matters: change asymmetry</h3>
+      <p>Low-level policy changes often, urgently, and for unimportant reasons. This is not hypothetical in o7 — the design record states it as fact: <em>Perfecto upgrades Appium drivers on its own schedule</em>; the pipeline cannot pin the full device stack even if it wants to. Octane formats drift. Model providers deprecate. High-level policy changes rarely and for reasons that matter: the bank's certification rules change when regulation or risk appetite changes. Arranging every import to point from the churning edge toward the stable center means the churn is <strong>contained</strong> — a Perfecto driver bump lands as a captured-evidence delta at the edge, not as a recompile of the certification rules.</p>
+      <p>This is also the protection hierarchy in action: the component that should be most protected from change — the invariants — is the one nothing else can reach with a change. When you review a PR, look at the direction of every new import before you look at anything else. An import from a policy package toward an adapter package is wrong <em>regardless of whether the code works</em>.</p>
+    </div>
+  </section>
+
+  <div class="rule-orn"><span>PART TWO · WALKING ACC-2087 THROUGH</span></div>
+  <!-- ================= 05 INGESTION ================= -->
+  <section id="ingestion">
+    <div class="measure">
+      <h2><span class="num">05</span>Ingestion — adapters at the door</h2>
+      <p>Our test enters as Octane case <code>ACC-2087</code>: <em>"Send $25 to a saved Zelle recipient and see the confirmation."</em> Five loose English steps — sign in, open Pay &amp; Transfers, open Zelle, send to Alex Rivera, verify the banner. Other tests arrive as Excel workbooks. Two wildly different vendor formats, one pipeline.</p>
+      <p>The answer is the oldest trick in the trade, done properly: <strong>both sources sit behind one adapter contract</strong>, and the pipeline cannot tell which one fed it. The Excel adapter (Apache POI) and the Octane adapter (REST) each translate their vendor's mess into the same canonical intake, apply per-adapter canonicalization — including a committed, versioned synonym table (<code>{sign in, log in, login} → login</code>) and noise-strip rules, plain string transforms with <em>zero</em> model calls — and record a source-snapshot digest so an auditor can later prove exactly what was read.</p>
+      <p>Two disciplines hide in that paragraph. First, <strong>substitutability</strong>: the two adapters must satisfy the contract <em>identically</em> — if Octane needs special treatment somewhere downstream, the design has failed. The moment you find yourself writing <code>if (source == "octane")</code> anywhere past the adapter, stop: that special case belongs inside the Octane adapter, absorbed at the door. A substitutability violation doesn't stay small — it pollutes every consumer with type-sniffing conditionals. Second, <strong>containment</strong>: a CI-enforced rule (F2) fails the build if any source-system type crosses out of its adapter. The canonical intake is the <em>only</em> thing that leaves ingestion. Not "should be" — <em>is</em>, because a build breaks otherwise.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/o7-ingestion-adapters.svg" alt="Excel/POI and Octane REST adapters both implement one adapter contract; inside the boundary, per-adapter canonicalization with the committed synonym table, the screening library, and the source-snapshot digest produce the canonical intake — the only thing that leaves ingestion" />
+      </div>
+      <figcaption><b>Figure 4 · Two vendors, one contract, one canonical output.</b> The screening library runs at this trust boundary, and its version is pinned on the lineage row of everything it screened.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>Screening at the trust boundary</h3>
+      <p>Ingestion is also one of the system's three <strong>trust boundaries</strong> — the places untrusted content enters or leaves. The design record (ADR&nbsp;0009) defines them by data class: untrusted source text entering, device-produced evidence entering, anything leaving toward a model provider. One shared screening library — injection screening plus secret/PII redaction — runs at all three, no caller may implement its own, and the library's version is itself a pinned field on every screened payload's lineage row. Note the shape of that rule: it is the same "one seam, one enforcement point" move you will see again at the model seam in the next section. Cross-cutting obligations get exactly one implementation, or they drift.</p>
+      <div class="callout">
+        <span class="tag">Honesty note — the A0 story</span>
+        <p>There was a proposal (A0) to put an LLM normalizer at the front of ingestion. The 2026-08-01 gate <strong>deferred</strong> it for lack of evidence and folded a deterministic synonym-table-plus-noise-strip into the adapters instead — that fold is what you see above. The next day the owner <strong>ratified A0 by override, on unchanged evidence</strong>, with four follow-on obligations still open; the deterministic fold stays, and A0 would sit upstream of it. I tell you this not as gossip but as a lesson in honest records: the ADR preserves both the gate's ruling and the override, so you can see exactly which decision rests on evidence and which on authority. Read ADR&nbsp;0015 before you touch ingestion.</p>
+      </div>
+
+      <h3>Who changes this code? The actor test</h3>
+      <p>Look at what lives in the authoring arm and ask <em>who</em> asks for changes to each piece. The POI adapter changes when a vendor format shifts — the tooling team answers to that. The synonym table changes when QA's phrasing conventions drift — the QA org owns that vocabulary. The screening rules change when the security owner updates the red-team corpus. Three different masters, three different rates of change — so three separate modules, none allowed to know the others' internals. When one file answers to two masters, every change for one risks breaking the promise made to the other. That is the actual content of "single responsibility": one module, one reason to change, where "reason" means a person who can demand it.</p>
+    </div>
+  </section>
+
+  <!-- ================= 06 MODEL SEAM ================= -->
+  <section id="model-seam">
+    <div class="measure">
+      <h2><span class="num">06</span>The one model seam</h2>
+      <p><code>ACC-2087</code>'s five business steps must become eleven precise runtime steps. The A1 parser splits structure deterministically; the A2 semantic interpreter expands compound steps into opcodes, resolves screen contexts, and — only when its deterministic templates miss — falls back to a bounded LLM call. Note the flag A1 raised on step&nbsp;3: <code>recipient-selection-mechanism-unspecified</code>. Does "send to Alex Rivera" mean tap a saved tile, or search by name? A1 doesn't guess; it flags. A2 must resolve that flag — deterministically if a known template matches, by bounded model fallback if not — because, as you'll see in section&nbsp;08, an unresolved ambiguity flag is a gate failure, not a shrug.</p>
+      <p>Now the architectural point. The LLM is the most <strong>volatile</strong> dependency this system has: providers deprecate models on their own schedule, the roadmap itself plans a provider change, and pricing shifts quarterly. The rule for volatile things is: never let policy name them. So every model call in the entire system — A2's fallback, the locator last-resort, the capture proposers, and certification's one advisory fidelity grade (ADR&nbsp;0004; more in section&nbsp;12) — routes through <strong>one seam</strong>: <code>invoke_models</code>, a Spring interface whose implementation is selected by configuration. Behind it live prompt assembly, the screening call at egress, the response cache, and version capture. In front of it, callers know none of that.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card fig-mid">
+        <img src="diagrams/o7-model-seam.svg" alt="The bounded callers — A2 semantic fallback, locator last-resort, capture proposers, and certification's advisory fidelity judge — all route through the invoke_models seam to a swappable reasoning provider; the replay path issues no model call at all, enforced in CI" />
+      </div>
+      <figcaption><b>Figure 5 · One way in, one way out — and the replay path isn't connected at all.</b> The red arrow is the edge that must never exist — and CI, not good intentions, is what keeps it nonexistent.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>Depend on the seam, cache with the truth</h3>
+      <p>Two supporting decisions make the seam real rather than ceremonial. ADR&nbsp;0002 puts the <strong>model and provider version in the response-cache key</strong> — a cached answer from one model version is never silently served as another's, because a cache that lies about provenance would poison every downstream pin. And the swap-provider promise is <em>tested</em>: a golden-set contract-parity run executes against both seam implementations at cutover, and divergence beyond certified thresholds blocks it. "Swapping the provider is a config change" is an acceptance-tested claim, not a slogan.</p>
+
+      <h3>A boundary is only as strong as its enforcement</h3>
+      <p>Here is the uncomfortable truth the design record states plainly: the stage-3 gate <em>declined</em> to build a runtime plug-in structure at this seam — Spring DI gives the strategy for free — so the entire protection of the model boundary is <strong>two build-time rules</strong>. F1: no type outside the adapter package references a provider SDK or model construct. F2: no source type leaves its adapter. ArchUnit rules, CI-blocking, run on every commit. The ADR is honest that this protection is <em>contingent</em>: it exists only as long as the team maintains it, and deleting or suppressing those rules requires a superseding decision record, not a code review. A one-interface boundary without reciprocal structure degrades fast when discipline is all that guards it — which is precisely why o7 moved the discipline into CI, where it cannot be quietly forgotten. When a boundary matters, automate its defense.</p>
+      <div class="callout port">
+        <span class="tag">The proposing line</span>
+        <p>One more bound — decided for the capture loop in ADR&nbsp;0014, and mirrored by the deterministic gate-and-commit machinery everywhere else in the arm: <strong>the model proposes; determinism disposes.</strong> No LLM output ever <em>decides</em> an admission, a commit, or a trust status; committed, versioned code disposes. Hold that line in every feature you build here.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 07 THE COMMIT ================= -->
+  <section id="commit">
+    <div class="measure">
+      <h2><span class="num">07</span>The commit is the boundary</h2>
+      <p>The authoring arm's output for <code>ACC-2087</code> is two files: the eleven-step <code>TestCaseIR.json</code> and its <code>LocatorCandidate</code> manifest. Here is the IR's step&nbsp;7 — the one interesting enough to teach from:</p>
+<pre><code>{ "index": 7, "action": "TAP", "timeoutMs": 7000,
+  "syncAfter": "WAIT_FOR_IDLE", "healPolicy": "NONE",
+  "target": {
+    "naturalReference": "the saved recipient Alex Rivera",
+    "screenContext": "ZelleScreen",
+    "resolvedLocators": [
+      { "strategy": "ACCESSIBILITY_ID", "value": "recipient_AlexRivera",
+        "confidence": 0.91, "source": "OBJECT_REPO" },
+      { "strategy": "XPATH",
+        "value": "//XCUIElementTypeCell[@name='recipient_AlexRivera']",
+        "confidence": 0.86, "source": "PAGE_SOURCE" }
+    ] } }
+<span class="cm">// Plain fields only. Two locator candidates, committed in cascade order.</span>
+<span class="cm">// timeoutMs, syncAfter, healPolicy: the three runtime fields o7 added.</span></code></pre>
+      <p>Notice the <em>form</em> of what crosses the boundary: plain data, shaped for the <strong>consumer's</strong> convenience. No POI cell references, no Octane JSON, no model transcripts, no prompt logs — the spine never sees any of it. Data crosses a boundary in the form most convenient for the inner side, or the boundary is a fiction. The credentials cross as <code>vault:</code> references, never values. And every step carries the three runtime fields the interpreter needs: a finite <code>timeoutMs</code>, an explicit <code>syncAfter</code>, and <code>healPolicy</code> fixed to <code>NONE</code> — hold that last one for section&nbsp;09.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card fig-mid">
+        <img src="diagrams/o7-commit-boundary.svg" alt="The authoring arm's working material — drafts, prompts, model responses, captured hierarchies — is distilled into the committed TestCaseIR and locator manifest, signed by the service principal; only those committed artifacts cross to the spine's IR gate, never raw working material" />
+      </div>
+      <figcaption><b>Figure 6 · What crosses, and in which form.</b> The working mess stays on the authoring side. Committed, screened, digest-pinned data is the only traffic.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>The commit that used to be a person</h3>
+      <p>In o1, an engineer reviews every generated test before it is committed. In o7 that pre-commit review is <strong>removed</strong> — the IR and manifest are auto-committed by a service principal, <code>svc:conversion-pipeline</code>, with the hash-chain link written in the same transaction. If that sounds reckless, follow the decision record's reasoning, because it is a masterclass in decomposing a control into its actual jobs:</p>
+      <ul>
+        <li><strong>Security?</strong> Already retired as a rationale — ADR&nbsp;0013 explicitly rejected per-artifact human review as a security control and removed credentials from the execution path instead. An unreviewed-but-gated IR has nothing to steal.</li>
+        <li><strong>Correctness?</strong> Transferred to machines: the seven-check IR gate, whose seventh check is a no-device dry-run (next section) — deterministic, repeatable, and stricter than a tired reviewer at 4&nbsp;p.m.</li>
+        <li><strong>Attribution?</strong> Relocated, not deleted: the individual principal moves from the commit row to the certification verdict row, where the accountable human actually decides (section&nbsp;12).</li>
+      </ul>
+      <p>The residue of the old review decomposes cleanly, so the review goes — and the recurring human cost of the pipeline halves. When you propose removing a control, this is the bar: name each job the control was doing, and show where each job now lives.</p>
+    </div>
+  </section>
+
+  <!-- ================= 08 IR GATE ================= -->
+  <section id="ir-gate">
+    <div class="measure">
+      <h2><span class="num">08</span>The IR gate — architecture with teeth</h2>
+      <p>Before <code>ACC-2087</code> may touch a device, its IR faces seven deterministic checks. Zero device cost, zero compilation — there is no generated Java in o7, so the old compile-and-lint gate has no analogue; validating the artifact replaced compiling the code.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/o7-ir-gate.svg" alt="The seven IR gate checks — schemaValid, opcodeClosed, boundedWaits, locatorManifest, noLiteralCreds, ambiguityClear, dryRun — with a green path to the replay queue and a red fail path back to the authoring arm" />
+      </div>
+      <figcaption><b>Figure 7 · Seven checks, seconds, no device.</b> A FAIL routes back to the authoring arm deterministically — no re-prompt loop, no device minute spent.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <p>Read the seven as an architecture lesson, not a checklist:</p>
+      <ul>
+        <li><strong><code>opcodeClosed</code></strong> — only the seven opcodes (<code>TAP TYPE SWIPE WAIT ASSERT LAUNCH NAVIGATE</code>) and three assertion kinds exist. The vocabulary is closed: adding an opcode is a <em>spec change</em>, never a silent runtime capability. This kills DSL sprawl at the root.</li>
+        <li><strong><code>boundedWaits</code></strong> — every step carries a finite <code>timeoutMs</code>. This is not a style rule; it is a <em>determinism control</em>. An unbounded wait makes a run's outcome a function of wall-clock luck instead of the committed artifact. (It also quietly replaced an entire lint category from o1 — with no test code to lint, the rule moved from source-lint to schema enforcement. Controls relocate; they don't evaporate.)</li>
+        <li><strong><code>locatorManifest</code></strong> — every locator the IR references must appear in the committed manifest. No orphans. The interpreter will never resolve a locator that wasn't reviewed.</li>
+        <li><strong><code>noLiteralCreds</code></strong> — vault-key indirection only, enforced by schema, not by reviewer vigilance.</li>
+        <li><strong><code>ambiguityClear</code></strong> — the flag A1 raised in section&nbsp;06 must be resolved before commit. The interpreter never disambiguates at runtime.</li>
+        <li><strong><code>schemaValid</code> + <code>dryRun</code></strong> — the IR validates against the committed schema, and a no-device structural walk proves every step resolvable against the captured hierarchy. The dry-run is the correctness substrate that made removing the pre-commit reviewer defensible.</li>
+      </ul>
+      <p class="pull">The gate is the architecture's rules <b>made executable</b>. Every discipline in this post that matters is enforced by a machine somewhere — the ones that aren't are the ones that erode.</p>
+      <p>That sentence is the deep pattern of this whole codebase. Count the enforcement points you have met already: F1 and F2 guard the model and source seams; the schema check guards the IR contract; and in section&nbsp;13 you'll meet the module-boundary rules, the one-deployable check, the no-per-test-Java rule, and the one-live-driver assertion. o7's structure is not a diagram on a wiki — it is a set of failing builds waiting for anyone who violates it. When you add a structural rule of your own, wire it into CI the same day, or history says it will not survive the quarter.</p>
+    </div>
+  </section>
+
+  <!-- ================= 09 INTERPRETER ================= -->
+  <section id="interpreter">
+    <div class="measure">
+      <h2><span class="num">09</span>The interpreter — the executable is data</h2>
+      <p>The gate passes, a replay request is enqueued through the transactional outbox, and the device-gate worker picks it up. What runs next is the heart of o7: a <strong>version-pinned, LLM-free, non-adaptive loop</strong> that walks the committed IR step by step over a real Perfecto device. The whole engine fits in your head:</p>
+<pre><code>for step in ir.steps:                      <span class="cm">// deterministic, ordered</span>
+    element = null
+    for locator in step.target.resolvedLocators:   <span class="cm">// committed cascade order</span>
+        element = session.findElement(locator, within=step.timeoutMs)
+        if element != null: break
+    if element == null:
+        report.fail(step, classify(session), evidence(...))
+        return report                      <span class="cm">// healPolicy NONE → hard stop</span>
+
+    switch step.action:                    <span class="cm">// closed dispatch: 7 opcodes</span>
+        TAP:    element.click()
+        TYPE:   element.sendKeys(resolve(step.inputData))
+        ASSERT: checkAssertion(element, step.assertion)
+        ...
+    if step.syncAfter == "WAIT_FOR_IDLE":
+        session.waitForIdle(bounded=step.timeoutMs)
+    report.recordStep(step, ...)           <span class="cm">// per-step evidence</span></code></pre>
+      <p>A loop and a dispatch table. No branching on model output, no retry cleverness, no guessing. The simplicity is the security argument, the audit argument, and the determinism argument all at once — this small amount of fixed code replaced an entire per-test code-generation stage, and with it the "execute untrusted generated code" attack surface that o1 has to actively contain. Complexity budget spent on <em>not existing</em>.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/o7-interpreter-loop.svg" alt="The interpreter loop: try committed locators in cascade order, dispatch on the closed opcode set, honor syncAfter, hard-fail on cascade exhaustion; it speaks to a Driver seam behind which sit the live Appium java-client and a stub raw-W3C adapter, driving a Perfecto device with cloud adaptivity attested off" />
+      </div>
+      <figcaption><b>Figure 8 · A loop, a closed dispatch table, and one seam to the device.</b> The raw-W3C adapter is a stub today; if it ever activates, that activation is recorded in lineage — a fallback is an evidenced event, never silent.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>The no-self-heal line</h3>
+      <p>Watch step&nbsp;7 of our Zelle flow at runtime. The interpreter tries <code>recipient_AlexRivera</code> by accessibility id — found, tapped, done; the committed XPath fallback is never touched. Now suppose release 8.5.0 renames <code>zelleSendButton</code>. At step&nbsp;9 the interpreter tries every committed candidate, exhausts the cascade, and <strong>hard-fails the run</strong>: red build, classification <code>LOCATOR_NOT_FOUND</code>, pre/post screenshots attached. It does not search the page source for something button-shaped. It does not ask a model for a better locator. It <em>fails</em> — and repair happens back in the authoring arm: re-capture the screen, re-resolve the cascade, produce a <em>new</em> IR version, re-gate, re-commit.</p>
+      <p>Understand why this restraint is load-bearing, because every test-tooling vendor will try to sell you the opposite. A certified conversion must pass <em>k</em> independent runs for its verdict to mean anything. Runtime adaptivity — self-healing locators, AI-assisted recovery, "smart waits" — makes each run's outcome partly a function of luck, and luck compounds: adaptive runs fail the all-k-must-agree regime by simple arithmetic. Worse, a green produced by a runtime repair certifies nothing about the committed artifact — it certifies the repair. So: <code>healPolicy: NONE</code>, forever, and the per-session attestation <code>cloudAdaptivityDisabled</code> proves Perfecto's own cloud AI was off. Trying committed locators in committed order is not self-heal; it is the reviewed plan, executed. Exhausting it is a real answer.</p>
+
+      <h3>Don't marry the vendor — and check the substitute's references</h3>
+      <p>The interpreter never names the Appium client directly; it speaks to a <code>Driver</code> seam it owns, and Spring DI binds the one live implementation — java-client 10.x — behind it. A raw-W3C adapter sits behind the same seam as an unimplemented stub, held for the day a client limitation forces it. That makes the seam a deliberate <em>partial</em> boundary: one interface, one live implementation, dependency direction correct, and no reciprocal structure — bought at a fraction of a full boundary's cost. Partial boundaries decay when nothing guards them, so this one is guarded twice: a <strong>seam-contract test</strong> that any implementation must pass before it may live behind the seam — substitutability as an executable requirement, not a hope — and a CI assertion that exactly <em>one</em> live driver exists, so a second backend cannot appear without tripping the recorded reopening trigger (section&nbsp;13).</p>
+      <div class="callout pitfall">
+        <span class="tag">Pitfall — "the java-client already does waits"</span>
+        <p>The vendor client has its own implicit-wait machinery, its own retry helpers, its own conveniences. Using them <em>feels</em> harmless and deletes o7's determinism story a convenience at a time: session setup explicitly sets implicit-wait to zero, and every wait in the system is an explicit, bounded, committed <code>timeoutMs</code>. The seam exists precisely so vendor conveniences must pass through a contract that refuses the ones that break policy. If you find yourself importing an Appium type outside the driver adapter, you are on the wrong side of the wall.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 10 DEVICE EDGE ================= -->
+  <section id="device-edge">
+    <div class="measure">
+      <h2><span class="num">10</span>Humble at the device edge</h2>
+      <p>Real devices are the most expensive, slowest, least deterministic resource this system touches. The classic failure mode of device-test pipelines is that <em>everything</em> ends up testable only on a device — every change queued behind hardware availability, every bug bisected at device speed. o7's defense is a disciplined split you should learn as a lifelong pattern: at every hard-to-test edge, divide the code into a <strong>testable side</strong> that holds all the decisions and a <strong>humble side</strong> that holds none.</p>
+      <p>Everything that decides lives device-free: opcode dispatch, cascade ordering, timeout bookkeeping, assertion checking, the classification rules, all seven gate checks, the dry-run walk. The humble remainder — the driver adapter translating seam calls into vendor calls, the session against a real iPhone — is kept so thin there is nothing in it to get wrong beyond the translation itself.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/o7-humble-device-edge.svg" alt="The testable side (step semantics, classification rules, gate checks) is exercised by the IR-conformance corpus and a seam-contract test without any device; the humble side (driver adapter, Perfecto session) stays thin" />
+      </div>
+      <figcaption><b>Figure 9 · The split at the device edge.</b> The conformance corpus proves the deciding code; the seam-contract test constrains the humble code; a device is needed only for the real thing.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>The corpus is the contract</h3>
+      <p>The testable side isn't just unit-tested ad hoc — it is governed by a committed <strong>IR-conformance corpus</strong>: one case per opcode, per assertion kind, plus the cascade-miss-hard-fail case and one trigger per classification class. No <code>interpreterVersion</code> may be pinned into the pipeline without a corpus-green run. That turns the version pin from a label into a behavioral claim — a version bump that silently changes what <code>TAP</code> means is caught before the pin is trusted. It is also the recorded defense against the fate of abandoned test-runner projects the design record names: an interpreter you own is only safe to own if a machine can prove each release still means the same thing.</p>
+      <p>Notice what the corpus is keyed to: the <em>IR contract</em>, not the interpreter's class structure. There is deliberately no test-class-per-production-class mirror here. Tests coupled to internal structure freeze it — every refactor breaks a hundred tests that verify nothing a user cares about, and the suite starts resisting change instead of enabling it. Tests coupled to the contract free the internals to evolve. When you add interpreter behavior, extend the corpus, not a mirror suite.</p>
+      <p>One more edge rule, easy to miss: everything the interpreter <em>pulls back</em> from the device — Smart Reporting artifacts, screenshots — is hashed at landing before any downstream read, and passes through the same screening library as ingested source text. Device output is untrusted input. The trust boundary at the bottom of the system is as real as the one at the top.</p>
+      <div class="dialogue">
+        <p><span class="who jr">Engineer</span> "So if I change how <code>SWIPE</code> maps to W3C actions, what actually has to pass before it ships?"</p>
+        <p><span class="who sr">Mentor</span> "The corpus case for <code>SWIPE</code>, no device needed. Then the seam-contract test if you touched the adapter. A Perfecto run happens once, at the week-gate — not four hundred times while you iterate. That's the whole point of the split: the expensive thing verifies, the cheap things develop."</p>
+      </div>
+    </div>
+  </section>
+<!-- PART-TWO -->
+
+  <div class="rule-orn"><span>PART THREE · THE RECORD</span></div>
+
+  <!-- ================= 11 EVIDENCE ================= -->
+  <section id="evidence">
+    <div class="measure">
+      <h2><span class="num">11</span>The database is a detail — the data model is not</h2>
+      <p>Our Zelle run passed: eleven green steps, a <code>ReplayReport</code>, screenshots, session versions. Now comes the half of the system that exists for a reader who isn't on the team: the auditor, three years from now. This section turns on two ideas that are easy to confuse and must be kept apart. The <strong>data model</strong> — what is recorded, how it relates, what can never be changed — is architecturally sacred in o7. The <strong>database</strong> — the engine that stores it — is a detail behind ports. Getting this backwards is how systems end up worshipping their storage engine.</p>
+      <p>The data model first, because it earns its centrality. Lineage is <strong>append-only</strong>: every row chains to its predecessor's digest within a per-conversion hash chain, every row carries an authenticated principal, corrections are compensating appends — never updates — and the application's database role physically cannot <code>UPDATE</code> or <code>DELETE</code> lineage. And because a hash chain alone only proves consistency <em>to whoever controls the database</em> — the wrong audience — chain heads are anchored into immutable object storage, so a database-side rewrite cannot also rewrite the evidence of the rewrite. The design record is candid about the limit: this <em>detects</em> tampering; it does not prevent it. Honest controls state what they don't do.</p>
+      <p>One primary store holds two schemas with different lifecycles — volatile conversion state and permanent lineage — with independent retention, independent grants, and <em>no foreign keys from lineage into conversion state</em>: the permanent record may never depend on rows that expire. Bulky device artifacts go to object storage through the S3 port, with the store holding references and digests, never payloads. Partitioned by <strong>lifecycle</strong>, note — by how the data lives and dies, not by which table is biggest.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/o7-evidence-lineage.svg" alt="The interpreter run writes lineage in the same transaction to the append-only, hash-chained store; the A-STD evidence bundle — ReplayReport plus the execution plan rendered from the irDigest — is stored through the S3 port; the auditor reads the plan, verifies the chain, and re-runs the SHAs" />
+      </div>
+      <figcaption><b>Figure 10 · The record-keeping spine.</b> Same-transaction lineage writes, a hash chain anchored where it can't be rewritten, object storage behind a port, and a rendered plan for human readers.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>Now the "detail" half — and what deferral buys</h3>
+      <p>Which object store does production use? <em>The team doesn't know yet — on purpose.</em> All evidence I/O goes through a thin S3-compatible port; dev and CI have run containerized MinIO behind it since task zero; and the production binding awaits a probe of whether the bank already operates an internal S3-compatible service. Work has never stopped for that answer, because the port made the decision <strong>deferrable</strong>. That is the payoff of treating storage as a detail: the pipeline was buildable and testable for weeks while a procurement-grade decision stayed open. When someone asks you why we bother with ports, this is the story to tell — the boundary let us <em>not decide</em>, cheaply.</p>
+      <p>The same-transaction rule deserves respect too: every lineage write happens in the same local transaction as the state change it describes, and at the two async seams a transactional outbox records the enqueue in that same transaction. No distributed transactions anywhere — one process, one commit point. This is a place where the monolith decision (section&nbsp;13) pays rent: "trivial in one process, the hard case in any distributed option," as the style decision put it.</p>
+
+      <h3>The execution plan is a presenter</h3>
+      <p>Inside the evidence bundle sits a file called <code>acc-2087.plan.md</code> — the whole run in numbered English lines: <em>"9. TAP 'Send' → zelleSendButton (→ WAIT_FOR_IDLE)."</em> Understand its architecture, because it is a textbook move. The plan is <strong>rendered deterministically from the <code>irDigest</code> at replay time</strong> — a pure projection for human eyes, holding only pre-formatted lines a compliance officer can read without seeing code. It is never committed as an authoritative artifact and nothing gates on it, because a committed plan would be a second source of truth that could drift from the IR — the two-competing-pins problem. It cannot drift, because it is derived; and it cannot be leaned on, because it is evidence, not a pin. When you build any human-facing view in this system, copy this shape: derive, present, and never let the presentation become load-bearing.</p>
+      <div class="dialogue">
+        <p><span class="who aud">Auditor</span> "Show me exactly what produced this certified Zelle verdict, and prove it hasn't changed."</p>
+        <p><span class="who sr">Mentor</span> "The committed IR at <code>irDigest sha:ir:2087:d41c9a…</code> — a content digest of the canonical IR itself — executed by the interpreter at <code>interpreterVersion sha:interp:9f0c22…</code>, a git commit SHA. Fetch both and re-run. The plan you're holding is byte-derived from the first SHA. The chain from ingestion to verdict is hash-linked, and its heads are anchored in storage we cannot overwrite. The session attested Perfecto's AI was off, and the driver versions we can't pin are captured right there as evidence."</p>
+        <p><span class="who aud">Auditor</span> "Who vouched for it?"</p>
+        <p><span class="who sr">Mentor</span> "The commit, a service principal after seven machine checks. The verdict, a named human. Next section."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 12 HUMANS ================= -->
+  <section id="humans">
+    <div class="measure">
+      <h2><span class="num">12</span>Humans and interfaces — the seam that stays human</h2>
+      <p>o7 removed a human touchpoint at the commit. It is worth being precise about what it <em>kept</em>, because the keeping is enforced at the database level. Every lineage row must carry an authenticated principal — an individual for human actions, a per-component service principal for automated ones, and a catch-all <code>system</code> principal is <strong>invalid at the schema</strong>. And one row demands more: the certification verdict row requires an <em>individual</em>. The machine's <code>PASS</code> is a precondition; certification is an attributable human decision, post-run. A fully autonomous certification path — no human on the verdict — is not "deferred": it is <strong>barred</strong>, recorded as a hard boundary in the spec.</p>
+      <p>The human doesn't decide unaided, either. Certification obtains one <strong>advisory fidelity grade</strong> — through the same <code>invoke_models</code> seam as every other model call in the system (ADR&nbsp;0004) — recorded as evidence with the judge's calibration version pinned, cached so a retry never re-grades, and still valid if the gateway is down. Note the shape of that arrangement, because it is the certified path's whole stance on models in one sentence: <em>the grade advises; the person certifies.</em> An advisory judge is never an autonomous one. (The design record calls this human the <strong>section-7 evaluator</strong>, after the spec section that defines the role — you'll hear the name in standups.)</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/o7-human-seam.svg" alt="The IR gate's green result leads to the service-principal commit row, the interpreter's machine PASS, then the R2 novelty router: never-seen shapes get mandatory review, known shapes get sampled review; both end at the verdict row signed by an individual. A fully autonomous verdict is barred" />
+      </div>
+      <figcaption><b>Figure 11 · Two principals, two rows, one invariant.</b> The service account signs the commit; a person signs the verdict; no row is ever principal-less.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>Spending human attention where it buys the most</h3>
+      <p>The remaining human touch is <em>routed</em>, not blanket. The novelty sampler stamps each IR at commit: a source shape the pipeline has seen before — our Zelle flow is ordinary login-navigate-submit-assert — goes to <strong>sampled</strong> review under the spine's existing fixed random draw; a genuinely novel shape routes to <strong>mandatory</strong> review. No new review machinery was invented for o7: the sampler reuses the spine's existing calibration flag, and the draw size is a plan-level value. Human attention is the scarcest resource in the pipeline; the design spends it on novelty and audit, not on rubber-stamping the four-hundredth login flow.</p>
+
+      <h3>Interfaces sized to their consumers — and the service that isn't there</h3>
+      <p>Who looks at all this? Four consumers, four deliberately different surfaces, recorded in ADR&nbsp;0008: reviewers get the web <strong>review queue</strong> (the only Phase-1 UI, every approval attributed); engineers get <strong>two CLIs</strong> speaking directly to the runtime; auditors get a <strong>versioned, read-only export</strong> owned by the provenance component; and the delivery lead gets a <strong>read-only metrics dashboard</strong> over the provenance read model. Notice what each consumer does <em>not</em> get: the reviewer surface carries no export machinery, the auditor export carries no mutation paths, and neither hauls the other's baggage. Interfaces are segregated by who consumes them, so no consumer depends on operations it never calls.</p>
+      <p>And notice what was <em>not</em> built: no backend-for-frontend layer, no "review service." The decision record's structural CI assertion makes adding a second web client or a BFF require a superseding ADR. This is a discipline worth internalizing early in your career: a service boundary is not automatically an architecture. The architecturally significant lines here — commit, gate, verdict — run <em>through</em> the monolith, drawn in code and enforced in CI. Standing up a network service where a boundary suffices buys you latency, serialization, and a deployment topology, and buys the architecture nothing. o7 keeps its boundaries strong and its process count at one.</p>
+      <div class="callout story">
+        <span class="tag">Security review that doesn't block — honestly recorded</span>
+        <p>One more governance seam worth knowing exists: for this target, security review runs as a <strong>parallel track</strong> — an ADR crossing a security threshold can be Accepted at the architecture gate with the security review queued and tracked, its output landing as a revision or superseding record, never a retroactive hold. The record is equally honest that the security-owner role is currently <em>dual-hatted</em> onto the architecture owner, and names the conditions that reopen blocking authority — a separate security owner being designated, production-derived data entering the system, or a parallel review surfacing a finding that would have blocked an ADR already built upon. You will inherit decisions shaped by this arrangement; now you know where its edges are written down.</p>
+      </div>
+    </div>
+  </section>
+<!-- PART-THREE -->
+
+  <div class="rule-orn"><span>PART FOUR · THE SHAPE</span></div>
+
+  <!-- ================= 13 COMPONENTS ================= -->
+  <section id="components">
+    <div class="measure">
+      <h2><span class="num">13</span>Three modules, named exits</h2>
+      <p>Zoom out to the component level. o7 ships as <strong>one deployable</strong>: a Spring Boot modular monolith, three modules — <code>conversion</code>, <code>validation-certification</code>, <code>evidence</code> — importable only through their published interface packages, forming a dependency graph with no cycles: conversion feeds validation-certification feeds evidence, arrows one way. The interpreter lives inside <code>validation-certification</code> as a module hosted by the device-gate worker; the plan renderer lives in <code>evidence</code>. That placement isn't taste — it follows the partitioning rule the modules were cut by.</p>
+      <p>The cut is worth learning as a rule you can reuse: <strong>group what changes together; separate what changes apart</strong>. The blueprint's original stage-shaped modules failed exactly that test — a change to certification policy would have smeared across three stage modules, while unrelated stages shared one. The characteristic clusters change as units: authoring concerns together, certification concerns together, record-keeping concerns together. When a future extraction ever happens, it cuts along seams that already exist in both the code and the schemas.</p>
+      <p>And the components stay honest about the other side of the tension: a component is also a unit someone <em>consumes</em>. The published-interface rule means depending on <code>evidence</code> pulls in its contract, not its internals — no consumer inherits baggage it never asked for. Cohesion pulls classes together; the don't-force-dependencies rule pushes oversized components apart; where the balance lands shifts with a project's maturity. o7, young and single-team, leans hard toward develop-ability — big cohesive modules, one release — with the release-granularity question deliberately parked (and one honest gap in that parking noted in section&nbsp;14).</p>
+    </div>
+
+    <figure>
+      <div class="fig-card fig-mid">
+        <img src="diagrams/o7-modules-flip.svg" alt="The one-deployable monolith with its three modules and one-way dependencies, held together by CI guards — ArchUnit module rules, F1, one-deployable check, no-per-test-Java, one-live-driver — and beneath them the recorded flip triggers: a fourth source adapter, a second concurrent reasoning provider, a second live execution backend, with service-based as the named migration target" />
+      </div>
+      <figcaption><b>Figure 12 · The monolith is a decision with named exits.</b> Structure enforced by CI above; the exact conditions for changing it recorded below.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <h3>Why a monolith — argued, not defaulted</h3>
+      <p>Read ADR&nbsp;0005 and 0017 together and you'll see the monolith won on the merits of <em>this system's</em> driving characteristics, all three of which reward one process: reproducibility (one clock, one transaction boundary), auditability (one trust boundary; in-transaction lineage), and pinning-integrity ("what ran" stays a two-value answer). Distribution was scored, and its costs — verdict pinning across a network, correlation instead of transactions — were named, weighted, and declined. Service-based is recorded as the <em>migration target</em>, with the first extraction candidates and their triggers spelled out. A monolith chosen this way is nothing like a monolith by inertia: it can tell you exactly what would change its mind.</p>
+      <p>The same record honesty applies to the road not taken twice. A core-plus-plugin architecture was proposed for o7 — it pattern-matches nicely to a driver seam and a closed opcode set — and declined with the reasoning written down: a runtime plug-in registry is a late-binding surface exactly where o7 spent its budget closing runtime variation; it would insert a third version variable that <code>irDigest</code> + <code>interpreterVersion</code> don't capture; and it would explode the conformance corpus from "one version behaves" to "every plug-in combination behaves." The registry's one genuine benefit — structural evolvability at the seam — is already banked by the plain Spring-DI seam at zero cost. Superficial pattern-matches lose to weighted characteristics; that's the discipline to copy.</p>
+
+      <h3>Decoupling is a dial, and someone recorded where it's set</h3>
+      <p>Between "one source tree" and "network services" lie distinct decoupling modes, and a system should be able to move along that dial as facts change. o7 sits deliberately at <em>strict module boundaries inside one deployable</em> — pushed far enough that a service <em>could</em> be formed along the module seams, kept co-located because nothing yet justifies the distribution tax. What makes this a living dial rather than a frozen choice is that the reopening conditions are <strong>recorded — and the sharpest of them mechanically guarded</strong>:</p>
+      <ul>
+        <li>A <strong>fourth source adapter</strong> or a <strong>second concurrent reasoning provider</strong> reopens the plug-in question at those seams (ADR&nbsp;0005's original trigger — held by the record and its quarterly boundary review, not by a CI rule).</li>
+        <li>A <strong>second live execution backend</strong> on the driver seam reopens the localized driver-seam SPI (ADR&nbsp;0017's sharper trigger) — and a CI assertion fails the build if a second live driver appears <em>before</em> that conversation happens, so the trigger cannot be crossed silently.</li>
+        <li>An <strong>evidence-residency ruling</strong> would reopen extraction for the evidence cluster specifically.</li>
+      </ul>
+      <p class="pull">The monolith isn't a belief. It is a decision <b>with tripwires</b> — the sharpest wired into CI, the rest written down where the quarterly review must trip over them.</p>
+      <h3>Where the wiring lives</h3>
+      <p>Last piece of the shape: somebody has to construct all of this. One place does — the composition root. Spring builds the object graph there: which adapter satisfies the ingestion contract, which implementation sits behind <code>invoke_models</code>, which driver binds behind the seam. That is also where the "dirty" knowledge is swept — the unavoidable knowledge of concrete classes that the rest of the system refuses to hold. Policy code asks for interfaces; the root knows the concretions; <code>@Autowired</code> never wanders into a policy package. If you need to know "which implementation actually runs in prod?", there is exactly one place to look, and that is the point of having exactly one place.</p>
+
+      <h3>Watching the shape with numbers</h3>
+      <p>Structure rules catch violations; numbers catch <em>drift</em>. Two families are worth knowing before your first review. At the method level, <strong>cyclomatic complexity</strong> counts the independent paths through a piece of code — every branch multiplies what a test must cover. Keep it in single digits and treat a spike as a question: is the complexity <em>essential</em> to the problem, or <em>accidental</em> to the solution? The distinction has sharp new relevance: brute-force, low-abstraction code — the fifty-case switch where a table would do — is the signature failure of model-generated implementation, and complexity numbers are among the best detectors of it. A pipeline whose entire thesis is bounding what models decide should hold model-drafted code to the strictest thresholds in the shop.</p>
+      <p>At the component level, two balances matter: how many things depend on a module versus how many it depends on (incoming dependencies make it hard to change; outgoing ones make it want to change), and how <em>abstract</em> it is versus how <em>stable</em> it must be. A module that is heavily depended-on, concrete, and volatile is a pain generator — database schemas are the canonical residents of that zone, which is one reason section&nbsp;11 guards the lineage schema so fiercely. And the rule that makes any of this real: a metric only becomes a control when it is wired to an alarm. o7's ArchUnit rules are exactly that pattern for dependencies; the same treatment for these numbers is one of the proposals in the next section — the numbers exist today, the alarm doesn't.</p>
+    </div>
+  </section>
+
+  <!-- ================= 14 PROPOSED ================= -->
+  <section id="proposed">
+    <div class="measure">
+      <h2><span class="num">14</span>What we deliberately don't have — and what this post proposes</h2>
+      <p>An honest architecture post about a real system owes you this section. The catalog of disciplines this series teaches recommends several structures o7 has <em>not</em> built. Some are already named in the design record as deferred follow-ons — decided-later, not forgotten. Others are proposals this post makes to the team: they fit the design's own logic, but <strong>no decision record exists for them</strong>, and in this codebase an undecided structure is exactly that. Do not build anything below without the conversation.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <img src="diagrams/o7-enhancements-map.svg" alt="The pipeline as built, with two groups attached: already-named deferred follow-ons (D7 in-toto attestation, raw-W3C driver implementation, service-based extraction) and this post's proposals (recorded-driver replay, testing-API module, boundary register, component metrics in CI, IR-schema release discipline, per-environment Mains) — every proposal box dashed" />
+      </div>
+      <figcaption><b>Figure 13 · Dashed means not built and not decided.</b> Left: deferred items already in the record. Right: this post's proposals, awaiting their own decision records.</figcaption>
+    </figure>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Named follow-ons (in the record) vs. proposals (this post's)</caption>
+        <thead><tr><th>Item</th><th>What it buys</th><th>When it becomes worth it</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>D7 — signed in-toto attestation</strong> wrapping the evidence bundle</td>
+            <td>Cryptographic tamper-evidence on top of the hash chain, near-zero schema invention</td>
+            <td>Named follow-on; explicitly not built now (spec S6)</td>
+            <td><span class="owner-pill port">named follow-on</span></td>
+          </tr>
+          <tr>
+            <td><strong>raw-W3C driver</strong> implemented behind the seam</td>
+            <td>Escape hatch from a java-client limitation</td>
+            <td>Only when a concrete limitation forces it; activation recorded in lineage (C1)</td>
+            <td><span class="owner-pill port">named follow-on</span></td>
+          </tr>
+          <tr>
+            <td><strong>Service-based extraction</strong> along module seams</td>
+            <td>Independent scaling/deployment if ever needed</td>
+            <td>Named migration target with recorded triggers (ADR&nbsp;0005/0017)</td>
+            <td><span class="owner-pill port">named follow-on</span></td>
+          </tr>
+          <tr>
+            <td><strong>Recorded-driver replay</strong> — a Driver-seam implementation that replays recorded device responses</td>
+            <td>Full interpreter runs with zero device minutes; richer than the structural dry-run; a dev/CI fixture the seam makes cheap</td>
+            <td>When device-minute cost or corpus growth makes no-device interpreter runs valuable</td>
+            <td><span class="owner-pill proposed">PROPOSED</span></td>
+          </tr>
+          <tr>
+            <td><strong>Testing-API module</strong> — state-forcing superpowers (seed lineage chains, force quarantine states), independently built, excluded from production artifacts</td>
+            <td>Tests decoupled from application structure; review-queue and quarantine paths testable without contortions</td>
+            <td>When quarantine/review-path test setup starts dominating test-writing time</td>
+            <td><span class="owner-pill proposed">PROPOSED</span></td>
+          </tr>
+          <tr>
+            <td><strong>Boundary register</strong> — one committed file listing every seam: full / partial / ignored, with its upgrade trigger</td>
+            <td>Generalizes what ADR&nbsp;0005/0017 already do for two seams to all of them; partial boundaries stop decaying invisibly</td>
+            <td>Cheap now; value compounds as seams multiply</td>
+            <td><span class="owner-pill proposed">PROPOSED</span></td>
+          </tr>
+          <tr>
+            <td><strong>Component metrics in CI</strong> — cycle watch plus coupling/abstractness distance per module, alarmed not just measured</td>
+            <td>Structural drift caught as a trend, not at the quarterly review; complements the existing ArchUnit rules</td>
+            <td>Once module count or contributor count grows past what review catches</td>
+            <td><span class="owner-pill proposed">PROPOSED</span></td>
+          </tr>
+          <tr>
+            <td><strong>IR-schema release discipline</strong> — version numbers + release notes for the IR schema as an internal component</td>
+            <td>Two live consumers (o1 and o7) can adopt schema changes on their own schedule instead of lockstep</td>
+            <td>Now-ish: the two-pipeline reality already exists</td>
+            <td><span class="owner-pill proposed">PROPOSED</span></td>
+          </tr>
+          <tr>
+            <td><strong>One Main per environment</strong> — dev / CI / prod composition roots as separate small Mains instead of one Main plus flags</td>
+            <td>Each environment's wiring readable at a glance; pairs naturally with the recorded-driver fixture for a no-device dev Main</td>
+            <td>When config-flag combinatorics in the single root start hiding what runs where</td>
+            <td><span class="owner-pill proposed">PROPOSED</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="measure">
+      <div class="callout proposed">
+        <span class="tag">Proposed — not in the design record</span>
+        <p>To be unmistakable: the six <strong>PROPOSED</strong> rows are this post's suggestions, offered because they follow the design's own logic — seams make fixtures cheap, partial boundaries need guards, records beat memory. None has been through a gate. If one earns your enthusiasm, the path is the same as for any structural change here: write the decision record, argue the trade-offs against the driving characteristics, and let the gate decide. The worst thing you could do with this table is treat it as a backlog.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 15 CHECKLIST ================= -->
+  <section id="monday">
+    <div class="measure">
+      <h2><span class="num">15</span>Monday morning checklist</h2>
+      <p>Everything above, compressed into what you actually do in your first weeks. Most of these are grep-able; none require permission.</p>
+      <ul class="checklist">
+        <li class="cksec">Before you write code</li>
+        <li>Read the o7 spec top to bottom once, then ADR&nbsp;0016 and 0017. Know the statuses: what's Accepted, what's Proposed, what gate is pending.</li>
+        <li>Walk Figure&nbsp;2 from memory: source → canonical intake → IR → commit → gate → interpreter → report → human verdict. If you can't, re-read Part Two.</li>
+        <li>Learn the two-value answer by heart: <code>irDigest</code> + <code>interpreterVersion</code>. Every design conversation here eventually lands on protecting it.</li>
+        <li class="cksec">In every PR you open</li>
+        <li>Check each new import's direction against the altitude map: policy packages never import adapter packages, and nothing imports a vendor SDK outside its adapter.</li>
+        <li>No model call outside <code>invoke_models</code>; no Appium type outside the driver adapter; no source-system type outside its ingestion adapter. CI will catch you — beat it there.</li>
+        <li>Data crossing a boundary is a plain committed structure in the consumer's shape. If you're passing a vendor object inward, stop at the adapter and translate.</li>
+        <li>Every wait bounded, every ambiguity resolved pre-commit, no literal credentials — the IR gate's rules are your authoring rules.</li>
+        <li>Touched interpreter behavior? Extend the conformance corpus in the same PR. Touched the driver adapter? The seam-contract test decides, not you.</li>
+        <li class="cksec">In every review you give</li>
+        <li>Ask the actor question: who demands changes to this file, and is it one answer?</li>
+        <li>Ask the substitutability question: could a second implementation live behind this interface without callers knowing? If a caller sniffs types, the boundary is already broken.</li>
+        <li>Ask the humble question: is new logic stranded on a hard-to-test side of an edge? Move the decision, keep the edge thin.</li>
+        <li class="cksec">When you're tempted</li>
+        <li>To add a "smart" retry, a locator fallback search, or an unbounded wait: no. Determinism is the product. A miss is a red build, and the fix is a new committed IR version.</li>
+        <li>To add an opcode: that's a spec change with a gate, never a quiet capability.</li>
+        <li>To split out a service or add a plug-in registry: find the recorded trigger. Untripped? Write the ADR that argues the world changed, or let it go.</li>
+        <li>To skip writing a decision record for a structural change: remember that every honest thing this post could tell you exists because someone wrote one.</li>
+      </ul>
+      <p class="pull">You now know the pipeline end to end — and better: you know <b>why each wall is where it is</b>, and exactly which recorded conditions would move it.</p>
+      <p class="footnote">All Zelle artifacts (IR excerpts, gate report, plan lines, SHAs) are mocked illustrations consistent with the committed mock set; statuses are as of 2026-08-08. Where this post and the design record ever disagree, the record wins — and tell the team, because one of the two needs fixing.</p>
+    </div>
+  </section>
+<!-- PART-FOUR -->
+
+</main>
+
+<footer>
+  <b>Sources, for the curious.</b> The o7 interpreter spec (<code>docs/sdd/specs/mobile-test-automation-o7-interpreter.spec.md</code>, Stage-2 DRAFT), decision records ADR&nbsp;0001–0017 (<code>docs/architecture/adrs/application/mobile-test-automation/</code>), the o7 end-to-end walkthrough (<code>docs/research/o7-pipeline-walkthrough.md</code>), and the team's coding-rules catalog (<code>cases/coding-rules/</code>). All Zelle artifacts shown are mocked illustrations shaped to the committed mock set (<code>mocks/o7-spine/</code>, <code>mocks/o1-spine/</code>). Diagrams are original to this post, authored in D2 and rendered to SVG (<code>diagrams/o7-*.d2</code>).<br><br>
+  <b>Series.</b> v1/v2 of this post taught the same disciplines on a fictional kata; v3 replaces the kata with the pipeline you will actually work on. Same colors, same rules, real stakes.
+</footer>
+
+</body>
+</html>

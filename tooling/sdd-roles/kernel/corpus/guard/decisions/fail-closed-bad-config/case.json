@@ -1,0 +1,8 @@
+{
+  "role": "gd-maker",
+  "stdin": "request.json",
+  "argv_extra": [
+    "--config",
+    "{case}/broken-config.json"
+  ]
+}

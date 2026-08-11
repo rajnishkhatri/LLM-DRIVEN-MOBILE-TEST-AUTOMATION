@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Bridge Pipeline — Adaptability with a Critic — the O3 story</title>
+<style>
+  :root {
+    --ground: #f7f8fa;
+    --panel: #ffffff;
+    --panel-2: #eef1f5;
+    --ink: #1a2027;
+    --ink-soft: #4a5560;
+    --ink-faint: #737f8b;
+    --rule: #d8dee6;
+    --rule-soft: #e6eaef;
+    --accent: #2d6a8e;
+    --accent-soft: #dbe8f0;
+    --good: #3f7d52;
+    --good-bg: #e2efe6;
+    --warn: #9a6a24;
+    --warn-bg: #f3e9d6;
+    --crit: #b0483a;
+    --crit-bg: #f4ddd8;
+    --shadow: 0 1px 2px rgba(20,32,44,.04), 0 4px 16px rgba(20,32,44,.05);
+    --maxw: 860px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0f1418;
+      --panel: #161d23;
+      --panel-2: #1c252c;
+      --ink: #e7ecf1;
+      --ink-soft: #a9b4bf;
+      --ink-faint: #78848f;
+      --rule: #2a343d;
+      --rule-soft: #212a32;
+      --accent: #5fa8cd;
+      --accent-soft: #16323f;
+      --good: #6ab383;
+      --good-bg: #16281c;
+      --warn: #d3aa5e;
+      --warn-bg: #2a2113;
+      --crit: #e0796b;
+      --crit-bg: #2c1713;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px 96px; }
+
+  header.mast {
+    border-bottom: 1px solid var(--rule);
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--warn) 9%, var(--ground)),
+      color-mix(in srgb, var(--accent) 5%, var(--ground)) 55%,
+      var(--ground));
+  }
+  .mast-inner { max-width: var(--maxw); margin: 0 auto; padding: 48px 24px 36px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--warn); font-weight: 700; margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 4.6vw, 2.7rem); line-height: 1.12; margin: 0 0 12px;
+    font-weight: 800; letter-spacing: -.02em; text-wrap: balance;
+  }
+  .dek { font-size: 1.08rem; color: var(--ink-soft); max-width: 62ch; margin: 0; }
+  .readtime { margin-top: 18px; font-size: .82rem; color: var(--ink-faint); }
+
+  section { margin-top: 56px; }
+  h2 { font-size: 1.45rem; margin: 0 0 14px; font-weight: 750; letter-spacing: -.015em; text-wrap: balance; }
+  p { margin: 0 0 16px; }
+  a { color: var(--accent); }
+  blockquote.pull {
+    margin: 26px 0; padding: 4px 0 4px 22px; border-left: 3px solid var(--warn);
+    font-size: 1.25rem; font-weight: 650; line-height: 1.45; color: var(--ink);
+  }
+  code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: .85em;
+    background: var(--panel-2); padding: .1em .35em; border-radius: 4px; }
+  pre { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 12px 14px; overflow-x: auto; font-size: .8rem; line-height: 1.5; margin: 0 0 16px; }
+  pre code { background: none; padding: 0; }
+  .snip-label { font-size: .74rem; color: var(--ink-faint); margin: 0 0 4px; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase; }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .7rem;
+    font-weight: 800; letter-spacing: .06em; text-transform: uppercase; vertical-align: middle; }
+  .badge.poc { background: var(--warn-bg); color: var(--warn); }
+  .badge.danger { background: var(--crit-bg); color: var(--crit); }
+  .badge.present { background: var(--good-bg); color: var(--good); }
+  .badge.absent { background: var(--panel-2); color: var(--ink-faint); font-weight: 700; }
+  .badge.bridge { background: var(--accent-soft); color: var(--accent); }
+
+  .vis { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 20px 22px; margin: 22px 0; }
+  .vis .vis-cap { font-size: .82rem; color: var(--ink-faint); margin: 12px 0 0; }
+
+  /* Hybrid bridge — interpret → critic → export → audit */
+  .bridge { display: grid; grid-template-columns: 1fr 22px 1fr 22px 1fr 22px 1fr; gap: 0; align-items: stretch; }
+  @media (max-width: 720px){
+    .bridge { grid-template-columns: 1fr; }
+    .br-arrow { transform: rotate(90deg); min-height: 28px; }
+  }
+  .br-lane { padding: 14px 14px; border-radius: 10px; }
+  .br-lane h4 { margin: 0 0 8px; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; }
+  .br-lane ul { margin: 0; padding-left: 18px; font-size: .82rem; color: var(--ink-soft); }
+  .br-lane li { margin: 3px 0; }
+  .br-interpret { background: var(--warn-bg); }
+  .br-interpret h4 { color: var(--warn); }
+  .br-critic { background: color-mix(in srgb, var(--accent-soft) 70%, var(--warn-bg)); }
+  .br-critic h4 { color: var(--accent); }
+  .br-export { background: var(--accent-soft); }
+  .br-export h4 { color: var(--accent); }
+  .br-audit { background: var(--good-bg); }
+  .br-audit h4 { color: var(--good); }
+  .br-arrow { display: flex; align-items: center; justify-content: center;
+    color: var(--ink-faint); font-size: 1.1rem; font-weight: 700; }
+
+  /* Journey strip */
+  .journey { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+  .stop { flex: 1 1 100px; min-width: 96px; background: var(--panel-2); border: 1px solid var(--rule-soft);
+    border-radius: 10px; padding: 10px 10px 8px; position: relative; }
+  .stop .n { font-size: .7rem; font-weight: 800; color: var(--accent); }
+  .stop .nm { font-size: .82rem; font-weight: 700; line-height: 1.25; margin: 2px 0; }
+  .stop .what { font-size: .72rem; color: var(--ink-faint); line-height: 1.35; }
+  .stop.llm { border-color: color-mix(in srgb, var(--warn) 45%, var(--rule-soft)); }
+  .stop.gate { border-color: color-mix(in srgb, var(--accent) 45%, var(--rule-soft));
+    background: color-mix(in srgb, var(--accent-soft) 55%, var(--panel-2)); }
+  .stop.export { border-color: color-mix(in srgb, var(--good) 35%, var(--rule-soft));
+    background: color-mix(in srgb, var(--good-bg) 55%, var(--panel-2)); }
+  .stop .ai { display: inline-block; margin-top: 4px; font-size: .62rem; font-weight: 800;
+    letter-spacing: .06em; padding: 1px 6px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); }
+  .stop .ctl { display: inline-block; margin-top: 4px; font-size: .62rem; font-weight: 800;
+    letter-spacing: .06em; padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .stop .out { display: inline-block; margin-top: 4px; font-size: .62rem; font-weight: 800;
+    letter-spacing: .06em; padding: 1px 6px; border-radius: 999px; background: var(--good-bg); color: var(--good); }
+
+  /* Before/after */
+  .beforeafter { display: grid; grid-template-columns: 1fr 34px 1fr; gap: 10px; align-items: center; }
+  @media (max-width: 700px){ .beforeafter { grid-template-columns: 1fr; } .ba-arrow { transform: rotate(90deg); } }
+  .ba-col h4 { margin: 0 0 6px; font-size: .76rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
+  .ba-col pre { margin: 0; }
+  .ba-arrow { text-align: center; font-size: 1.3rem; color: var(--ink-faint); }
+  .ba-col.blocked pre { border-color: color-mix(in srgb, var(--warn) 45%, var(--rule)); }
+
+  /* Heal-gated timeline */
+  .timeline { display: grid; gap: 0; }
+  .tl-step { display: grid; grid-template-columns: 28px 1fr; gap: 12px; }
+  .tl-rail { display: flex; flex-direction: column; align-items: center; }
+  .tl-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); margin-top: 4px;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); flex-shrink: 0; }
+  .tl-dot.warn { background: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 22%, transparent); }
+  .tl-dot.gate { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent); }
+  .tl-dot.pending { background: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 28%, transparent); }
+  .tl-line { width: 2px; flex: 1; min-height: 18px; background: var(--rule); margin: 4px 0; }
+  .tl-body { padding-bottom: 16px; }
+  .tl-body h4 { margin: 0 0 4px; font-size: .9rem; }
+  .tl-body p { margin: 0; font-size: .84rem; color: var(--ink-soft); }
+
+  /* Tension scatter */
+  .tension { position: relative; height: 340px; margin-top: 8px; border-radius: 12px;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--good) 10%, var(--panel)) 0%, var(--panel) 45%, color-mix(in srgb, var(--accent) 9%, var(--panel)) 100%);
+    border: 1px solid var(--rule); overflow: hidden; }
+  .tension .axis { position: absolute; color: var(--ink-faint); font-size: .74rem; font-weight: 600; letter-spacing: .04em; }
+  .ax-y { left: 14px; top: 14px; }
+  .ax-x { right: 14px; bottom: 12px; }
+  .frontier { position: absolute; inset: 0; }
+  .dot { position: absolute; transform: translate(-50%,-50%); text-align: center; }
+  .dot .b { width: 13px; height: 13px; border-radius: 50%; background: var(--accent); margin: 0 auto 4px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .dot.good .b { background: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 22%, transparent); }
+  .dot.warnd .b { background: var(--warn); box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 20%, transparent); }
+  .dot.critd .b { background: var(--crit); box-shadow: 0 0 0 4px color-mix(in srgb, var(--crit) 20%, transparent); }
+  .dot .l { font-size: .76rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .dot .sc { font-size: .68rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+  .dot.ghost .b { opacity: .35; box-shadow: none; }
+  .dot.ghost .l, .dot.ghost .sc { opacity: .55; }
+  .dot.focus .b { width: 16px; height: 16px; background: var(--warn);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--warn) 28%, transparent); }
+
+  /* Checklist contrast cards */
+  .checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px){ .checklist { grid-template-columns: 1fr; } }
+  .ck { background: var(--panel-2); border: 1px solid var(--rule-soft); border-radius: 12px; padding: 14px 16px; }
+  .ck.o2 { border-color: color-mix(in srgb, var(--crit) 35%, var(--rule-soft)); }
+  .ck.o3 { border-color: color-mix(in srgb, var(--warn) 40%, var(--rule-soft)); }
+  .ck h4 { margin: 0 0 10px; font-size: .95rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ck ul { margin: 0; padding: 0; list-style: none; }
+  .ck li { font-size: .84rem; color: var(--ink-soft); padding: 5px 0; border-top: 1px solid var(--rule-soft);
+    display: flex; gap: 8px; align-items: flex-start; }
+  .ck li:first-of-type { border-top: none; }
+  .ck .mark { font-weight: 800; font-variant-numeric: tabular-nums; flex-shrink: 0; width: 1.1em; }
+  .ck.o2 .mark { color: var(--crit); }
+  .ck.o3 .mark { color: var(--good); }
+  .ck li b { color: var(--ink); font-weight: 650; }
+
+  .callout { background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--rule));
+    border-radius: 12px; padding: 18px 20px; margin: 22px 0; }
+  .callout h3 { margin: 0 0 8px; font-size: 1.02rem; color: var(--warn); }
+  .callout p { font-size: .93rem; margin-bottom: 10px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout.contrast { background: var(--crit-bg); border-color: color-mix(in srgb, var(--crit) 30%, var(--rule)); }
+  .callout.contrast h3 { color: var(--crit); }
+
+  .callout.honest { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 30%, var(--rule)); }
+  .callout.honest h3 { color: var(--accent); }
+
+  .spec-pointer { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--rule));
+    border-radius: 12px; padding: 14px 18px; margin: 22px 0; font-size: .93rem; }
+
+  .note { font-size: .84rem; color: var(--ink-faint); margin-top: 12px; border-left: 2px solid var(--rule); padding-left: 12px; }
+
+  footer { margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--rule); font-size: .82rem; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="mast-inner">
+    <p class="eyebrow">Bridge story · Mobile test automation · POC candidate</p>
+    <h1>The Bridge Pipeline — Adaptability with a Critic</h1>
+    <p class="dek">How the hybrid keeps demo-speed interpretation alive — and still refuses to print a silent green when a heal goes wrong.</p>
+    <p class="readtime">~10-minute read · August 2026</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="hook">
+<blockquote class="pull">"Show me the executable that produced this verdict, and prove it hasn't changed."</blockquote>
+<p>Ask that of O3 — the proposed hybrid — and the honest answer is conditional: <em>not yet</em>, not while the run is still interpreted. The report carries an <code>auditCaveat</code> that says as much. Export the successful path into committed code, re-enter a static gate, and the auditor's question becomes answerable. Until then, you have a gated demo lane — not a certified one.</p>
+<p>That is the hybrid promise in one breath: keep the interpreter's adaptability so a POC can move at demo speed, and add a deterministic critic so a wrong heal cannot become a clean <code>PASS</code>. O3 is the bridge. It is not the cautionary villain (that is <a href="o2-pipeline-blog.html">O2</a>), and it is not the production north-star (that is the <a href="o1-pipeline-blog.html">O1 spine</a>).</p>
+</section>
+
+<section id="bakeoff">
+<h2>We didn't start with O3</h2>
+<p>Six architectures went through a weighted bake-off for a bank shipping a monthly app release: the LLM-free spine (O1), a pure runtime interpreter (O2), a hybrid (O3), a vendor tool, a YAML-DSL approach, and Meta's regenerate-and-filter pattern. Auditability took 20% of the weight; maintainability was elevated to 22%. The scores are a draft for architecture-board sign-off, using the analyst's weights — not a settled ruling.</p>
+<p>O3 lands at roughly <b>74</b> out of 100 — close enough to the first-pass leaders to stay in the room, and the comparison's verdict card names it the POC / spike pick. Its SWOT is the bridge in miniature: interpreter adaptability plus a deterministic critic; export-on-success as the audit bridge; two modes to build; interpreted runs not audit-grade until materialized; scope-creep risk if critic + repair + export bloats a throwaway. Production posture stays with the evolved O1 spine and regenerate-and-filter maintenance — O3 proves the adaptability needle without pretending to replace the commit-pinned substrate.</p>
+
+<div class="vis">
+  <div class="tension">
+    <div class="axis ax-y">▲ audit / determinism (banking-safe)</div>
+    <div class="axis ax-x">adaptability (demo-friendly) ▶</div>
+    <div class="frontier">
+      <div class="dot good ghost" style="left:52%; top:14%;"><div class="b"></div><div class="l">O1 + ADR 0014*</div><div class="sc">≈88</div></div>
+      <div class="dot good" style="left:34%; top:16%;"><div class="b"></div><div class="l">O6 Meta-Gen</div><div class="sc">75</div></div>
+      <div class="dot warnd focus" style="left:56%; top:48%;"><div class="b"></div><div class="l">O3 Hybrid</div><div class="sc">74</div></div>
+      <div class="dot" style="left:33%; top:37%;"><div class="b"></div><div class="l">O5 Maestro</div><div class="sc">73</div></div>
+      <div class="dot warnd ghost" style="left:74%; top:62%;"><div class="b"></div><div class="l">O4 Perfecto</div><div class="sc">62</div></div>
+      <div class="dot critd ghost" style="left:82%; top:78%;"><div class="b"></div><div class="l">O2 Pure interp</div><div class="sc">50</div></div>
+    </div>
+  </div>
+  <p class="vis-cap">O3 sits mid-frontier: adaptable enough for a POC, not yet audit-complete until export. *O1's ≈88 assumes ADR 0014 is accepted (proposal). Scores from the <a href="../mobile-test-automation-six-way-comparison.html">six-way comparison</a> — draft for ARB, analyst's weights.</p>
+</div>
+</section>
+
+<section id="hybrid-trick">
+<h2>The hybrid trick</h2>
+<p>Here is the whole idea, stated once. O3 runs in two modes that share one IR shape. <em>Interpret</em> executes <code>TestCaseIR</code> live on a device — adaptive, demo-friendly, and gated by an embedded <code>healPolicy</code> so heals fail closed when confidence, path criticality, or corroboration say no. <em>Export-on-success</em> materializes a surviving path toward committed code, so the run can eventually re-enter a static gate and earn a real <code>codeCommit</code>. The mock suite's README puts the artifact contrast cleanly: two artifacts, but the IR is fatter — discipline lives inside the IR itself, not across a four-file spine.</p>
+<p>That is a bridge, not a firewall. O1's commit wall keeps every LLM on the authoring side of git. O3 lets interpretation happen in the run — and then insists that certification wait for materialization. The comparison's tension note is blunt on who can answer for a verdict: O1, O5, and O6 via committed artifacts; O3 and O4 only after export; O2 not at all.</p>
+
+<div class="vis">
+  <div class="bridge">
+    <div class="br-lane br-interpret">
+      <h4>1 · Interpret</h4>
+      <ul>
+        <li>TestCaseIR runs live</li>
+        <li>Per-step resolve on device</li>
+        <li>Demo-speed adaptability</li>
+        <li>Pin today = <code>irDigest</code></li>
+      </ul>
+    </div>
+    <div class="br-arrow">→</div>
+    <div class="br-lane br-critic">
+      <h4>2 · Critic</h4>
+      <ul>
+        <li><code>healPolicy</code> in the IR</li>
+        <li>Floor, confirm, never-heal</li>
+        <li>Screenshot corroboration</li>
+        <li>No silent green on auth</li>
+      </ul>
+    </div>
+    <div class="br-arrow">→</div>
+    <div class="br-lane br-export">
+      <h4>3 · Export</h4>
+      <ul>
+        <li>Materialize on success</li>
+        <li>Reviewable residue</li>
+        <li>Bridge toward code</li>
+        <li>Still not certified yet</li>
+      </ul>
+    </div>
+    <div class="br-arrow">→</div>
+    <div class="br-lane br-audit">
+      <h4>4 · Audit path</h4>
+      <ul>
+        <li>Static gate re-entry</li>
+        <li><code>codeCommit</code> becomes real</li>
+        <li>Compliance use allowed</li>
+        <li>Production still → O1</li>
+      </ul>
+    </div>
+  </div>
+  <p class="vis-cap">The hybrid bridge. Interpretation stays adaptive; the critic gates heals; export is the only door into an audit-capable committed artifact.</p>
+</div>
+</section>
+
+<section id="journey">
+<h2>One test's journey</h2>
+<p>Follow ACC-1042 — "Login with valid credentials shows welcome" — the same login flow every option in the mock suite renders. Under O3 the IR is still the live action script, but it is no longer a bare list of steps. Credentials remain vault references (<code>vault:user_qa</code> / <code>vault:pass_qa</code>). Platforms, provenance, and an <code>irDigest</code> travel with the file. Each step carries a timeout and a sync wait — <code>ELEMENT_PRESENT</code>, <code>CLICKABLE</code>, <code>TEXT_PRESENT</code> — so the execution contract is thicker than O2's thin interpreter loop.</p>
+<p>The load-bearing addition is the control surface at the top of the IR:</p>
+<p class="snip-label">From TestCaseIR.runtime.json — healPolicy</p>
+<pre><code>"healPolicy": {
+  "retryBudgetPerStep": 3,
+  "healOnMiss": ["LOCATOR_NOT_FOUND", "STALE_ELEMENT"],
+  "neverHeal": ["ASSERTION_MISMATCH", "APP_CRASH", "ENV_INFRA"],
+  "healConfidenceFloor": 0.90,
+  "humanConfirmOnCriticalPaths": ["payments", "auth", "balance"],
+  "fallbackToVLM": true,
+  "corroborateAgainstScreenshot": true
+}</code></pre>
+<p>At runtime the interpreter walks the six steps on a real device — the mock pins Appium 2.5.1, XCUITest 5.12, and an iPhone 15 on iOS 17.4 — and every locator miss must clear that policy before it can rewrite the path. The mock run does three attempts (<code>runs: 3</code>, <code>passes: 2</code>) and records flakiness as <code>FLAKY</code> rather than pretending a single green settles the matter. Export-on-success is the optional seventh stop: materialize only what survived, then aim that residue at a static gate. Until that export lands, <code>codeCommit</code> and <code>staticGate</code> stay null by construction — honesty encoded in the report shape.</p>
+
+<div class="vis">
+  <div class="journey">
+    <div class="stop llm"><span class="n">1</span><div class="nm">Emit IR</div><div class="what">TestCaseIR + healPolicy</div><span class="ai">LLM or human</span></div>
+    <div class="stop"><span class="n">2</span><div class="nm">Load runtime</div><div class="what">digest, timeouts, sync</div></div>
+    <div class="stop llm"><span class="n">3</span><div class="nm">Resolve / execute</div><div class="what">per step, on device</div><span class="ai">Interpret lane</span></div>
+    <div class="stop gate"><span class="n">4</span><div class="nm">Heal attempt</div><div class="what">gated by healPolicy</div><span class="ctl">Critic</span></div>
+    <div class="stop gate"><span class="n">5</span><div class="nm">Verdict</div><div class="what">pending confirm, not clean PASS</div><span class="ctl">Gated</span></div>
+    <div class="stop export"><span class="n">6</span><div class="nm">Export</div><div class="what">materialize on success</div><span class="out">Bridge</span></div>
+    <div class="stop export"><span class="n">7</span><div class="nm">Static gate</div><div class="what">after commit — audit path</div><span class="out">Certified lane</span></div>
+  </div>
+  <p class="vis-cap">ACC-1042 under O3: the interpreter stays, the critic sits inside the run, and export is the only bridge into a certified lane.</p>
+</div>
+</section>
+
+<section id="gated-heal">
+<h2>The heal that didn't pass quietly</h2>
+<p>Here is the load-bearing contrast with the cautionary sibling. Step 4 — tap the Login button on an auth-critical flow — misses its accessibility id. O2 healed the same miss to the first button in the hierarchy at confidence <b>0.41</b> and still printed a clean <code>PASS</code>. O3 attempts a more plausible fallback — a named XPath at confidence <b>0.60</b> — and the policy stops it.</p>
+
+<div class="vis">
+  <div class="timeline">
+    <div class="tl-step">
+      <div class="tl-rail"><div class="tl-dot"></div><div class="tl-line"></div></div>
+      <div class="tl-body">
+        <h4>Step 4 starts</h4>
+        <p>Intent: tap the Login button. Preferred locator: <code>ACCESSIBILITY_ID:loginButton</code> at 0.97 from the object repo.</p>
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-rail"><div class="tl-dot warn"></div><div class="tl-line"></div></div>
+      <div class="tl-body">
+        <h4>Miss — <code>LOCATOR_NOT_FOUND</code></h4>
+        <p>The preferred id is gone on this build. A candidate exists: <code>XPATH://XCUIElementTypeButton[@name='Login']</code> at 0.60.</p>
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-rail"><div class="tl-dot gate"></div><div class="tl-line"></div></div>
+      <div class="tl-body">
+        <h4>healPolicy blocks the swap</h4>
+        <p>0.60 is below the 0.90 floor. Auth is on <code>humanConfirmOnCriticalPaths</code>. Screenshot corroboration is recorded. <code>humanConfirm</code> stays <code>REQUIRED_AND_PENDING</code>.</p>
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-rail"><div class="tl-dot pending"></div></div>
+      <div class="tl-body">
+        <h4>Verdict: <code>PASSED_WITH_HEALS_PENDING_CONFIRM</code></h4>
+        <p>Not a clean pass. The heal is surfaced, gated, and lineage-recorded — risk R1 made visible instead of camouflaged.</p>
+      </div>
+    </div>
+  </div>
+  <p class="vis-cap">The same step-4 miss as O2, reconstructed from the O3 ReplayReport — blocked instead of silently accepted.</p>
+</div>
+
+<div class="vis">
+  <div class="beforeafter">
+    <div class="ba-col">
+      <h4>Attempted heal</h4>
+      <pre><code>"from": "ACCESSIBILITY_ID:loginButton",
+"to": "XPATH://...[@name='Login']",
+"confidence": 0.60</code></pre>
+    </div>
+    <div class="ba-arrow">↛</div>
+    <div class="ba-col blocked">
+      <h4>Blocked — not a clean PASS</h4>
+      <pre><code>"blockedBy": "healConfidenceFloor=0.90
+  (0.60 &lt; 0.90) AND
+  humanConfirmOnCriticalPaths
+  contains 'auth'",
+"verdict":
+  "PASSED_WITH_HEALS_PENDING_CONFIRM"</code></pre>
+    </div>
+  </div>
+  <p class="vis-cap">Quoted from <code>healsApplied</code> in the O3 ReplayReport. The swap is attempted and refused; the verdict name encodes the unfinished human look.</p>
+</div>
+
+<p class="snip-label">From ReplayReport.json — healsApplied + verdict</p>
+<pre><code>"healsApplied": [
+  {
+    "stepIndex": 4,
+    "from": "ACCESSIBILITY_ID:loginButton",
+    "to": "XPATH://XCUIElementTypeButton[@name='Login']",
+    "confidence": 0.60,
+    "reason": "LOCATOR_NOT_FOUND",
+    "humanConfirm": "REQUIRED_AND_PENDING",
+    "screenshotCorroborated": true,
+    "blockedBy": "healConfidenceFloor=0.90 (0.60 &lt; 0.90) AND humanConfirmOnCriticalPaths contains 'auth'"
+  }
+],
+"verdict": "PASSED_WITH_HEALS_PENDING_CONFIRM"</code></pre>
+
+<div class="callout contrast">
+  <h3>What O2 did with the same miss</h3>
+  <p>On the pure-interpreter path, step 4 healed to <code>XPATH://XCUIElementTypeButton[1]</code> at confidence 0.41 — no floor, no screenshot corroboration, no human confirm, no never-heal guard — and the verdict stayed a clean <code>PASS</code> with <code>codeCommit: null</code>. That is the silent-wrong-heal case the risk register labels Critical. O3's point is not that interpretation is safe; it is that the same interpreter loop can refuse to launder a weak heal into green.</p>
+  <p>Practitioner audits report that ML element-match healing carries roughly 3× the false-pass rate of simpler fallback strategies, and that around 60% of teams disabled AI self-heal within three months — reported industry figures, not this project's measurements. Auto-heal is survivable only with a deterministic critic, human confirm on critical paths, and an audit trail — which is why the comparison recommends O3 for the POC, not O2.</p>
+</div>
+</section>
+
+<section id="control-surface">
+<h2>What's in the IR that O2 lacks</h2>
+<p>The mock suite README says O2 has the fewest artifacts; the controls that make O3 survivable are <em>absent</em> — the danger is in what's missing. O3 keeps the two-artifact footprint and pushes the missing discipline into the IR. Beyond <code>healPolicy</code>, the runtime contract adds per-step <code>timeoutMs</code> and <code>sync</code> waits, an <code>irDigest</code> labelled as the interim pin (the digest note says null/absent is never valid), and report fields that record blocked heals as lineage events rather than disposable log lines.</p>
+<p>The risk register names the wounds those fields close. R1 — silent wrong-heal — wants a confidence floor at or above 0.90, alert on every heal, and human confirm on payments, auth, and balance. R2 — non-deterministic verdict — wants a deterministic critic gating acceptance, and materialization before any compliance verdict. R3 — un-audited change — wants heal events on a hash-chain lineage and a materialized diff as the reviewable residue. O3's mock is those mitigations made readable in JSON.</p>
+
+<div class="vis">
+  <div class="checklist">
+    <div class="ck o2">
+      <h4>O2 · Pure interpreter <span class="badge danger">≈50</span></h4>
+      <ul>
+        <li><span class="mark">✗</span> <b>healConfidenceFloor</b> — absent; 0.41 accepted</li>
+        <li><span class="mark">✗</span> <b>humanConfirmOnCriticalPaths</b> — absent on auth</li>
+        <li><span class="mark">✗</span> <b>screenshot corroboration</b> — absent</li>
+        <li><span class="mark">✗</span> <b>neverHeal</b> classes — absent</li>
+        <li><span class="mark">✗</span> <b>per-step timeout / sync</b> — thin runtime</li>
+        <li><span class="mark">✗</span> <b>staticGate</b> — <code>null</code></li>
+        <li><span class="mark">✗</span> <b>codeCommit</b> — <code>null</code>; pin = <code>irDigest</code></li>
+        <li><span class="mark">✗</span> Verdict after wrong-heal — clean <code>PASS</code></li>
+      </ul>
+    </div>
+    <div class="ck o3">
+      <h4>O3 · Hybrid <span class="badge poc">≈74 · POC</span></h4>
+      <ul>
+        <li><span class="mark">✓</span> <b>healConfidenceFloor</b> = 0.90</li>
+        <li><span class="mark">✓</span> <b>humanConfirmOnCriticalPaths</b> = payments, auth, balance</li>
+        <li><span class="mark">✓</span> <b>corroborateAgainstScreenshot</b> = true</li>
+        <li><span class="mark">✓</span> <b>neverHeal</b> = assertion mismatch, crash, infra</li>
+        <li><span class="mark">✓</span> <b>timeoutMs + sync</b> per step in the IR</li>
+        <li><span class="mark">~</span> <b>staticGate</b> — after export-on-success</li>
+        <li><span class="mark">~</span> <b>codeCommit</b> — after materialize; pin today = <code>irDigest</code></li>
+        <li><span class="mark">✓</span> Same heal attempt — blocked; confirm pending</li>
+      </ul>
+    </div>
+  </div>
+  <p class="vis-cap">Control surface contrast from the O2 and O3 mocks. The tildes are the honesty boundary: interpreted mode borrows an audit path; it does not own one yet.</p>
+</div>
+</section>
+
+<section id="honesty">
+<h2>The honesty boundary</h2>
+<p>The O3 report states the boundary in the artifact itself — not in a slide footnote:</p>
+<p class="snip-label">From ReplayReport.json — auditCaveat</p>
+<pre><code>"auditCaveat": "Interpreted run — not a certified verdict. Materialize to committed code (export-on-success) and re-enter the spine's static gate before any compliance use."</code></pre>
+
+<div class="callout honest">
+  <h3>Interpreted ≠ certified</h3>
+  <p>A gated heal and a pending-confirm verdict are necessary for a responsible POC. They are not sufficient for a bank auditor. Until export materializes the path and a static gate pins a commit, the run remains an interpreted signal — useful for learning which steps flake, heal, or need richer sync, unfit as a compliance verdict.</p>
+</div>
+
+<p>The SWOT weaknesses are the price of the bridge. Two modes to build — interpret and export — means more moving parts than O2's seductive thin loop. The interpreted mode is not audit-grade until materialized, so every demo must keep that caveat in the room. And the threat column is scope creep: critic + repair + export can bloat a throwaway unless the team treats O3 as a time-boxed spike with a deliberate exit into the O1 substrate. Discipline is part of the architecture, not a soft skill bolted on later.</p>
+</section>
+
+<section id="economics">
+<h2>Economics &amp; the flywheel</h2>
+<p>On the comparison's per-release TCO table, O3 sits with the regenerate-and-review economics band — roughly <b>$8k–14k</b> a year for a hundred-test suite under monthly releases (O3's own row is about $8k–13k; neighboring O1/O6 rows fill the same band). Human hours land around five to eight per release of supervision, not twenty-plus of hand-editing. The figures are illustrative order-of-magnitude constants from the analyst's draft, pending ARB ratification against bank actuals — not measured spend.</p>
+<p>What matters structurally is the residue. O2's flywheel grade is largely wasted: runtime heals are ephemeral; there is often no durable, reviewable patch for the next release to learn from. O3's maintenance model is materialize-and-gate: export plus critic classifications become exemplars and labelled outcomes; repair feedback is few-shot data. The comparison grades that compounding path High — the same family of advantage O6 gets from regenerate-and-filter. You convert engineer hours into compute <em>and</em> leave something the next month can use.</p>
+<p>Self-heal remains a narrow tool even when gated. The comparison notes that healing addresses only the roughly 25–30% of failures that are broken locators, at about 75% success on that slice — around 20% of all failures at best. O3's job is not to romanticize heal rates; it is to keep the useful slice while refusing the silent-green remainder.</p>
+</section>
+
+<section id="where">
+<h2>Where this goes</h2>
+<p>The comparison's decision framing is two questions with two winners. The POC question picks the proposed hybrid: a runtime-interpreting Appium path with a deterministic critic and bounded repair, materializing successful runs as the bridge toward production. The production question still lands on the evolved O1 spine — LLM-free deterministic replay as the audit-ready foundation, with regenerate-and-filter (never hand-maintain) as the maintenance model once ADR 0014's authoring arm is in place.</p>
+<p>Read the path as a migration, not a rivalry. Spike O3 to prove IR-driven adaptability under a real critic. Harvest heal logs, flakiness signals, and export shapes. Carry what worked into Phase 1 as a bridge — then stop pretending the interpreted lane is the certified one. Production certification stays on committed artifacts and an LLM-free spine. That is how a 74-scoring hybrid earns its keep without becoming a permanent second production system.</p>
+
+<div class="spec-pointer"><b>Go deeper:</b> the <a href="o1-pipeline-blog.html">O1 auditor-answerable pipeline</a>, the <a href="o2-pipeline-blog.html">O2 cautionary tale</a> (same heal, silent PASS), the <a href="mocks/o3-hybrid/">O3 hybrid mocks</a> that back every claim above, and the <a href="../mobile-test-automation-six-way-comparison.html">six-way comparison</a> that scored O3 ≈74 as the POC candidate.</div>
+</section>
+
+<section id="close">
+<h2>Adaptability with a critic — audit after export</h2>
+<p>Never mistake the interpreted lane for the certified one. O3 keeps the demo's speed and refuses O2's silent green; export is the bridge; production still lands on O1.</p>
+</section>
+
+<footer>
+  <p>A bridge-story retelling of the O3 hybrid option. Pipeline claims are grounded in the <a href="mocks/o3-hybrid/">O3 mocks</a>, the <a href="mocks/README.md">mock suite README</a>, the <a href="mocks/o2-pure-interpreter/">O2 contrast mocks</a>, and the <a href="../mobile-test-automation-six-way-comparison.html">six-way comparison</a>. Matrix scores and TCO constants are the analyst's draft figures pending ARB sign-off. Industry self-heal false-pass rates are reported industry figures, not this project's measurements. Interpreted runs are not certified until materialized; production north-star remains the O1 spine.</p>
+</footer>
+
+</div>
+
+</body>
+</html>

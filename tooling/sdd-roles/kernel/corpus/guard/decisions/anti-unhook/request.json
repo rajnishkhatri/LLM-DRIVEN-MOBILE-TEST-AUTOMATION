@@ -1,0 +1,6 @@
+{
+  "operation": "delete",
+  "paths": [
+    "harness-settings/hooks.json"
+  ]
+}

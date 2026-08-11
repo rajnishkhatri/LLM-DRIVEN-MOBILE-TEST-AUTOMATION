@@ -1,0 +1,237 @@
+{
+  "$schema": "../../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "09-component-provenance",
+    "level": "component",
+    "title": "C3c \u2014 Component overlay: provenance & pinning",
+    "caption": "Who writes lineage, carrying what? A subset of C3a \u2014 the thirteen lineage writers, Preserve Provenance, and the two store edges. The thirteen edges are directed and unlabeled; they share the one meaning fixed in the key (\u00a70).",
+    "direction": "down",
+    "opens": "APP",
+    "opens_from": "07-component",
+    "completeness": "subset:07-component",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "INGEST_TEST_SOURCES",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Ingest Test Sources"
+    },
+    {
+      "id": "INTERPRET_TEST_INTENT",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Interpret Test Intent"
+    },
+    {
+      "id": "ACQUIRE_UI_EVIDENCE",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Acquire UI Evidence"
+    },
+    {
+      "id": "RESOLVE_ELEMENTS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Resolve Elements"
+    },
+    {
+      "id": "GENERATE_TEST_CODE",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Generate Test Code"
+    },
+    {
+      "id": "REPAIR_LOCATORS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Repair Locators"
+    },
+    {
+      "id": "INVOKE_MODELS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Invoke Models",
+      "role": "model-seam"
+    },
+    {
+      "id": "VERIFY_STATICALLY",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Verify Statically"
+    },
+    {
+      "id": "REPLAY_ON_DEVICES",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Replay on Devices"
+    },
+    {
+      "id": "CLASSIFY_REPLAY_OUTCOME",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Classify Replay Outcome"
+    },
+    {
+      "id": "CERTIFY_CONVERSION",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Certify Conversion"
+    },
+    {
+      "id": "PUBLISH_CERTIFIED_ASSETS",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Publish Certified Assets"
+    },
+    {
+      "id": "ROUTE_HUMAN_DECISIONS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Route Human Decisions"
+    },
+    {
+      "id": "PRESERVE_PROVENANCE",
+      "kind": "component",
+      "family": "module-c",
+      "label": "Preserve Provenance",
+      "role": "lineage-store",
+      "detail": [
+        "Append-only hash-chained lineage, CA=13 (ADR 0012); + metrics read model + auditor export (ADR 0008, CF11)"
+      ]
+    },
+    {
+      "id": "POSTGRESQL",
+      "kind": "datastore",
+      "label": "PostgreSQL",
+      "detail": [
+        "WORKING ASSUMPTION (spine C3); lineage schema append-only: app role INSERT/SELECT only, per-conversion hash chain, supersede-not-update \u2014 ADR 0012"
+      ]
+    },
+    {
+      "id": "OBJECT_STORAGE",
+      "kind": "datastore",
+      "label": "object storage",
+      "detail": [
+        "Evidence object storage behind an S3-compatible port (ADR 0011). Lineage chain anchors (ADR 0012)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "INGEST_TEST_SOURCES",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "INTERPRET_TEST_INTENT",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "ACQUIRE_UI_EVIDENCE",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "RESOLVE_ELEMENTS",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "GENERATE_TEST_CODE",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "REPAIR_LOCATORS",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "INVOKE_MODELS",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "VERIFY_STATICALLY",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "REPLAY_ON_DEVICES",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "CLASSIFY_REPLAY_OUTCOME",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "CERTIFY_CONVERSION",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "PUBLISH_CERTIFIED_ASSETS",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "ROUTE_HUMAN_DECISIONS",
+      "to": "PRESERVE_PROVENANCE",
+      "kind": "sync",
+      "label": "",
+      "detail": "writes its lineage row in the same local transaction as its state change (ADR 0007), carrying the pinning fields (F6), the authenticated principal (M37), the per-conversion chain link (ADR 0012), the corpus class (M19), the retention class (M39), and the writer's build identity (M32)"
+    },
+    {
+      "from": "PRESERVE_PROVENANCE",
+      "to": "POSTGRESQL",
+      "kind": "sync",
+      "label": "append-only chained writes (ADR 0012)"
+    },
+    {
+      "from": "PRESERVE_PROVENANCE",
+      "to": "OBJECT_STORAGE",
+      "kind": "sync",
+      "label": "chain-head anchors at interval; a stale anchor is an alert (ADR 0012)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

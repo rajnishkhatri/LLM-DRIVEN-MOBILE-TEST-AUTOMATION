@@ -1,0 +1,10 @@
+{
+  "testId": "ACC-1042",
+  "irVersion": "sha:4f2c91e8...",
+  "candidates": [
+    { "strategy": "ACCESSIBILITY_ID", "value": "usernameField", "confidence": 0.98, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "passwordField", "confidence": 0.98, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "loginButton",   "confidence": 0.97, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "welcomeBanner", "confidence": 0.95, "source": "OBJECT_REPO" }
+  ]
+}

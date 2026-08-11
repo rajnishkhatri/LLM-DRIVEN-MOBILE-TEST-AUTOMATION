@@ -1,0 +1,45 @@
+{
+  "artifact": "hook_mount",
+  "events": {
+    "beforeFileEdit": [
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role specifier",
+        "matcher": "specifier"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role coder",
+        "matcher": "coder"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role cleaner",
+        "matcher": "cleaner"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role architect",
+        "matcher": "architect"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role hardener",
+        "matcher": "hardener"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role qa",
+        "matcher": "qa"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role solo",
+        "matcher": "solo"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role maker3",
+        "matcher": "maker3"
+      },
+      {
+        "command": "gate-wrap --descriptors {descriptors} --harness cursor -- write-guard decide --kernel {kernel} --descriptors {descriptors} --harness cursor --config {config} --registry {registry} --workspace {workspace} --run-dir {run_dir} --role checker3",
+        "matcher": "checker3"
+      }
+    ]
+  },
+  "generated_by": "write-guard mount",
+  "harness": "cursor"
+}

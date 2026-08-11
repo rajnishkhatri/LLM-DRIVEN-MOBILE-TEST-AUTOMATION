@@ -1,0 +1,33 @@
+# skill-sync manifest — source of truth per family; projections are generated.
+# Spec: docs/sdd/specs/skill-sync.spec.md (SPEC-OK 2026-08-10).
+# Two entry shapes: families WITH `members` pair <source>/<m>/ <-> <proj>/<m>/
+# per member; member-less families pair <source>/ <-> <proj>/ directly.
+# NOTE (F7): tooling/sdd-skills-bundle/_sdd/ is deliberately unguarded — it is
+# the binding-contract master documentation, never projected into any surface.
+
+[[family]]
+id = "sdd"
+source = "tooling/sdd-skills-bundle"
+members = ["sdd-lifecycle", "sdd-brainstorm", "sdd-spec", "sdd-replan", "sdd-implement", "sdd-converge"]
+projections = [".claude/skills", ".cursor/skills"]
+
+[[family]]
+id = "arch"
+source = ".cursor/skills"
+members = ["arch-lifecycle", "arch-characteristics", "arch-components", "arch-style", "arch-decide", "arch-risk", "arch-validate"]
+projections = [".claude/skills"]
+
+[[family]]
+id = "role-agents"
+source = "tooling/sdd-roles/kernel/corpus/catalog-projections/claude-code/agents"
+projections = [".claude/agents"]
+
+[[family]]
+id = "kernel-card"
+source = "tooling/sdd-roles/kernel/corpus/catalog-projections/claude-code/skills/sdd-roles"
+projections = [".claude/skills/sdd-roles"]
+
+[[family]]
+id = "coding-rules-dist"
+source = "tooling/coding-rules-skill/references"
+projections = ["tooling/coding-rules-skill/dist/coding-rules/references"]

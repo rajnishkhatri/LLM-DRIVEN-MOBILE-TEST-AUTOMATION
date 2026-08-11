@@ -1,0 +1,6 @@
+{
+  "harness": "cursor",
+  "tool_exit": 0,
+  "expected_stdout": "allow\n",
+  "expected_exit": 0
+}

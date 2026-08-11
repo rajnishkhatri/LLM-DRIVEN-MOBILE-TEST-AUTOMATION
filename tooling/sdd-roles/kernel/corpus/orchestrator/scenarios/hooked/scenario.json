@@ -1,0 +1,101 @@
+{
+  "roles": {
+    "h7-coder": [
+      {
+        "guarded_writes": [
+          {
+            "path": "tests/test_base.py",
+            "mode": "edit",
+            "content": "def test_base():\n    assert False  # tampered\n"
+          },
+          {
+            "path": "src/feature.py",
+            "mode": "add",
+            "content": "FEATURE = 1\n"
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "h7-coder",
+          "to_role": "h7-checker",
+          "stage": "h7-coder",
+          "stage_status": "complete",
+          "summary": {
+            "text": "coder stage complete; tamper attempt was blocked live.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "adopt-guarded-write-path",
+              "rationale": "deterministic scenario decision for h7-coder",
+              "rejected_alternatives": [
+                "alternative-x"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      }
+    ],
+    "h7-checker": [
+      {
+        "guarded_writes": [
+          {
+            "path": "src/checked.txt",
+            "mode": "add",
+            "content": "checked\n"
+          }
+        ],
+        "draft": {
+          "schema_version": "1.4.0",
+          "artifact_type": "handoff_contract",
+          "from_role": "h7-checker",
+          "to_role": "h7-coder",
+          "stage": "h7-checker",
+          "stage_status": "complete",
+          "summary": {
+            "text": "checker stage complete, tests green.",
+            "provenance": {
+              "source": "role_authored"
+            }
+          },
+          "decisions": [
+            {
+              "choice": "accept-feature-envelope",
+              "rationale": "deterministic scenario decision for h7-checker",
+              "rejected_alternatives": [
+                "alternative-x"
+              ],
+              "provenance": {
+                "source": "role_authored"
+              }
+            }
+          ],
+          "gate_outcomes": [],
+          "completion_evidence": []
+        }
+      }
+    ]
+  },
+  "gates": {
+    "g-build": {
+      "exits": [
+        0
+      ],
+      "tool_version": "9.9.1"
+    },
+    "g-tests": {
+      "exits": [
+        0
+      ],
+      "tool_version": "9.9.1"
+    }
+  }
+}

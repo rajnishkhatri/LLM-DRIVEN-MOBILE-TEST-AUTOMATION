@@ -1,0 +1,55 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "debug_report_ref": {
+    "path": "artifacts/debug-report.json",
+    "sha256": "53a9ea21d7d66171ea8628bc571547d95a7e654611c6a62319115fd730eb348c"
+  },
+  "decisions": [
+    {
+      "choice": "route-defect-to-diagnostic-role",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision 4",
+      "rejected_alternatives": [
+        "alternative-4"
+      ]
+    }
+  ],
+  "from_role": "r-checker",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "r-tests",
+      "input_tree_digest": "a38dede5648304ce1602be0c5d799dca68ea5ff6a42338e767f2f4cfe4696fa3",
+      "report_ref": {
+        "path": "reports/golden-rework-1-r-tests-s008.json",
+        "sha256": "2e9ca1494be68ceba4125ed5036fba2b8145cfd30296829ea6fda465036acde9"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.2"
+    }
+  ],
+  "rework": {
+    "counter": 1,
+    "defect_shape": "edge-input drift",
+    "stage": "r-coder",
+    "target_role": "r-coder"
+  },
+  "schema_version": "1.4.0",
+  "stage": "r-checker",
+  "stage_status": "rework",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "edge-input defect found; routing back to the diagnostic role."
+  },
+  "to_role": "r-coder"
+}

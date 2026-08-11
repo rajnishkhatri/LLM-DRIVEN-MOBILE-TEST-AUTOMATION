@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "handoff_contract",
+  "from_role": "hardener",
+  "to_role": "qa",
+  "stage": "verify",
+  "stage_status": "rework",
+  "summary": {
+    "text": "stage summary",
+    "provenance": {
+      "source": "role_authored"
+    }
+  },
+  "decisions": [
+    {
+      "choice": "route-to-diagnostic-role",
+      "rationale": "smallest machinery that satisfies the criteria",
+      "rejected_alternatives": [
+        "retry-blind-fix"
+      ],
+      "provenance": {
+        "source": "role_authored"
+      }
+    }
+  ],
+  "gate_outcomes": [],
+  "completion_evidence": [],
+  "rework": {
+    "target_role": "qa",
+    "counter": 1,
+    "defect_shape": "surviving-mutant",
+    "surviving_mutants": [
+      "MUT-17"
+    ]
+  }
+}

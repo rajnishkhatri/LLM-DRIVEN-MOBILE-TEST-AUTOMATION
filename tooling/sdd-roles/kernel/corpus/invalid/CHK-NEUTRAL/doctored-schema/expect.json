@@ -1,0 +1,5 @@
+{
+  "check_id": "CHK-NEUTRAL",
+  "phase": "v1",
+  "expected": "fail"
+}

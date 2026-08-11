@@ -1,0 +1,43 @@
+{
+  "testId": "ACC-2087",
+  "irDigest": "sha:ir:2087:d41c9a...",
+  "interpreterVersion": "sha:interp:9f0c22...",
+  "locatorManifestDigest": "sha:loc:2087:7e3a...",
+  "irGate": {
+    "gateVersion": "sha:gate:1f4c8b...",
+    "schemaValid": "PASS",
+    "opcodeClosed": "PASS",
+    "boundedWaits": "PASS",
+    "locatorManifest": "PASS",
+    "noLiteralCreds": "PASS",
+    "ambiguityClear": "PASS",
+    "dryRun": "PASS"
+  },
+  "deviceGate": {
+    "runs": 1,
+    "passes": 1,
+    "flakiness": "NOT_DERIVABLE_AT_K1",
+    "classification": null,
+    "pinnedVersions": {
+      "interpreter": "sha:interp:9f0c22...",
+      "appiumRequested": "2.19",
+      "appiumReported": "2.19.0",
+      "driverReported": "XCUITest 9.4.0",
+      "device": "iPhone 15 / iOS 17.4",
+      "appVersion": "8.4.0"
+    },
+    "cloudAdaptivity": {
+      "selfHealing": "DISABLED",
+      "perfectoAI": "NOT_APPLICABLE",
+      "attestationRef": "PENDING — Perfecto written confirmation that Scriptless self-healing does not touch code-path Appium sessions (next-items I6). Until on file the real value is UNKNOWN and the run quarantines; this mock depicts the POST-confirmation state.",
+      "postRunAssertion": { "healedLocatorMarkers": 0, "basis": "session log scan — evidence of absence, not a signed guarantee (ADR 0016, Accepted residual risk)" }
+    }
+  },
+  "executionPlanRef": "ExecutionPlan.acc-2087.md",
+  "healsApplied": "NONE",
+  "verdict": "PASS",
+  "commitPrincipal": "svc:conversion-pipeline",
+  "noveltyFlag": false,
+  "certification": { "status": "PENDING_HUMAN", "certifiedBy": null },
+  "auditPin": "irDigest sha:ir:2087:d41c9a... executed by interpreterVersion sha:interp:9f0c22... — the executable that produced this verdict is the committed IR at this SHA, walked by the interpreter at that SHA; reviewable and reproducible. Perfecto server/driver versions captured as recorded evidence (pinned per epoch, not forever). IR-gate verdicts above are reproducible at gateVersion sha:gate:1f4c8b...."
+}

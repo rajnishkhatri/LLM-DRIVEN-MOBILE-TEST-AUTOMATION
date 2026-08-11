@@ -1,0 +1,140 @@
+{
+  "view": {
+    "id": "02-container--model-call",
+    "level": "container",
+    "title": "Mobile Test Automation LLM Pipeline - Container view (logical components) \u2014 model-call overlay",
+    "caption": "This view is a subset of `02-container` opening `SYS` \u2014 only the model-call seam and its gateway. Edge numbers match the primary; see `02-container` for the complete edge set.",
+    "direction": "down",
+    "opens": "SYS",
+    "opens_from": "02-container",
+    "completeness": "subset:02-container",
+    "primary_of": "02-container",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "ITI",
+      "kind": "component",
+      "label": "Interpret Test Intent",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Produces schema-valid TestCaseIR, including control flow, and flags ambiguity rather than resolving it silently.",
+        "Enriches with control flow and step dependencies - the defensible half of pass-1's 'Planner'."
+      ]
+    },
+    {
+      "id": "IM",
+      "kind": "component",
+      "label": "Invoke Models",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Mediates every model call with versioned prompts, fixed sampling policy, caching, and backoff.",
+        "Single choke point. Stable and abstract: CE = 1, CA = 5, I = 0.17. Cache-key defect (must include model and provider version) carried to Stage 4 as ADR-2. One of three trust boundaries invoking the screening library."
+      ],
+      "role": "model-seam"
+    },
+    {
+      "id": "RE",
+      "kind": "component",
+      "label": "Resolve Elements",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Ranks and validates locator candidates against captured evidence and the object repository.",
+        "Owns the locator cascade - nothing else may know it. Watch item: if VLM grounding is adopted, extract Ground Visually (section 6)."
+      ]
+    },
+    {
+      "id": "GTC",
+      "kind": "component",
+      "label": "Generate Test Code",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Renders Page Objects and Appium Java/TestNG tests from approved IR and locators.",
+        "Growth test: if house-style rework churns independently of code generation, extract Match House Style (section 5)."
+      ]
+    },
+    {
+      "id": "RL",
+      "kind": "component",
+      "label": "Repair Locators",
+      "qualifiers": [
+        "Cluster A"
+      ],
+      "detail": [
+        "Re-grounds locators for heal-eligible failures within a bounded repair budget.",
+        "Budget: 3 static repairs, 3 device retries, then human queue (enforced by the coordinator)."
+      ]
+    },
+    {
+      "id": "LIB",
+      "kind": "not-a-component",
+      "label": "screening library",
+      "qualifiers": [
+        "not a component"
+      ],
+      "detail": [
+        "Shared screening library - injection screening plus secret/PII redaction - invoked at all three trust boundaries.",
+        "Demoted from a component at the pass-3 gate; the duplication rule is still satisfied but the boundary is no longer structural, so its three call sites must be asserted by a fitness function (section 4, section 9)."
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "ITI",
+      "to": "IM",
+      "kind": "sync",
+      "ref": 12,
+      "detail": "Interpret Test Intent calls Invoke Models for messy free text."
+    },
+    {
+      "from": "RE",
+      "to": "IM",
+      "kind": "sync",
+      "ref": 13,
+      "detail": "Resolve Elements calls Invoke Models."
+    },
+    {
+      "from": "GTC",
+      "to": "IM",
+      "kind": "sync",
+      "ref": 14,
+      "detail": "Generate Test Code calls Invoke Models."
+    },
+    {
+      "from": "RL",
+      "to": "IM",
+      "kind": "sync",
+      "ref": 15,
+      "detail": "Repair Locators calls Invoke Models for bounded re-grounding."
+    },
+    {
+      "from": "IM",
+      "to": "LIB",
+      "kind": "sync",
+      "ref": 25,
+      "detail": "Invoke Models invokes the screening library at its trust boundary."
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bPostgres\\b",
+    "\\bOpenAI\\b",
+    "\\bGPT-",
+    "\\bClaude\\b"
+  ]
+}

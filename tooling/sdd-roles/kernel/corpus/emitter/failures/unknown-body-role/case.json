@@ -1,0 +1,23 @@
+{
+  "command": "role-emit",
+  "args": [
+    "project",
+    "--kernel",
+    "<KERNEL>",
+    "--descriptors",
+    "./descriptors.json",
+    "--harness",
+    "fail-bodies",
+    "--registry",
+    "../../common/role-registry.json",
+    "--bodies",
+    "./bodies-bad",
+    "--out",
+    "./out"
+  ],
+  "expected_exit": 2,
+  "expect_stderr_contains": [
+    "bodies name unknown roles: stray"
+  ],
+  "expect_no_out_dir": "out"
+}

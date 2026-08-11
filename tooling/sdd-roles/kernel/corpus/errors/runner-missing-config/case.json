@@ -1,0 +1,15 @@
+{
+  "command": "gate-runner",
+  "args": [
+    "run",
+    "--kernel", "<KERNEL>",
+    "--workspace", ".",
+    "--run-dir", "./rd",
+    "--config", "./no-such-config.json",
+    "--registry", "./no-such-registry.json",
+    "--descriptors", "./no-such-descriptors.json",
+    "--harness", "stub-alpha",
+    "--run-id", "err-1"
+  ],
+  "expected_exit": 1
+}

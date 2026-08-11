@@ -1,0 +1,154 @@
+{
+  "view": {
+    "id": "03-container-module-wiring--module-a",
+    "level": "container",
+    "title": "C2b - Container drill-down: module wiring \u2014 module-a overlay",
+    "caption": "This view is a subset of `03-container-module-wiring` opening `APP` \u2014 only the edges owned by `module-a`. Edge numbers match the primary; see `03-container-module-wiring` for the complete edge set.",
+    "direction": "right",
+    "opens": "APP",
+    "opens_from": "03-container-module-wiring",
+    "completeness": "subset:03-container-module-wiring",
+    "overlays": "none",
+    "primary_of": "03-container-module-wiring"
+  },
+  "nodes": [
+    {
+      "id": "MA",
+      "kind": "component",
+      "family": "module-a",
+      "label": "conversion",
+      "detail": [
+        "Conversion (cluster A) - 10 components incl. the Invoke Models seam.",
+        "Only MA holds the gateway credential; drawn properly in C2d."
+      ]
+    },
+    {
+      "id": "PG",
+      "kind": "datastore",
+      "label": "PostgreSQL",
+      "detail": [
+        "WORKING ASSUMPTION (spine C3); dev/CI embedded or containerized, ephemeral-only (D1, M40).",
+        "Schemas: conversion-state; lineage (append-only: app role INSERT/SELECT only, per-conversion hash chain, supersede-not-update - ADR 0012); outbox+queue (bounded retries, dead-letter quarantine - M21); judge-response cache (M27, CF7).",
+        "No cross-lifecycle foreign keys (F4, ADR 0006)."
+      ]
+    },
+    {
+      "id": "OBJ",
+      "kind": "datastore",
+      "label": "object storage",
+      "detail": [
+        "Evidence object storage behind an S3-compatible port (ADR 0011).",
+        "Dev/CI: containerized MinIO; production BINDING PROBE-PENDING (week-0 platform probe; default = self-operated MinIO).",
+        "Write-once / object-lock REQUIRED - ADR 0012's precondition, deployment-checked.",
+        "Holds: classified artifacts + retention classes (M39); canonicalized source snapshots (M15); lineage chain anchors (ADR 0012).",
+        "Envelope encryption + crypto-shredding before the first audit-retained artifact (ADR 0011 as amended)."
+      ]
+    },
+    {
+      "id": "SEC",
+      "kind": "datastore",
+      "label": "secrets store",
+      "detail": [
+        "Interim: CI secret store; the vault is named by the M33 controls-baseline read - PENDING.",
+        "All credentials resolved by injected reference, never literals (M34/CF8)."
+      ]
+    },
+    {
+      "id": "GIT",
+      "kind": "datastore",
+      "label": "Git",
+      "detail": [
+        "Prompts / exemplars / golden set / test code; version identity is free."
+      ]
+    },
+    {
+      "id": "GW",
+      "kind": "external",
+      "label": "AI gateway",
+      "detail": [
+        "Same standing as the C1 node-detail table (E4).",
+        "Model providers hosted INSIDE the bank - prompts never leave (E4); version-report contract UNVERIFIED (M5 held)."
+      ]
+    },
+    {
+      "id": "OCT",
+      "kind": "external",
+      "label": "ALM Octane",
+      "detail": [
+        "Same standing as the C1 node-detail table (E5).",
+        "At BOTH ends of the pipeline (E5): ingest source AND publish target; asset-versioning UNVERIFIED (M7 held)."
+      ]
+    },
+    {
+      "id": "XLS",
+      "kind": "external",
+      "label": "Excel / ALM-QC",
+      "detail": [
+        "Same standing as the C1 node-detail table (E3/S9).",
+        "File input originating from bank teams inside the network (E3/S9)."
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "MA",
+      "to": "PG",
+      "kind": "sync",
+      "ref": 6,
+      "detail": "State + lineage, same local transaction (ADR 0007)"
+    },
+    {
+      "from": "MA",
+      "to": "OBJ",
+      "kind": "sync",
+      "ref": 9,
+      "detail": "Canonicalized source snapshots (M15)"
+    },
+    {
+      "from": "MA",
+      "to": "SEC",
+      "kind": "sync",
+      "ref": 12,
+      "detail": "Gateway credential, by injected reference (M34)"
+    },
+    {
+      "from": "MA",
+      "to": "GIT",
+      "kind": "sync",
+      "ref": 14,
+      "detail": "Versioned assets (prompts / exemplars / golden set / test code)"
+    },
+    {
+      "from": "MA",
+      "to": "GW",
+      "kind": "sync",
+      "ref": 19,
+      "detail": "Model calls (P2) via the Invoke Models seam"
+    },
+    {
+      "from": "MA",
+      "to": "OCT",
+      "kind": "sync",
+      "ref": 21,
+      "detail": "Manual-test ingest, API-key; hash-at-ingest (M15)"
+    },
+    {
+      "from": "MA",
+      "to": "XLS",
+      "kind": "sync",
+      "ref": 23,
+      "detail": "Workbook file input; raw workbooks never enter Git (M35)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

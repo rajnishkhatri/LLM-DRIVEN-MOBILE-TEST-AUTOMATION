@@ -1,0 +1,163 @@
+# Ch.16 Independence - layers x use-cases grid (illustrative order system)
+# caption: An illustrative order-processing system decomposed along BOTH axes at once: horizontal layers (UI / application rules / domain rules) and vertical use cases (AddOrder, DeleteOrder, TrackOrder). The TrackOrder column is NEW - it adds a fresh column of components and touches none of the existing cells. No edges cross columns: use cases are decoupled from each other. No edges cross rows outside a column: layers are decoupled from each other. This is the grid Clean Architecture Ch.16 asks for.
+direction: down
+
+# Canonical reserved-vocabulary D2 classes for C4-flavored diagrams.
+#
+# The IR -> D2 transformer (scripts/ir_to_d2.py) emits this block verbatim at
+# the top of every generated .d2 file, then applies the classes via `class:`.
+# Encoding shape/line semantics as classes is what makes the reserved
+# vocabulary CONSISTENT across all views and un-driftable (diagramskill.md
+# "Enforced consistency"). Do not restyle nodes inline; add or edit a class
+# here so every view moves together.
+#
+# Palette values are the exact hex from the Silicon Sandwiches designer brief
+# (.arch/components/silicon-sandwiches/designer-agent-prompt.md, "Visual
+# system"). Every colour is paired with a SHAPE and/or TEXT difference so the
+# set survives grayscale (rule: colour is never the only channel).
+
+classes: {
+  # Stadium / pill = person (actor). High border-radius makes the pill.
+  actor: {
+    style: {
+      border-radius: 999
+      fill: "#d0e7f9"
+      stroke: "#1a5276"
+      font-color: "#111111"
+    }
+  }
+
+  # Plain rectangle = system / container / component. The system box is the
+  # heaviest element on a Context canvas: 2px stroke.
+  system: {
+    style: {
+      fill: "#fdf2d0"
+      stroke: "#7d6608"
+      stroke-width: 2
+      font-color: "#111111"
+    }
+  }
+
+  # Plain rectangle for containers / components (lighter than the system box).
+  container: {
+    style: {
+      fill: "#ffffff"
+      stroke: "#333333"
+      font-color: "#111111"
+    }
+  }
+
+  # Double-bordered rectangle = external system. Label is prefixed `EXT:` by
+  # the transformer so the convention reads even in grayscale.
+  external: {
+    style: {
+      fill: "#eeeeee"
+      stroke: "#555555"
+      double-border: true
+      font-color: "#111111"
+    }
+  }
+
+  # Orange "evidence gap" family for unresolved production evidence
+  # (provisional vendor, pending contract). Still a rectangle/EXT shape; the
+  # orange only reinforces a tag that is also written in the label text.
+  evidence-gap: {
+    style: {
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      double-border: true
+      font-color: "#111111"
+    }
+  }
+
+  # Cylinder = datastore ONLY. Never use a cylinder for anything else.
+  datastore: {
+    shape: cylinder
+    style: {
+      fill: "#e8daef"
+      stroke: "#6c3483"
+      font-color: "#111111"
+    }
+  }
+
+  # Infrastructure (e.g. load balancer) — white rectangle, dark stroke.
+  infra: {
+    style: {
+      fill: "#ffffff"
+      stroke: "#333333"
+      font-color: "#111111"
+    }
+  }
+
+  # Faded / location-only element: reappears in a deeper view for context, not
+  # as subject. De-emphasised fill + muted text.
+  faded: {
+    style: {
+      fill: "#f8f9f9"
+      stroke: "#aaaaaa"
+      font-color: "#555555"
+    }
+  }
+
+  # Dashed-outline container = a boundary/grouping, never a node.
+  boundary: {
+    style: {
+      stroke-dash: 4
+      fill: transparent
+      font-color: "#111111"
+    }
+  }
+
+  # --- Readability additions (see references/readability.md) ---
+
+  # Dash-bordered rectangle = a runtime PROCESS, not a deployable artifact.
+  # The dash border (a shape channel) carries the meaning, so it survives gray.
+  process: {
+    style: {
+      stroke-dash: 3
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      font-color: "#111111"
+    }
+  }
+
+  # Hexagon = an element deliberately NOT modelled as a component (e.g. a
+  # library an ADR records is not a component). The distinct shape says "this
+  # is not one of the boxes" without a word.
+  not-a-component: {
+    shape: hexagon
+    style: {
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      font-color: "#111111"
+    }
+  }
+
+  # Module / domain fills — LOCK these and apply the SAME one to a module in
+  # EVERY view that contains it, so a reader tracks the module across the zoom
+  # chain by colour (readability.md §7). Each is paired with the module name in
+  # the label, so the tracking survives grayscale.
+  module-a: { style: { fill: "#fef9e7"; stroke: "#7d6608"; font-color: "#111111" } }
+  module-b: { style: { fill: "#eafaf1"; stroke: "#1e8449"; font-color: "#111111" } }
+  module-c: { style: { fill: "#ebf5fb"; stroke: "#21618c"; font-color: "#111111" } }
+  # module-d = Payments (rose) — Silicon Sandwiches 4th domain; locked for
+  # colour-tracking across Container/Component views (designer brief palette).
+  module-d: { style: { fill: "#fdedec"; stroke: "#943126"; font-color: "#111111" } }
+}
+
+A_UI: "[1] AddOrder UI\n[Component]" { class: container }
+A_APP: "[2] AddOrder app rules\n[Component]" { class: container }
+A_DOM: "[3] AddOrder domain rules\n[Component]" { class: container }
+D_UI: "[4] DeleteOrder UI\n[Component]" { class: container }
+D_APP: "[5] DeleteOrder app rules\n[Component]" { class: container }
+D_DOM: "[6] DeleteOrder domain rules\n[Component]" { class: container }
+T_UI: "[7] TrackOrder UI\n[Component]" { class: module-c }
+T_APP: "[8] TrackOrder app rules\n[Component]" { class: module-c }
+T_DOM: "[9] TrackOrder domain rules\n[Component]" { class: module-c }
+
+A_UI -> A_APP: "submits order form to"
+A_APP -> A_DOM: "delegates pricing to"
+D_UI -> D_APP: "submits cancellation to"
+D_APP -> D_DOM: "delegates policy to"
+T_UI -> T_APP: "submits tracking query to"
+T_APP -> T_DOM: "delegates shipment lookup to"

@@ -1,0 +1,38 @@
+{
+  "testId": "ACC-1042",
+  "irVersion": "sha:4f2c91e8...",
+  "codeCommit": "sha:9be1a3f7...",
+  "locatorManifestVersion": "sha:loc:5a1b3e2d...",
+  "gateVersion": "sha:gate:1f4c8b0a...",
+  "gatedAt": "2026-07-29T14:20Z",
+  "checks": {
+    "format": {
+      "status": "PASS",
+      "tool": "google-java-format 1.22.0",
+      "details": "1 file checked, 0 reformatting needed"
+    },
+    "compile": {
+      "status": "PASS",
+      "tool": "mvn -q compile (JDK 17)",
+      "details": "BUILD SUCCESS, 0 errors, 0 warnings"
+    },
+    "checkstyle": {
+      "status": "PASS",
+      "tool": "checkstyle 10.17.0 (config: bank-checks.xml)",
+      "details": "0 violations"
+    },
+    "errorProne": {
+      "status": "PASS",
+      "tool": "errorprone 2.28.0",
+      "details": "0 issues across 27 enabled patterns"
+    },
+    "locatorManifest": {
+      "status": "PASS",
+      "tool": "locator-manifest-linter (internal)",
+      "details": "4/4 locators in LoginTest.java appear in LocatorCandidate.manifest.json; 0 orphan locators"
+    }
+  },
+  "findings": [],
+  "decision": "PROCEED_TO_DEVICE_GATE",
+  "auditPin": "gateVersion sha:gate:1f4c8b0a... against codeCommit sha:9be1a3f7... — the static gate is deterministic; this verdict is reviewable and reproducible by re-running the gate at these SHAs."
+}

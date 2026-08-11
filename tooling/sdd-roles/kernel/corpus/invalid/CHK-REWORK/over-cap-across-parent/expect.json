@@ -1,0 +1,7 @@
+{
+  "check_id": "CHK-REWORK",
+  "phase": "item-2",
+  "expected": "fail",
+  "exit_code": 2,
+  "json_pointer": "/rework/count"
+}

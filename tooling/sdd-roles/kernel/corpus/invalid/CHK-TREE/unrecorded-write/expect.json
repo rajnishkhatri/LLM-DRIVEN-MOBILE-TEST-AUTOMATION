@@ -1,0 +1,7 @@
+{
+  "check_id": "CHK-TREE",
+  "phase": "item-2",
+  "expected": "deferred",
+  "exit_code": 0,
+  "expected_when_implemented": "fail"
+}

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdd-roles-validator"
+version = "0.7.4"
+description = "Reference contract-lint + gate-wrap + gate-runner + write-guard + role-emit + kata for the SDD role kernel (corpus-as-contract, C3; golden-run conformance, ADR 0002; D7 floor; catalog-as-source, ADR 0003; kata rig, ADR 0004)"
+requires-python = ">=3.11"
+dependencies = ["jsonschema>=4.21,<5"]
+
+[project.scripts]
+contract-lint = "sdd_roles_validator.cli:main"
+gate-wrap = "sdd_roles_validator.gate_wrap:main"
+gate-runner = "sdd_roles_validator.runner:main"
+write-guard = "sdd_roles_validator.guard:main"
+role-emit = "sdd_roles_validator.emitter:main"
+kata = "sdd_roles_validator.kata:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

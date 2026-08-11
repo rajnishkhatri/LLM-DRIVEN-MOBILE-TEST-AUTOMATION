@@ -1,0 +1,21 @@
+{
+  "command": "kata",
+  "args": [
+    "analyze",
+    "--kernel",
+    "<KERNEL>",
+    "--plan",
+    "../../plan.json",
+    "--prereg",
+    "../../preregistration.json",
+    "--results",
+    "./results.json",
+    "--out",
+    "./out-verdict.json"
+  ],
+  "expected_exit": 2,
+  "expect_stderr_contains": [
+    "plan_stamp does not match"
+  ],
+  "expect_no_out_dir": "out-verdict.json"
+}

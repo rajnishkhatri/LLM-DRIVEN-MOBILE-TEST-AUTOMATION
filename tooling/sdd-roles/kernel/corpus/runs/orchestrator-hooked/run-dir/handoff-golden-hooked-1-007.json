@@ -1,0 +1,45 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "decisions": [
+    {
+      "choice": "accept-feature-envelope",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision for h7-checker",
+      "rejected_alternatives": [
+        "alternative-x"
+      ]
+    }
+  ],
+  "from_role": "h7-checker",
+  "gate_outcomes": [
+    {
+      "attempt_number": 1,
+      "exit_code": 0,
+      "gate_id": "g-tests",
+      "input_tree_digest": "4da832e96da744d2e5ec471f73e3632a9ec8005410449c766ae453225e7fe343",
+      "report_ref": {
+        "path": "reports/golden-hooked-1-g-tests-s006.json",
+        "sha256": "655c0f617d25aa29670f5bab205eb030a25920f163d468192ac51773e81f234d"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.1"
+    }
+  ],
+  "schema_version": "1.4.0",
+  "stage": "h7-checker",
+  "stage_status": "complete",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "checker stage complete, tests green."
+  },
+  "to_role": "h7-coder"
+}

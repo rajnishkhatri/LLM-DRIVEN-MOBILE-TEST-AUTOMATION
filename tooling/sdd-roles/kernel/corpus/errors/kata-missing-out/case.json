@@ -1,0 +1,11 @@
+{
+  "command": "kata",
+  "args": [
+    "report",
+    "--kernel",
+    "<KERNEL>",
+    "--verdict",
+    "<KERNEL>/corpus/kata/verdict-six-roles.json"
+  ],
+  "expected_exit": 1
+}

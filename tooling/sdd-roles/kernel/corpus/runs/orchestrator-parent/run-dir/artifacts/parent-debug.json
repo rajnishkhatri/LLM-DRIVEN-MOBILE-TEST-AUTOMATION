@@ -1,0 +1,9 @@
+{
+  "artifact_type": "debug_report",
+  "expected": "arc closes",
+  "failing_test": "story_arc_case",
+  "minimal_repro": "read story v1",
+  "observed": "v1 arc incomplete",
+  "schema_version": "1.4.0",
+  "suspected_locus": "src/story.txt"
+}

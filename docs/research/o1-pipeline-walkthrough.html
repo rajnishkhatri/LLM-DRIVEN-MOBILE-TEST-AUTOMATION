@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O1 Pipeline — Deep Walkthrough (Spine + ASH-Capture)</title>
+<style>
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6; max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.5rem 6rem;
+  color: #1f2328; background: #ffffff;
+}
+h1,h2,h3,h4 { line-height: 1.25; margin-top: 2rem; font-weight: 600; }
+h1 { font-size: 2rem; border-bottom: 1px solid #d0d7de; padding-bottom: .4rem; }
+h2 { font-size: 1.5rem; border-bottom: 1px solid #d0d7de; padding-bottom: .3rem; }
+h3 { font-size: 1.2rem; } h4 { font-size: 1.05rem; }
+a { color: #0969da; }
+p, li { font-size: 1rem; }
+blockquote {
+  margin: 1rem 0; padding: .5rem 1rem; border-left: 4px solid #d0d7de;
+  color: #57606a; background: #f6f8fa;
+}
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: .88em;
+  background: rgba(175,184,193,.2); padding: .15em .35em; border-radius: 4px; }
+pre { background: #f6f8fa; padding: 1rem; overflow-x: auto; border-radius: 8px; border: 1px solid #d0d7de; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: .5rem .7rem; text-align: left; vertical-align: top; }
+th { background: #f6f8fa; font-weight: 600; }
+tr:nth-child(even) td { background: #fafbfc; }
+figure.diagram { margin: 1.5rem 0; padding: 1rem; border: 1px solid #d0d7de; border-radius: 8px;
+  background: #ffffff; text-align: center; }
+figure.diagram img { max-width: 100%; height: auto; }
+figure.diagram figcaption { margin-top: .6rem; font-size: .9rem; color: #57606a; font-style: italic; }
+.status-banner { background: #fff8e1; border: 1px solid #f0c200; border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+.provenance { background: #f4f8fb; border: 1px solid #cfe3ef; border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+.toc { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px; padding: 1rem 1.5rem; }
+.toc ul { margin: .3rem 0; padding-left: 1.2rem; }
+@media (prefers-color-scheme: dark) {
+  body { color: #e6edf3; background: #0d1117; }
+  h1,h2 { border-color: #30363d; }
+  a { color: #4493f8; }
+  blockquote { color: #9198a1; background: #161b22; border-color: #30363d; }
+  pre { background: #161b22; border-color: #30363d; }
+  th { background: #161b22; } td, th { border-color: #30363d; }
+  tr:nth-child(even) td { background: #12161c; }
+  figure.diagram { background: #ffffff; border-color: #30363d; }
+  .status-banner { background: #3a2e00; border-color: #8a6d00; color: #f0e6c0; }
+  .provenance { background: #0f1a23; border-color: #1f4660; }
+  .toc { background: #161b22; border-color: #30363d; }
+}
+</style>
+</head>
+<body>
+
+<h1>O1 Pipeline — Deep Walkthrough (Spine + ASH-Capture)</h1>
+
+<div class="status-banner">
+<strong>Document status.</strong> Part I (§§0–10) records the O1 spine walkthrough, grounded in
+<code>blueprint-revision-v2.md</code> and the existing ADRs (decided). Part II (§§11–13) records the
+<strong>ASH-Capture</strong> proposal from this session — <strong>PROPOSED, not yet an ADR</strong>
+(ADR 0014 is in flight in a parallel thread). Every ASH-Capture element in the diagrams carries a
+<code>PROPOSED ADR 0014</code> honesty tag; spine/blueprint elements are drawn as decided.
+<strong>Reviewed 2026-07-31:</strong> 28 confirmed findings (<code>o1-pipeline-review.md</code>);
+Replan R1 Lane-1 editorial fixes are applied in this revision (spine boundary, K=1
+phase-labeling, flywheel rename, coverage-as-targets, NavigationManifest demotion,
+ADR 0009 call-outs). ADR-grade items — signature re-keying, proposer/executor credential
+split, deep-link URL denylist, graph lineage chain, "prod-grade data", K policy — remain
+<strong>OPEN</strong> (Replan R1 Lane 2 in <code>docs/sdd/plans/mobile-test-automation-spine.tasks.md</code>).
+</div>
+
+<div class="toc">
+<strong>Contents</strong>
+<ul>
+<li><a href="#part-i">Part I — The O1 Spine Walkthrough</a> (§§0–10, decided)</li>
+<li><a href="#part-ii">Part II — ASH-Capture Proposal</a> (§§11–13, PROPOSED)</li>
+<li><a href="#s14">§14 — Mock Artifact Index</a> (every stage backed by real mock data)</li>
+</ul>
+</div>
+
+<h2 id="part-i">Part I — The O1 Spine Walkthrough <small>(decided)</small></h2>
+
+<h3 id="s0">§0. The one-sentence idea</h3>
+<blockquote>
+<strong>O1 is the LLM-free deterministic replay of committed code.</strong>
+LLMs are used upstream to <em>author</em> artifacts (IR, locators, Java), but the replay
+pipeline itself consumes only committed artifacts and contains no LLM in the execution path
+(<code>blueprint-revision-v2.md:73</code>). The "spine" is the deterministic replay pipeline;
+the "authoring arm" is everything that feeds it. The handoff between the two halves is a
+<strong>git commit</strong>.
+</blockquote>
+
+<h3 id="s1">§1. The two halves</h3>
+<p>The authoring arm is LLM-bounded and produces committed artifacts; the spine is LLM-free
+and consumes only committed artifacts. A2 commits <code>TestCaseIR.json</code>; Code Generation
+commits <code>LoginTest.java</code>. The spine reads those commits and never asks the LLM
+anything. This is what makes O1 auditable: the executable artifact that produced a verdict is
+reviewable, pinned by SHA, and reproducible by anyone with the repo.</p>
+
+<figure class="diagram">
+<img src="o1-diagrams/01-context/01-context.svg" alt="O1 pipeline context view">
+<figcaption>Context view — the O1 pipeline, its two human roles, and its external dependencies. The single system box is opened in the Container view.</figcaption>
+</figure>
+
+<table>
+<tr><th>#</th><th>Node</th><th>Detail the short label hides</th></tr>
+<tr><td>1</td><td>QA</td><td>runs ingestion CLI, reviews and commits generated artifacts</td></tr>
+<tr><td>2</td><td>Auditor</td><td>audits verdicts and tamper-evident lineage</td></tr>
+<tr><td>3</td><td>Pipeline</td><td>ACCEPTED: LLM-free deterministic replay of committed code (blueprint-revision-v2); north-star production posture; O3 hybrid is the proposed POC (opened in the Container view)</td></tr>
+<tr><td>4</td><td>Octane</td><td>manual test script sources; free-form English or structured steps</td></tr>
+<tr><td>5</td><td>Gateway</td><td>all LLM calls route through one ChatModel interface (blueprint-revision-v2); no direct model vendor SDKs anywhere</td></tr>
+<tr><td>6</td><td>Perfecto</td><td>pinned device pool, Appium 2, Smart Reporting</td></tr>
+<tr><td>7</td><td>LocalDevices</td><td>xctools (iOS sim) and adb (Android) for local capture/replay</td></tr>
+<tr><td>8</td><td>VAULT</td><td>short-lived single-run session tokens (ADR 0013); no long-lived creds held by workers</td></tr>
+<tr><td>9</td><td>GIT</td><td>system of record for committed IR / Java / manifests / graph</td></tr>
+</table>
+<p><strong>Key:</strong> stadium/pill = a person/role; heavy-stroke rectangle = the software system in focus;
+double-bordered rectangle <code>EXT:</code> = an external system we don't own; solid arrow = synchronous call.</p>
+
+<h3 id="s1a">§1.1 System decomposition (container view)</h3>
+<p>Zooming into the system box reveals five modules and four datastores. The spine
+(replay + certification) is LLM-free; the authoring arm (ingestion + ASH-Capture + conversion)
+is LLM-bounded. <strong>ASH-Capture is PROPOSED (ADR 0014 in flight)</strong> — drawn here for
+completeness but tagged as proposed.</p>
+
+<figure class="diagram">
+<img src="o1-diagrams/02-container/02-container.svg" alt="O1 pipeline container view">
+<figcaption>Container view — five modules and four datastores. The spine (replay + certification) is LLM-free; the authoring arm is LLM-bounded. ASH-Capture is PROPOSED.</figcaption>
+</figure>
+
+<table>
+<tr><th>#</th><th>Node</th><th>Detail the short label hides</th></tr>
+<tr><td>1</td><td>ING</td><td>A0 Normalizer (LLM) — PROPOSED this session; A1 Parser (deterministic, structure only); A2 Semantic Interpreter (deterministic-first, LLM fallback); emits committed TestCaseIR.json</td></tr>
+<tr><td>2</td><td>ASH</td><td>PROPOSED ADR 0014 (in flight, parallel thread); automates state-aware hierarchy capture (replaces manual hierarchy-tool run); hybrid: LLM proposes + deterministic validator shortlists; commits NavigationManifest + ScreenGraph edges (opened in the Component view)</td></tr>
+<tr><td>3</td><td>CVT</td><td>Phase 1: Copilot workspace + prompt library; Phase 2: generation service via Orchestrator AI; structured output via BeanOutputConverter against IR + manifest schemas; emits committed Appium Java (the audit pin)</td></tr>
+<tr><td>4</td><td>RPL</td><td>Stage 1 static gate: format, mvn compile, Checkstyle, Error Prone, locator-manifest rule; Stage 2 device gate: K runs on Perfecto (K=1 signed-off baseline; K=3/5 is a weeks-3-8+ target — raising K is a CF6 recorded decision), flakiness derivable once K&gt;1; Stage 3 verdict: ReplayReport pins codeCommit SHA; LLM output never touches it; consumes only committed code</td></tr>
+<tr><td>5</td><td>CER</td><td>applies gates: compile, K/K device passes, semantic fidelity, locator confidence floor; publishes metrics; feeds the flywheel on accept; certification is an attributable individual decision (CF9), never mechanical</td></tr>
+<tr><td>6</td><td>PG</td><td>single primary store (ADR 0006); TestCaseIR, ReplayReport, lineage chain (ADR 0012); ScreenGraph + NavigationManifest tables (PROPOSED ADR 0014)</td></tr>
+<tr><td>7</td><td>OBJ</td><td>resolved locators, single-writer discipline; enriched by the flywheel on accept</td></tr>
+<tr><td>8</td><td>EVID</td><td>immutable, S3-port-backed (ADR 0011); anchors lineage chain heads + graph version JSON</td></tr>
+<tr><td>9</td><td>GITD</td><td>TestCaseIR.json, LoginTest.java, NavigationManifest, ScreenGraph snapshots</td></tr>
+</table>
+<p><strong>Key:</strong> rectangle = an application or data store (C4 container); cylinder = a data store (datastores ONLY);
+module-a / module-b colour = the same module tracked by colour across every view;
+<code>[Type]</code> under a name = the element's C4 type; solid arrow = synchronous call.</p>
+
+<h3 id="s2">§2. The authoring arm — stage by stage</h3>
+
+<h4>§2.0 A0 — Normalizer (LLM) <small>[PROPOSED this session]</small></h4>
+<p>In plain terms: real test scripts arrive as messy exports — headers, metadata fields, odd
+phrasing, boilerplate notes. A0's only job is to clean that up into something the next
+(deterministic) stage can parse reliably. It does not decide what the test <em>means</em>; it
+just tidies the words.</p>
+
+<p><strong>Purpose.</strong> Automate intake. Take free-form English or a manual test script
+string (from Octane, Jira, ALM, Excel) and produce a <code>NormalizedIntent</code> that makes
+A1's deterministic parser succeed more often.</p>
+
+<p><strong>Input.</strong> The raw export, unedited — headers, metadata, numbering, and all.
+Example (<code>mocks/o1-spine/NormalizedIntent.input.txt</code>):</p>
+<pre><code>=== OCTANE TEST CASE ===
+ID: ACC-1042
+Title: Login with valid credentials shows welcome
+Created: 2024-03-15   Owner: QA Team   Priority: HIGH
+
+Steps:
+1. Sign in to the app using the test credentials (username/password)
+2. Verify that the welcome banner appears on the home screen
+
+Notes: This is a happy path test. Use the QA environment creds.</code></pre>
+
+<p><strong>What happens.</strong> A0 strips the boilerplate (header, metadata, notes), collapses
+phrasing variants to one canonical form ("Sign in" / "log in" / "login" → <code>sign in</code>),
+and carries vault references through untouched. Output
+(<code>mocks/o1-spine/NormalizedIntent.json</code>, trimmed):</p>
+<pre><code>{
+  "sourceSystem": "octane", "sourceId": "ACC-1042",
+  "testData": { "username": "vault:user_qa", "password": "vault:pass_qa" },
+  "normalizedSteps": [
+    { "index": 0, "canonicalIntent": "sign in to the app using the test credentials username and password",
+      "normalizedPhrasing": "sign in", "phrasingVariantsAbsorbed": ["Sign in", "log in", "login"] },
+    { "index": 1, "canonicalIntent": "verify the welcome banner appears on the home screen",
+      "normalizedPhrasing": "verify", "phrasingVariantsAbsorbed": ["Verify that", "check that", "confirm"] }
+  ],
+  "honestyTags": ["PROPOSED ADR 0014", "Replan R1 D2", "lives outside spine repo", "F1 does not apply"]
+}</code></pre>
+<p>See <code>mocks/o1-spine/NormalizedIntent.prompt.md</code> for the full system prompt this
+runs against.</p>
+
+<p><strong>What A0 does NOT do.</strong> It does <strong>not</strong> produce the
+<code>TestCaseIR</code> — only A1/A2 do that. It never fills in an action, a locator, or an
+assertion; it never touches a device; and it never invents preconditions or steps that weren't
+in the source. The data flywheel does not apply to A0 either (renamed from "F1 (flywheel)" —
+F1 is the no-model-call fitness function; the name collision was itself an audit hazard).</p>
+
+<p><strong>Why this needs care.</strong> A0 reads raw, untrusted text from Octane/Jira/ALM/Excel
+and writes LLM output back into the pipeline — that is both an injection <em>ingress</em> and an
+<em>egress</em>, so screening (ADR 0009/F3) is mandatory here, not optional. A0 is
+<strong>PROPOSED and unratified</strong> (Replan R1 D2): it cannot ship without its ADR 0009
+call-site map, and it must live outside the spine repo (F1 CI-fails any model call there).</p>
+
+<h4>§2.1 A1 — Parser (deterministic, "structure only")</h4>
+<p>A1 is the boundary between "words" and "shape." It takes A0's cleaned intent and turns it
+into the right <em>number of slots</em> for a test case — without yet deciding what fills each
+slot. Think of it as building an empty form with the right number of fields, not filling them in.</p>
+
+<p><strong>Purpose.</strong> Take the <code>NormalizedIntent</code> and split it into a
+partially-filled <code>TestCaseIR</code> skeleton — structure only, no semantics yet.</p>
+
+<p><strong>Input.</strong> A0's <code>NormalizedIntent.json</code> (above) — 2 normalized steps.</p>
+
+<p><strong>What happens.</strong> A1 splits the intent into N step-slots (here, still 2 — one
+per A0 step; A2 is what later expands "sign in" into its 5 sub-actions), recognizes deterministic
+patterns like the login pattern, and notes that credentials exist but their values are still
+unresolved (they come from the vault at runtime, not from A1). Output
+(<code>mocks/o1-spine/TestCaseIR.skeleton.json</code>, trimmed):</p>
+<pre><code>{
+  "sourceSystem": "octane", "sourceId": "ACC-1042",
+  "steps": [
+    { "index": 0, "intent": "sign in to the app using the test credentials username and password",
+      "recognizedPattern": "login", "credsNote": "present-but-unresolved",
+      "action": null, "target": { "naturalReference": null, "resolvedLocators": [] },
+      "assertion": null, "controlFlow": null },
+    { "index": 1, "intent": "verify the welcome banner appears on the home screen",
+      "recognizedPattern": "assertion", "action": null, "assertion": null }
+  ]
+}</code></pre>
+
+<p><strong>What A1 does NOT do.</strong> It does not fill <code>action</code>,
+<code>resolvedLocators</code>, <code>assertion</code>, or <code>controlFlow</code> — every one of
+those is still <code>null</code>/empty above. It does not expand "sign in" into its 5 sub-steps
+(TAP/TYPE/TAP/TYPE/TAP) — that expansion is A2's job, not A1's. A1 is entirely deterministic: no
+model call happens here at all.</p>
+
+<p><strong>Output → next stage.</strong> This 2-step skeleton is what A2 (below) receives and
+expands into the final, semantically complete, 6-step committed IR.</p>
+
+<h4>§2.2 A2 — Semantic Interpreter (deterministic-first, LLM fallback)</h4>
+<p>Where A1 built the empty form, A2 fills it in with meaning — and only A2's output is
+committed to the repo. This is the step where "sign in" finally becomes concrete TAP/TYPE
+actions and "verify welcome" becomes a real assertion.</p>
+
+<p><strong>Purpose.</strong> Turn A1's structural skeleton into a semantically complete,
+committed <code>TestCaseIR</code>.</p>
+
+<p><strong>What happens.</strong> A2 expands compound steps (login → <code>TAP / TYPE / TAP /
+TYPE / TAP</code>), normalizes navigation into <code>NAVIGATE</code> + <code>screenContext</code>,
+extracts loops into <code>controlFlow</code>, structures vague assertions into
+<code>VALUE_CHECK</code> + <code>expected</code>, and flags ambiguity it can't resolve
+deterministically.</p>
+
+<p><strong>The A1 → A2 delta, side by side:</strong></p>
+<table>
+<tr><th>Field</th><th>A1 skeleton (2 steps)</th><th>A2 output <code>TestCaseIR.json</code> (6 steps)</th></tr>
+<tr><td>step count</td><td>2</td><td>6 (login expands to 5 + 1 assert)</td></tr>
+<tr><td><code>action</code></td><td><code>null</code></td><td><code>TAP</code>/<code>TYPE</code>/<code>TAP</code>/<code>TYPE</code>/<code>TAP</code>/<code>ASSERT</code></td></tr>
+<tr><td><code>target.naturalReference</code></td><td><code>null</code></td><td>"the username field", "the Login button", etc.</td></tr>
+<tr><td><code>assertion</code></td><td><code>null</code></td><td><code>{ kind: "TEXT_EQUALS", expected: "Welcome, QA User" }</code></td></tr>
+<tr><td><code>resolvedLocators</code></td><td><code>[]</code></td><td><code>[]</code> — still empty in both; no device has been touched yet</td></tr>
+</table>
+
+<p><strong>What A2 does NOT do.</strong> It leaves <code>resolvedLocators</code> empty — that's
+Capture Hierarchy + Locator Resolution's job (§§3–4), not A2's. A2 can fall back to an LLM for
+genuinely ambiguous phrasing, but the deterministic path is tried first.</p>
+
+<p><strong>Output.</strong> The committed <code>TestCaseIR.json</code> — see
+<code>mocks/o1-spine/TestCaseIR.json</code>. This is the file the spine's audit trail ultimately
+traces back to.</p>
+
+<h3 id="s3">§3. Capture hierarchy (deterministic tool)</h3>
+<p>Before any locator can be resolved, the pipeline needs to know exactly what's on screen —
+every button, field, and label, with its technical identifiers. This stage is the bridge from
+"intent" (English words like "the username field") to "concrete elements" (an accessibility ID
+a script can actually tap).</p>
+
+<p><strong>Purpose.</strong> Obtain the live UI view hierarchy from a real device so locators can
+be resolved deterministically.</p>
+
+<p><strong>What happens.</strong> The <code>hierarchy-tool</code> CLI
+(<code>blueprint-revision-v2.md:26</code>) opens an Appium session against the device, calls
+<code>getPageSource()</code>, and pulls Perfecto's Object Spy + the XCUITest accessibility tree
+in parallel. It writes out <strong>three</strong> artifacts, each answering a different question:</p>
+
+<table>
+<tr><th>File</th><th>Answers</th><th>Excerpt (<code>mocks/o1-spine/</code>)</th></tr>
+<tr><td><code>LoginScreen.pageSource.xml</code></td><td>"What is literally on screen?" — the full, noisy Appium dump (status bar, nav bar, logo, every label)</td><td><pre><code>&lt;XCUIElementTypeTextField type="TextField" name="usernameField"
+  label="Username" placeholder="Username" enabled="true"/&gt;
+&lt;XCUIElementTypeButton type="Button" name="loginButton" label="Login"/&gt;</code></pre></td></tr>
+<tr><td><code>LoginScreen.pruned.json</code></td><td>"What actually matters?" — interactive elements + their ancestor chain only, sized to fit an LLM's context window</td><td><pre><code>{ "id": "usernameField", "type": "XCUIElementTypeTextField",
+  "label": "Username", "ancestors": ["Application>BankApp","Window","Other","ScrollView","Other"] }</code></pre></td></tr>
+<tr><td><code>LoginScreen.objectSpy.json</code></td><td>"What locator strategies are available, and how confident is each?" — Perfecto's ranked candidates</td><td><pre><code>{ "id": "usernameField",
+  "candidates": [
+    { "strategy": "ACCESSIBILITY_ID", "value": "usernameField", "confidence": 0.98 },
+    { "strategy": "XPATH", "value": "//XCUIElementTypeTextField[@name='usernameField']", "confidence": 0.90 }
+  ] }</code></pre></td></tr>
+</table>
+
+<p><strong>What it does NOT do.</strong> It does not choose a locator — that's §4's job. It just
+records everything that could plausibly be used, from three independent angles (full dump,
+pruned view, and Perfecto's own smart-locator engine).</p>
+
+<blockquote><strong>This manual stage is what ASH-Capture (Part II) automates.</strong> Today
+a human runs the CLI and steers the app to the right screen; ASH-Capture removes that human.</blockquote>
+
+<h3 id="s4">§4. Locator resolution (deterministic cascade + LLM fallback)</h3>
+<p>This is where the pipeline decides, for every English phrase like "the username field," which
+exact technical locator to use. It tries five sources in a strict order, cheapest and most
+trustworthy first, and only reaches for an LLM when everything deterministic has failed.</p>
+
+<p><strong>Purpose.</strong> For every <code>naturalReference</code> in the IR, pick the best
+concrete locator using a fixed, auditable cascade.</p>
+
+<figure class="diagram">
+<img src="o1-diagrams/06-locator-cascade/06-locator-cascade.svg" alt="Locator resolution cascade and LLM fallback">
+<figcaption>The five-source cascade. The first three are deterministic; the LLM is only reached when confidence falls below the floor. This stage is DECIDED (part of the base O1 spine) — the fallback genuinely calls a model, but doing so here is an accepted design, not an open proposal.</figcaption>
+</figure>
+
+<table>
+<tr><th>#</th><th>Node</th><th>Detail the short label hides</th></tr>
+<tr><td>1</td><td>REPO</td><td>source 1 of 5 — the object repository (existing resolved locators, single-writer discipline); deterministic, no model call</td></tr>
+<tr><td>2</td><td>PAGESRC</td><td>source 2 of 5 — the live <code>getPageSource()</code> dump (<code>LoginScreen.pageSource.xml</code>); deterministic, no model call</td></tr>
+<tr><td>3</td><td>SPY</td><td>source 3 of 5 — Perfecto's Object Spy smart-locator candidates (<code>LoginScreen.objectSpy.json</code>); deterministic, no model call</td></tr>
+<tr><td>4</td><td>VLM</td><td>source 4 of 5 — a vision-language model confirms the element is visually present and tappable from a screenshot; a genuine model call, routed through the Gateway (ADR 0013); screening call-site <code>adr-0009:locator-fallback-egress</code></td></tr>
+<tr><td>5</td><td>LLMGUESS</td><td>source 5 of 5, last resort — proposes a locator from the pruned tree text alone (no screenshot); genuine model call; does NOT invent elements outside the pruned tree (returns NO_MATCH instead); does NOT execute anything on a device</td></tr>
+<tr><td>6</td><td>MANIFEST</td><td>every candidate carries a confidence and a source; committed as <code>LocatorCandidate.manifest.json</code></td></tr>
+<tr><td>7</td><td>SG</td><td>the static gate's no-orphan-locator rule: every locator used in the committed Java must appear in this manifest or the object repository</td></tr>
+</table>
+<p><strong>Key:</strong> cylinder = a data store (datastores ONLY); dash-bordered rectangle = a runtime process, not a deployable; solid arrow = synchronous call.</p>
+
+<p><strong>Cascade order.</strong> <code>ACCESSIBILITY_ID &gt; id &gt; class chain &gt; xpath</code>
+(strategy preference), tried against sources
+<code>OBJECT_REPO &gt; PAGE_SOURCE &gt; OBJECT_SPY &gt; VLM &gt; LLM-guess</code> (in that order).
+A candidate is accepted once its confidence clears a floor (0.85); the first three sources are
+deterministic string/tree matching — no model call at all.</p>
+
+<h4>§4.1 The LLM fallback — worked example</h4>
+<p>Sometimes the deterministic sources find a candidate but reject it — not because it's missing,
+but because it doesn't clear the confidence floor. Here's a real case: the reference is "the
+Forgot Password link," but the actual element is typed as a <code>Button</code>, not a link. That
+type mismatch drags every deterministic candidate's confidence below 0.85.</p>
+
+<p><strong>Input</strong> (<code>mocks/o1-spine/LocatorResolution.fallback.input.json</code>,
+trimmed) — note it records exactly why each deterministic source fell short, so the fallback is
+auditable, not a black box:</p>
+<pre><code>{
+  "naturalReference": "the Forgot Password link", "cascadeFloor": 0.85,
+  "deterministicCandidatesTried": [
+    { "source": "OBJECT_REPO", "status": "MISS" },
+    { "source": "PAGE_SOURCE", "status": "BELOW_FLOOR",
+      "candidate": { "value": "forgotPasswordButton", "confidence": 0.72 },
+      "reason": "type mismatch: naturalReference says 'link', element type is XCUIElementTypeButton" },
+    { "source": "OBJECT_SPY", "status": "BELOW_FLOOR", "candidate": { "confidence": 0.74 } }
+  ]
+}</code></pre>
+
+<p><strong>Output</strong> (<code>mocks/o1-spine/LocatorResolution.fallback.output.json</code>):</p>
+<pre><code>{
+  "naturalReference": "the Forgot Password link", "status": "RESOLVED",
+  "proposedLocator": { "strategy": "ACCESSIBILITY_ID", "value": "forgotPasswordButton",
+                        "confidence": 0.91, "source": "LLM-guess" },
+  "reasoning": "The pruned tree has exactly one element whose label 'Forgot Password?' matches the reference; the 'link' vs 'Button' type mismatch is a common UI-labeling looseness, not a true mismatch."
+}</code></pre>
+
+<p>See <code>mocks/o1-spine/LocatorResolution.fallback.prompt.md</code> for the full prompt. If a
+human evaluator accepts this proposal, it's appended to
+<code>LocatorCandidate.manifest.json</code> tagged <code>source: "LLM-guess"</code> — the static
+gate's no-orphan-locator rule applies to it exactly as it would to any deterministic locator.</p>
+
+<h3 id="s5">§5. Code generation (LLM, offline, one-shot per IR version)</h3>
+<p>Turns the committed IR + locator manifest into committed Appium Java. Runs offline, once per
+IR version, and its output is reviewed and committed by an engineer before any device runs.
+Credentials come via <code>vault(...)</code> calls, never literals. The committed
+<code>LoginTest.java</code> is the <strong>audit pin</strong> — its git SHA is what
+ReplayReport.codeCommit pins.</p>
+
+<h3 id="s6">§6. The spine — stage by stage</h3>
+<p>The end-to-end flow below shows where the spine begins. The authoring arm (A0 → A1 → A2 →
+ASH-Capture → locator resolution → code gen) is LLM-bounded; the spine (static gate → device
+gate → verdict) is LLM-free and consumes only committed artifacts. Two bounded loops
+(static-gate repair, ASH-Capture discovery) and the flywheel close-out are visible.</p>
+
+<figure class="diagram">
+<img src="o1-diagrams/04-pipeline-flow/04-pipeline-flow.svg" alt="O1 pipeline end-to-end flow">
+<figcaption>End-to-end flow — the authoring arm (LLM-bounded) feeds the spine (LLM-free). The spine begins at the static gate. ASH-Capture stages are PROPOSED (ADR 0014 in flight).</figcaption>
+</figure>
+
+<table>
+<tr><th>#</th><th>Node</th><th>Detail the short label hides</th></tr>
+<tr><td>1</td><td>A0</td><td>PROPOSED this session (unratified — Replan R1 D2); free-form English / manual script → NormalizedIntent; does NOT produce TestCaseIR; data flywheel does not apply; ADR 0009 screening required at intake + egress; concrete mocks: <code>NormalizedIntent.input.txt</code> → <code>NormalizedIntent.prompt.md</code> → <code>NormalizedIntent.json</code></td></tr>
+<tr><td>2</td><td>A1</td><td>structure only; splits into N steps, raw intent per step; does NOT fill action/locator/assertion/controlFlow; concrete mock: <code>TestCaseIR.skeleton.json</code></td></tr>
+<tr><td>3</td><td>A2</td><td>deterministic-first, LLM fallback; expands steps, normalizes navigation, extracts loops, flags ambiguity; emits committed TestCaseIR.json; concrete mock: <code>TestCaseIR.json</code> (the committed handoff to the spine)</td></tr>
+<tr><td>4</td><td>ASH</td><td>PROPOSED ADR 0014; drives app to screenContext, dumps hierarchy (pageSource + pruned + objectSpy); commits NavigationManifest + ScreenGraph edges; concrete mocks: <code>ASHCapture.discovery.*</code>, <code>ASHCapture.deeplink.*</code>, <code>ASHCapture.driftrepair.input.json</code>; see the discovery-loop diagram (§11.5) for the internal runtime cycle</td></tr>
+<tr><td>5</td><td>LOC</td><td>deterministic cascade: accessibility id &gt; id &gt; class chain &gt; xpath; sources: OBJECT_REPO &gt; PAGE_SOURCE &gt; OBJECT_SPY &gt; VLM &gt; LLM-guess; emits LocatorCandidate.manifest.json; concrete mocks: <code>LocatorResolution.fallback.{input.json,prompt.md,output.json}</code> (the LLM fallback path); see the locator-cascade diagram (§4) for the full cascade</td></tr>
+<tr><td>6</td><td>CG</td><td>IR + manifest → Appium Java (page objects, BaseTest); credentials via vault() calls, never literals; emits committed LoginTest.java (the audit pin); concrete mock: <code>LoginTest.java</code></td></tr>
+<tr><td>7</td><td>SG</td><td><strong>THE SPINE BEGINS — LLM-free from here</strong>; format, mvn compile, Checkstyle, Error Prone, locator-manifest rule; FAIL → loop back to code gen (bounded); concrete mock: <code>StaticGate.report.json</code></td></tr>
+<tr><td>8</td><td>DG</td><td>Perfecto; K=1 signed-off baseline (K=3/5 is a weeks-3-8+ target — raising K is a CF6 recorded decision); outcome fields let flakiness STABLE / FLAKY / UNKNOWN be derived once K&gt;1</td></tr>
+<tr><td>9</td><td>VR</td><td>pins codeCommit SHA (the audit pin); machine PASS (static + device) is a precondition — CERTIFIED is issued by an attributable individual (CF9), never mechanically; healsApplied: NONE (spine does not self-heal); concrete mock: <code>ReplayReport.json</code></td></tr>
+<tr><td>10</td><td>HE</td><td>validates result against original input intent; PASS → flywheel; FAIL → loop back to A0 with error (bounded — iteration budget + owner are an OPEN Replan R1 item)</td></tr>
+<tr><td>11</td><td>FW</td><td>accepted locators → object repository; accepted exemplars → prompt library; accept/reject labels → preference training data (O6 ensemble)</td></tr>
+</table>
+<p><strong>Key:</strong> cylinder = a data store (datastores ONLY); dash-bordered rectangle = a runtime process, not a deployable;
+module-a / module-b colour = the same module tracked by colour across every view; solid arrow = synchronous call.</p>
+
+<h4>§6.1 Static gate · §6.2 Device gate · §6.3 Verdict</h4>
+<p><strong>Static gate</strong> rejects bad generations in seconds before any device minute:
+format, <code>mvn compile</code> (against the test project — Appium client, TestNG, page-object
+library — <em>not</em> against the IPA/APK), Checkstyle, Error Prone, and the locator-manifest
+rule (every locator must be in the repo or manifest). On failure, loops back to code gen (bounded).</p>
+<p><strong>Device gate</strong> runs the compiled Java on real Perfecto devices K times.
+<strong>K=1 is the signed-off baseline</strong> (spec M10b — outcome fields are designed so
+K-of-K becomes derivable later); K=3 conversion / K=5 certification is a weeks-3-8+
+<em>target</em>, and raising K is a CF6 recorded decision (Replan R1 D6).</p>
+<p><strong>Verdict</strong> emits the ReplayReport — the single feedback artifact both phases
+consume. Static PASS + device pass are <em>preconditions</em>; <code>CERTIFIED</code> itself
+is an attributable individual decision (CF9), never emitted mechanically.
+<code>healsApplied</code> is absent in O1 — the spine does not self-heal (contrast
+with O2/O3 where that field is the locus of the audit argument).</p>
+
+<h3 id="s7">§7. Human evaluator + flywheel (close-out)</h3>
+<p>The human evaluator validates the test result against the <em>original input intent</em>
+(not just the IR). PASS → feed accepted locators and exemplars into the flywheel. FAIL →
+loop back to A0 with the error + original intent (this loop must be <strong>bounded</strong>
+— the iteration budget and its owner are an OPEN Replan R1 item). The flywheel makes Phase 1 (human-driven,
+Copilot-assisted) the asset factory and data flywheel for Phase 2 (programmatic, via
+Orchestrator AI) — accepted conversions become exemplars, human corrections become preference
+pairs, diagnose-and-fix sessions become the healing agent's few-shot library.</p>
+
+<h2 id="part-ii">Part II — ASH-Capture Proposal <small>(PROPOSED — ADR 0014 in flight)</small></h2>
+
+<div class="provenance">
+<strong>Provenance.</strong> Part II records the ASH-Capture (Automated State-Aware Hierarchy
+Capture) design produced this session. It is <strong>PROPOSED, not yet an ADR</strong> — ADR 0014
+is being drafted in a parallel thread. Every ASH-Capture element in the diagrams carries a
+<code>PROPOSED ADR 0014</code> honesty tag; the spine/blueprint elements in Part I are decided.
+The spine contract is unchanged — the spine never calls the LLM, never searches the graph.
+(Review correction: no <em>decided</em> spine stage consumes the NavigationManifest — it is a
+capture provenance record; promoting it to a spine input is itself an ADR-scoped change with
+schema, screening, and lineage obligations.)
+</div>
+
+<h3 id="s11">§11. The ASH-Capture proposal</h3>
+<p>ASH-Capture lives in the authoring arm, upstream of the spine. It replaces the manual
+<code>hierarchy-tool</code> run (§3). It drives the app to a target <code>screenContext</code>,
+settles it, and dumps the hierarchy — with a <strong>target</strong> of no human in the loop
+for ~90% of screens and a human escape hatch for the ~10% it can't (both
+<strong>unmeasured targets</strong> pending the §12.4 spike).
+If ASH-Capture breaks entirely, the spine keeps working off existing manifests and manual
+capture remains the escape hatch — the survivability guarantee.</p>
+
+<h4>§11.1 Screen-signature function (load-bearing)</h4>
+<p><code>signature(screen) = (skeletonHash, titleAnchor)</code>. The skeletonHash is the hash
+of sorted <code>(elementType, accessibilityId)</code> tuples — excludes text content, so dynamic
+data (balances, timestamps) does not change the hash. The titleAnchor is the screen's
+accessibility title element, <strong>auto-discovered</strong> (not app-team-declared). Two
+screens collide only if both match. A screen with no discoverable title anchor is flagged
+<code>ANCHOR_LESS</code> and routed to the human escape hatch — the one structural limit of
+"no app-team cooperation."</p>
+
+<h4>§11.2 <code>ScreenGraph</code> schema (committed, versioned, auditable-not-gated)</h4>
+<p>Nodes = screen signatures; edges = deterministic locator-actions with costs
+(<code>DEEP_LINK=1 &lt; SCROLL/TAP=2 &lt; TYPE=3</code>) so graph search minimizes cost and
+prefers deep links. Each edge carries <code>provenance</code> (DISCOVERY | GRAPH_SEARCH |
+DEEP_LINK_PROBE | DRIFT_REPAIR | MANUAL_CAPTURE) and <code>status</code> (VERIFIED | UNVERIFIED | BROKEN).
+On each release, edges flip to UNVERIFIED and re-verify lazily on first capture.</p>
+
+<h4>§11.3 ASH-Capture internals (component view)</h4>
+<p>Zooming into the ASH-Capture container shows the discovery loop, deterministic validator,
+DeviceSession abstraction, and the two committed artifacts (ScreenGraph, NavigationManifest).
+<strong>Every node here is PROPOSED (ADR 0014 in flight).</strong> The spine consumes only
+the committed manifest; none of these components run in the spine.</p>
+
+<figure class="diagram">
+<img src="o1-diagrams/03-component-ash/03-component-ash.svg" alt="ASH-Capture component view">
+<figcaption>Component view — ASH-Capture internals. Every node is PROPOSED (ADR 0014 in flight). The spine consumes only the committed NavigationManifest.</figcaption>
+</figure>
+
+<table>
+<tr><th>#</th><th>Node</th><th>Detail the short label hides</th></tr>
+<tr><td>1</td><td>DISC</td><td>PROPOSED ADR 0014; LLM proposes ≤K candidate next actions from screenshot + pruned tree; budgets: ≤15 actions, ≤60s/step, ≤3 no-progress strikes, 10-min session cap; records every transition as a graph edge (side effect); concrete mocks: <code>ASHCapture.discovery.{input.json,prompt.md,output.json}</code> — HomeScreen → AccountOverview scenario; see §11.5's discovery-loop diagram for the step-by-step runtime cycle</td></tr>
+<tr><td>2</td><td>VAL</td><td>PROPOSED ADR 0014; filters by locator cascade + confidence floor; denylist (logout/transfer/pay/confirm) — defense-in-depth, not the safety guarantee; safety is environmental: lower test env, resettable data</td></tr>
+<tr><td>3</td><td>EXEC</td><td>PROPOSED ADR 0014; applies the surviving action via DeviceSession.act(); re-dumps hierarchy, computes screen signature, checks arrival</td></tr>
+<tr><td>4</td><td>SIG</td><td>PROPOSED ADR 0014; signature = (skeletonHash, titleAnchor); skeletonHash = hash of sorted (elementType, accessibilityId) tuples, excludes text; titleAnchor = auto-discovered accessibility title element (no app-team ask); ANCHOR_LESS screens → human escape hatch</td></tr>
+<tr><td>5</td><td>DEV</td><td>PROPOSED ADR 0014; abstraction: login(), screenshot(), hierarchy(), act(), launchDeepLink(); implementations: PerfectoSession, LocalIOSSession, LocalAndroidSession; normalized hierarchy output; locator source field marks backend</td></tr>
+<tr><td>6</td><td>DRIFT</td><td>PROPOSED ADR 0014; on release: edges flip UNVERIFIED, re-verify lazily; on capture failure: mark edge BROKEN, scoped re-discovery from last good node; graph versioned per appVersion; supersede-not-update (ADR 0012); concrete mock: <code>ASHCapture.driftrepair.input.json</code>; surfaces the signature re-keying defect (Replan R1 D1/S1) — reuses the discovery prompt unchanged</td></tr>
+<tr><td>7</td><td>DEEP</td><td>PROPOSED ADR 0014; static parse (APK intent filters / iOS associated domains) + LLM-proposed routes + deterministic probe; stores confirmed links as DEEP_LINK edges (cost 1), supplemental not replacing; concrete mocks: <code>ASHCapture.deeplink.{input.json,prompt.md,output.json}</code>; known gap preserved: the probe has no URL denylist (Replan R1 D1)</td></tr>
+<tr><td>8</td><td>HATCH</td><td>PROPOSED ADR 0014; triggered by discovery failure or ANCHOR_LESS screen (&lt;10% target); human steers; system records action stream and commits manifest + edges; provenance: MANUAL_CAPTURE</td></tr>
+<tr><td>9</td><td>GRAPH</td><td>PROPOSED ADR 0014; nodes = screen signatures, edges = deterministic locator-actions; snapshot per graph_version_sha; auditable-not-gated; cost weights: DEEP_LINK=1 &lt; SCROLL/TAP=2 &lt; TYPE=3</td></tr>
+<tr><td>10</td><td>MAN</td><td>PROPOSED ADR 0014; per-screen deterministic path the spine replays; rootMode FRESH_LOGIN or DEEP_LINK; always starts from a known root; provenance: DISCOVERY | GRAPH_SEARCH | DEEP_LINK_PROBE | DRIFT_REPAIR | MANUAL_CAPTURE</td></tr>
+</table>
+<p><strong>Key:</strong> rectangle = a grouping of code inside a container (C4 component); cylinder = a data store (datastores ONLY); solid arrow = synchronous call; <code>[Type]</code> under a name = the element's C4 type.</p>
+
+<h4>§11.4 <code>NavigationManifest</code> schema (capture provenance record — PROPOSED)</h4>
+<p>Per-screen deterministic path. <code>rootMode</code> is FRESH_LOGIN (default)
+or DEEP_LINK (deep link lands the root screen directly). Manifests always start from a known
+root, so every capture is reproducible from the same starting state. <code>provenance</code>
+tracks whether the path came from an IR, a graph search, a discovery run, or a manual capture.
+<strong>Status honesty (review fix):</strong> no decided spine stage consumes this artifact —
+the committed Java remains <em>the</em> audit pin; if ADR 0014 promotes the manifest to a
+replayed spine input (reading <code>steps</code> + <code>rootMode</code>), that promotion
+carries its own schema, ADR 0009 screening, and ADR 0012 lineage obligations.</p>
+
+<h4>§11.5 Capture flow (the decision tree)</h4>
+<p>In plain terms: most of the time, ASH-Capture just replays a path it already knows — no LLM
+involved at all. The LLM is reached only when the screen is genuinely new or a known path
+stopped working.</p>
+
+<p><strong>Warm path (target ~90% of runs — unmeasured; no LLM).</strong> Screen already in the
+graph with a VERIFIED path → graph search picks the cheapest route, replays the steps, dumps the
+hierarchy. Done.</p>
+
+<p><strong>Cold start / drift (the LLM path) — the hybrid loop, step by step:</strong></p>
+<ol>
+<li>Dump the current screen's hierarchy, compute its signature.</li>
+<li><strong>LLM proposes</strong> ≤K candidate next actions (input: screenshot + pruned tree + current/target signature + denylist + known edges).</li>
+<li><strong>Deterministic validator filters</strong> by locator cascade + confidence floor, the denylist (logout/transfer/pay/confirm/sign out — defense-in-depth, not the safety guarantee), known graph edges (preferred), and remaining budget.</li>
+<li>The survivor is executed via <code>DeviceSession.act()</code> — the LLM itself never touches the device.</li>
+<li>Re-dump, compute the newly landed signature, and record the edge into the graph as a side effect.</li>
+<li>If the landed signature matches the target → commit the manifest + edges. Done.</li>
+<li>If not, loop again — until budget/no-progress/timeout forces the human escape hatch.</li>
+</ol>
+<p>Budgets: ≤15 actions, ≤60s/step, ≤3 no-progress strikes, 10-min session cap.</p>
+
+<figure class="diagram">
+<img src="o1-diagrams/05-discovery-loop/05-discovery-loop.svg" alt="ASH-Capture discovery loop runtime cycle">
+<figcaption>The discovery loop's runtime cycle — entered only when a screen is NOT in the graph or its path is BROKEN. Every node is PROPOSED (ADR 0014 in flight).</figcaption>
+</figure>
+
+<table>
+<tr><th>#</th><th>Node</th><th>Detail the short label hides</th></tr>
+<tr><td>1</td><td>DUMP</td><td>dumps the current screen's hierarchy and computes its signature; entered only when the screen is NOT already in the graph, or its stored path is BROKEN</td></tr>
+<tr><td>2</td><td>PROPOSE</td><td>proposes ≤K (maxProposalsK=3) candidate next actions, ranked by confidence; concrete mock: <code>ASHCapture.discovery.{input.json,prompt.md,output.json}</code> — HomeScreen → AccountOverview, ranks <code>accountsTab</code> 0.90 / <code>hamburgerMenu</code> 0.62 / <code>paymentsTab</code> 0.48</td></tr>
+<tr><td>3</td><td>VALIDATE</td><td>filters by locator cascade + confidence floor (0.85), the denylist, known graph edges, and remaining step budget</td></tr>
+<tr><td>4</td><td>EXECUTE</td><td>applies the one surviving action via <code>DeviceSession.act()</code>, re-dumps, computes the newly landed signature</td></tr>
+<tr><td>5</td><td>CHECK</td><td>success predicate: landed signature equals target signature. <strong>Known defect (Replan R1 D1/S1):</strong> compares against the <em>stored</em> target, so a legitimately changed screen can never match and the loop deterministically exhausts its budget into the escape hatch</td></tr>
+<tr><td>6</td><td>GRAPH</td><td>the edge (from → to) is recorded as a side effect of EXECUTE, before the arrival check even runs</td></tr>
+<tr><td>7</td><td>MAN</td><td>committed only on arrival (signature == target); a failed loop commits nothing here and falls through to the escape hatch instead</td></tr>
+<tr><td>8</td><td>HATCH</td><td>triggered by 3 no-progress strikes, budget exhaustion, the 10-min session cap, or an ANCHOR_LESS screen</td></tr>
+</table>
+<p><strong>Key:</strong> rectangle = a grouping of code inside a container (C4 component); cylinder = a data store (datastores ONLY); dash-bordered rectangle = a runtime process; solid arrow = synchronous call.</p>
+
+<p><strong>Screening (ADR 0009).</strong> Every LLM ingress/egress in this loop is a screening
+call site (<code>adr-0009:ash-discovery-proposer-egress</code>); the map belongs in ADR 0014.
+The loop cannot ship without it.</p>
+
+<p><strong>The single biggest open risk.</strong> The success predicate in step 5 compares
+against the <em>stored</em> signature from before. On a screen that legitimately changed —
+exactly the case discovery exists to handle — the loop can <em>never</em> match, so it
+deterministically burns its whole budget and lands in the human escape hatch every time. Until a
+signature <strong>re-keying</strong> mechanism is designed, this defect alone means the &lt;10%
+escape-hatch target fails at every release. This is not a minor edge case — it is the load-bearing
+open question for whether ASH-Capture's automatic-update story works at all.</p>
+
+<h4>§11.6 Drift/repair loop</h4>
+<p>Apps change every release. This loop is what keeps the graph honest without re-discovering
+everything from scratch each time.</p>
+
+<p><strong>Purpose.</strong> Keep the <code>ScreenGraph</code> correct as the app changes,
+without paying the full discovery cost for screens that didn't change.</p>
+
+<p><strong>What happens.</strong> On a monthly release (new <code>appVersion</code>), every edge
+flips to <code>UNVERIFIED</code> — nothing is rebuilt upfront. Instead, re-verification happens
+lazily, the first time each screen is needed: unchanged screens replay their known steps, the
+signature matches, and the edge flips back to <code>VERIFIED</code> — no LLM. Changed screens
+(~20% per release, unmeasured) land on a different signature, get marked <code>BROKEN</code>, and
+trigger a <em>scoped</em> re-discovery from the last known-good node — repairing just that
+sub-path, not the whole graph.</p>
+
+<p><strong>Worked example</strong> (<code>mocks/o1-spine/ASHCapture.driftrepair.input.json</code>,
+trimmed):</p>
+<pre><code>{
+  "trigger": "CAPTURE_FAILURE",
+  "brokenEdge": { "from": "HomeScreen", "to": "AccountOverview", "status": "BROKEN",
+    "failureReason": "landed signature h_acctov_7a2b != stored signature h_acctov_9c1d — screen changed in 8.5.0" },
+  "lastKnownGoodNode": { "screen": "HomeScreen", "status": "VERIFIED" },
+  "scope": "SCOPED_REDISCOVERY",
+  "promptReuse": "ASHCapture.discovery.prompt.md",
+  "promptReuseNote": "This reuses the discovery loop proposer prompt (§11.5 step 2) unchanged — only the loopState (starting screen, target) is narrower. No separate prompt is needed."
+}</code></pre>
+
+<p><strong>What it does NOT do.</strong> It does not re-run discovery from the root, and it does
+not need its own LLM prompt — it reuses the exact discovery-loop prompt from §11.5, just scoped
+to a narrower target. It also inherits that loop's known defect: if <code>AccountOverview</code>
+genuinely changed in the new release (the very case this repair exists for), the stored-signature
+comparison can never match, and the repair will exhaust its budget into the escape hatch every
+time — the same signature re-keying gap called out in §11.5.</p>
+
+<p>The graph is versioned per <code>appVersion</code>; diffs across releases are auditable.</p>
+
+<h4>§11.7 Deep-link sub-loop (supplemental)</h4>
+<p>Some screens can be reached instantly via a deep link instead of tapping through the UI. This
+loop discovers which ones — it never invents links the app doesn't already support.</p>
+
+<p><strong>Purpose.</strong> Discover existing deep links and store confirmed ones as fast
+(cost-1) graph edges, supplementing — never replacing — the tap-based graph.</p>
+
+<p><strong>What happens, in three steps:</strong> (1) a deterministic <strong>static parse</strong>
+of the APK's intent filters / iOS's associated domains extracts the URL scheme and known hosts
+(iOS yields scheme only — routes live in code); (2) the <strong>LLM proposes</strong> candidate
+routes for a target screen, working from app docs and screen titles, always within that
+already-parsed scheme; (3) a deterministic <strong>probe</strong> launches each candidate and
+checks the landed signature — only confirmed matches become <code>DEEP_LINK</code> edges
+(cost 1).</p>
+
+<p><strong>Worked example</strong> (<code>mocks/o1-spine/ASHCapture.deeplink.{input,output}.json</code>,
+trimmed) — proposing routes toward <code>AccountOverview</code> within the known
+<code>erica://</code> scheme:</p>
+<pre><code>{ "proposedRoutes": [
+  { "rank": 1, "url": "erica://accounts/overview", "confidence": 0.85,
+    "reasoning": "Direct match to the target title as a sub-route of the known 'erica://accounts' host." },
+  { "rank": 2, "url": "erica://accounts/details", "confidence": 0.62 },
+  { "rank": 3, "url": "erica://accountoverview", "confidence": 0.40 }
+] }</code></pre>
+
+<p><strong>What it does NOT do.</strong> The LLM never invents a new scheme — only routes
+<em>within</em> the already-parsed one. It never re-proposes a route already confirmed. And it
+never executes anything — that's the deterministic probe's job.</p>
+
+<p><strong>Security gap — surfaced, not hidden.</strong> The probe currently has
+<strong>no URL denylist</strong>: the validator's action denylist (logout/transfer/pay/confirm)
+covers UI taps, but not deep-link URLs. A probed route like <code>erica://transfer?...</code>
+could execute and, if confirmed, persist as the <em>preferred</em> cost-1 edge. A URL
+allow/deny-list is an open Lane-2 ADR 0014 item (Replan R1 D1) — until it ships, the LLM's own
+self-restraint (never proposing destructive-looking routes) is the only line of defense.</p>
+
+<h4>§11.8 Device interface</h4>
+<p><code>DeviceSession</code> abstraction: <code>login()</code>, <code>screenshot()</code>,
+<code>hierarchy()</code>, <code>act()</code>, <code>launchDeepLink()</code>. Three
+implementations: PerfectoSession (cloud), LocalIOSSession (xctools + Appium XCUITest),
+LocalAndroidSession (adb + Appium UiAutomator2). <code>hierarchy()</code> returns a normalized
+form; the locator <code>source</code> field marks which backend produced each locator, so
+audits know which captures were Perfecto vs local.</p>
+
+<h4>§11.9 Human escape hatch (the &lt;10%, extreme/boundary only)</h4>
+<p>Triggered by discovery failure (budget exhausted / no-progress / ANCHOR_LESS screen /
+unreachable state). The human manually navigates to the target; the device session records
+every action; the system commits the manifest + edges from that recorded stream with
+<code>provenance: MANUAL_CAPTURE</code>. The human only steers; the system records — mirroring
+the blueprint's Phase-1 pattern. Over releases, the escape-hatch bucket should shrink as
+anchors get discovered and edges get verified.</p>
+
+<h4>§11.10 Trade-offs baked in</h4>
+<table>
+<tr><th>Trade-off</th><th>Resolution</th></tr>
+<tr><td>Determinism vs coverage</td><td>Hybrid by design; graph = deterministic cache, discovery = non-deterministic frontier</td></tr>
+<tr><td>Auditability vs maintenance</td><td>Graph is auditable-not-gated; drift loop is the maintenance cost</td></tr>
+<tr><td>Autonomy vs app-team cooperation</td><td>Anchors auto-discovered, no app-team ask; escape hatch covers the gap</td></tr>
+<tr><td>Safety</td><td>Environmental (resettable test env, "prod-grade data"); denylist is defense-in-depth only. <strong>"Prod-grade data" is undefined</strong> — production-<em>derived</em> data flips ADR 0010's PII condition (Replan R1 D4)</td></tr>
+<tr><td>Session</td><td>10-min, from-root, cheap re-login via stored creds</td></tr>
+<tr><td>Deep links</td><td>Supplemental, prefer-when-available; can't fully cover iOS</td></tr>
+<tr><td>Speed vs 100%</td><td>Deep-link cost-1 edges optimize speed; graph + escape hatch chase 100% discoverability</td></tr>
+</table>
+
+<h4>§11.11 Coverage target &amp; open watch-items</h4>
+<p><strong>&gt;90% automated</strong> via graph replay + discovery; <strong>&lt;10% human
+escape hatch</strong> for extreme/boundary failures — both <strong>unmeasured targets</strong>
+(falsifiable claims pending the §12.4 spike), and the &lt;10% figure collapses while the
+§11.5 re-keying defect stands. Open watch-items: (1) the
+<code>ANCHOR_LESS</code> bucket size is the one place "no app-team cooperation" bites —
+measure early on a real release; (2) the deep-link "synthesis" interpretation is
+<em>discovering existing links and storing them as edges</em>, not inventing new ones;
+(3) the discovery success predicate needs signature <strong>re-keying</strong> before any
+measurement — without it, changed screens route to the hatch by construction
+(Replan R1 S1 precedes S2).</p>
+
+<h3 id="s12">§12. Provenance — what is NEW this session vs already planned</h3>
+<p><strong>NEW (proposed this session, not in any ADR):</strong> the ASH-Capture subsystem,
+the hybrid discovery loop, the <code>NavigationManifest</code> and <code>ScreenGraph</code>
+artifact types, the screen-signature function, the deep-link sub-loop, the drift/repair
+loop, the human escape hatch, the <code>DeviceSession</code> abstraction, the budgets, the
+&gt;90%/&lt;10% coverage framing (targets, unmeasured), the <code>ANCHOR_LESS</code> routing,
+and the <strong>A0 Normalizer</strong> (Part I §2.0 — corrected: the first draft mislisted A0
+as already-planned; it is NEW, unratified, and needs its ADR 0009 screening map — Replan R1
+D2). These need ADR 0014 (and, for A0, its own ratification) before implementation.</p>
+<p><strong>ALREADY PLANNED (in existing ADRs / blueprint / user constraints):</strong> the
+LLM-free spine (<code>blueprint-revision-v2.md:73</code>), the <code>hierarchy-tool</code>
+(line 26), the pruned tree (line 115), the locator cascade, credential isolation (ADR 0013),
+tamper-evident lineage (ADR 0012), the Phase-1 pattern, the data flywheel, the K-run policy
+(K=1 signed-off baseline; raising K is a CF6 recorded decision),
+the monthly release cadence, the 10-min session + stored creds + lower test env, and the
+"erica" deep-link scheme. ASH-Capture inherits all of these; it does not change them.</p>
+<p><strong>Spine contract (unchanged):</strong> the spine consumes only committed artifacts,
+runs no LLM / graph search / discovery, holds no long-lived creds (ADR 0013), and pins every
+verdict to a committed SHA (ADR 0012). If ASH-Capture fails, the spine continues off existing
+manifests and manual capture remains the escape hatch.</p>
+
+<h3 id="s13">§13. How the graph is stored — PostgreSQL, not a graph DB</h3>
+<p><strong>Decision: store the ScreenGraph in PostgreSQL.</strong> The graph is small
+(hundreds of nodes, thousands of edges); Dijkstra runs in microseconds in process memory, so
+no graph DB traversal engine is needed — only a store to hold and version the graph, which
+Postgres does. The existing ADRs already chose Postgres as the single primary store, and the
+graph is audit-grade data that must join the tamper-evident lineage — noting ADR 0012 today
+defines <em>per-conversion</em> chains only, so a graph-version chain is an ADR 0012
+amendment (Replan R1 D3) — easiest if it lives in the same store. Adding a graph DB would introduce a second system of record
+(violating ADR 0006) plus backup/DR/security-review burden, for a few thousand edges.</p>
+<p>Three tables, versioned by snapshot (append-only, matching ADR 0012's supersede-not-update
+semantics): <code>screen_graph_versions</code> (one row per committed graph version, the audit
+pin), <code>screen_graph_nodes</code>, <code>screen_graph_edges</code>. Each committed graph
+is a full snapshot keyed by <code>graph_version_sha</code>; drift repair writes a <em>new</em>
+version (with <code>prev_version_sha</code> pointing at the prior one). Diffing two releases
+= comparing their node/edge sets. Graph mutations route through the existing outbox (ADR 0007)
+so they join the lineage chain; each version's full JSON is anchored to object storage via the
+ADR 0011 port as immutable evidence.</p>
+<p><strong>When the answer would flip:</strong> a graph DB would be justified only if the
+graph grew to millions of edges, traversal became the dominant workload with complex multi-hop
+patterns SQL expresses poorly, or multiple services needed concurrent graph traversal at
+scale. None apply to a per-app screen graph. If one ever does, Postgres stays the system of
+record and a graph DB could be added in front as a traversal cache later — a future
+optimization, not a day-one decision. This belongs in ADR 0014 (touches ADRs 0006/0007/0011/0012).</p>
+
+<h3 id="s14">§14. Mock artifact index — every stage, in real data</h3>
+<p>Every stage described above has a concrete mock backing it — real (illustrative) JSON, XML,
+Java, and LLM prompts under <code>mocks/o1-spine/</code>, all built around one scenario
+(<strong>ACC-1042</strong> — "Login with valid credentials shows welcome"). The full index, a
+pipeline-flow ASCII diagram, and a detailed write-up of all four LLM call sites lives in
+<a href="mocks/o1-spine/README.md"><code>mocks/o1-spine/README.md</code></a>. Condensed pointers:</p>
+
+<table>
+<tr><th>Stage</th><th>Mock files</th></tr>
+<tr><td>§2.0 A0 — Normalizer</td><td><code>NormalizedIntent.input.txt</code>, <code>NormalizedIntent.prompt.md</code>, <code>NormalizedIntent.json</code></td></tr>
+<tr><td>§2.1 A1 — Parser</td><td><code>TestCaseIR.skeleton.json</code></td></tr>
+<tr><td>§2.2 A2 — Semantic Interpreter</td><td><code>TestCaseIR.json</code> (committed handoff to the spine)</td></tr>
+<tr><td>§3 Capture Hierarchy</td><td><code>LoginScreen.pageSource.xml</code>, <code>LoginScreen.pruned.json</code>, <code>LoginScreen.objectSpy.json</code></td></tr>
+<tr><td>§4 Locator Resolution (deterministic)</td><td><code>LocatorCandidate.manifest.json</code></td></tr>
+<tr><td>§4.1 Locator Resolution (LLM fallback) — <em>decided spine</em></td><td><code>LocatorResolution.fallback.{input.json,prompt.md,output.json}</code></td></tr>
+<tr><td>§5 Code Generation</td><td><code>LoginTest.java</code></td></tr>
+<tr><td>§6.1 Static Gate</td><td><code>StaticGate.report.json</code></td></tr>
+<tr><td>§6.2–6.3 Device Gate / Verdict</td><td><code>ReplayReport.json</code></td></tr>
+<tr><td>§11.5 ASH discovery loop — <em>PROPOSED ADR 0014</em></td><td><code>ASHCapture.discovery.{input.json,prompt.md,output.json}</code></td></tr>
+<tr><td>§11.6 ASH drift/repair — <em>PROPOSED ADR 0014</em></td><td><code>ASHCapture.driftrepair.input.json</code> (reuses the discovery prompt)</td></tr>
+<tr><td>§11.7 ASH deep-link sub-loop — <em>PROPOSED ADR 0014</em></td><td><code>ASHCapture.deeplink.{input.json,prompt.md,output.json}</code></td></tr>
+</table>
+
+<p><strong>The four LLM call sites, at a glance:</strong></p>
+<table>
+<tr><th>Call site</th><th>Status</th><th>Key open item</th></tr>
+<tr><td>1. Locator Resolution fallback</td><td>Decided spine</td><td>none</td></tr>
+<tr><td>2. Discovery loop proposer</td><td>PROPOSED ADR 0014</td><td>signature re-keying (Replan R1 D1/S1)</td></tr>
+<tr><td>3. Deep-link route proposer</td><td>PROPOSED ADR 0014</td><td>URL denylist gap (Replan R1 D1)</td></tr>
+<tr><td>4. Drift/repair re-discovery</td><td>PROPOSED ADR 0014</td><td>reuses #2's prompt and its open defect</td></tr>
+</table>
+
+<hr>
+<p><small>Generated walkthrough combining <code>o1-pipeline-walkthrough.md</code> with C4-flavored
+diagrams rendered via the <code>generating-architecture-diagrams</code> skill (D2 → lint →
+self-audit, all six views PASS). Diagrams live in <code>o1-diagrams/</code>; their IRs and
+detail tables are co-located there. ASH-Capture elements carry <code>PROPOSED ADR 0014</code>
+honesty tags per the skill's no-invented-facts rule. Mock artifacts live in
+<code>mocks/o1-spine/</code> (22 files + index).</small></p>
+
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "artifact_type": "mutation_report",
+  "contract": "o7-kata-seam.1",
+  "engine": "mvn test-compile + pitest mutationCoverage (mutations XML)",
+  "inputs": {
+    "pom_sha256": "c0341a591cff74c4de034de5d1499057d261cf6abf704ddb52728e364dead1b3"
+  },
+  "mutants": {
+    "by_status": {
+      "KILLED": 2,
+      "NO_COVERAGE": 1,
+      "SURVIVED": 1
+    },
+    "detected": 2,
+    "total": 4
+  },
+  "mutation_score": 0.5,
+  "mutation_score_scaled": 5000,
+  "not_evaluable": null,
+  "survivors": [
+    {
+      "class": "fx.Clamp",
+      "line": 10,
+      "method": "clamp",
+      "mutator": "ConditionalsBoundaryMutator",
+      "status": "SURVIVED"
+    },
+    {
+      "class": "fx.Clamp",
+      "line": 11,
+      "method": "clamp",
+      "mutator": "PrimitiveReturnsMutator",
+      "status": "NO_COVERAGE"
+    }
+  ],
+  "threshold": {
+    "name": "mutation_score_min",
+    "value": 0.85
+  },
+  "threshold_scaled": 8500,
+  "tool": "mutate4java",
+  "tool_version": "1.0.0",
+  "verdict": "red"
+}

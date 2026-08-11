@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "kernel_config",
+  "arm": "C",
+  "thresholds": [
+    {
+      "name": "build_errors_max",
+      "value": 0
+    },
+    {
+      "name": "tests_failures_max",
+      "value": 0
+    },
+    {
+      "name": "crap_composite",
+      "value": 6
+    },
+    {
+      "name": "mutation_score_min",
+      "value": 0.85
+    }
+  ],
+  "protected": {
+    "kernel_config": [
+      ".sdd-roles/kernel-config.json"
+    ],
+    "role_registry": [
+      ".sdd-roles/role-registry.json"
+    ],
+    "ledger_dir": [
+      "tooling/sdd-roles/ledger/"
+    ],
+    "tests_globs": [
+      "tests/**",
+      "src/test/**"
+    ],
+    "gate_configs": [
+      ".sdd-roles/gates/**"
+    ],
+    "harness_enablement": [
+      "harness-settings/**"
+    ],
+    "speckit_constitution": [
+      ".specify/memory/constitution.md"
+    ]
+  },
+  "gate_tool_allowlist": [
+    "javac-build",
+    "junit-runner",
+    "crap4java",
+    "mutate4java"
+  ],
+  "required_mappings": [
+    "handoff_contract",
+    "stage_ledger_entry"
+  ],
+  "speckit_roots": [
+    ".specify/",
+    "specs/"
+  ],
+  "rework": {
+    "max": 3
+  },
+  "gate_runner": "sdd-roles-gate-runner",
+  "enforcement_tier": "floor"
+}

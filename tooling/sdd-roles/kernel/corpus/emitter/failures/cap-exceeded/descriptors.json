@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "invocation_descriptor_set",
+  "declares": [
+    "fail-a",
+    "fail-b",
+    "fail-c"
+  ],
+  "rows": [
+    {
+      "harness": "fail-cap",
+      "command_template": "{python} run --role {role}",
+      "agent_selection": "scenario-table",
+      "auth_env_var": "STUB_TOKEN",
+      "resume_semantics": "ledger-replay",
+      "output_parse_mode": "text",
+      "projection": {
+        "targets": [
+          {
+            "kind": "agent-card",
+            "path_template": "cards/{role}.md",
+            "format": "markdown",
+            "front_matter": [
+              {
+                "key": "name",
+                "source": "id"
+              },
+              {
+                "key": "stamp",
+                "source": "stamp"
+              }
+            ],
+            "char_cap": 64,
+            "args_token": null
+          }
+        ]
+      },
+      "exit_code_map": [
+        {
+          "tool_exit": 0,
+          "decision_output": "allow",
+          "wrapper_exit": 0
+        },
+        {
+          "tool_exit": 1,
+          "decision_output": "error",
+          "wrapper_exit": 1
+        }
+      ]
+    }
+  ]
+}

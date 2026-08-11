@@ -1,0 +1,55 @@
+{
+  "sourceSystem": "octane",
+  "sourceId": "ACC-1042",
+  "title": "Login with valid credentials shows welcome",
+  "preconditions": [
+    "app freshly installed",
+    "on the login screen"
+  ],
+  "testData": {
+    "username": "vault:user_qa",
+    "password": "vault:pass_qa"
+  },
+  "platforms": ["IOS", "ANDROID"],
+  "provenance": {
+    "a1Version": "sha:a1:2d8e4a1c...",
+    "derivedFrom": "sha:a0:7c3f1b9e...",
+    "parsedAt": "2026-07-29T13:58Z"
+  },
+  "steps": [
+    {
+      "index": 0,
+      "intent": "sign in to the app using the test credentials username and password",
+      "recognizedPattern": "login",
+      "credsNote": "present-but-unresolved",
+      "action": null,
+      "target": {
+        "naturalReference": null,
+        "elementType": null,
+        "resolvedLocators": [],
+        "screenContext": null
+      },
+      "inputData": null,
+      "assertion": null,
+      "controlFlow": null,
+      "ambiguityFlags": []
+    },
+    {
+      "index": 1,
+      "intent": "verify the welcome banner appears on the home screen",
+      "recognizedPattern": "assertion",
+      "credsNote": null,
+      "action": null,
+      "target": {
+        "naturalReference": null,
+        "elementType": null,
+        "resolvedLocators": [],
+        "screenContext": null
+      },
+      "inputData": null,
+      "assertion": null,
+      "controlFlow": null,
+      "ambiguityFlags": []
+    }
+  ]
+}

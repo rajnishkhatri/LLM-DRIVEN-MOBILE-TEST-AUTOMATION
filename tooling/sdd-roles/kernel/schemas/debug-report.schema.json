@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdd-roles:debug-report:1.4.0",
+  "title": "DebugReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "failing_test_id",
+    "observed",
+    "expected",
+    "suspected_locus",
+    "minimal_repro"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.4.0" },
+    "artifact_type": { "const": "debug_report" },
+    "failing_test_id": { "type": "string", "minLength": 1 },
+    "observed": { "type": "string", "minLength": 1 },
+    "expected": { "type": "string", "minLength": 1 },
+    "suspected_locus": { "type": "string", "minLength": 1 },
+    "minimal_repro": { "type": "string", "minLength": 1 }
+  }
+}

@@ -1,0 +1,19 @@
+# ARCH workspace-binding — LLM-DRIVEN-MOBILE-TEST-AUTOMATION
+# Adapted from Architect 2026-08-11 for the MTA/spine/O7 design workspace.
+# Architect-workflow skill family (arch-*).
+# Kata-first: `target` is chosen per run; mobile-test-automation uses [roots].
+
+[binding]
+methodology_source = "<none>"
+constitution       = ".cursor/rules/architecture-principles.mdc"
+worksheet_home     = ".arch/worksheets/"
+component_home     = ".arch/components/"
+adr_home           = ".arch/adrs/"
+risk_home          = ".arch/risk/"
+diagram_notation   = "mermaid"
+breadth_read_tool  = "explore subagent"
+
+# Per-target root override: mobile-test-automation artifacts publish under
+# docs/architecture/ (same layout: worksheets/<slug>/, etc.).
+[roots]
+mobile-test-automation = "docs/architecture/"

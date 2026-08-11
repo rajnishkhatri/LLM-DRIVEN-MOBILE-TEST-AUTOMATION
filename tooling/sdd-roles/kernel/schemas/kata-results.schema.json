@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sdd-roles:kata-results:1.4.0",
+  "title": "KataResults",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "plan_stamp",
+    "prereg_digest",
+    "observations"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.4.0" },
+    "artifact_type": { "const": "kata_results" },
+    "plan_stamp": { "type": "string", "minLength": 1 },
+    "prereg_digest": { "type": "string", "minLength": 1 },
+    "observations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/cell_result" }
+    }
+  },
+  "$defs": {
+    "cell_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cell_id",
+        "arm",
+        "instance",
+        "rep",
+        "gates",
+        "mutation_score",
+        "crap",
+        "tokens",
+        "wall_clock_ms",
+        "handoff_schema_failures",
+        "tamper_events",
+        "final_all_gates_pass",
+        "tamper_instance",
+        "provenance",
+        "evidence_ref"
+      ],
+      "properties": {
+        "cell_id": { "type": "string", "minLength": 1 },
+        "arm": { "type": "string", "minLength": 1 },
+        "instance": { "type": "string", "minLength": 1 },
+        "rep": { "type": "integer", "minimum": 0 },
+        "gates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/gate_result" }
+        },
+        "mutation_score": { "$ref": "#/$defs/score10k" },
+        "crap": { "$ref": "#/$defs/crap" },
+        "tokens": { "type": "integer", "minimum": 0 },
+        "wall_clock_ms": { "type": "integer", "minimum": 0 },
+        "handoff_schema_failures": { "type": "integer", "minimum": 0 },
+        "tamper_events": { "type": "integer", "minimum": 0 },
+        "final_all_gates_pass": { "type": "boolean" },
+        "tamper_instance": { "type": "boolean" },
+        "provenance": { "const": "tool_output" },
+        "evidence_ref": { "$ref": "#/$defs/artifact_ref" }
+      }
+    },
+    "gate_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate_id", "first_attempt_pass", "final_pass"],
+      "properties": {
+        "gate_id": { "type": "string", "minLength": 1 },
+        "first_attempt_pass": { "type": "boolean" },
+        "final_pass": { "type": "boolean" }
+      }
+    },
+    "score10k": { "type": "integer", "minimum": 0, "maximum": 10000 },
+    "crap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max", "mean", "over_threshold_count", "per_method"],
+      "properties": {
+        "max": { "type": "integer", "minimum": 0 },
+        "mean": { "type": "integer", "minimum": 0 },
+        "over_threshold_count": { "type": "integer", "minimum": 0 },
+        "per_method": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/method_crap" }
+        }
+      }
+    },
+    "method_crap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "score"],
+      "properties": {
+        "method": { "type": "string", "minLength": 1 },
+        "score": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "artifact_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "operation": "modify",
+  "paths": [
+    "ledger/run.ndjson"
+  ]
+}

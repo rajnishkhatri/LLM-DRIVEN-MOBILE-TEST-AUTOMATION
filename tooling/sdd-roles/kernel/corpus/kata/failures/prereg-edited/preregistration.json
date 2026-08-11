@@ -1,0 +1,30 @@
+{
+  "arms": [
+    "A",
+    "B",
+    "C",
+    "C-dbg"
+  ],
+  "artifact_type": "kata_preregistration",
+  "criteria": {
+    "b_over_a_pp": 5,
+    "b_over_a_token_ratio_max": 2,
+    "c_over_a_intervals": "non-overlapping",
+    "c_over_a_pp": 5,
+    "c_over_a_token_ratio_max": 3,
+    "c_over_b_pp": 5,
+    "kill_a_token_den": 2,
+    "kill_a_token_num": 1,
+    "kill_a_within_c_pp": 5,
+    "tamper_zero_tolerance": true
+  },
+  "instance_count": 12,
+  "interval_method": "wilson",
+  "prereg_digest": "a25c8688038b0ebc45d796288324790c7c7fc12f4532dcd3ed39e2755a5711ce",
+  "primary_metric": "final_all_gates_pass",
+  "reps": 5,
+  "scale": 10000,
+  "schema_version": "1.4.0",
+  "wilson_z_den": 2500,
+  "wilson_z_num": 9604
+}

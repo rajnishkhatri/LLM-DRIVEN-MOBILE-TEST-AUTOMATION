@@ -1,0 +1,18 @@
+{
+  "artifact_type": "build_report",
+  "contract": "o7-kata-seam.1",
+  "engine": "mvn compile",
+  "errors": [],
+  "errors_total": 0,
+  "inputs": {
+    "pom_sha256": "1ad56901643935df18d2cf2d493c02f5a37ba2e63489f99f81beb910cb8245b8"
+  },
+  "not_evaluable": null,
+  "threshold": {
+    "name": "build_errors_max",
+    "value": 0
+  },
+  "tool": "javac-build",
+  "tool_version": "1.0.0",
+  "verdict": "green"
+}

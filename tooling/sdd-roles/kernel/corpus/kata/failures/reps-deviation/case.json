@@ -1,0 +1,22 @@
+{
+  "command": "kata",
+  "args": [
+    "analyze",
+    "--kernel",
+    "<KERNEL>",
+    "--plan",
+    "./plan-reps1.json",
+    "--prereg",
+    "../../preregistration.json",
+    "--results",
+    "../../results-solo.json",
+    "--out",
+    "./out-verdict.json"
+  ],
+  "expected_exit": 2,
+  "expect_stderr_contains": [
+    "reps",
+    "deviation"
+  ],
+  "expect_no_out_dir": "out-verdict.json"
+}

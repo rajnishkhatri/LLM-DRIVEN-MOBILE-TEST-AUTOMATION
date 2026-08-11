@@ -1,0 +1,101 @@
+{
+  "$schema": "../../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "08-component-screening",
+    "level": "component",
+    "title": "C3b \u2014 Component overlay: screening boundaries",
+    "caption": "Where does untrusted content get screened (ADR 0009)? A subset of C3a \u2014 the screening library and the four edges that cross its three boundaries.",
+    "direction": "right",
+    "opens": "APP",
+    "opens_from": "07-component",
+    "completeness": "subset:07-component",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "INGEST_TEST_SOURCES",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Ingest Test Sources",
+      "detail": [
+        "Adapters: Excel + Octane now, ALM/QC later (C1). Hash-at-ingest snapshot digest (M15)"
+      ]
+    },
+    {
+      "id": "ACQUIRE_UI_EVIDENCE",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Acquire UI Evidence",
+      "detail": [
+        "Hierarchy tool: page source, Object Spy, pruned tree. Records device + pool identity; off-pool captures flagged (M24)"
+      ]
+    },
+    {
+      "id": "REPLAY_ON_DEVICES",
+      "kind": "component",
+      "family": "module-b",
+      "label": "Replay on Devices",
+      "detail": [
+        "K runs, pinned pools; dominant cost. Spawns the separate execution process, single-run token, NO gateway credential (ADR 0013). Records ACTUAL context beside requested; pinned-facet mismatch quarantines (M24)"
+      ]
+    },
+    {
+      "id": "INVOKE_MODELS",
+      "kind": "component",
+      "family": "module-a",
+      "label": "Invoke Models",
+      "role": "model-seam",
+      "detail": [
+        "THE model seam (ADR 0001): P1 Copilot impl / P2 gateway impl, config-selected. Cache key incl. model+provider version (ADR 0002). P2 edge tags = runtime call exists in Phase 2 only; the seam and its callers exist from the first commit (F1)"
+      ]
+    },
+    {
+      "id": "SCREENING_LIBRARY",
+      "kind": "not-a-component",
+      "label": "screening library",
+      "qualifiers": [
+        "NOT a component (ADR 0009)"
+      ],
+      "detail": [
+        "Screening library \u2014 NOT a component (ADR 0009, amended M35). Boundaries defined by DATA CLASS. Quarantine-and-review failure mode, recorded overrides; flip counter 2 of 3"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "INGEST_TEST_SOURCES",
+      "to": "SCREENING_LIBRARY",
+      "kind": "sync",
+      "label": "boundary 1: source text at ingest (F3)"
+    },
+    {
+      "from": "ACQUIRE_UI_EVIDENCE",
+      "to": "SCREENING_LIBRARY",
+      "kind": "sync",
+      "label": "boundary 2: capture output BEFORE it is written (M35)"
+    },
+    {
+      "from": "REPLAY_ON_DEVICES",
+      "to": "SCREENING_LIBRARY",
+      "kind": "sync",
+      "label": "boundary 2: pulled artifacts at landing, beside hash-at-pull (M35, M9)"
+    },
+    {
+      "from": "INVOKE_MODELS",
+      "to": "SCREENING_LIBRARY",
+      "kind": "sync",
+      "label": "boundary 3: model egress (F3)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

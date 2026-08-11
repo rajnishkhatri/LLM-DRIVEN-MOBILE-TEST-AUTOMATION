@@ -1,0 +1,256 @@
+{
+  "$schema": "../../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "02-container",
+    "level": "container",
+    "title": "C2a \u2014 Container view: deployment topology (high level)",
+    "caption": "What containers exist, and what talks to what? This view opens the single box SYS from C1. Structure and synchronous data flow only, at container grain \u2014 the monolith is one opaque box here. Which module owns each edge is C2b; evidence flows are C2c; credentials are C2d; async edges are C2e. Canvas carries numbered edge refs only (1\u201316); the full claim lives in the edge-detail table keyed by number.",
+    "direction": "right",
+    "opens": "SYS",
+    "opens_from": "01-context",
+    "completeness": "complete",
+    "allow_deployment": true,
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "QA",
+      "kind": "actor",
+      "label": "QA engineer"
+    },
+    {
+      "id": "REVIEWER",
+      "kind": "actor",
+      "label": "Reviewer"
+    },
+    {
+      "id": "AUDITOR",
+      "kind": "actor",
+      "label": "Auditor"
+    },
+    {
+      "id": "LEAD",
+      "kind": "actor",
+      "label": "Delivery lead"
+    },
+    {
+      "id": "WEB",
+      "kind": "container",
+      "label": "Review UI + dashboard",
+      "qualifiers": [
+        "TECH: UNKNOWN"
+      ],
+      "detail": [
+        "One authenticated internal API, no BFF (ADR 0008). SSO against the bank IdP is a HARD requirement, not a nice-to-have (M37). The ONLY UI in Phase 1"
+      ]
+    },
+    {
+      "id": "APP",
+      "kind": "container",
+      "label": "Spring Boot modular monolith",
+      "technology": "Spring Boot modular monolith",
+      "detail": [
+        "Deployment boundary: bank internal network \u2014 on-premises, bank validated internal network \u2014 no external party has access (ADR 0006; E3). Perfecto, the gateway, Octane, and workbook sources sit outside it",
+        "Architecture quantum 1 of 1 \u2014 one deployable + one primary datastore = the single architecture quantum (ADR 0005). Object storage, Git, and the secrets store are on-premises but outside the quantum: they have their own lifecycles",
+        "Module boundaries are the three clusters, NOT the blueprint's five pipeline stages (ADR 0005). Drawn opaque in C2a; opened at module grain in C2b and at component grain in C3a"
+      ]
+    },
+    {
+      "id": "POSTGRESQL",
+      "kind": "datastore",
+      "label": "PostgreSQL",
+      "detail": [
+        "WORKING ASSUMPTION (spine C3); dev/CI embedded or containerized, ephemeral-only (D1, M40). Schemas: conversion-state \u00b7 lineage (append-only: app role INSERT/SELECT only, per-conversion hash chain, supersede-not-update \u2014 ADR 0012) \u00b7 outbox+queue (bounded retries, dead-letter quarantine \u2014 M21) \u00b7 judge-response cache (M27, CF7). No cross-lifecycle foreign keys (F4, ADR 0006)"
+      ]
+    },
+    {
+      "id": "TEST_EXECUTION",
+      "kind": "process",
+      "label": "test-execution process",
+      "detail": [
+        "Test-execution process, spawned per device run. Separate OS process \u2014 shape committed NOW, sandbox technology weeks 3\u20138 (ADR 0013). NO long-lived credentials; single-run device session token; NEVER the gateway credential. Static capability rules gate entry (supplement, not the control)"
+      ]
+    },
+    {
+      "id": "SECRETS_STORE",
+      "kind": "datastore",
+      "label": "secrets store",
+      "detail": [
+        "Interim: CI secret store; the vault is named by the M33 controls-baseline read \u2014 PENDING. All credentials resolved by injected reference, never literals (M34/CF8)"
+      ]
+    },
+    {
+      "id": "OBJECT_STORAGE",
+      "kind": "datastore",
+      "label": "object storage",
+      "detail": [
+        "Evidence object storage behind an S3-compatible port (ADR 0011). Dev/CI: containerized MinIO; production BINDING PROBE-PENDING (week-0 platform probe; default = self-operated MinIO). Write-once / object-lock REQUIRED \u2014 ADR 0012's precondition, deployment-checked. Holds: classified artifacts + retention classes (M39) \u00b7 canonicalized source snapshots (M15) \u00b7 lineage chain anchors (ADR 0012). Envelope encryption + crypto-shredding before the first audit-retained artifact (ADR 0011 as amended)"
+      ]
+    },
+    {
+      "id": "GIT",
+      "kind": "datastore",
+      "label": "Git",
+      "detail": [
+        "Prompts / exemplars / golden set / test code; version identity is free"
+      ]
+    },
+    {
+      "id": "PERFECTO",
+      "kind": "external",
+      "label": "Perfecto device lab",
+      "detail": [
+        "Same standing as the C1 node-detail table (E1/E2, E4, E5, E3/S9). INCUMBENT vendor \u2014 MSA on file, unread (E1); flows run on mock/synthetic data (E2); NOT covered by E3"
+      ]
+    },
+    {
+      "id": "GATEWAY",
+      "kind": "external",
+      "label": "Orchestrator AI gateway",
+      "detail": [
+        "Same standing as the C1 node-detail table (E1/E2, E4, E5, E3/S9). Internal gateway; model providers hosted INSIDE the bank \u2014 prompts never leave (E4); version-report contract UNVERIFIED (M5 held)"
+      ]
+    },
+    {
+      "id": "OCTANE",
+      "kind": "external",
+      "label": "ALM Octane",
+      "detail": [
+        "Same standing as the C1 node-detail table (E1/E2, E4, E5, E3/S9). At BOTH ends of the pipeline (E5): ingest source AND publish target; asset-versioning UNVERIFIED (M7 held)"
+      ]
+    },
+    {
+      "id": "XLS",
+      "kind": "external",
+      "label": "Excel / ALM-QC",
+      "detail": [
+        "Same standing as the C1 node-detail table (E1/E2, E4, E5, E3/S9). File input originating from bank teams inside the network (E3/S9)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "QA",
+      "to": "APP",
+      "kind": "sync",
+      "ref": 1,
+      "detail": "2 CLIs (ingestion + hierarchy-tool), no BFF (ADR 0008)"
+    },
+    {
+      "from": "REVIEWER",
+      "to": "WEB",
+      "kind": "async",
+      "ref": 2,
+      "detail": "Review queue; human latency, hours\u2013days"
+    },
+    {
+      "from": "LEAD",
+      "to": "WEB",
+      "kind": "sync",
+      "ref": 3,
+      "detail": "Read-only metrics dashboard"
+    },
+    {
+      "from": "WEB",
+      "to": "APP",
+      "kind": "sync",
+      "ref": 4,
+      "detail": "One authenticated internal API; SSO against bank IdP (M37)"
+    },
+    {
+      "from": "AUDITOR",
+      "to": "APP",
+      "kind": "sync",
+      "ref": 5,
+      "detail": "Versioned export; targets the evidence module at module grain (C2b). Itself an attributable lineage event (CF11)"
+    },
+    {
+      "from": "APP",
+      "to": "POSTGRESQL",
+      "kind": "sync",
+      "ref": 6,
+      "detail": "State + lineage, same local transaction (ADR 0007) \u2014 rolled up from MA/MB/MC in C2b"
+    },
+    {
+      "from": "APP",
+      "to": "OBJECT_STORAGE",
+      "kind": "sync",
+      "ref": 7,
+      "detail": "Snapshots + classified artifacts + chain anchors (rolled up from MA/MB/MC in C2b)"
+    },
+    {
+      "from": "APP",
+      "to": "SECRETS_STORE",
+      "kind": "sync",
+      "ref": 8,
+      "detail": "All credentials resolved by injected reference, never literals (M34/CF8)"
+    },
+    {
+      "from": "APP",
+      "to": "GIT",
+      "kind": "sync",
+      "ref": 9,
+      "detail": "Versioned assets (prompts / exemplars / golden set / test code)"
+    },
+    {
+      "from": "APP",
+      "to": "TEST_EXECUTION",
+      "kind": "sync",
+      "ref": 10,
+      "detail": "Spawn per device run (ADR 0013)"
+    },
+    {
+      "from": "TEST_EXECUTION",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "ref": 11,
+      "detail": "Single-run device session token (ADR 0013)"
+    },
+    {
+      "from": "APP",
+      "to": "PERFECTO",
+      "kind": "sync",
+      "ref": 12,
+      "detail": "Pool + artifact pull; dominant cost (MB-owned \u2014 C2b)"
+    },
+    {
+      "from": "APP",
+      "to": "GATEWAY",
+      "kind": "sync",
+      "ref": 13,
+      "detail": "Model calls (P2) + fidelity grade (ADR 0004) \u2014 MA/MB-owned (C2b)"
+    },
+    {
+      "from": "APP",
+      "to": "OCTANE",
+      "kind": "sync",
+      "ref": 14,
+      "detail": "Manual-test ingest, API-key (MA-owned \u2014 C2b)"
+    },
+    {
+      "from": "APP",
+      "to": "OCTANE",
+      "kind": "async",
+      "ref": 15,
+      "detail": "A3: publish certified assets \u2014 idempotent projection (CF3); never a verdict precondition"
+    },
+    {
+      "from": "APP",
+      "to": "XLS",
+      "kind": "sync",
+      "ref": 16,
+      "detail": "Workbook file input (MA-owned \u2014 C2b)"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.99",
+    "\\bAWS\\b",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "us-east",
+    "eu-west",
+    "\\bRedis\\b",
+    "\\bKafka\\b",
+    "\\bDynamoDB\\b"
+  ]
+}

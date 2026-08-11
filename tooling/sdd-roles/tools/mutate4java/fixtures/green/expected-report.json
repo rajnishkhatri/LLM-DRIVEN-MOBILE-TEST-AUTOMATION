@@ -1,0 +1,27 @@
+{
+  "artifact_type": "mutation_report",
+  "contract": "o7-kata-seam.1",
+  "engine": "mvn test-compile + pitest mutationCoverage (mutations XML)",
+  "inputs": {
+    "pom_sha256": "f2f0831b90f64ff4976ac8232a22e199b9e0e5bef807d4b9d427810b064a5775"
+  },
+  "mutants": {
+    "by_status": {
+      "KILLED": 5
+    },
+    "detected": 5,
+    "total": 5
+  },
+  "mutation_score": 1.0,
+  "mutation_score_scaled": 10000,
+  "not_evaluable": null,
+  "survivors": [],
+  "threshold": {
+    "name": "mutation_score_min",
+    "value": 0.85
+  },
+  "threshold_scaled": 8500,
+  "tool": "mutate4java",
+  "tool_version": "1.0.0",
+  "verdict": "green"
+}

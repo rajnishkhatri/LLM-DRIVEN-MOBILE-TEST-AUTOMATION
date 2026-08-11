@@ -1,0 +1,47 @@
+{
+  "sourceSystem": "octane",
+  "sourceId": "ACC-1042",
+  "title": "Login with valid credentials shows welcome",
+  "preconditions": [
+    "app freshly installed",
+    "on the login screen"
+  ],
+  "testData": {
+    "username": "vault:user_qa",
+    "password": "vault:pass_qa"
+  },
+  "platforms": ["IOS", "ANDROID"],
+  "normalizedSteps": [
+    {
+      "index": 0,
+      "canonicalIntent": "sign in to the app using the test credentials username and password",
+      "normalizedPhrasing": "sign in",
+      "phrasingVariantsAbsorbed": ["Sign in", "log in", "login"],
+      "referencesTestData": ["username", "password"],
+      "screenContextHint": "LoginScreen",
+      "ambiguityFlags": []
+    },
+    {
+      "index": 1,
+      "canonicalIntent": "verify the welcome banner appears on the home screen",
+      "normalizedPhrasing": "verify",
+      "phrasingVariantsAbsorbed": ["Verify that", "check that", "confirm"],
+      "referencesTestData": [],
+      "screenContextHint": "HomeScreen",
+      "ambiguityFlags": []
+    }
+  ],
+  "ambiguityFlags": [],
+  "provenance": {
+    "a0Version": "sha:a0:7c3f1b9e...",
+    "model": "gpt-4o-mini via Gateway",
+    "screeningCallSite": "adr-0009:a0-egress",
+    "normalizedAt": "2026-07-29T13:55Z"
+  },
+  "honestyTags": [
+    "PROPOSED ADR 0014",
+    "Replan R1 D2",
+    "lives outside spine repo",
+    "F1 does not apply"
+  ]
+}

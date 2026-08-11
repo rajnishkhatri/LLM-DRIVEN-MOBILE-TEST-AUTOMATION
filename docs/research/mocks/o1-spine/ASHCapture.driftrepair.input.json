@@ -1,0 +1,58 @@
+{
+  "honestyTags": [
+    "PROPOSED ADR 0014",
+    "Replan R1 D2",
+    "lives outside spine repo",
+    "F1 does not apply"
+  ],
+  "appVersion": "8.5.0",
+  "previousAppVersion": "8.4.0",
+  "graphVersion": "sha:graph:4c9d1f2a...",
+  "previousGraphVersion": "sha:graph:3b2c7e8f...",
+  "trigger": "CAPTURE_FAILURE",
+  "triggerNote": "Post-release re-verify of the HomeScreen->AccountOverview edge replayed the stored path but landed on a signature != expected. Edge marked BROKEN; scoped re-discovery runs from the last known-good node (HomeScreen).",
+  "brokenEdge": {
+    "from": "HomeScreen",
+    "to": "AccountOverview",
+    "action": { "kind": "TAP", "locator": { "strategy": "ACCESSIBILITY_ID", "value": "accountsTab" } },
+    "lastVerifiedAt": "2026-07-29T14:35Z",
+    "status": "BROKEN",
+    "failureReason": "landed signature h_acctov_7a2b != stored signature h_acctov_9c1d — screen changed in 8.5.0 release"
+  },
+  "lastKnownGoodNode": {
+    "screen": "HomeScreen",
+    "signature": { "skeletonHash": "h_home_4a2f", "titleAnchor": "Home" },
+    "verifiedAt": "2026-08-01T09:50Z",
+    "status": "VERIFIED"
+  },
+  "loopState": {
+    "currentScreen": "HomeScreen",
+    "currentSignature": { "skeletonHash": "h_home_4a2f", "titleAnchor": "Home" },
+    "targetScreen": "AccountOverview",
+    "targetSignature": {
+      "skeletonHash": "h_acctov_9c1d",
+      "titleAnchor": "Account Overview",
+      "storedAtAppVersion": "8.4.0"
+    },
+    "stepBudgetRemaining": 15,
+    "noProgressStrikes": 0,
+    "sessionTimeRemainingSec": 600
+  },
+  "scope": "SCOPED_REDISCOVERY",
+  "scopeNote": "Re-discovery runs from the last known-good node only — not from root. The rest of the graph is untouched; only the broken sub-path is repaired.",
+  "promptReuse": "ASHCapture.discovery.prompt.md",
+  "promptReuseNote": "This reuses the discovery loop proposer prompt (§11.4 step 2) unchanged. The only difference is the loopState: currentScreen is the last known-good node, not root, and the target is the broken edge's destination. No separate prompt is needed.",
+  "knownEdgesFromCurrentNode": [
+    { "to": "PaymentsActivity", "action": { "kind": "TAP", "locator": { "strategy": "ACCESSIBILITY_ID", "value": "paymentsTab" } }, "status": "VERIFIED" },
+    { "to": "ProfileScreen", "action": { "kind": "TAP", "locator": { "strategy": "ACCESSIBILITY_ID", "value": "profileButton" } }, "status": "VERIFIED" }
+  ],
+  "denylist": ["logout", "transfer", "pay", "confirm", "sign out"],
+  "cascadeFloor": 0.85,
+  "maxProposalsK": 3,
+  "knownDefect": {
+    "id": "Replan R1 D1/S1",
+    "description": "Signature re-keying defect: the success predicate (signature == target) compares against the STORED signature from appVersion 8.4.0. If AccountOverview legitimately changed in 8.5.0 (the very case this repair exists for), the loop can never match and will deterministically exhaust its budget into the human escape hatch. Until a signature re-keying mechanism is designed, this scoped repair fails on every changed screen.",
+    "walkthroughRef": "o1-pipeline-walkthrough.md:616-621"
+  },
+  "screeningCallSite": "adr-0009:ash-discovery-proposer-egress"
+}

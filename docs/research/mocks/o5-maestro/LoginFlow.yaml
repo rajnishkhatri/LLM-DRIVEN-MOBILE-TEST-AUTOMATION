@@ -1,0 +1,30 @@
+# Maestro flow for ACC-1042: Login with valid credentials shows welcome.
+# Committed YAML — readable, versionable, diff-able. The fixed Maestro runtime interprets it
+# deterministically at execution time. Built-in waits reduce flakiness. No runtime self-healing:
+# on locator drift this flow FAILS and a human edits the YAML selector. iOS is simulator-only
+# natively (real iOS needs community tooling) — a hard constraint for a banking certification tier.
+
+appId: com.bank.mobile
+---
+- launchApp:
+    clearState: true
+
+# step 1-2: username
+- tapOn:
+    id: "usernameField"          # accessibility id; deterministic match at runtime
+- inputText: "${MAESTRO_USER_QA}"
+
+# step 3-4: password
+- tapOn:
+    id: "passwordField"
+- inputText: "${MAESTRO_PASS_QA}"
+
+# step 5: login
+- tapOn:
+    id: "loginButton"
+
+# step 6: assert welcome
+- assertVisible:
+    text: "Welcome, QA User"
+    # Maestro's built-in wait means this assertion is tolerant of load timing,
+    # but NOT tolerant of the text changing — drift here = red test = human edits YAML.

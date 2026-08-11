@@ -1,0 +1,30 @@
+# OKF workspace-binding — LLM-DRIVEN-MOBILE-TEST-AUTOMATION
+# Adapted from Architect 2026-08-11 for the MTA/spine/O7 design workspace.
+# Keys marked <none> have no analog here — skill skips those rules.
+
+[binding]
+conventions_doc        = "docs/CONVENTIONS.md"
+lint_gate              = "python .cursor/skills/okf-curator/scripts/okf_lint.py"
+docs_home              = "docs/"
+recipes_home           = "<none>"
+authored_research_home = "<none>"
+evidence_home          = "<none>"
+context_mention_prefix = "<none>"
+knowledge_globs        = [
+  "cases/coding-rules/**/*.md",
+  "docs/architecture/**/*.md",
+  "docs/sdd/**/*.md",
+  "docs/research/**/*.md",
+  "docs/skills/**/*.md",
+]
+
+[lint]
+declared_bundles  = ["cases/coding-rules", "docs/architecture"]
+evidence_segments = ["outputs", "node_modules", "staging"]
+evidence_suffixes = ["-workspace"]
+run_dir_pattern   = "^run-\\d+$"
+reserved          = ["index.md", "log.md", "README.md"]
+
+[drift]
+code_prefixes    = []
+exclude_segments = ["/outputs/", "/node_modules/", "/staging/"]

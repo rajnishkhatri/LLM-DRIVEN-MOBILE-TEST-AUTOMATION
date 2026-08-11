@@ -1,0 +1,6 @@
+{
+  "harness": "copilot",
+  "tool_exit": 3,
+  "expected_stdout": "deny\n",
+  "expected_exit": 1
+}

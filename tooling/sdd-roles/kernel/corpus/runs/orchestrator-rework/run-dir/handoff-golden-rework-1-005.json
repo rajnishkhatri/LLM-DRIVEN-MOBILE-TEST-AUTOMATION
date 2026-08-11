@@ -1,0 +1,45 @@
+{
+  "artifact_type": "handoff_contract",
+  "completion_evidence": [],
+  "decisions": [
+    {
+      "choice": "repair-build-break",
+      "provenance": {
+        "source": "role_authored"
+      },
+      "rationale": "deterministic scenario decision 2",
+      "rejected_alternatives": [
+        "alternative-2"
+      ]
+    }
+  ],
+  "from_role": "r-coder",
+  "gate_outcomes": [
+    {
+      "attempt_number": 2,
+      "exit_code": 0,
+      "gate_id": "r-build",
+      "input_tree_digest": "12ae53e5691d4bc31b4f7981414e33ff735100f6700a1f846fbc03f11390435d",
+      "report_ref": {
+        "path": "reports/golden-rework-1-r-build-s004.json",
+        "sha256": "b4bdf3d04c5e9b5ba02c3d3fb779f2040377a4e86fb7f467a1b4462cbffb9e9e"
+      },
+      "threshold": {
+        "name": "stub_threshold",
+        "value": 0
+      },
+      "tool": "stub-gate-tool",
+      "tool_version": "9.9.2"
+    }
+  ],
+  "schema_version": "1.4.0",
+  "stage": "r-coder",
+  "stage_status": "complete",
+  "summary": {
+    "provenance": {
+      "source": "role_authored"
+    },
+    "text": "repaired the build break."
+  },
+  "to_role": "r-checker"
+}

@@ -1,0 +1,954 @@
+<title>The Sealed Map — How the o7 Test Pipeline Works</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    /* ---- chosen neutrals, biased warm toward the teal ink ---- */
+    --paper:      #F5F1E7;
+    --paper-2:    #EEE8DA;   /* raised panels */
+    --paper-edge: #E2DAC6;   /* hairlines on paper */
+    --ink:        #1B2A2B;   /* deep ink-teal, body text */
+    --ink-soft:   #4A5A59;   /* secondary text */
+    --ink-faint:  #7A8683;   /* captions */
+
+    /* ---- meaning colors (the honesty key) ---- */
+    --det:        #1F6F6B;   /* deterministic / machine / trustworthy */
+    --det-wash:   #DCECE9;
+    --llm:        #B0742A;   /* LLM / authoring / "fuzzy" reasoning */
+    --llm-wash:   #F1E3CE;
+    --proposed:   #6A5A9C;   /* proposed enhancement — never confused with real */
+    --proposed-wash:#E7E1F1;
+    --human:      #495C77;   /* human decision */
+
+    --pass:       #2E7D5B;
+    --fail:       #A6402F;
+
+    --accent:     var(--det);
+    --rule:       #D8CFBB;
+
+    --measure: 66ch;
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "Menlo", Consolas, "Liberation Mono", monospace;
+
+    --shadow: 0 1px 2px rgba(27,42,43,.06), 0 8px 24px rgba(27,42,43,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #14201F;
+      --paper-2:    #1B2B29;
+      --paper-edge: #263A37;
+      --ink:        #E7EBE7;
+      --ink-soft:   #AEBCB8;
+      --ink-faint:  #7E908B;
+      --det:        #6FC9C0;
+      --det-wash:   #17332F;
+      --llm:        #E0A65A;
+      --llm-wash:   #33280F;
+      --proposed:   #A99AD6;
+      --proposed-wash:#241E38;
+      --human:      #8BA3C4;
+      --pass:       #6BC79A;
+      --fail:       #E48374;
+      --rule:       #2A3D39;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  /* explicit toggle overrides — must win both directions */
+  :root[data-theme="light"] {
+    --paper:#F5F1E7;--paper-2:#EEE8DA;--paper-edge:#E2DAC6;--ink:#1B2A2B;--ink-soft:#4A5A59;--ink-faint:#7A8683;
+    --det:#1F6F6B;--det-wash:#DCECE9;--llm:#B0742A;--llm-wash:#F1E3CE;--proposed:#6A5A9C;--proposed-wash:#E7E1F1;
+    --human:#495C77;--pass:#2E7D5B;--fail:#A6402F;--rule:#D8CFBB;
+    --shadow:0 1px 2px rgba(27,42,43,.06),0 8px 24px rgba(27,42,43,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper:#14201F;--paper-2:#1B2B29;--paper-edge:#263A37;--ink:#E7EBE7;--ink-soft:#AEBCB8;--ink-faint:#7E908B;
+    --det:#6FC9C0;--det-wash:#17332F;--llm:#E0A65A;--llm-wash:#33280F;--proposed:#A99AD6;--proposed-wash:#241E38;
+    --human:#8BA3C4;--pass:#6BC79A;--fail:#E48374;--rule:#2A3D39;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* faint survey-grid texture on the ground */
+  body::before {
+    content:""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(var(--paper-edge) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-edge) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: .28;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 80%);
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+  .measure { max-width: var(--measure); margin-left: auto; margin-right: auto; }
+
+  /* ---------- masthead ---------- */
+  header.mast {
+    max-width: 1000px; margin: 0 auto; padding: 64px 24px 28px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--det); margin: 0 0 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow::before {
+    content:""; width: 34px; height: 2px; background: var(--det); display:inline-block;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 700; line-height: 1.05;
+    font-size: clamp(2.4rem, 6vw, 4.1rem); margin: 0 0 .35em; letter-spacing: -.01em;
+    text-wrap: balance; color: var(--ink);
+  }
+  .dek {
+    font-family: var(--serif); font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    line-height: 1.4; color: var(--ink-soft); max-width: 40ch; text-wrap: balance;
+    font-style: italic; margin: 0 0 26px;
+  }
+  .byline {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    letter-spacing: .04em; border-top: 1px solid var(--rule);
+    padding-top: 14px; display:flex; gap: 18px 26px; flex-wrap: wrap;
+  }
+  .byline b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- body typography ---------- */
+  main { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  p { margin: 0 0 1.15em; }
+  main > .measure > p,
+  main > .measure > h2,
+  main > .measure > h3,
+  main > .measure > ul,
+  main > .measure > ol,
+  main > .measure > .callout { }
+
+  h2 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.01em;
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem); line-height: 1.12;
+    margin: 2.2em 0 .1em; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .5em; color: var(--det); font-weight: 500;
+    letter-spacing: .1em; vertical-align: middle; margin-right: .8em;
+    border: 1px solid var(--det); border-radius: 3px; padding: .18em .5em;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.16rem;
+    margin: 1.9em 0 .3em; color: var(--ink); letter-spacing: -.005em;
+  }
+  .lede { font-size: 1.28rem; line-height: 1.5; color: var(--ink);
+    font-family: var(--serif); }
+  .lede b { color: var(--det); }
+  a { color: var(--det); text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { }
+  code {
+    font-family: var(--mono); font-size: .84em;
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 4px; padding: .08em .38em; color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .drop::first-letter {
+    font-family: var(--serif); float: left; font-size: 3.7em; line-height: .78;
+    padding: .06em .12em 0 0; color: var(--det); font-weight: 700;
+  }
+
+  ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--det); }
+
+  /* ---------- the honesty key (persistent legend) ---------- */
+  .key {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    margin: 0 -24px 0; padding: 10px 24px;
+  }
+  .key-inner {
+    max-width: 1000px; margin: 0 auto; display: flex; gap: 8px 22px;
+    flex-wrap: wrap; align-items: center;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .02em;
+  }
+  .key-inner .klabel { color: var(--ink-faint); text-transform: uppercase; letter-spacing:.12em; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+  .sw { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .sw.det { background: var(--det); }
+  .sw.llm { background: var(--llm); }
+  .sw.human { background: var(--human); }
+  .sw.prop { background: var(--proposed-wash); border: 1.5px dashed var(--proposed); }
+
+  /* ---------- figure bands (break the measure) ---------- */
+  figure {
+    margin: 2.4em 0; padding: 0;
+  }
+  figure svg { display: block; width: 100%; height: auto; }
+  .fig-card {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 12px; padding: 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    margin-top: 12px; line-height: 1.5; letter-spacing: .01em;
+    max-width: 74ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--det); background: var(--det-wash);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 1.6em 0;
+    font-size: .98rem;
+  }
+  .callout .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--det); display:block; margin-bottom: 6px; font-weight: 600;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout.proposed { border-left-color: var(--proposed); background: var(--proposed-wash); border-left-style: dashed; }
+  .callout.proposed .tag { color: var(--proposed); }
+
+  /* ---------- proposed section wrapper ---------- */
+  .proposed-zone {
+    border: 1.5px dashed var(--proposed); border-radius: 14px;
+    background: color-mix(in srgb, var(--proposed-wash) 55%, transparent);
+    padding: 8px 26px 26px; margin: 2.4em 0;
+  }
+  .proposed-banner {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--proposed); font-weight: 700;
+    background: var(--paper); border: 1.5px dashed var(--proposed); border-radius: 999px;
+    padding: 7px 16px; transform: translateY(-20px); box-shadow: var(--shadow);
+  }
+  .proposed-zone h2, .proposed-zone h3 { }
+  .proposed-zone h2 .num { color: var(--proposed); border-color: var(--proposed); }
+
+  /* ---------- scorecard table ---------- */
+  .table-wrap { overflow-x: auto; margin: 1.8em 0; border-radius: 10px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--paper-2); font-size: .95rem; }
+  caption { text-align: left; font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint); padding: 0 0 10px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--paper-edge); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600; background: color-mix(in srgb, var(--paper-2) 60%, var(--paper)); }
+  tbody tr:last-child td { border-bottom: none; }
+  td .who { font-weight: 700; }
+  td .who.det { color: var(--det); }
+  td .who.llm { color: var(--llm); }
+  td .who.human { color: var(--human); }
+  td .who.excl { color: var(--fail); }
+
+  .owner-pill {
+    display:inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .owner-pill.det { background: var(--det-wash); color: var(--det); border:1px solid var(--det); }
+  .owner-pill.llm { background: var(--llm-wash); color: var(--llm); border:1px solid var(--llm); }
+  .owner-pill.human { background: color-mix(in srgb,var(--human) 16%, transparent); color: var(--human); border:1px solid var(--human); }
+  .owner-pill.excl { background: color-mix(in srgb,var(--fail) 12%, transparent); color: var(--fail); border:1px dashed var(--fail); }
+
+  /* ---------- section rule ---------- */
+  .rule-orn { display: flex; align-items: center; gap: 16px; margin: 3em 0 0; color: var(--rule); }
+  .rule-orn::before, .rule-orn::after { content:""; height: 1px; background: var(--rule); flex: 1; }
+  .rule-orn span { font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: var(--ink-faint); }
+
+  /* ---------- pull quote ---------- */
+  .pull {
+    font-family: var(--serif); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.28;
+    color: var(--ink); font-style: italic; text-wrap: balance;
+    border-top: 2px solid var(--det); border-bottom: 2px solid var(--det);
+    padding: .7em 0; margin: 1.8em 0;
+  }
+  .pull b { font-style: normal; color: var(--det); }
+
+  /* footer */
+  footer {
+    max-width: 1000px; margin: 60px auto 0; padding: 26px 24px 0;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+  footer b { color: var(--ink-soft); }
+
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    header.mast { padding-top: 40px; }
+    .key-inner { font-size: 11px; gap: 6px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<header class="mast">
+  <p class="eyebrow">Internal Engineering&nbsp;·&nbsp;Mobile Test Automation&nbsp;·&nbsp;o7 Pipeline</p>
+  <h1>The Sealed Map</h1>
+  <p class="dek">How we teach a computer to test our banking app — and why the smart part happens before the test ever runs.</p>
+  <div class="byline">
+    <span><b>Audience</b> Developers · BAs · Architects · Managers</span>
+    <span><b>Reading time</b> ~10 min</span>
+    <span><b>Status</b> Explainer — grounded in the o7 spec &amp; mocks</span>
+  </div>
+</header>
+
+<div class="key">
+  <div class="key-inner">
+    <span class="klabel">How to read the colours:</span>
+    <span class="chip"><span class="sw llm"></span> AI / reasoning</span>
+    <span class="chip"><span class="sw det"></span> Deterministic machine</span>
+    <span class="chip"><span class="sw human"></span> Human decision</span>
+    <span class="chip"><span class="sw prop"></span> Proposed — not yet decided or designed</span>
+  </div>
+</div>
+
+<main>
+
+  <div class="measure">
+    <p class="lede drop">Every test is a little journey. You start somewhere, you travel to where you need to be, and once you arrive you check whether the thing you came to see is actually there. It's exactly like using a map: you need to know your <b>starting point</b>, your <b>destination</b>, and the <b>directions</b> in between.</p>
+
+    <p>Our mobile test automation pipeline — the one we call <strong>o7</strong> — is built on that simple idea. A test of our banking app might say: <em>"send $25 to a saved Zelle recipient and check the confirmation."</em> To run it automatically, the system has to figure out where to start (the login screen), how to get to the Zelle send screen, and what "success" looks like when it lands there.</p>
+
+    <p>This is the story of how o7 does that, and — more importantly — of a single design decision that shapes everything else:</p>
+
+    <p class="pull">o7 splits the work into <b>making the map</b> and <b>driving the map</b>. All the clever AI lives in the map-making. By the time a test actually runs, the map is <b>sealed</b> — and the thing driving it is a machine that never improvises.</p>
+
+    <p>If you remember only one thing from this post, make it that. Everything below is the reasoning behind it.</p>
+  </div>
+
+  <!-- ============ FIG 1: TWO ARMS ONE SEAM ============ -->
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="f1t">
+        <title id="f1t">Two arms and one seam: authoring uses AI, replay is a deterministic machine, and the commit seal separates them.</title>
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="var(--ink-soft)"/>
+          </marker>
+        </defs>
+        <!-- authoring arm -->
+        <rect x="20" y="60" width="360" height="180" rx="14" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="40" y="92" font-family="var(--mono)" font-size="12" letter-spacing="1.5" fill="var(--llm)" font-weight="700">MAP&#8209;MAKING · AUTHORING ARM</text>
+        <text x="40" y="128" font-family="var(--serif)" font-size="23" fill="var(--ink)" font-weight="700">The surveyors</text>
+        <text x="40" y="158" font-family="var(--sans)" font-size="14.5" fill="var(--ink-soft)">AI reads the request, explores the</text>
+        <text x="40" y="178" font-family="var(--sans)" font-size="14.5" fill="var(--ink-soft)">app, and draws the route. Fuzzy,</text>
+        <text x="40" y="198" font-family="var(--sans)" font-size="14.5" fill="var(--ink-soft)">world&#8209;knowledge work lives here.</text>
+        <circle cx="55" cy="222" r="4" fill="var(--llm)"/>
+        <text x="68" y="227" font-family="var(--mono)" font-size="11.5" fill="var(--llm)">revisable · uncertain · human&#8209;checked</text>
+
+        <!-- seam -->
+        <g>
+          <rect x="410" y="40" width="100" height="220" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="2" stroke-dasharray="2 4"/>
+          <text x="460" y="70" text-anchor="middle" font-family="var(--mono)" font-size="11" letter-spacing="1" fill="var(--det)" font-weight="700">THE SEAL</text>
+          <!-- envelope / wax seal motif -->
+          <rect x="428" y="120" width="64" height="46" rx="4" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+          <path d="M428,124 L460,148 L492,124" fill="none" stroke="var(--det)" stroke-width="1.5"/>
+          <circle cx="460" cy="150" r="13" fill="var(--det)"/>
+          <text x="460" y="154" text-anchor="middle" font-family="var(--mono)" font-size="9" fill="var(--paper)" font-weight="700">SHA</text>
+          <text x="460" y="196" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">commit +</text>
+          <text x="460" y="210" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">irDigest</text>
+        </g>
+
+        <!-- replay arm -->
+        <rect x="540" y="60" width="360" height="180" rx="14" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="560" y="92" font-family="var(--mono)" font-size="12" letter-spacing="1.5" fill="var(--det)" font-weight="700">MAP&#8209;DRIVING · REPLAY ARM</text>
+        <text x="560" y="128" font-family="var(--serif)" font-size="23" fill="var(--ink)" font-weight="700">The machine driver</text>
+        <text x="560" y="158" font-family="var(--sans)" font-size="14.5" fill="var(--ink-soft)">Follows the sealed route turn by</text>
+        <text x="560" y="178" font-family="var(--sans)" font-size="14.5" fill="var(--ink-soft)">turn on a real device. No AI. No</text>
+        <text x="560" y="198" font-family="var(--sans)" font-size="14.5" fill="var(--ink-soft)">guessing. Same result every time.</text>
+        <circle cx="575" cy="222" r="4" fill="var(--det)"/>
+        <text x="588" y="227" font-family="var(--mono)" font-size="11.5" fill="var(--det)">fixed · repeatable · re&#8209;runnable</text>
+
+        <line x1="380" y1="150" x2="406" y2="150" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="514" y1="150" x2="536" y2="150" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah)"/>
+      </svg>
+    </div>
+    <figcaption><b>The whole pipeline in one picture.</b> Everything to the left of the seal is AI-assisted and changeable. Everything to the right is a fixed machine walking a sealed file. The wax-seal "SHA" is a fingerprint of the exact map that was approved — so the map that runs is provably the map that was reviewed.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <h2><span class="num">01</span>The eleven stops on the line</h2>
+    <p>Before we zoom in, here's the whole journey a test takes, start to finish. Read the colour of each stop: <span style="color:var(--llm);font-weight:700">amber</span> means AI is doing the thinking, <span style="color:var(--det);font-weight:700">teal</span> means a deterministic machine is doing exact work, and <span style="color:var(--human);font-weight:700">slate</span> means a person decides.</p>
+  </div>
+
+  <!-- ============ FIG 2: PIPELINE STRIP ============ -->
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 470" role="img" aria-labelledby="f2t">
+        <title id="f2t">The eleven pipeline stages in order, colour-coded by who does the work, with the commit seal between stage 5 and stage 6.</title>
+        <defs>
+          <marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--ink-faint)"/>
+          </marker>
+        </defs>
+
+        <!-- arm labels -->
+        <rect x="16" y="20" width="4" height="196" rx="2" fill="var(--llm)"/>
+        <text x="30" y="34" font-family="var(--mono)" font-size="11" letter-spacing="1.4" fill="var(--llm)" font-weight="700">MAP-MAKING (AI-ASSISTED)</text>
+        <rect x="16" y="250" width="4" height="200" rx="2" fill="var(--det)"/>
+        <text x="30" y="264" font-family="var(--mono)" font-size="11" letter-spacing="1.4" fill="var(--det)" font-weight="700">MAP-DRIVING (DETERMINISTIC)</text>
+
+        <!-- row 1 : stages 1-5 -->
+        <g font-family="var(--sans)">
+          <!-- helper: each card 168 wide -->
+          <!-- 1 -->
+          <rect x="30" y="46" width="168" height="150" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.2"/>
+          <text x="44" y="70" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">01</text>
+          <text x="44" y="98" font-size="14.5" font-weight="700" fill="var(--ink)">Ingest sources</text>
+          <text x="44" y="120" font-size="12.5" fill="var(--ink-soft)">Read the tests</text>
+          <text x="44" y="136" font-size="12.5" fill="var(--ink-soft)">people wrote</text>
+          <text x="44" y="152" font-size="12.5" fill="var(--ink-soft)">(Excel, Octane).</text>
+          <text x="44" y="182" font-size="10.5" font-family="var(--mono)" fill="var(--det)">machine</text>
+
+          <!-- 2 -->
+          <rect x="212" y="46" width="168" height="150" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.6"/>
+          <text x="226" y="70" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">02</text>
+          <text x="226" y="98" font-size="14.5" font-weight="700" fill="var(--ink)">Understand it</text>
+          <text x="226" y="120" font-size="12.5" fill="var(--ink-soft)">Turn a vague note</text>
+          <text x="226" y="136" font-size="12.5" fill="var(--ink-soft)">into an exact</text>
+          <text x="226" y="152" font-size="12.5" fill="var(--ink-soft)">step-by-step plan.</text>
+          <text x="226" y="182" font-size="10.5" font-family="var(--mono)" fill="var(--llm)" font-weight="700">AI</text>
+
+          <!-- 3 -->
+          <rect x="394" y="46" width="168" height="150" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.6"/>
+          <text x="408" y="70" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">03</text>
+          <text x="408" y="98" font-size="14.5" font-weight="700" fill="var(--ink)">Explore &amp; map</text>
+          <text x="408" y="120" font-size="12.5" fill="var(--ink-soft)">Walk the app,</text>
+          <text x="408" y="136" font-size="12.5" fill="var(--ink-soft)">draw the screen</text>
+          <text x="408" y="152" font-size="12.5" fill="var(--ink-soft)">map (greedy).</text>
+          <text x="408" y="182" font-size="10" font-family="var(--mono)" fill="var(--llm)" font-weight="700">AI proposes · machine acts</text>
+
+          <!-- 4 -->
+          <rect x="576" y="46" width="168" height="150" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.6"/>
+          <text x="590" y="70" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">04</text>
+          <text x="590" y="98" font-size="14.5" font-weight="700" fill="var(--ink)">Name landmarks</text>
+          <text x="590" y="120" font-size="12.5" fill="var(--ink-soft)">Record how to</text>
+          <text x="590" y="136" font-size="12.5" fill="var(--ink-soft)">recognise each</text>
+          <text x="590" y="152" font-size="12.5" fill="var(--ink-soft)">button/field.</text>
+          <text x="590" y="182" font-size="10.5" font-family="var(--mono)" fill="var(--ink-soft)">machine + AI fallback</text>
+
+          <!-- 5 SEAL -->
+          <rect x="758" y="46" width="132" height="150" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="2"/>
+          <text x="772" y="70" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">05</text>
+          <circle cx="824" cy="112" r="17" fill="var(--det)"/>
+          <text x="824" y="116" text-anchor="middle" font-family="var(--mono)" font-size="9" fill="var(--paper)" font-weight="700">SHA</text>
+          <text x="824" y="150" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">SEAL IT</text>
+          <text x="824" y="170" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">the map becomes</text>
+          <text x="824" y="185" text-anchor="middle" font-size="11.5" fill="var(--ink-soft)">the executable</text>
+        </g>
+
+        <!-- connectors row1 -->
+        <g stroke="var(--ink-faint)" stroke-width="1.3">
+          <line x1="198" y1="121" x2="210" y2="121" marker-end="url(#ah2)"/>
+          <line x1="380" y1="121" x2="392" y2="121" marker-end="url(#ah2)"/>
+          <line x1="562" y1="121" x2="574" y2="121" marker-end="url(#ah2)"/>
+          <line x1="744" y1="121" x2="756" y2="121" marker-end="url(#ah2)"/>
+        </g>
+        <!-- down connector -->
+        <path d="M824,196 L824,228 L100,228 L100,272" fill="none" stroke="var(--det)" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#ah2)"/>
+        <text x="430" y="222" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">once sealed, the machine takes over ↓</text>
+
+        <!-- row 2 : stages 6-11 -->
+        <g font-family="var(--sans)">
+          <!-- 6 -->
+          <rect x="30" y="276" width="135" height="150" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.2"/>
+          <text x="44" y="300" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">06</text>
+          <text x="44" y="326" font-size="13.5" font-weight="700" fill="var(--ink)">Checklist</text>
+          <text x="44" y="348" font-size="12" fill="var(--ink-soft)">7 checks on</text>
+          <text x="44" y="364" font-size="12" fill="var(--ink-soft)">the sealed map.</text>
+          <text x="44" y="380" font-size="12" fill="var(--ink-soft)">No device yet.</text>
+          <text x="44" y="410" font-size="10.5" font-family="var(--mono)" fill="var(--det)">machine</text>
+
+          <!-- 7 -->
+          <rect x="179" y="276" width="120" height="150" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.2"/>
+          <text x="193" y="300" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">07</text>
+          <text x="193" y="326" font-size="13.5" font-weight="700" fill="var(--ink)">Dispatch</text>
+          <text x="193" y="348" font-size="12" fill="var(--ink-soft)">Queue the job</text>
+          <text x="193" y="364" font-size="12" fill="var(--ink-soft)">— exactly</text>
+          <text x="193" y="380" font-size="12" fill="var(--ink-soft)">once.</text>
+          <text x="193" y="410" font-size="10.5" font-family="var(--mono)" fill="var(--det)">machine</text>
+
+          <!-- 8 -->
+          <rect x="313" y="276" width="175" height="150" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="2"/>
+          <text x="327" y="300" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">08 · THE CORE</text>
+          <text x="327" y="326" font-size="13.5" font-weight="700" fill="var(--ink)">Drive on device</text>
+          <text x="327" y="348" font-size="12" fill="var(--ink-soft)">Follow the sealed</text>
+          <text x="327" y="364" font-size="12" fill="var(--ink-soft)">route on a real</text>
+          <text x="327" y="380" font-size="12" fill="var(--ink-soft)">phone. No AI.</text>
+          <text x="327" y="410" font-size="10.5" font-family="var(--mono)" fill="var(--det)" font-weight="700">machine · LLM-free</text>
+
+          <!-- 9 -->
+          <rect x="502" y="276" width="120" height="150" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.2"/>
+          <text x="516" y="300" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">09</text>
+          <text x="516" y="326" font-size="13.5" font-weight="700" fill="var(--ink)">Classify</text>
+          <text x="516" y="348" font-size="12" fill="var(--ink-soft)">Stamp 1 of 7</text>
+          <text x="516" y="364" font-size="12" fill="var(--ink-soft)">standard</text>
+          <text x="516" y="380" font-size="12" fill="var(--ink-soft)">reason-codes.</text>
+          <text x="516" y="410" font-size="10.5" font-family="var(--mono)" fill="var(--det)">machine</text>
+
+          <!-- 10 -->
+          <rect x="636" y="276" width="120" height="150" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.2"/>
+          <text x="650" y="300" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">10</text>
+          <text x="650" y="326" font-size="13.5" font-weight="700" fill="var(--ink)">Record</text>
+          <text x="650" y="348" font-size="12" fill="var(--ink-soft)">File the report,</text>
+          <text x="650" y="364" font-size="12" fill="var(--ink-soft)">pinned to the</text>
+          <text x="650" y="380" font-size="12" fill="var(--ink-soft)">exact SHAs.</text>
+          <text x="650" y="410" font-size="10.5" font-family="var(--mono)" fill="var(--det)">machine</text>
+
+          <!-- 11 -->
+          <rect x="770" y="276" width="120" height="150" rx="10" fill="color-mix(in srgb,var(--human) 12%, transparent)" stroke="var(--human)" stroke-width="1.6"/>
+          <text x="784" y="300" font-family="var(--mono)" font-size="11" fill="var(--human)" font-weight="700">11</text>
+          <text x="784" y="326" font-size="13.5" font-weight="700" fill="var(--ink)">Sign-off</text>
+          <text x="784" y="348" font-size="12" fill="var(--ink-soft)">A named person</text>
+          <text x="784" y="364" font-size="12" fill="var(--ink-soft)">certifies —</text>
+          <text x="784" y="380" font-size="12" fill="var(--ink-soft)">after the run.</text>
+          <text x="784" y="410" font-size="10.5" font-family="var(--mono)" fill="var(--human)" font-weight="700">human</text>
+        </g>
+
+        <g stroke="var(--ink-faint)" stroke-width="1.3">
+          <line x1="165" y1="351" x2="177" y2="351" marker-end="url(#ah2)"/>
+          <line x1="299" y1="351" x2="311" y2="351" marker-end="url(#ah2)"/>
+          <line x1="488" y1="351" x2="500" y2="351" marker-end="url(#ah2)"/>
+          <line x1="622" y1="351" x2="634" y2="351" marker-end="url(#ah2)"/>
+          <line x1="756" y1="351" x2="768" y2="351" marker-end="url(#ah2)"/>
+        </g>
+      </svg>
+    </div>
+    <figcaption><b>Read it left-to-right, top row then bottom.</b> Notice the colour flip at the seal: the top row (making the map) is amber — AI is involved. The bottom row (driving it) is teal — pure machine — right up to the final human sign-off in slate. This is the honest shape of o7 as specified today.</figcaption>
+  </figure>
+
+  <div class="rule-orn"><span>PART ONE · MAKING THE MAP</span></div>
+
+  <div class="measure">
+    <h2><span class="num">02</span>Where the AI earns its keep</h2>
+    <p>Here's the thing about a large language model: it already knows how the world works. Ask it to "check an account balance" and it understands, without being told, that a banking app is a locked box — you log in first, you find the accounts area, <em>then</em> you can read a balance. That background knowledge is genuinely useful, and o7 puts it to work in three specific places.</p>
+
+    <h3>Reading the destination out of a vague note</h3>
+    <p>A manual test is often just a sentence a person typed. The first AI job is to turn <em>"send $25 to a saved Zelle recipient and check the confirmation"</em> into a precise, ordered list of steps — a plan the rest of the pipeline can work with. We call that plan the <strong>Test Case IR</strong> (think of "IR" as simply <em>the structured recipe</em>).</p>
+    <p>Crucially, when the AI is <em>unsure</em> — which recipient? which account? — it doesn't quietly guess. It <strong>flags the uncertainty as a visible field</strong> and hands that decision to a person. That habit runs through the whole design: the AI is allowed to reason in the fog, but the fog is always made visible, never painted over.</p>
+
+    <h3>Surveying the app to draw a map</h3>
+    <p>The second AI job is exploration — and this is the part your intuition about "discovering places as we go" describes exactly. The system opens the app and, screen by screen, an AI looks at what's on the display and <strong>suggests the next move</strong>: "to reach Zelle, tap the thing that looks like Payments." A separate, non-AI component actually performs the tap and records what it found.</p>
+    <p>The screens and the connections between them get saved into a reusable <strong>screen map</strong> (formally, a <em>ScreenGraph</em> — screens are dots, taps and swipes are the lines between them). This map is built once and reused by every future test. It's the database that grows over time toward covering more and more of the app.</p>
+  </div>
+
+  <!-- ============ FIG 3: GREEDY LOOP ============ -->
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 340" role="img" aria-labelledby="f3t">
+        <title id="f3t">The greedy discovery loop: dump the screen, AI proposes up to three moves, the machine validates and picks one, executes, and checks arrival — repeating until the goal or a budget limit.</title>
+        <defs>
+          <marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--det)"/></marker>
+        </defs>
+
+        <text x="30" y="34" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">THE EXPLORE-AND-MAP LOOP  ·  &#8220;greedy&#8221; = always take the single best-looking move, don&#8217;t backtrack</text>
+
+        <!-- 5 steps around a loop -->
+        <!-- DUMP -->
+        <rect x="40" y="70" width="150" height="76" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="115" y="100" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">DUMP</text>
+        <text x="115" y="122" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">look at the</text>
+        <text x="115" y="138" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">current screen</text>
+
+        <!-- PROPOSE (AI) -->
+        <rect x="240" y="70" width="170" height="76" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.6"/>
+        <text x="325" y="96" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">PROPOSE · AI</text>
+        <text x="325" y="118" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">suggest up to 3 next</text>
+        <text x="325" y="134" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">moves, most-likely first</text>
+
+        <!-- VALIDATE -->
+        <rect x="460" y="70" width="160" height="76" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="540" y="96" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">VALIDATE</text>
+        <text x="540" y="118" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">machine keeps the one</text>
+        <text x="540" y="134" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">safe, in-budget survivor</text>
+
+        <!-- EXECUTE -->
+        <rect x="670" y="70" width="150" height="76" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="745" y="100" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">EXECUTE</text>
+        <text x="745" y="122" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">perform the tap,</text>
+        <text x="745" y="138" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">save to the map</text>
+
+        <!-- CHECK -->
+        <rect x="355" y="210" width="210" height="76" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="460" y="236" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">CHECK — did we arrive?</text>
+        <text x="460" y="258" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">compare the screen&#8217;s fingerprint</text>
+        <text x="460" y="274" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">to the target &#8212; a pure calculation</text>
+
+        <!-- arrows -->
+        <g fill="none" stroke="var(--det)" stroke-width="1.4">
+          <line x1="190" y1="108" x2="238" y2="108" marker-end="url(#ah3)"/>
+          <line x1="410" y1="108" x2="458" y2="108" marker-end="url(#ah3)"/>
+          <line x1="620" y1="108" x2="668" y2="108" marker-end="url(#ah3)"/>
+          <path d="M745,146 L745,248 L567,248" marker-end="url(#ah3)"/>
+          <path d="M355,258 L115,258 L115,148" marker-end="url(#ah3)" stroke-dasharray="5 4"/>
+        </g>
+        <text x="230" y="300" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">not there yet → loop again (new screen)</text>
+
+        <!-- budget note -->
+        <rect x="620" y="210" width="270" height="90" rx="10" fill="var(--paper-2)" stroke="var(--paper-edge)"/>
+        <text x="636" y="234" font-family="var(--mono)" font-size="10.5" fill="var(--fail)" font-weight="700">SAFETY BUDGET</text>
+        <text x="636" y="255" font-size="12" fill="var(--ink-soft)">≤ 15 actions · ≤ 60s per step</text>
+        <text x="636" y="272" font-size="12" fill="var(--ink-soft)">3 no-progress strikes · 10-min cap</text>
+        <text x="636" y="290" font-size="12" fill="var(--ink-soft)">then → hand to a human</text>
+      </svg>
+    </div>
+    <figcaption><b>"Greedy" is a real, deliberate choice.</b> The loop always takes the single best-looking move and never backtracks. It's simple and cheap, and when it gets stuck it doesn't thrash — it spends a fixed budget and then asks a person. The <b>arrival check</b> is not an AI judgement; it's a fingerprint comparison (more on that below).</figcaption>
+  </figure>
+
+  <div class="measure">
+    <h3>Some destinations have a secret shortcut</h3>
+    <p>Not every screen has to be reached by tapping through the app. Many banking apps expose <strong>deep links</strong> — special URLs like <code>erica://zelle/send</code> that jump straight to a screen. When one exists, it's by far the cheapest way to arrive, so o7's map records it as the <strong>cheapest possible connection</strong> (a "cost-1" edge, versus cost-2 for a tap and cost-3 for typing).</p>
+    <p>Two things keep this safe and honest. First, o7 only ever <strong>discovers</strong> deep links the app <em>already</em> supports — an AI may <em>suggest</em> candidate URLs within the app's own scheme, but a deterministic probe must confirm each one truly lands on the target before it's saved. o7 never invents a shortcut. Second, every URL is checked against a strict <strong>allowlist three separate times</strong> — when it's proposed, again by the component that launches it, and again whenever the map is loaded — so nothing outside the sanctioned list can ever fire.</p>
+    <div class="callout">
+      <span class="tag">Where this sits on the honesty line</span>
+      <p>The <strong>cost model</strong> (deep link = cheapest edge) and the <strong>deny-by-default allowlist</strong> are part of the <em>accepted</em> map design. The <strong>discover-and-probe loop</strong> that actually finds new deep links is a <em>proposed</em> sub-loop (ADR 0014, not yet ratified) — so it's flagged as such below. And note the boundary that matters most: deep links live entirely in <strong>map-making</strong>. The sealed test run never launches one — the machine driver still walks the committed route step by step.</p>
+    </div>
+  </div>
+
+  <!-- ============ FIG 5b: SHORTCUT VS DRIVE ============ -->
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="f5bt">
+        <title id="f5bt">Two ways to reach a destination screen: the long tap-by-tap drive at cost two-to-three per hop, versus a single cost-one deep-link shortcut discovered and confirmed at map-making time.</title>
+        <defs>
+          <marker id="ah5b" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--det)"/></marker>
+          <marker id="ah5bp" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--proposed)"/></marker>
+        </defs>
+
+        <text x="30" y="30" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">TWO WAYS TO REACH ONE SCREEN  ·  the map stores whichever is cheaper</text>
+
+        <!-- the long drive (teal) -->
+        <text x="30" y="66" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">THE LONG DRIVE — tap by tap</text>
+        <g font-family="var(--sans)">
+          <rect x="30" y="80" width="120" height="52" rx="9" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+          <text x="90" y="103" text-anchor="middle" font-size="13" fill="var(--ink)" font-weight="700">Login</text>
+          <text x="90" y="120" text-anchor="middle" font-size="11" fill="var(--ink-faint)">start</text>
+
+          <rect x="214" y="80" width="120" height="52" rx="9" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+          <text x="274" y="103" text-anchor="middle" font-size="13" fill="var(--ink)" font-weight="700">Home</text>
+
+          <rect x="398" y="80" width="130" height="52" rx="9" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+          <text x="463" y="103" text-anchor="middle" font-size="13" fill="var(--ink)" font-weight="700">Payments</text>
+
+          <rect x="592" y="80" width="150" height="52" rx="9" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.8"/>
+          <text x="667" y="103" text-anchor="middle" font-size="13" fill="var(--ink)" font-weight="700">Zelle Send Money</text>
+          <text x="667" y="120" text-anchor="middle" font-size="11" fill="var(--det)">destination</text>
+        </g>
+        <g fill="none" stroke="var(--det)" stroke-width="1.5">
+          <line x1="150" y1="106" x2="212" y2="106" marker-end="url(#ah5b)"/>
+          <line x1="334" y1="106" x2="396" y2="106" marker-end="url(#ah5b)"/>
+          <line x1="528" y1="106" x2="590" y2="106" marker-end="url(#ah5b)"/>
+        </g>
+        <text x="181" y="98" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">cost 2</text>
+        <text x="365" y="98" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">cost 2</text>
+        <text x="559" y="98" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">cost 2</text>
+
+        <!-- the shortcut (proposed violet) -->
+        <text x="30" y="176" font-family="var(--mono)" font-size="11" fill="var(--proposed)" font-weight="700">THE SHORTCUT — one deep link  ◆ discovered via the proposed sub-loop</text>
+        <rect x="30" y="190" width="150" height="52" rx="9" fill="var(--paper)" stroke="var(--proposed)" stroke-width="1.3"/>
+        <text x="105" y="213" text-anchor="middle" font-size="13" fill="var(--ink)" font-weight="700" font-family="var(--sans)">Login</text>
+        <text x="105" y="230" text-anchor="middle" font-size="11" fill="var(--ink-faint)" font-family="var(--sans)">start</text>
+
+        <rect x="592" y="190" width="150" height="52" rx="9" fill="var(--proposed-wash)" stroke="var(--proposed)" stroke-width="1.8"/>
+        <text x="667" y="213" text-anchor="middle" font-size="13" fill="var(--ink)" font-weight="700" font-family="var(--sans)">Zelle Send Money</text>
+        <text x="667" y="230" text-anchor="middle" font-size="11" fill="var(--proposed)" font-family="var(--sans)">same destination</text>
+
+        <path d="M180,216 L590,216" fill="none" stroke="var(--proposed)" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#ah5bp)"/>
+        <rect x="294" y="196" width="184" height="24" rx="12" fill="var(--paper)" stroke="var(--proposed)" stroke-width="1"/>
+        <text x="386" y="212" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--proposed)" font-weight="700">erica://zelle/send · cost 1</text>
+
+        <!-- guardrails strip -->
+        <rect x="30" y="262" width="712" height="30" rx="8" fill="var(--paper-2)" stroke="var(--paper-edge)"/>
+        <text x="44" y="281" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)"><tspan fill="var(--det)" font-weight="700">GUARDRAILS  </tspan> discovered, never invented  ·  deterministic probe must confirm arrival  ·  deny-by-default allowlist, re-checked 3×</text>
+
+        <!-- verdict -->
+        <rect x="762" y="80" width="128" height="162" rx="10" fill="var(--paper-2)" stroke="var(--paper-edge)"/>
+        <text x="826" y="112" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)" font-weight="700">MAP KEEPS</text>
+        <text x="826" y="140" text-anchor="middle" font-family="var(--serif)" font-size="30" fill="var(--proposed)" font-weight="700">cost 1</text>
+        <text x="826" y="162" text-anchor="middle" font-size="12" fill="var(--ink-soft)" font-family="var(--sans)">the cheaper</text>
+        <text x="826" y="179" text-anchor="middle" font-size="12" fill="var(--ink-soft)" font-family="var(--sans)">route wins</text>
+        <line x1="778" y1="196" x2="874" y2="196" stroke="var(--paper-edge)"/>
+        <text x="826" y="216" text-anchor="middle" font-size="11" fill="var(--ink-faint)" font-family="var(--sans)">…but only in</text>
+        <text x="826" y="231" text-anchor="middle" font-size="11" fill="var(--ink-faint)" font-family="var(--sans)">the map, not</text>
+      </svg>
+    </div>
+    <figcaption><b>A deep link is a teleport to the destination.</b> When the app offers one, arriving costs a single cheap hop instead of three taps — so the map prefers it. The teleport is drawn in <span style="color:var(--proposed);font-weight:700">violet</span> because the loop that <em>finds</em> new deep links is a proposed sub-loop; the cost model that <em>prefers</em> them is already part of the accepted design. Either way, the shortcut only helps while <b>building the map</b> — the sealed test run never teleports.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <h3>Writing down how to recognise each landmark</h3>
+    <p>For every step, o7 records <em>how the driver will later recognise the button or field it needs</em> — its "locator." And here the AI is deliberately the <strong>last resort</strong>, not the first. o7 tries five sources in a fixed order, and only reaches for a model when the reliable, exact methods have all come up short:</p>
+  </div>
+
+  <!-- ============ FIG 4: LOCATOR CASCADE ============ -->
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 250" role="img" aria-labelledby="f4t">
+        <title id="f4t">The locator cascade: three deterministic sources tried first, then two AI fallbacks, only reached if confidence falls below the floor.</title>
+        <defs><marker id="ah4" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--ink-faint)"/></marker></defs>
+
+        <text x="30" y="34" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">HOW WE RECOGNISE A BUTTON  ·  try in order, stop at the first confident match (floor 0.85)</text>
+
+        <!-- three deterministic -->
+        <g font-family="var(--sans)">
+          <rect x="30" y="70" width="165" height="120" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+          <text x="46" y="94" font-family="var(--mono)" font-size="10.5" fill="var(--det)" font-weight="700">1 · OBJECT REPO</text>
+          <text x="46" y="120" font-size="13" fill="var(--ink)" font-weight="700">Known good ID</text>
+          <text x="46" y="144" font-size="12" fill="var(--ink-soft)">a locator we&#8217;ve</text>
+          <text x="46" y="160" font-size="12" fill="var(--ink-soft)">saved before</text>
+          <text x="46" y="182" font-size="10" font-family="var(--mono)" fill="var(--det)">deterministic</text>
+
+          <rect x="205" y="70" width="165" height="120" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+          <text x="221" y="94" font-family="var(--mono)" font-size="10.5" fill="var(--det)" font-weight="700">2 · PAGE SOURCE</text>
+          <text x="221" y="120" font-size="13" fill="var(--ink)" font-weight="700">Read the screen</text>
+          <text x="221" y="144" font-size="12" fill="var(--ink-soft)">the app&#8217;s own</text>
+          <text x="221" y="160" font-size="12" fill="var(--ink-soft)">element list</text>
+          <text x="221" y="182" font-size="10" font-family="var(--mono)" fill="var(--det)">deterministic</text>
+
+          <rect x="380" y="70" width="165" height="120" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+          <text x="396" y="94" font-family="var(--mono)" font-size="10.5" fill="var(--det)" font-weight="700">3 · OBJECT SPY</text>
+          <text x="396" y="120" font-size="13" fill="var(--ink)" font-weight="700">Inspect element</text>
+          <text x="396" y="144" font-size="12" fill="var(--ink-soft)">Perfecto&#8217;s</text>
+          <text x="396" y="160" font-size="12" fill="var(--ink-soft)">inspector tool</text>
+          <text x="396" y="182" font-size="10" font-family="var(--mono)" fill="var(--det)">deterministic</text>
+        </g>
+
+        <!-- divider -->
+        <line x1="560" y1="60" x2="560" y2="200" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 4"/>
+        <text x="566" y="56" font-family="var(--mono)" font-size="10" fill="var(--llm)">only if all three fall short →</text>
+
+        <!-- two AI -->
+        <g font-family="var(--sans)">
+          <rect x="575" y="70" width="150" height="120" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.6"/>
+          <text x="591" y="94" font-family="var(--mono)" font-size="10.5" fill="var(--llm)" font-weight="700">4 · VLM</text>
+          <text x="591" y="120" font-size="13" fill="var(--ink)" font-weight="700">Look at it</text>
+          <text x="591" y="144" font-size="12" fill="var(--ink-soft)">vision model</text>
+          <text x="591" y="160" font-size="12" fill="var(--ink-soft)">confirms it&#8217;s there</text>
+          <text x="591" y="182" font-size="10" font-family="var(--mono)" fill="var(--llm)" font-weight="700">AI</text>
+
+          <rect x="735" y="70" width="155" height="120" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.6"/>
+          <text x="751" y="94" font-family="var(--mono)" font-size="10.5" fill="var(--llm)" font-weight="700">5 · LLM GUESS</text>
+          <text x="751" y="120" font-size="13" fill="var(--ink)" font-weight="700">Reason about it</text>
+          <text x="751" y="144" font-size="12" fill="var(--ink-soft)">or honestly says</text>
+          <text x="751" y="160" font-size="12" fill="var(--ink-soft)">&#8220;no match&#8221;</text>
+          <text x="751" y="182" font-size="10" font-family="var(--mono)" fill="var(--llm)" font-weight="700">AI</text>
+        </g>
+
+        <g stroke="var(--ink-faint)" stroke-width="1.2">
+          <line x1="195" y1="130" x2="203" y2="130" marker-end="url(#ah4)"/>
+          <line x1="370" y1="130" x2="378" y2="130" marker-end="url(#ah4)"/>
+          <line x1="725" y1="130" x2="733" y2="130" marker-end="url(#ah4)"/>
+        </g>
+        <text x="220" y="224" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">In the real Zelle test, 10 of 11 steps matched on source 1 alone. Only the recipient needed a fallback.</text>
+      </svg>
+    </div>
+    <figcaption><b>AI is the exception, not the default.</b> The exact, cheap methods always go first; the model is only consulted when they can't reach 85% confidence — and even then it's allowed to say "I don't see it" rather than invent something. In our sample $25 Zelle test, only one of eleven steps ever needed a fallback at all.</figcaption>
+  </figure>
+
+  <div class="rule-orn"><span>PART TWO · THE SEAL</span></div>
+
+  <div class="measure">
+    <h2><span class="num">03</span>Sealing the map</h2>
+    <p>Everything so far is fuzzy and changeable — drafts a surveyor can still redraw. Then comes the moment that gives o7 its name and its guarantees: the <strong>commit</strong>.</p>
+    <p>The finished recipe and its list of landmarks are locked together and stamped with a <strong>fingerprint</strong> — a SHA hash we call the <code>irDigest</code>. From this instant, two things are true:</p>
+    <ul>
+      <li><strong>The sealed map <em>is</em> the program.</strong> There's no separate "turn the plan into code" step. o7 deliberately deleted code-generation. The sealed file itself is what runs.</li>
+      <li><strong>Nothing is fuzzy again.</strong> The fingerprint means the exact map that was reviewed is the exact map that runs, character for character — and any report can later be re-run at that fingerprint to reproduce the result.</li>
+    </ul>
+    <div class="callout">
+      <span class="tag">Why this matters to the bank</span>
+      <p>Auditability. When a regulator or an internal reviewer asks "what exactly did this test do, and can you prove it?", the answer is a fingerprint that pins the precise recipe and the precise version of the machine that ran it. You can re-run history and get the same answer — because no AI was in the loop when it ran.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>PART THREE · DRIVING THE MAP</span></div>
+
+  <div class="measure">
+    <h2><span class="num">04</span>The machine driver never improvises</h2>
+    <p>Now the map is sealed, and the guiding rule flips: <strong>anything that must be correct, cheap, and repeatable should never depend on a model's live output.</strong> So from here on, it's all deterministic machinery.</p>
+
+    <h3>A checklist before any phone is touched</h3>
+    <p>Before spending a single minute of real device time, a deterministic <strong>gate</strong> runs <strong>seven checks</strong> on the sealed map — like a pre-flight checklist. Does the recipe parse? Are all the moves legal moves? Does every step have a time limit (no waiting forever)? Is every landmark on the recognition sheet? Are there any secrets accidentally written in plain text (there must not be)? Any leftover ambiguity? And finally, a <em>dry run</em> — a no-device walk through the whole route on paper. It costs nothing, and it's the safety net that lets us trust the pipeline without a human re-reviewing every test.</p>
+
+    <h3>Dispatch — exactly once</h3>
+    <p>An approved test is dropped into a queue built so that even if the order is accidentally submitted twice, <strong>exactly one run happens</strong> and we never double-charge our device budget.</p>
+
+    <h3>The core: following the sealed route on a real device</h3>
+    <p>This is the heart of o7. A <strong>version-pinned interpreter</strong> — itself a fixed, audited piece of software with its own fingerprint — picks up a real phone from our device cloud and walks the sealed recipe one step at a time, using the industry-standard Appium toolkit to actually tap and type. For each step it:</p>
+    <ul>
+      <li>tries the recorded landmarks <strong>in the exact sealed order</strong> (first the primary ID, then the one committed backup);</li>
+      <li>respects each step's own time limit and "wait for the screen to settle" instruction;</li>
+      <li>and <strong>never searches for, invents, or "heals" a landmark on the fly.</strong></li>
+    </ul>
+    <p>If the recorded landmarks don't match, the test <strong>fails hard</strong> — a red build — and stops. It does not go looking for a workaround.</p>
+    <div class="callout">
+      <span class="tag">A subtle but important safeguard</span>
+      <p>Modern device clouds (Perfecto, BrowserStack and the like) now quietly inject their <em>own</em> AI "self-healing" into test runs. o7 explicitly switches that off and records that it was off — because a cloud silently "fixing" a broken locator would destroy the very repeatability the seal was meant to guarantee. If it can't confirm the cloud AI is disabled, it quarantines the run.</p>
+    </div>
+  </div>
+
+  <!-- ============ FIG 5: DESTINATION CHECK ============ -->
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 260" role="img" aria-labelledby="f5t">
+        <title id="f5t">The destination check is a deterministic fingerprint comparison of three signals, not an AI judgement.</title>
+        <text x="30" y="32" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">&#8220;DID WE ARRIVE?&#8221;  ·  a pure calculation, identical every run &#8212; no model decides this</text>
+
+        <!-- three signals combine -->
+        <g font-family="var(--sans)">
+          <rect x="40" y="66" width="220" height="66" rx="9" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+          <text x="56" y="90" font-family="var(--mono)" font-size="10.5" fill="var(--det)" font-weight="700">TITLE ANCHOR</text>
+          <text x="56" y="114" font-size="12.5" fill="var(--ink-soft)">the screen&#8217;s heading element</text>
+
+          <rect x="40" y="146" width="220" height="66" rx="9" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+          <text x="56" y="170" font-family="var(--mono)" font-size="10.5" fill="var(--det)" font-weight="700">SKELETON HASH</text>
+          <text x="56" y="192" font-size="12.5" fill="var(--ink-soft)">the layout shape (ignores text)</text>
+
+          <rect x="290" y="106" width="220" height="66" rx="9" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+          <text x="306" y="130" font-family="var(--mono)" font-size="10.5" fill="var(--det)" font-weight="700">ID OVERLAP</text>
+          <text x="306" y="152" font-size="12.5" fill="var(--ink-soft)">how many known IDs match</text>
+        </g>
+
+        <path d="M260,99 L288,120" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>
+        <path d="M260,179 L288,158" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>
+
+        <!-- equals -->
+        <rect x="545" y="106" width="150" height="66" rx="9" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.6"/>
+        <text x="620" y="134" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">COMPARE TO</text>
+        <text x="620" y="154" text-anchor="middle" font-size="12.5" fill="var(--ink-soft)">stored fingerprint</text>
+        <path d="M510,139 L543,139" stroke="var(--ink-faint)" stroke-width="1.3" marker-end="url(#ah3)"/>
+
+        <!-- verdict -->
+        <rect x="725" y="86" width="165" height="46" rx="9" fill="color-mix(in srgb,var(--pass) 14%,transparent)" stroke="var(--pass)" stroke-width="1.5"/>
+        <text x="807" y="114" text-anchor="middle" font-size="14" font-weight="700" fill="var(--pass)">✓ ARRIVED</text>
+        <rect x="725" y="146" width="165" height="46" rx="9" fill="color-mix(in srgb,var(--fail) 12%,transparent)" stroke="var(--fail)" stroke-width="1.5"/>
+        <text x="807" y="174" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fail)">✗ NOT ARRIVED</text>
+        <path d="M695,130 L723,113" stroke="var(--ink-faint)" stroke-width="1.2"/>
+        <path d="M695,148 L723,165" stroke="var(--ink-faint)" stroke-width="1.2"/>
+
+        <text x="40" y="238" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">Two readings taken ≥1s apart avoid mistaking a still-loading screen for the real one. Same inputs → same verdict, always.</text>
+      </svg>
+    </div>
+    <figcaption><b>The destination check is math, not opinion.</b> "Did we land on the right screen?" is answered by comparing three deterministic signals against a stored fingerprint. The skeleton hash deliberately ignores changing text (balances, names) so dynamic content doesn't break screen identity. No model gets a vote.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <h3>Reason-code, record, and a human signature</h3>
+    <p>When a run ends, a deterministic lookup stamps it with one of exactly <strong>seven standard reason-codes</strong> (locator not found, timeout, assertion mismatch, app crash, and so on) — a pre-printed list, not a free-form AI narrative. The result is filed as a report pinned to the exact fingerprints. And the final <strong>certification is a named person's decision, made after the run.</strong> The machine's clean pass is only a precondition; fully-automated sign-off is deliberately not allowed. Accountability stays with a human.</p>
+  </div>
+
+  <div class="rule-orn"><span>THE SCORECARD</span></div>
+
+  <div class="measure">
+    <h2><span class="num">05</span>Who does what — and why</h2>
+    <p>Pulling it together, here's the division of labour across the whole pipeline. The pattern is consistent: <strong>the AI is confined to making the map; everything downstream of the seal is deterministic, pinned, and re-runnable.</strong></p>
+  </div>
+
+  <div class="table-wrap measure" style="max-width:var(--measure)">
+    <table>
+      <caption>o7 responsibility map — as specified today</caption>
+      <thead>
+        <tr><th>The job</th><th>Owner</th><th>Why it lives there</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Turn a messy written test into a clear plan</td><td><span class="owner-pill llm">AI</span></td><td>Needs language understanding — irreducibly fuzzy</td></tr>
+        <tr><td>Suggest the next screen to explore</td><td><span class="owner-pill llm">AI</span></td><td>World knowledge of how apps are laid out</td></tr>
+        <tr><td>Landmark fallback (vision / guess)</td><td><span class="owner-pill llm">AI</span></td><td>Only when exact methods fall short</td></tr>
+        <tr><td>Exact landmark lookup (repo / screen read)</td><td><span class="owner-pill det">Machine</span></td><td>Precise and cheap — no reason to ask a model</td></tr>
+        <tr><td>Did we arrive on the right screen?</td><td><span class="owner-pill det">Machine</span></td><td>Must be identical every run — a fingerprint</td></tr>
+        <tr><td>Seal the map (commit + fingerprint)</td><td><span class="owner-pill det">Machine</span></td><td>Integrity and audit — hashing, not judgement</td></tr>
+        <tr><td>The seven-point pre-flight checklist</td><td><span class="owner-pill det">Machine</span></td><td>Must be trustworthy and free to run</td></tr>
+        <tr><td>Dispatch a run exactly once</td><td><span class="owner-pill det">Machine</span></td><td>A transactional guarantee a model can't give</td></tr>
+        <tr><td>Drive the sealed map on a real device</td><td><span class="owner-pill det">Machine</span></td><td>The core bet — repeatable ≠ live AI output</td></tr>
+        <tr><td>Fix a broken landmark mid-run ("self-heal")</td><td><span class="owner-pill excl">Barred</span></td><td>Would break repeatability by design</td></tr>
+        <tr><td>Stamp the failure reason</td><td><span class="owner-pill det">Machine</span></td><td>Fixed seven-item list — a lookup</td></tr>
+        <tr><td>Final certification sign-off</td><td><span class="owner-pill human">Human</span></td><td>Accountability; auto-sign-off is forbidden</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ================= PROPOSED ZONE ================= -->
+  <div class="proposed-zone">
+    <div class="proposed-banner">◆ Proposed — not yet decided or designed</div>
+    <div class="measure" style="margin-top:-6px">
+      <h2><span class="num">06</span>Ideas we could add (clearly labelled)</h2>
+      <p>Everything above this line describes o7 <strong>as it is specified today</strong>. What follows is a set of <strong>enhancement ideas</strong> — genuinely useful, and a natural fit for the design, but <em>not yet decided, designed, or built</em>. No decision has been taken on any of them. We're keeping them visibly fenced off so nobody mistakes an idea for a plan.</p>
+
+      <p>There's one hard rule on all of them: they belong to <strong>map-making only</strong>. None of them may touch the sealed replay walk — that has to stay a plain, no-search, no-improvisation drive.</p>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Proposed · highest value</span>
+        <p><strong>Smart shortest-path routing (Dijkstra).</strong> Our screen map already stores a "cost" on every connection (a deep link is cheaper than a tap, which is cheaper than typing). Today nothing uses those costs. A classic shortest-path algorithm would turn them into an <em>optimal</em> route-planner at map-making time — producing shorter, cheaper, more robust test routes automatically. Because the cost data is already part of the design, this is the most natural fit of the ideas here — but it is still just an idea.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Proposed · ADR 0014, unratified</span>
+        <p><strong>The deep-link discovery sub-loop.</strong> A small loop that <em>finds</em> new shortcuts: an AI suggests candidate deep-link URLs within the app's real scheme, a deterministic probe confirms each one lands on the right screen, and only confirmed links are saved to the map as cost-1 edges. The safety design around it (discovered-not-invented, and a deny-by-default allowlist re-checked three times) is settled; the loop itself has an accepted design but is <em>not yet ratified</em>. It would only ever add shortcuts to the map — never launch one during a sealed test run.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Proposed · depends on the two above</span>
+        <p><strong>Prefer shortcuts when routing.</strong> Once shortest-path routing and the deep-link sub-loop both exist, route-planning would automatically favour a cost-1 deep-link teleport over a long tap-by-tap path — making generated test routes dramatically shorter and less fragile. This one stacks on the two ideas above, so it is the furthest from decided.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Proposed</span>
+        <p><strong>Faster routing on big apps (A*).</strong> The same route-planning as above, but with a smart hint to skip obviously-wrong directions — useful once the app map gets large. Weaker footing than Dijkstra (we'd need to design the hint), but a natural next step.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Proposed</span>
+        <p><strong>Remember-the-best-route cache (dynamic programming).</strong> The screen map already behaves like an informal cache of known routes. Formalising it — storing the best-known path for each start-and-goal pair — would make "reuse the saved route vs. explore again" a principled, deterministic decision instead of a happy accident.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Proposed</span>
+        <p><strong>Guaranteed-coverage exploration (BFS/DFS).</strong> Today's explorer is "greedy" and can get stuck on hard screens, burning its budget. A systematic sweep would instead <em>guarantee</em> every reachable screen gets mapped — trading some AI flexibility for completeness. Worth it for a push toward that 90%-plus coverage goal.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Proposed</span>
+        <p><strong>Stronger dry-run checking (dependency ordering).</strong> The pre-flight "dry run" could be sharpened to formally prove no step depends on a later one — catching impossible orderings on paper, before any device is touched.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Proposed</span>
+        <p><strong>Auto-tidy before sealing (critic + bounded repair).</strong> A deterministic checker that fixes small mechanical defects in a recipe (a missing time limit, an unused landmark) <em>before</em> it's sealed — reducing checklist rejections. Strictly upstream of the seal: the running test still gets no self-repair whatsoever.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="measure">
+    <div class="pull">The AI figures out the route. The machine drives it, exactly, every time. That separation is the whole idea — and it's what lets a bank trust an automated test.</div>
+
+    <h2><span class="num">07</span>Where the coverage comes from</h2>
+    <p>Back to the original bet. How does o7 expect to cover more than 90% of an app's navigation? Not from any single trick, but from four sources stacking up in the screen map:</p>
+    <ul>
+      <li><strong>The AI's world knowledge</strong> handles the typical, "any banking app works like this" cases — roughly 60–70% on its own.</li>
+      <li><strong>The steps people already wrote</strong> in their manual tests feed straight into the map.</li>
+      <li><strong>Greedy exploration</strong> discovers the in-between screens as it goes and saves them.</li>
+      <li><strong>And every run adds more</strong> — the map only grows.</li>
+    </ul>
+    <p>Each source covers what the others miss. Together, the hypothesis is that they clear 90%. And whatever the AI can't figure out, a human fills in — visibly, by design, never silently.</p>
+  </div>
+
+</main>
+
+<footer>
+  <p><b>About this explainer.</b> Grounded in the o7 interpreter specification, the o7-spine example artifacts (the "$25 to Alex Rivera" Zelle test that runs through the real pipeline), the discovery-loop and locator-cascade design diagrams, and the ASH-Capture spec and deep-link sub-loop mocks (ADR 0014). Written for internal engineering readers across roles.</p>
+  <p><b>Honesty note.</b> Stages 1–11 and the responsibility scorecard describe o7 <b>as specified today</b>. The dashed-violet "Proposed" section describes enhancement ideas that are <b>not yet decided, designed, or built</b> — no decision has been taken on them. A few naming details in the source artifacts (e.g. the exact <code>irVersion</code>/<code>irDigest</code> field rule, and Appium vs. driver version lines) are still being reconciled against the schema and don't affect the story told here.</p>
+  <p><b>Companion doc.</b> A plain-markdown version of this explainer lives alongside it as <code>o7-pipeline-map-analogy.md</code>.</p>
+</footer>

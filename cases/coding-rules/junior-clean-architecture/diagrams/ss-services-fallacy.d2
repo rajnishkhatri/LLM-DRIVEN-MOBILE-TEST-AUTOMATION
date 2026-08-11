@@ -1,0 +1,92 @@
+# Services aren't architecture — gluten-free surcharge cross-cut.
+# Naive "services" vs modular monolith domain modules.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+title: "Services aren't architecture — the gluten-free surcharge" {
+  shape: text
+  near: top-center
+  style: {
+    font-size: 20
+    bold: true
+  }
+}
+
+naive: "Naive split — three \"services\"" {
+  style: {
+    fill: "#f5e6e6"
+    stroke: "#8b3a3a"
+    font-size: 15
+    bold: true
+  }
+
+  offer_svc: "Offer\nService" {
+    style.fill: "#ffffff"
+  }
+  order_svc: "Order\nService" {
+    style.fill: "#ffffff"
+  }
+  pay_svc: "Payment\nService" {
+    style.fill: "#ffffff"
+  }
+
+  surcharge: "Gluten-free surcharge\ntouches all three" {
+    style: {
+      fill: "#ffcccc"
+      stroke: "#8b3a3a"
+      font-size: 13
+      bold: true
+    }
+  }
+
+  surcharge -> offer_svc: "price rule"
+  surcharge -> order_svc: "line item"
+  surcharge -> pay_svc: "charge amount"
+}
+
+good: "Modular monolith — domain modules, one deployable" {
+  style: {
+    fill: "#e6f5e8"
+    stroke: "#2d6a3e"
+    font-size: 15
+    bold: true
+  }
+
+  ofv: "Offer &\nFranchise Variation\n(ResolveOffer)" {
+    style.fill: "#ffffff"
+  }
+  ord: "Ordering &\nFulfillment\n(PlaceOrder)" {
+    style.fill: "#ffffff"
+  }
+  pay: "Payments" {
+    style.fill: "#ffffff"
+  }
+  loc: "Location &\nMapping" {
+    style.fill: "#ffffff"
+  }
+
+  note: "Cross-cutting change still needs design —\nbut you don't pay a network tax just because\nyou drew service boxes. One quantum, one DB." {
+    shape: text
+    style: {
+      font-size: 12
+      italic: true
+    }
+  }
+}
+
+caption: "Chapter 27 — a process boundary is not an architecture. Silicon Sandwiches: modular monolith; the surcharge is a design problem, not a reason to invent three deployables." {
+  shape: rectangle
+  near: bottom-center
+  style: {
+    fill: "#ffffff"
+    stroke: "#4a4a4a"
+    stroke-dash: 4
+    font-size: 13
+  }
+}

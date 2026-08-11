@@ -1,0 +1,18 @@
+{
+  "testId": "ACC-2087",
+  "irVersion": "sha:ir:2087:d41c9a...",
+  "manifestDigest": "sha:loc:2087:7e3a...",
+  "candidates": [
+    { "strategy": "ACCESSIBILITY_ID", "value": "usernameField",           "confidence": 0.98, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "passwordField",           "confidence": 0.98, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "loginButton",             "confidence": 0.97, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "homeDashboard",           "confidence": 0.95, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "payTransfersTab",         "confidence": 0.96, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "zelleMenuItem",           "confidence": 0.94, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "recipient_AlexRivera",    "confidence": 0.91, "source": "OBJECT_REPO" },
+    { "strategy": "XPATH",            "value": "//XCUIElementTypeCell[@name='recipient_AlexRivera']", "confidence": 0.86, "source": "PAGE_SOURCE" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "amountField",             "confidence": 0.95, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "zelleSendButton",         "confidence": 0.96, "source": "OBJECT_REPO" },
+    { "strategy": "ACCESSIBILITY_ID", "value": "zelleConfirmationBanner", "confidence": 0.93, "source": "OBJECT_REPO" }
+  ]
+}

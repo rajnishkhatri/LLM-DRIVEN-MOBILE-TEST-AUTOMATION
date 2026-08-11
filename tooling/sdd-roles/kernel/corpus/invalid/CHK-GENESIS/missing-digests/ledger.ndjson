@@ -1,0 +1,1 @@
+{"schema_version":"1.4.0","artifact_type":"stage_ledger_entry","run_id":"run-1004","seq":0,"prev_entry_digest":null,"tree_digest":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","parent_run":null,"writer":"sdd-roles-gate-runner","ts":"2026-08-07T12:00:00Z"}

@@ -1,0 +1,7 @@
+{
+  "check_id": "CHK-PROV-PRESENT",
+  "phase": "v1",
+  "expected": "fail",
+  "exit_code": 2,
+  "json_pointer": "/decisions/0/provenance"
+}

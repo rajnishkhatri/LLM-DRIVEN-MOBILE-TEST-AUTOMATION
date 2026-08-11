@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.4.0",
+  "artifact_type": "role_registry",
+  "roles": [
+    {
+      "id": "s-solo",
+      "tag": "maker",
+      "gates": [
+        "s-build"
+      ],
+      "write_scopes": [
+        "src/",
+        "scratch/"
+      ],
+      "diagnostic_capability": true,
+      "invocation": {
+        "prompt": "resume"
+      }
+    }
+  ],
+  "arms": [
+    {
+      "id": "S1",
+      "roles": [
+        "s-solo"
+      ]
+    }
+  ]
+}

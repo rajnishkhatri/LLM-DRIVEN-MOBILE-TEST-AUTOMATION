@@ -15,10 +15,10 @@ surfaces used to evolve that design.
 
 ## How to use the skills
 
-Start with the human operator manual:
+**Setup (clone / fresh machine):** [`docs/SETUP.md`](docs/SETUP.md)
 
-**[`docs/skills/sdd-usage-guide.md`](docs/skills/sdd-usage-guide.md)**
-
+**SDD how-to (this workspace):** [`docs/skills/sdd-lifecycle-instructions.md`](docs/skills/sdd-lifecycle-instructions.md)  
+Operator manual (all families): [`docs/skills/sdd-usage-guide.md`](docs/skills/sdd-usage-guide.md)  
 Skill index: [`docs/skills/README.md`](docs/skills/README.md)
 
 On a fresh clone, provision projections:

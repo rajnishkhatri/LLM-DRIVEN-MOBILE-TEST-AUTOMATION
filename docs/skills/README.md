@@ -5,11 +5,13 @@ diagram pack. Agent projections live under `.cursor/skills/` and
 `.claude/skills/` (provisioned by `tooling/skill-sync/`). Do not maintain a
 third divergent copy of arch/sdd skill trees here.
 
+**First-time / clone setup:** [../SETUP.md](../SETUP.md)
+
 ## Instruments
 
 | Family | What it does | Source of truth | How to invoke |
 |---|---|---|---|
-| **sdd-\*** (6) | Spec-driven development lifecycle | `tooling/sdd-skills-bundle/` | Chat: `sdd-lifecycle` / stage skills; manual: [sdd-usage-guide.md](sdd-usage-guide.md) |
+| **sdd-\*** (6) | Spec-driven development lifecycle | `tooling/sdd-skills-bundle/` | Chat: `sdd-lifecycle` / stage skills; **how-to:** [sdd-lifecycle-instructions.md](sdd-lifecycle-instructions.md); full manual: [sdd-usage-guide.md](sdd-usage-guide.md) |
 | **arch-\*** (7) | Architecture workflow (characteristics → validate) | `.cursor/skills/arch-*/` | Chat: `arch-lifecycle`; projected to `.claude/skills/` |
 | **sdd-roles** | Role cards + conveyor kernel | `tooling/sdd-roles/` | Claude: `.claude/agents/`; kernel card `.claude/skills/sdd-roles/` |
 | **coding-rules** | ADR-backed coding rules for the Java delivery repo | `tooling/coding-rules-skill/` | Install into spine/o1 per [coding-rules-skill/INSTALL.md](coding-rules-skill/INSTALL.md) — not mounted in this design repo |
@@ -27,6 +29,9 @@ python3 tooling/skill-sync/skill_sync.py fix
 python3 tooling/skill-sync/skill_sync.py check
 ```
 
-## Operator manual
+## Operator manuals
 
-[sdd-usage-guide.md](sdd-usage-guide.md) — when to play which instrument across the lifecycle.
+| Doc | Use when |
+|---|---|
+| [sdd-lifecycle-instructions.md](sdd-lifecycle-instructions.md) | Running SDD **in this repo** — binding paths, gate tokens, copy-paste prompts |
+| [sdd-usage-guide.md](sdd-usage-guide.md) | Full playbook across sdd / arch / roles / coding-rules |

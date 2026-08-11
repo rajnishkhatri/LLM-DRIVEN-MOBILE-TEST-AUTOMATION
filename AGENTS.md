@@ -31,7 +31,8 @@ Delivery-project artifacts for `mobile-test-automation` root under
 ## Spec-driven development
 
 For the 10-stage SDD lifecycle, see `sdd-lifecycle` (SoT:
-`tooling/sdd-skills-bundle/`). Human operator manual:
+`tooling/sdd-skills-bundle/`). Workspace how-to (prompts, gates, paths):
+`docs/skills/sdd-lifecycle-instructions.md`. Full operator manual:
 `docs/skills/sdd-usage-guide.md`. Bindings: `.sdd/binding.toml`.
 
 ## Spine repo root files (staged data)

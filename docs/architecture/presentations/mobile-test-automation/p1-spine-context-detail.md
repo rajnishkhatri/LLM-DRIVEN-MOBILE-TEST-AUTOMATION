@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'P1 — The spine in one picture (weeks 0–3) — detail tables'
+description: 'P1 — The spine in one picture (weeks 0–3) — detail tables'
+tags: [architecture, presentation]
+---
+
 # P1 — The spine in one picture (weeks 0–3) — detail tables
 
 > What are we building in weeks 0–3? One Spring Boot deployable that turns manual-test exports into IR, captures device UI evidence, and replays committed tests into a classified, pinned, auditable verdict — with no LLM call anywhere. Drill down: P2 (module map), P3 (replay flow); engineer-grade detail in docs/mobile-test-automation-diagrams/.

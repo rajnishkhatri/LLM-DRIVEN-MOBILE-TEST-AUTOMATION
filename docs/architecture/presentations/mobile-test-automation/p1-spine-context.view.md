@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'P1 — The spine in one picture (weeks 0–3)'
+description: 'Weeks 0–3 spine context: one Spring Boot deployable turns manual-test exports into IR, captures UI evidence, and replays committed tests.'
+tags: [architecture, presentation]
+---
+
 # P1 — The spine in one picture (weeks 0–3)
 
 ![P1 — The spine in one picture (weeks 0–3)](p1-spine-context.svg)

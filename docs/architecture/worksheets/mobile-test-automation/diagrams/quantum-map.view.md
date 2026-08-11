@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'Determination 1 — Quantum map: one quantum, three module seams'
+description: 'What is the single architecture quantum, and what sits outside it?'
+tags: [architecture, worksheet]
+---
+
 # Determination 1 — Quantum map: one quantum, three module seams
 
 ![Determination 1 — Quantum map: one quantum, three module seams](quantum-map.svg)

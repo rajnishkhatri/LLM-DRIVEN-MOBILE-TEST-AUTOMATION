@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'SELF-AUDIT — Determination 1 quantum map (style-decision)'
+description: 'Rendered: docs/architecture/worksheets/mobile-test-automation/diagrams/'
+tags: [architecture, worksheet]
+---
+
 # SELF-AUDIT — Determination 1 quantum map (style-decision)
 
 Rendered: `docs/architecture/worksheets/mobile-test-automation/diagrams/`

@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'ADR 4. The kata rig is a deterministic instrument; the pre-registration is pinned by a digest triangle'
+description: 'Ship a deterministic kata rig as the instrument for role-kernel evals — placeholder workload, sealed fixtures, exit-code-only verdicts.'
+tags: [architecture, adr]
+---
+
 # ADR 4. The kata rig is a deterministic instrument; the pre-registration is pinned by a digest triangle
 
 ## Status

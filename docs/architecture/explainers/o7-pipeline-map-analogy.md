@@ -1,3 +1,10 @@
+---
+type: overview
+title: 'The o7 pipeline as a map: source, directions, destination — and who does each job'
+description: 'A test is a journey: you start somewhere (source), you follow directions to get'
+tags: [architecture, explainer]
+---
+
 # The o7 pipeline as a map: source, directions, destination — and who does each job
 
 > **Explainer** — narrates the full o7 mobile-test-automation pipeline end to end

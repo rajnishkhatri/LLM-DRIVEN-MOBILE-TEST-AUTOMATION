@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'ADR 5. `ir-gate` is first-class kernel gate vocabulary, pinned to one checker tool'
+description: 'Add first-class kernel gate id ir-gate so o7''s IR gate is declarable in role stage exits without folding into build/tests.'
+tags: [architecture, adr]
+---
+
 # ADR 5. `ir-gate` is first-class kernel gate vocabulary, pinned to one checker tool
 
 ## Status

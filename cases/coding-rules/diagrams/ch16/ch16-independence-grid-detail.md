@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'Ch.16 Independence - layers x use-cases grid (illustrative order system) — detail tables'
+description: 'Locator: this view opens ORDSYS from 01-context.'
+tags: [coding-rules, diagram]
+---
+
 # Ch.16 Independence - layers x use-cases grid (illustrative order system) — detail tables
 
 > An illustrative order-processing system decomposed along BOTH axes at once: horizontal layers (UI / application rules / domain rules) and vertical use cases (AddOrder, DeleteOrder, TrackOrder). The TrackOrder column is NEW - it adds a fresh column of components and touches none of the existing cells. No edges cross columns: use cases are decoupled from each other. No edges cross rows outside a column: layers are decoupled from each other. This is the grid Clean Architecture Ch.16 asks for.

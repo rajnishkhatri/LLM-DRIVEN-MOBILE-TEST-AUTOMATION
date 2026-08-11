@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'ADR 2. Golden-run conformance for the gate orchestrator (stub-harness fixtures as the behavioral contract)'
+description: 'Extend corpus-as-contract to gate-orchestrator behavior via golden-run conformance (pinned runner reproduces committed ledgers byte-identically).'
+tags: [architecture, adr]
+---
+
 # ADR 2. Golden-run conformance for the gate orchestrator (stub-harness fixtures as the behavioral contract)
 
 ## Status

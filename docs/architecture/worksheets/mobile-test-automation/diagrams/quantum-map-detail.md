@@ -1,3 +1,10 @@
+---
+type: architecture
+title: 'Determination 1 — Quantum map: one quantum, three module seams — detail tables'
+description: 'Locator: this view opens Q from style-decision.'
+tags: [architecture, worksheet]
+---
+
 # Determination 1 — Quantum map: one quantum, three module seams — detail tables
 
 > What is the single architecture quantum, and what sits outside it? Opens `Q` from style-decision Determination 1. The three cluster modules (conversion · validation-certification · evidence) are seams inside this one deployable — named on the canvas qualifier and expanded in the node-detail table — not separate quanta. Module-grain edge ownership is C2b in the full diagram set. Async seams inside the quantum are Determination 3. Primary datastore omitted — see omitted note; data topology is Determination 2.

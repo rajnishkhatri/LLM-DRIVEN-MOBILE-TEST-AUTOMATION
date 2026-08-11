@@ -17,7 +17,7 @@ Use this when you want to run the **architect workflow** (`arch-*`) in
 | Clone / provision skills | [../SETUP.md](../SETUP.md) |
 | SDD how-to (spec-driven code/docs changes) | [sdd-lifecycle-instructions.md](sdd-lifecycle-instructions.md) |
 | Full operator manual (all four families) | [sdd-usage-guide.md](sdd-usage-guide.md) |
-| C4 diagram render (IR → D2 → lint) | [generating-architecture-diagrams/SKILL.md](generating-architecture-diagrams/SKILL.md) |
+| C4 diagram render (IR → D2 → lint) | [diagram-skill-instructions.md](diagram-skill-instructions.md) · [generating-architecture-diagrams/SKILL.md](generating-architecture-diagrams/SKILL.md) |
 | Agent pointers | [../../AGENTS.md](../../AGENTS.md) |
 
 **This repo is the design workspace** (ADRs, worksheets, components, risk). It

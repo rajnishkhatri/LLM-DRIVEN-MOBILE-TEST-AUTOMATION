@@ -17,6 +17,10 @@ Architect.
 Human index: [skills/README.md](skills/README.md)  
 SDD how-to (this workspace): [skills/sdd-lifecycle-instructions.md](skills/sdd-lifecycle-instructions.md)  
 Arch how-to (this workspace): [skills/arch-lifecycle-instructions.md](skills/arch-lifecycle-instructions.md)  
+Roles how-to: [skills/sdd-roles-instructions.md](skills/sdd-roles-instructions.md)  
+OKF how-to: [skills/okf-curator-instructions.md](skills/okf-curator-instructions.md)  
+Diagrams how-to: [skills/diagram-skill-instructions.md](skills/diagram-skill-instructions.md)  
+Coding-rules (deferred): [skills/coding-rules-instructions.md](skills/coding-rules-instructions.md)  
 Operator manual (all families): [skills/sdd-usage-guide.md](skills/sdd-usage-guide.md)
 
 ---
@@ -75,11 +79,11 @@ blocks interactive work.
 
 | Skill | Cursor | Claude | Human docs |
 |---|---|---|---|
-| sdd-\* | `.cursor/skills/sdd-*` | `.claude/skills/sdd-*` | [skills/sdd-usage-guide.md](skills/sdd-usage-guide.md) |
+| sdd-\* | `.cursor/skills/sdd-*` | `.claude/skills/sdd-*` | [skills/sdd-lifecycle-instructions.md](skills/sdd-lifecycle-instructions.md) · [skills/sdd-usage-guide.md](skills/sdd-usage-guide.md) |
 | arch-\* | `.cursor/skills/arch-*` | `.claude/skills/arch-*` | [skills/arch-lifecycle-instructions.md](skills/arch-lifecycle-instructions.md) · SoT under `.cursor/skills/arch-*/` |
-| sdd-roles | — | `.claude/agents/` + `.claude/skills/sdd-roles/` | SoT `tooling/sdd-roles/` |
-| okf-curator | `.cursor/skills/okf-curator/` | — (use Cursor or run lint CLI) | skill `INSTALL.md` / `FIRST_RUN.md` |
-| diagrams | use `docs/skills/generating-architecture-diagrams/` (AGENTS.md points here) | same path / optional copy into agent skills | [skills/generating-architecture-diagrams/SKILL.md](skills/generating-architecture-diagrams/SKILL.md) |
+| sdd-roles | — | `.claude/agents/` + `.claude/skills/sdd-roles/` | [skills/sdd-roles-instructions.md](skills/sdd-roles-instructions.md) · SoT `tooling/sdd-roles/` |
+| okf-curator | `.cursor/skills/okf-curator/` | — (use Cursor or run lint CLI) | [skills/okf-curator-instructions.md](skills/okf-curator-instructions.md) · skill `INSTALL.md` / `FIRST_RUN.md` |
+| diagrams | use `docs/skills/generating-architecture-diagrams/` (AGENTS.md points here) | same path / optional copy into agent skills | [skills/diagram-skill-instructions.md](skills/diagram-skill-instructions.md) · [SKILL.md](skills/generating-architecture-diagrams/SKILL.md) |
 
 Bindings (already resolved; do not blank them):
 
@@ -101,16 +105,21 @@ Skills register at **session start**. After `fix` / `check`:
    - (Claude) “Use the `specifier` agent — what may you write?”
    - “Point at `docs/skills/generating-architecture-diagrams/SKILL.md`.”
 
-For day-to-day SDD prompts and gate tokens after setup, use
-[skills/sdd-lifecycle-instructions.md](skills/sdd-lifecycle-instructions.md).
-For arch-\* prompts and gate tokens, use
-[skills/arch-lifecycle-instructions.md](skills/arch-lifecycle-instructions.md).
+For day-to-day prompts and gates after setup, use the workspace how-tos:
+[sdd](skills/sdd-lifecycle-instructions.md) ·
+[arch](skills/arch-lifecycle-instructions.md) ·
+[roles](skills/sdd-roles-instructions.md) ·
+[okf](skills/okf-curator-instructions.md) ·
+[diagrams](skills/diagram-skill-instructions.md) ·
+[coding-rules (deferred)](skills/coding-rules-instructions.md).
 
 ---
 
 ## 6. Diagram skill (optional machine tools)
 
-Prereqs in §1. Usage: follow
+Prereqs in §1. Workspace how-to:
+[skills/diagram-skill-instructions.md](skills/diagram-skill-instructions.md).
+Install/pack detail:
 [skills/generating-architecture-diagrams/INSTALL.md](skills/generating-architecture-diagrams/INSTALL.md)
 and `SKILL.md`. This repo keeps the pack under `docs/skills/`; agents should
 follow `AGENTS.md` rather than requiring a second copy under `.cursor/skills/`.
@@ -120,7 +129,9 @@ follow `AGENTS.md` rather than requiring a second copy under `.cursor/skills/`.
 ## 7. coding-rules — not installed here
 
 coding-rules targets the **spine/o1 Java delivery repo**, not this design
-workspace. When that repo exists:
+workspace. Thin pointer:
+[skills/coding-rules-instructions.md](skills/coding-rules-instructions.md).
+When that repo exists:
 
 ```bash
 # follow tooling/coding-rules-skill/INSTALL.md (or docs/skills/coding-rules-skill/INSTALL.md)
@@ -136,6 +147,7 @@ Until then, leave coding-rules off Cursor/Claude in this repo.
 python .cursor/skills/okf-curator/scripts/okf_lint.py
 ```
 
+Workspace how-to: [skills/okf-curator-instructions.md](skills/okf-curator-instructions.md).  
 Conventions: [CONVENTIONS.md](CONVENTIONS.md). Binding: `.okf/binding.toml`.
 
 ---
@@ -161,6 +173,6 @@ tooling/sdd-roles/             → roles / conveyor SoT
 docs/skills/generating-architecture-diagrams/  → diagram SoT
 tooling/coding-rules-skill/    → install into spine/o1 later
 tooling/skill-sync/            → provision + drift guard
-docs/skills/                   → human manuals
+docs/skills/                   → human manuals + *-instructions.md how-tos
 docs/SETUP.md                  → this runbook
 ```

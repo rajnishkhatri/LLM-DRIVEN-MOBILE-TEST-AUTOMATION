@@ -20,11 +20,15 @@ knowledge_globs        = [
 
 [lint]
 declared_bundles  = ["cases/coding-rules", "docs/architecture"]
-evidence_segments = ["outputs", "node_modules", "staging"]
+# `evals` = local live-evidence trees (probe reports, evidence bundles) that the
+# sdd-roles plans reference by relative path but that stay uncommitted per
+# evidence_home = <none>; classify as evidence so any such file is skipped as a
+# generated artifact, never flagged as rot.
+evidence_segments = ["outputs", "node_modules", "staging", "evals"]
 evidence_suffixes = ["-workspace"]
 run_dir_pattern   = "^run-\\d+$"
 reserved          = ["index.md", "log.md", "README.md"]
 
 [drift]
 code_prefixes    = []
-exclude_segments = ["/outputs/", "/node_modules/", "/staging/"]
+exclude_segments = ["/outputs/", "/node_modules/", "/staging/", "/evals/"]

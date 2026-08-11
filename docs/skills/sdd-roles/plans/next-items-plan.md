@@ -12,7 +12,7 @@ status: superseded
 superseded_by: live-leg-and-kata-study-plan.md
 tags: [sdd-roles, o7, plan, ir-gate, kata, seams]
 adr: ../../../architecture/adrs/tooling/sdd-roles/0005-ir-gate-first-class-gate-vocabulary.md
-battle_test: ../evals/battle-test-report.md
+battle_test: sdd-roles battle-test report (Architect workspace eval artifact; not vendored here)
 ---
 
 # Next-items plan — sdd-roles / o7 (written 2026-08-09)

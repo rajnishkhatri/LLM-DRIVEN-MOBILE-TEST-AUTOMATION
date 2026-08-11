@@ -15,7 +15,7 @@ supersedes: next-items-plan.md
 adr_0005: ../../../architecture/adrs/tooling/sdd-roles/0005-ir-gate-first-class-gate-vocabulary.md
 adr_0006: ../../../architecture/adrs/tooling/sdd-roles/0006-live-invocation-runner-contract-channel.md
 probe_report: ../evals/live-leg-probe-report.md
-battle_test: ../evals/battle-test-report.md
+battle_test: sdd-roles battle-test report (Architect workspace eval artifact; not vendored here)
 tags: [sdd-roles, o7, plan, kata, live-leg, hooks, seams]
 ---
 

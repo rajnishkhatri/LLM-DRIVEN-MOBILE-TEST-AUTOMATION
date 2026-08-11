@@ -16,6 +16,7 @@ Use this when you want to run a **spec-driven change** in
 |---|---|
 | Clone / provision skills | [../SETUP.md](../SETUP.md) |
 | Full operator manual (all four families) | [sdd-usage-guide.md](sdd-usage-guide.md) |
+| Role cards (Claude agents) | [sdd-roles-instructions.md](sdd-roles-instructions.md) |
 | Agent pointers | [../../AGENTS.md](../../AGENTS.md) |
 
 **This repo is the design workspace** (specs, plans, ADRs). It is **not** the

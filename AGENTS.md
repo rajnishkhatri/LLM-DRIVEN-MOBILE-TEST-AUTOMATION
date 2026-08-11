@@ -14,6 +14,9 @@ set, use the skill at:
 
 **`docs/skills/generating-architecture-diagrams/SKILL.md`**
 
+Workspace how-to (prompts, gates, paths):
+`docs/skills/diagram-skill-instructions.md`.
+
 It gives you a fact-frozen IR, a reserved shape vocabulary, verbatim labels,
 honesty tags (never invent SLAs / vendors / regions / counts), a deterministic
 D2 render (`scripts/render.sh`), and a deterministic linter
@@ -36,6 +39,24 @@ For the 10-stage SDD lifecycle, see `sdd-lifecycle` (SoT:
 `tooling/sdd-skills-bundle/`). Workspace how-to (prompts, gates, paths):
 `docs/skills/sdd-lifecycle-instructions.md`. Full operator manual:
 `docs/skills/sdd-usage-guide.md`. Bindings: `.sdd/binding.toml`.
+
+## SDD roles (Claude agents)
+
+Interactive role cards: `.claude/agents/` + kernel
+`.claude/skills/sdd-roles/` (SoT: `tooling/sdd-roles/`). Workspace how-to:
+`docs/skills/sdd-roles-instructions.md`. Do **not** mount conveyor `hooks.json`
+into `.claude/settings.json`.
+
+## Knowledge plane (OKF)
+
+Curate authored docs with `okf-curator` (`.cursor/skills/okf-curator/`).
+Workspace how-to: `docs/skills/okf-curator-instructions.md`. Binding:
+`.okf/binding.toml`.
+
+## Coding-rules (not mounted here)
+
+Deferred to the spine/o1 Java delivery repo. Pointer:
+`docs/skills/coding-rules-instructions.md`.
 
 ## Spine repo root files (staged data)
 

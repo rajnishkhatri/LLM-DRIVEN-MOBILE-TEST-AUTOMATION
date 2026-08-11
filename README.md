@@ -18,6 +18,7 @@ surfaces used to evolve that design.
 **Setup (clone / fresh machine):** [`docs/SETUP.md`](docs/SETUP.md)
 
 **SDD how-to (this workspace):** [`docs/skills/sdd-lifecycle-instructions.md`](docs/skills/sdd-lifecycle-instructions.md)  
+**Arch how-to (this workspace):** [`docs/skills/arch-lifecycle-instructions.md`](docs/skills/arch-lifecycle-instructions.md)  
 Operator manual (all families): [`docs/skills/sdd-usage-guide.md`](docs/skills/sdd-usage-guide.md)  
 Skill index: [`docs/skills/README.md`](docs/skills/README.md)
 

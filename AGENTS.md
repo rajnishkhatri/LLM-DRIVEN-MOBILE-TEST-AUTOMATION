@@ -25,8 +25,10 @@ Install/usage details are in the skill's `INSTALL.md`.
 For the broader software-architect workflow — deriving characteristics,
 component design, style/quanta selection, ADRs, risk storming, validation — see
 the `arch-*` skill family under `.cursor/skills/` (router: `arch-lifecycle`).
-Delivery-project artifacts for `mobile-test-automation` root under
-`docs/architecture/` (see `.arch/binding.toml` `[roots]`).
+Workspace how-to (prompts, gates, paths):
+`docs/skills/arch-lifecycle-instructions.md`. Delivery-project artifacts for
+`mobile-test-automation` root under `docs/architecture/` (see
+`.arch/binding.toml` `[roots]`).
 
 ## Spec-driven development
 

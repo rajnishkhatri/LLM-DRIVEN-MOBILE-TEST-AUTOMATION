@@ -16,6 +16,7 @@ Architect.
 
 Human index: [skills/README.md](skills/README.md)  
 SDD how-to (this workspace): [skills/sdd-lifecycle-instructions.md](skills/sdd-lifecycle-instructions.md)  
+Arch how-to (this workspace): [skills/arch-lifecycle-instructions.md](skills/arch-lifecycle-instructions.md)  
 Operator manual (all families): [skills/sdd-usage-guide.md](skills/sdd-usage-guide.md)
 
 ---
@@ -75,7 +76,7 @@ blocks interactive work.
 | Skill | Cursor | Claude | Human docs |
 |---|---|---|---|
 | sdd-\* | `.cursor/skills/sdd-*` | `.claude/skills/sdd-*` | [skills/sdd-usage-guide.md](skills/sdd-usage-guide.md) |
-| arch-\* | `.cursor/skills/arch-*` | `.claude/skills/arch-*` | SoT under `.cursor/skills/arch-*/` |
+| arch-\* | `.cursor/skills/arch-*` | `.claude/skills/arch-*` | [skills/arch-lifecycle-instructions.md](skills/arch-lifecycle-instructions.md) · SoT under `.cursor/skills/arch-*/` |
 | sdd-roles | — | `.claude/agents/` + `.claude/skills/sdd-roles/` | SoT `tooling/sdd-roles/` |
 | okf-curator | `.cursor/skills/okf-curator/` | — (use Cursor or run lint CLI) | skill `INSTALL.md` / `FIRST_RUN.md` |
 | diagrams | use `docs/skills/generating-architecture-diagrams/` (AGENTS.md points here) | same path / optional copy into agent skills | [skills/generating-architecture-diagrams/SKILL.md](skills/generating-architecture-diagrams/SKILL.md) |
@@ -102,6 +103,8 @@ Skills register at **session start**. After `fix` / `check`:
 
 For day-to-day SDD prompts and gate tokens after setup, use
 [skills/sdd-lifecycle-instructions.md](skills/sdd-lifecycle-instructions.md).
+For arch-\* prompts and gate tokens, use
+[skills/arch-lifecycle-instructions.md](skills/arch-lifecycle-instructions.md).
 
 ---
 

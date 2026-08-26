@@ -1,0 +1,1336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Two Lanes and a Gate</title>
+<style>
+:root{
+  --bg:#fbfbf9; --surface:#ffffff; --surface-2:#f3f5f8; --text:#1a2230; --muted:#5c6775;
+  --border:#e3e7ee; --border-strong:#d3d9e2; --accent:#0c6b62; --accent-2:#0a5aa8;
+  --chip-bg:#eef4f3; --chip-ink:#0c5a53; --chip-br:#cfe4e0;
+  --risk-high:#c0233a; --risk-high-bg:#fdecef; --risk-med:#9a6a00; --risk-med-bg:#fdf3df;
+  --risk-low:#2f7d46; --risk-low-bg:#e9f6ed; --quote-br:#0c6b62; --quote-bg:#f2f7f6;
+  --diagram-bg:#ffffff; --diagram-ink:#14202f; --code:#0a5aa8;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#0d1117; --surface:#141a22; --surface-2:#1a212b; --text:#e6edf5; --muted:#9aa7b6;
+  --border:#28313d; --border-strong:#37424f; --accent:#4bd6c4; --accent-2:#6db3ff;
+  --chip-bg:#12261f; --chip-ink:#7fe3d3; --chip-br:#1f4a40;
+  --risk-high:#ff7183; --risk-high-bg:#2a141a; --risk-med:#e5b74f; --risk-med-bg:#2a2313;
+  --risk-low:#74d391; --risk-low-bg:#13251a; --quote-br:#4bd6c4; --quote-bg:#111a19;
+  --diagram-bg:#0d1117; --diagram-ink:#eaf0f7; --code:#6db3ff;
+}}
+:root[data-theme="dark"]{
+  --bg:#0d1117; --surface:#141a22; --surface-2:#1a212b; --text:#e6edf5; --muted:#9aa7b6;
+  --border:#28313d; --border-strong:#37424f; --accent:#4bd6c4; --accent-2:#6db3ff;
+  --chip-bg:#12261f; --chip-ink:#7fe3d3; --chip-br:#1f4a40;
+  --risk-high:#ff7183; --risk-high-bg:#2a141a; --risk-med:#e5b74f; --risk-med-bg:#2a2313;
+  --risk-low:#74d391; --risk-low-bg:#13251a; --quote-br:#4bd6c4; --quote-bg:#111a19;
+  --diagram-bg:#0d1117; --diagram-ink:#eaf0f7; --code:#6db3ff;
+}
+:root[data-theme="light"]{
+  --bg:#fbfbf9; --surface:#ffffff; --surface-2:#f3f5f8; --text:#1a2230; --muted:#5c6775;
+  --border:#e3e7ee; --border-strong:#d3d9e2; --accent:#0c6b62; --accent-2:#0a5aa8;
+  --diagram-bg:#ffffff; --diagram-ink:#14202f;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);overflow-x:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans",sans-serif;
+  font-size:18px;line-height:1.66;letter-spacing:.005em;-webkit-font-smoothing:antialiased;}
+main{max-width:880px;margin:0 auto;padding:0 22px 96px}
+.hero{max-width:880px;margin:0 auto;padding:64px 22px 8px}
+.eyebrow{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 14px}
+h1{font-size:2.7rem;line-height:1.08;margin:0 0 .5rem;letter-spacing:-.02em}
+.standfirst{font-size:1.24rem;line-height:1.5;color:var(--muted);margin:.4rem 0 0;max-width:44ch}
+.meta{font-size:.9rem;color:var(--muted);margin-top:22px;padding-top:18px;border-top:1px solid var(--border)}
+h2{font-size:1.72rem;line-height:1.18;letter-spacing:-.015em;margin:2.6em 0 .6em;padding-top:.4em}
+h3{font-size:1.24rem;line-height:1.25;margin:2em 0 .5em;color:var(--text)}
+.sec{scroll-margin-top:20px}
+p{margin:0 0 1.1em}
+a{color:var(--accent-2);text-decoration:none;border-bottom:1px solid transparent}
+a:hover{border-bottom-color:currentColor}
+strong{font-weight:680}
+ul,ol{margin:0 0 1.2em;padding-left:1.3em}
+li{margin:.34em 0}
+code,.chip{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em}
+code{color:var(--code);background:var(--surface-2);padding:.08em .38em;border-radius:5px}
+.chip{display:inline-block;background:var(--chip-bg);color:var(--chip-ink);border:1px solid var(--chip-br);
+  border-radius:6px;padding:.05em .5em;font-size:.8em;font-weight:600;letter-spacing:.01em;line-height:1.5;white-space:nowrap}
+blockquote{margin:1.7em 0;padding:1.05em 1.3em;background:var(--quote-bg);border-left:4px solid var(--quote-br);
+  border-radius:0 10px 10px 0;font-size:1.08rem;line-height:1.55}
+blockquote p:last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:1.5em 0;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:.94rem}
+th,td{text-align:left;padding:.6em .85em;border-bottom:1px solid var(--border);vertical-align:top}
+thead th{background:var(--surface-2);font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border-strong)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+figure.diagram{margin:2.2em 0;width:min(100vw - 30px,1100px);position:relative;left:50%;transform:translateX(-50%)}
+.diagram-scroll{overflow-x:auto;background:var(--diagram-bg);border:1px solid var(--border);border-radius:14px;padding:14px}
+.diagram svg{display:block;width:100%;height:auto;color:var(--diagram-ink)}
+figure.diagram figcaption{max-width:820px;margin:.7em auto 0;text-align:center;font-size:.9rem;color:var(--muted);line-height:1.45;padding:0 16px}
+.toc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin:30px auto 8px;max-width:880px}
+.toc-h{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 .5em}
+.toc ol{margin:0;padding-left:1.3em}
+.toc li{margin:.28em 0}
+.toc a{color:var(--text)}
+.footer{max-width:880px;margin:60px auto 0;padding:22px;border-top:1px solid var(--border);color:var(--muted);font-size:.9rem;line-height:1.55}
+.footer strong{color:var(--text)}
+@media (max-width:600px){
+  body{font-size:16.5px}
+  h1{font-size:2.05rem}
+  .hero{padding:44px 20px 6px}
+  h2{font-size:1.42rem}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+<p class="eyebrow">Reference architecture &middot; design narrative</p>
+<h1>Two Lanes and a Gate</h1>
+<p class="standfirst">How to let an AI agent adjudicate money-laundering and sanctions alerts for a bank &mdash; and almost never miss the one that matters.</p>
+<p class="meta">A worked design for a hypothetical mid-size bank, taken from characteristics through to governance. Industry figures are cited as reported, not asserted as fact; where the design leaves questions open or unbuilt, it says so.</p>
+</header>
+<nav class="toc" aria-label="Contents"><p class="toc-h">Contents</p><ol><li><a href="#stakes">The stakes</a></li><li><a href="#requirements">What it must be, what we build on</a></li><li><a href="#blocks">The building blocks and the shape</a></li><li><a href="#awsdesign">The AWS solution design</a></li><li><a href="#decisionsrisk">Decisions, and attacking the design</a></li><li><a href="#validate">Proving it holds, and what we owe</a></li></ol></nav>
+<main>
+<section id="stakes" class="sec">
+<h2>The stakes, and the system at a glance</h2>
+
+<p>A rule-based transaction-monitoring system earns its keep by being paranoid, and the bank pays for that paranoia every single day. Somewhere between 85 and 95 percent of the alerts these systems raise are false, a range reported consistently across industry accounts. Run that through a mid-size bank pushing roughly 100,000 alerts a year across 50 investigators at about 97 percent false, and the paranoia becomes a standing tax: thousands of hours spent clearing transactions that were never suspicious, a queue that never empties, and the one genuinely dangerous alert waiting in line behind the noise.</p>
+
+<p>The reason a bank tolerates that tax is the shape of the mistake sitting underneath it. The two ways this system can be wrong are not two sizes of one error. They are different in kind, and the difference is the whole design.</p>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>The error</th><th>What it actually costs</th><th>Who absorbs it</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>False clear — a real launderer waved through</td><td>A regulatory failure: enforcement, consent orders, personal liability for named officers</td><td>The bank, and its license to operate</td></tr>
+    <tr><td>False alarm — a clean transaction escalated</td><td>One investigator-hour</td><td>The investigator's afternoon</td></tr>
+  </tbody>
+</table></div>
+
+<blockquote>A missed launderer is catastrophic and a regulatory failure. A false alarm is merely an investigator-hour. Every choice that follows — the model on each lane, the retrieval, the three layers of safety — exists to honor that asymmetry: the system must almost never miss while it shaves the false-positive mountain down toward 85 percent so 50 investigators stop drowning. You cannot buy the false-positive reduction with recall.</blockquote>
+
+<h3>The prize, and the trap</h3>
+
+<p>The prize is real and large. Public deployments cited across industry reporting put false-positive reductions in the 45 to 65 percent band (HSBC, Danske Bank, and Valley Bank among them; Tookitaki reported around 45 percent at a digital bank), and one documented agent reportedly worked 20,000-plus alerts a month at a 65 percent automation rate on sanctions adjudication. On the brief's own arithmetic, moving this bank's rate toward 85 percent could return $15 to 25 million and roughly 400,000 analyst hours. That is the case that funds the build.</p>
+
+<p>The trap is that every one of those numbers is a precision story, and precision is the cheap thing to buy. You could hit 85 percent by tomorrow morning simply by clearing more aggressively — and clear a launderer on the way. So the operating point is not "be right most of the time." Set the recall floor first (a floor at or above 99 percent on AML typologies, zero auto-clear on any true sanctions hit), then optimize precision underneath it. The floor is fixed and the reduction is what you earn beneath it. Read that order backwards and the savings arrive with a regulatory failure stapled to them.</p>
+
+<h3>The system at a glance</h3>
+
+<p>The system is two lanes and a human. A cheap, fine-tuned triage classifier reads every incoming alert and routes it — the obvious noise to a fast disposition, the roughly 15 percent that carry genuine signal into a deliberate reasoning agent that investigates the way a careful junior analyst would: pulling KYC and transaction history, screening entities against sanctions lists, tracing the counterparty graph for shared parties and layering, matching the pattern to typologies grounded in retrieved guidance, and writing a clear-or-escalate recommendation in which every claim carries a citation. A human investigator makes the final call, and the agent never files a SAR on its own.</p>
+
+<figure class="diagram">
+<div class="diagram-scroll"><svg viewBox="0 0 1240 748" style="width:100%;height:auto;max-width:1240px;font-family:Arial,Helvetica,sans-serif" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two-lane AML adjudication end-to-end architecture"><style>
+.aml-bg__dg-hero-two-lane{fill:#ffffff}.aml-ttl__dg-hero-two-lane{fill:#14202f;font-weight:700}.aml-ttl-sm__dg-hero-two-lane{fill:#14202f;font-weight:700}
+.aml-sub__dg-hero-two-lane{fill:#5a6675}.aml-klabel__dg-hero-two-lane{fill:#39465a;font-weight:700}.aml-elab__dg-hero-two-lane{fill:#5a6675}
+.aml-node__dg-hero-two-lane{fill:#ffffff;stroke:#c3ccd8;stroke-width:1.4}
+.aml-agent__dg-hero-two-lane{fill:#ffffff;stroke:#2E9E8F;stroke-width:2.2}
+.aml-panel__dg-hero-two-lane{fill:#f5f7fa;stroke:#d5dbe3;stroke-width:1.2}
+.aml-ext__dg-hero-two-lane{fill:#eef1f5;stroke:#9aa7b6;stroke-width:1.4;stroke-dasharray:5 4}
+.aml-qbound__dg-hero-two-lane{fill:#f8fafc;stroke:#8f9db0;stroke-width:1.8;stroke-dasharray:9 6}
+.aml-choke__dg-hero-two-lane{fill:#fff7f6;stroke:#C7131F;stroke-width:1.9}
+.aml-edge__dg-hero-two-lane{fill:none;stroke:#48566b;stroke-width:2}.aml-async__dg-hero-two-lane{stroke-dasharray:7 5}
+.aml-ahead__dg-hero-two-lane{fill:#48566b}.aml-inkf__dg-hero-two-lane{fill:#48566b}
+@media (prefers-color-scheme:dark){
+.aml-bg__dg-hero-two-lane{fill:#0d1117}.aml-ttl__dg-hero-two-lane,.aml-ttl-sm__dg-hero-two-lane{fill:#eaf0f7}.aml-sub__dg-hero-two-lane,.aml-elab__dg-hero-two-lane{fill:#9aa7b6}.aml-klabel__dg-hero-two-lane{fill:#c4cede}
+.aml-node__dg-hero-two-lane{fill:#171d27;stroke:#33404e}.aml-agent__dg-hero-two-lane{fill:#141c22;stroke:#39c3ad}.aml-panel__dg-hero-two-lane{fill:#141a23;stroke:#2b3541}
+.aml-ext__dg-hero-two-lane{fill:#1b222c;stroke:#4a5666}.aml-qbound__dg-hero-two-lane{fill:#111722;stroke:#54637a}.aml-choke__dg-hero-two-lane{fill:#241417;stroke:#f2555f}
+.aml-edge__dg-hero-two-lane{stroke:#9fb0c4}.aml-ahead__dg-hero-two-lane{fill:#9fb0c4}.aml-inkf__dg-hero-two-lane{fill:#9fb0c4}}
+:root[data-theme="dark"] .aml-bg__dg-hero-two-lane{fill:#0d1117}:root[data-theme="dark"] .aml-ttl__dg-hero-two-lane, :root[data-theme="dark"] .aml-ttl-sm__dg-hero-two-lane{fill:#eaf0f7}:root[data-theme="dark"] .aml-sub__dg-hero-two-lane, :root[data-theme="dark"] .aml-elab__dg-hero-two-lane{fill:#9aa7b6}:root[data-theme="dark"] .aml-klabel__dg-hero-two-lane{fill:#c4cede}:root[data-theme="dark"] .aml-node__dg-hero-two-lane{fill:#171d27;stroke:#33404e}:root[data-theme="dark"] .aml-agent__dg-hero-two-lane{fill:#141c22;stroke:#39c3ad}:root[data-theme="dark"] .aml-panel__dg-hero-two-lane{fill:#141a23;stroke:#2b3541}:root[data-theme="dark"] .aml-ext__dg-hero-two-lane{fill:#1b222c;stroke:#4a5666}:root[data-theme="dark"] .aml-qbound__dg-hero-two-lane{fill:#111722;stroke:#54637a}:root[data-theme="dark"] .aml-choke__dg-hero-two-lane{fill:#241417;stroke:#f2555f}:root[data-theme="dark"] .aml-edge__dg-hero-two-lane{stroke:#9fb0c4}:root[data-theme="dark"] .aml-ahead__dg-hero-two-lane{fill:#9fb0c4}:root[data-theme="dark"] .aml-inkf__dg-hero-two-lane{fill:#9fb0c4}:root[data-theme="light"] .aml-bg__dg-hero-two-lane{fill:#ffffff}:root[data-theme="light"] .aml-ttl__dg-hero-two-lane{fill:#14202f;font-weight:700}:root[data-theme="light"] .aml-ttl-sm__dg-hero-two-lane{fill:#14202f;font-weight:700}:root[data-theme="light"] .aml-sub__dg-hero-two-lane{fill:#5a6675}:root[data-theme="light"] .aml-klabel__dg-hero-two-lane{fill:#39465a;font-weight:700}:root[data-theme="light"] .aml-elab__dg-hero-two-lane{fill:#5a6675}:root[data-theme="light"] .aml-node__dg-hero-two-lane{fill:#ffffff;stroke:#c3ccd8;stroke-width:1.4}:root[data-theme="light"] .aml-agent__dg-hero-two-lane{fill:#ffffff;stroke:#2E9E8F;stroke-width:2.2}:root[data-theme="light"] .aml-panel__dg-hero-two-lane{fill:#f5f7fa;stroke:#d5dbe3;stroke-width:1.2}:root[data-theme="light"] .aml-ext__dg-hero-two-lane{fill:#eef1f5;stroke:#9aa7b6;stroke-width:1.4;stroke-dasharray:5 4}:root[data-theme="light"] .aml-qbound__dg-hero-two-lane{fill:#f8fafc;stroke:#8f9db0;stroke-width:1.8;stroke-dasharray:9 6}:root[data-theme="light"] .aml-choke__dg-hero-two-lane{fill:#fff7f6;stroke:#C7131F;stroke-width:1.9}:root[data-theme="light"] .aml-edge__dg-hero-two-lane{fill:none;stroke:#48566b;stroke-width:2}:root[data-theme="light"] .aml-async__dg-hero-two-lane{stroke-dasharray:7 5}:root[data-theme="light"] .aml-ahead__dg-hero-two-lane{fill:#48566b}:root[data-theme="light"] .aml-inkf__dg-hero-two-lane{fill:#48566b}</style>
+
+<defs>
+<linearGradient id="h-mlai" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E9E8F"/><stop offset="1" stop-color="#1B827A"/></linearGradient>
+<linearGradient id="h-compute" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ED7100"/><stop offset="1" stop-color="#C55A0B"/></linearGradient>
+<linearGradient id="h-graph" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4581C3"/><stop offset="1" stop-color="#2F5A8A"/></linearGradient>
+<linearGradient id="h-search" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8C4FFF"/><stop offset="1" stop-color="#6B2FBB"/></linearGradient>
+<linearGradient id="h-sec" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C7131F"/><stop offset="1" stop-color="#A30E18"/></linearGradient>
+<linearGradient id="h-appint" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E7157B"/><stop offset="1" stop-color="#B81062"/></linearGradient>
+<marker id="h-arw" viewBox="0 0 10 10" refX="8.4" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 L3,5 Z" class="aml-ahead__dg-hero-two-lane"/></marker>
+</defs>
+<rect x="0" y="0" width="1240" height="748" class="aml-bg__dg-hero-two-lane"/>
+<text x="36" y="40" class="aml-ttl__dg-hero-two-lane" font-size="22">Two-lane AML adjudication — end-to-end architecture</text>
+<text x="36" y="62" class="aml-sub__dg-hero-two-lane" font-size="13">Elastic triage lane · async lane boundary · reasoning + system-of-record lane. A human always makes the final call.</text>
+<rect x="28" y="72" width="300" height="306" rx="18" class="aml-qbound__dg-hero-two-lane"/>
+<text x="44" y="96" class="aml-klabel__dg-hero-two-lane" font-size="13">Q1 · Intake &amp; Triage</text>
+<text x="44" y="112" class="aml-sub__dg-hero-two-lane" font-size="11">elastic · high-volume · cheap</text>
+<rect x="48" y="120" width="260" height="44" rx="9" class="aml-ext__dg-hero-two-lane"/>
+<text x="178" y="140" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="13">TM System (external)</text>
+<text x="178" y="155" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="11">transaction-monitoring feed</text>
+<rect x="48" y="176" width="260" height="44" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="178" y="196" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="13">Receive Alert · Ingestion API</text>
+<text x="178" y="211" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="11">admit + de-duplicate</text>
+<rect x="48" y="232" width="260" height="44" rx="9" class="aml-node__dg-hero-two-lane"/>
+<rect x="248" y="238" width="52" height="16" rx="8" fill="url(#h-appint)"/><text x="274" y="250" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">queue</text>
+<text x="122" y="252" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="13">Alert Queue</text>
+<text x="122" y="266" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="11">durable work queue</text>
+<rect x="48" y="300" width="260" height="60" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="178" y="322" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="13">Triage Alert · score &amp; route</text>
+<rect x="102" y="332" width="152" height="17" rx="8.5" fill="url(#h-mlai)"/><text x="178" y="344" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff">SageMaker SLM · fast lane</text>
+<rect x="344" y="72" width="872" height="648" rx="18" class="aml-qbound__dg-hero-two-lane"/>
+<text x="360" y="96" class="aml-klabel__dg-hero-two-lane" font-size="13">Q2 · Adjudication &amp; Governance</text>
+<text x="360" y="112" class="aml-sub__dg-hero-two-lane" font-size="11">reasoning + system-of-record</text>
+<rect x="360" y="300" width="132" height="52" rx="9" class="aml-node__dg-hero-two-lane"/>
+<rect x="386" y="306" width="52" height="15" rx="7.5" fill="url(#h-appint)"/><text x="412" y="317.5" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">queue</text>
+<text x="426" y="336" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Lane queue</text>
+<text x="426" y="349" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">durable · elastic</text>
+<rect x="520" y="104" width="9" height="150" rx="4.5" fill="url(#h-sec)"/>
+<rect x="520" y="402" width="9" height="150" rx="4.5" fill="url(#h-sec)"/>
+<text x="524" y="330" text-anchor="middle" class="aml-klabel__dg-hero-two-lane" font-size="10.5" transform="rotate(-90 524 330)">SCOPE GUARD</text>
+<rect x="352" y="108" width="164" height="54" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="434" y="130" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Assemble Context</text>
+<text x="434" y="146" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">KYC · txn · adverse media</text>
+<rect x="352" y="176" width="164" height="54" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="434" y="198" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Screen Sanctions</text>
+<text x="434" y="214" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">match lists · hard-stop · MCP</text>
+<rect x="352" y="402" width="164" height="58" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="434" y="422" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Trace Network</text>
+<rect x="386" y="432" width="96" height="16" rx="8" fill="url(#h-graph)"/><text x="434" y="444" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">Neo4j · MCP (3P)</text>
+<rect x="352" y="470" width="164" height="58" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="434" y="490" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Match Typology</text>
+<rect x="380" y="500" width="108" height="16" rx="8" fill="url(#h-search)"/><text x="434" y="512" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">KB · OpenSearch</text>
+<rect x="548" y="250" width="196" height="120" rx="12" class="aml-agent__dg-hero-two-lane"/>
+<text x="646" y="284" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="14.5">Reason &amp; Decide</text>
+<text x="646" y="302" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="11">ReAct investigator · single agent</text>
+<text x="646" y="318" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="11">Bedrock Converse · Claude</text>
+<rect x="565" y="336" width="64" height="17" rx="8.5" fill="url(#h-mlai)"/><text x="597" y="348.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Bedrock</text>
+<rect x="635" y="336" width="94" height="17" rx="8.5" fill="url(#h-compute)"/><text x="682" y="348.5" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Strands / Lambda</text>
+<text x="646" y="242" text-anchor="middle" class="aml-elab__dg-hero-two-lane" font-size="10.5">parallel tool fan-out</text>
+<rect x="800" y="168" width="180" height="58" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="890" y="190" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Verify Clear</text>
+<text x="890" y="206" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">independent 2nd model · Bedrock</text>
+<rect x="800" y="252" width="180" height="64" rx="9" class="aml-choke__dg-hero-two-lane"/>
+<text x="890" y="274" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Gate Decision</text>
+<text x="890" y="290" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">recall floor · no-auto-clear</text>
+<text x="890" y="305" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">citations complete</text>
+<rect x="800" y="342" width="180" height="54" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="890" y="364" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Compile Case File</text>
+<text x="890" y="380" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">SAR-ready (escalations)</text>
+<rect x="800" y="422" width="180" height="58" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="890" y="444" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Present for Review</text>
+<text x="890" y="460" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">HITL · clear / escalate / override</text>
+<rect x="1024" y="422" width="180" height="58" rx="9" class="aml-ext__dg-hero-two-lane"/>
+<circle cx="1050" cy="445" r="5.4" class="aml-inkf__dg-hero-two-lane"/><path d="M1041,462 C1041,452 1059,452 1059,462 Z" class="aml-inkf__dg-hero-two-lane"/>
+<text x="1122" y="446" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Investigator</text>
+<text x="1122" y="462" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">human · final call · never auto-SAR</text>
+<rect x="548" y="596" width="180" height="56" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="638" y="620" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Record Decision</text>
+<text x="638" y="636" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">operational state</text>
+<rect x="800" y="596" width="180" height="56" rx="9" class="aml-choke__dg-hero-two-lane"/>
+<text x="890" y="620" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Preserve Audit Trail</text>
+<text x="890" y="636" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">append-only · immutable</text>
+<rect x="1024" y="596" width="180" height="56" rx="9" class="aml-node__dg-hero-two-lane"/>
+<text x="1114" y="620" text-anchor="middle" class="aml-ttl-sm__dg-hero-two-lane" font-size="12.5">Watch Outcomes</text>
+<text x="1114" y="636" text-anchor="middle" class="aml-sub__dg-hero-two-lane" font-size="10.5">drift + degradation alarms</text>
+<line x1="178" y1="164" x2="178" y2="176" class="aml-edge__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<line x1="178" y1="220" x2="178" y2="232" class="aml-edge__dg-hero-two-lane aml-async__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<line x1="178" y1="276" x2="178" y2="300" class="aml-edge__dg-hero-two-lane aml-async__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<line x1="308" y1="328" x2="360" y2="326" class="aml-edge__dg-hero-two-lane aml-async__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<text x="336" y="292" text-anchor="middle" class="aml-elab__dg-hero-two-lane" font-size="10">async</text>
+<text x="336" y="304" text-anchor="middle" class="aml-elab__dg-hero-two-lane" font-size="10">lane boundary</text>
+<line x1="492" y1="326" x2="548" y2="320" class="aml-edge__dg-hero-two-lane aml-async__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<text x="520" y="312" text-anchor="middle" class="aml-elab__dg-hero-two-lane" font-size="9.5">consume</text>
+<line x1="516" y1="135" x2="548" y2="272" class="aml-edge__dg-hero-two-lane" marker-start="url(#h-arw)" marker-end="url(#h-arw)"/>
+<line x1="516" y1="203" x2="548" y2="292" class="aml-edge__dg-hero-two-lane" marker-start="url(#h-arw)" marker-end="url(#h-arw)"/>
+<line x1="516" y1="431" x2="548" y2="338" class="aml-edge__dg-hero-two-lane" marker-start="url(#h-arw)" marker-end="url(#h-arw)"/>
+<line x1="516" y1="499" x2="548" y2="352" class="aml-edge__dg-hero-two-lane" marker-start="url(#h-arw)" marker-end="url(#h-arw)"/>
+<line x1="744" y1="296" x2="800" y2="200" class="aml-edge__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<line x1="890" y1="226" x2="890" y2="252" class="aml-edge__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<line x1="890" y1="316" x2="890" y2="342" class="aml-edge__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<text x="918" y="334" text-anchor="middle" class="aml-elab__dg-hero-two-lane" font-size="9.5">escalate</text>
+<line x1="890" y1="396" x2="890" y2="422" class="aml-edge__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<path d="M800,300 C 770,345 770,405 800,448" class="aml-edge__dg-hero-two-lane" fill="none" marker-end="url(#h-arw)"/>
+<text x="762" y="378" text-anchor="middle" class="aml-elab__dg-hero-two-lane" font-size="9.5">clear</text>
+<line x1="980" y1="451" x2="1024" y2="451" class="aml-edge__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<path d="M846,480 L700,596" class="aml-edge__dg-hero-two-lane" fill="none" marker-end="url(#h-arw)"/>
+<text x="742" y="548" text-anchor="middle" class="aml-elab__dg-hero-two-lane" font-size="9.5">commit</text>
+<line x1="728" y1="624" x2="800" y2="624" class="aml-edge__dg-hero-two-lane aml-async__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<text x="764" y="616" text-anchor="middle" class="aml-elab__dg-hero-two-lane" font-size="9.5">outbox</text>
+<line x1="980" y1="624" x2="1024" y2="624" class="aml-edge__dg-hero-two-lane aml-async__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<text x="1002" y="616" text-anchor="middle" class="aml-elab__dg-hero-two-lane" font-size="9.5">outcomes</text>
+<rect x="28" y="398" width="300" height="298" rx="14" class="aml-panel__dg-hero-two-lane"/>
+<text x="44" y="424" class="aml-klabel__dg-hero-two-lane" font-size="14">Legend</text>
+<line x1="46" y1="446" x2="86" y2="446" class="aml-edge__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<text x="96" y="450" class="aml-sub__dg-hero-two-lane" font-size="11.5">synchronous call / commit</text>
+<line x1="46" y1="474" x2="86" y2="474" class="aml-edge__dg-hero-two-lane aml-async__dg-hero-two-lane" marker-end="url(#h-arw)"/>
+<text x="96" y="478" class="aml-sub__dg-hero-two-lane" font-size="11.5">asynchronous (queue · outbox)</text>
+<line x1="46" y1="502" x2="86" y2="502" class="aml-edge__dg-hero-two-lane" marker-start="url(#h-arw)" marker-end="url(#h-arw)"/>
+<text x="96" y="506" class="aml-sub__dg-hero-two-lane" font-size="11.5">tool call + return (fan-out)</text>
+<rect x="46" y="522" width="40" height="22" rx="6" class="aml-qbound__dg-hero-two-lane"/>
+<text x="96" y="537" class="aml-sub__dg-hero-two-lane" font-size="11.5">architecture quantum</text>
+<rect x="52" y="552" width="9" height="26" rx="4.5" fill="url(#h-sec)"/>
+<text x="96" y="569" class="aml-sub__dg-hero-two-lane" font-size="11.5">Scope Guard — mediates data access</text>
+<rect x="46" y="586" width="40" height="22" rx="6" class="aml-choke__dg-hero-two-lane"/>
+<text x="96" y="601" class="aml-sub__dg-hero-two-lane" font-size="11.5">Gate / Audit — safety choke point</text>
+<text x="44" y="632" class="aml-klabel__dg-hero-two-lane" font-size="11.5">Traverse to detect, disclose in scope.</text>
+<text x="44" y="650" class="aml-sub__dg-hero-two-lane" font-size="11.5">Trace can cross entities to find layering;</text>
+<text x="44" y="666" class="aml-sub__dg-hero-two-lane" font-size="11.5">Scope Guard filters the rationale to scope.</text>
+<text x="44" y="686" class="aml-klabel__dg-hero-two-lane" font-size="11.5">The agent never files a SAR autonomously.</text>
+</svg></div>
+<figcaption>The whole system: a cheap triage lane, an async queue, and a deliberate deep adjudication lane with a human at the end.</figcaption>
+</figure>
+
+<p>Those two lanes map onto two AWS runtimes chosen for opposite jobs. The triage classifier is a small model fine-tuned on the bank's own historically adjudicated alerts and served on Amazon SageMaker, bought for latency and burst throughput rather than for cost — domain-tuned small models are industry-reported to reach 90 to 95 percent accuracy on compliance tasks at a fraction of a generic model's latency, and the labeled history to train one already exists. The survivors flow into a reasoning agent on Amazon Bedrock: the Converse API for tool-calling, Guardrails on the text boundary, and hybrid retrieval across a vector Knowledge Base of typologies and regulation plus a counterparty graph, with the whole investigation captured as an examiner-reconstructable audit trail. The pre-filter is also the cost lever — the expensive deep loop, near five cents an alert, runs only on the fraction that triage could not safely dismiss.</p>
+
+<figure class="diagram">
+<div class="diagram-scroll"><svg viewBox="0 0 900 560" style="width:100%;height:auto;max-width:900px;font-family:Arial,Helvetica,sans-serif" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AWS service stack role legend"><style>
+.aml-bg__dg-aws-stack-legend{fill:#ffffff}.aml-ttl__dg-aws-stack-legend{fill:#14202f;font-weight:700}.aml-ttl-sm__dg-aws-stack-legend{fill:#14202f;font-weight:700}
+.aml-sub__dg-aws-stack-legend{fill:#5a6675}.aml-klabel__dg-aws-stack-legend{fill:#39465a;font-weight:700}
+@media (prefers-color-scheme:dark){.aml-bg__dg-aws-stack-legend{fill:#0d1117}.aml-ttl__dg-aws-stack-legend,.aml-ttl-sm__dg-aws-stack-legend{fill:#eaf0f7}.aml-sub__dg-aws-stack-legend{fill:#9aa7b6}.aml-klabel__dg-aws-stack-legend{fill:#c4cede}}
+:root[data-theme="dark"] .aml-bg__dg-aws-stack-legend{fill:#0d1117}:root[data-theme="dark"] .aml-ttl__dg-aws-stack-legend, :root[data-theme="dark"] .aml-ttl-sm__dg-aws-stack-legend{fill:#eaf0f7}:root[data-theme="dark"] .aml-sub__dg-aws-stack-legend{fill:#9aa7b6}:root[data-theme="dark"] .aml-klabel__dg-aws-stack-legend{fill:#c4cede}:root[data-theme="light"] .aml-bg__dg-aws-stack-legend{fill:#ffffff}:root[data-theme="light"] .aml-ttl__dg-aws-stack-legend{fill:#14202f;font-weight:700}:root[data-theme="light"] .aml-ttl-sm__dg-aws-stack-legend{fill:#14202f;font-weight:700}:root[data-theme="light"] .aml-sub__dg-aws-stack-legend{fill:#5a6675}:root[data-theme="light"] .aml-klabel__dg-aws-stack-legend{fill:#39465a;font-weight:700}</style>
+
+<defs>
+<linearGradient id="l-mlai" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E9E8F"/><stop offset="1" stop-color="#1B827A"/></linearGradient>
+<linearGradient id="l-compute" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ED7100"/><stop offset="1" stop-color="#C55A0B"/></linearGradient>
+<linearGradient id="l-graph" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4581C3"/><stop offset="1" stop-color="#2F5A8A"/></linearGradient>
+<linearGradient id="l-search" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8C4FFF"/><stop offset="1" stop-color="#6B2FBB"/></linearGradient>
+<linearGradient id="l-sec" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C7131F"/><stop offset="1" stop-color="#A30E18"/></linearGradient>
+<linearGradient id="l-net" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7A3FF2"/><stop offset="1" stop-color="#5A2FBB"/></linearGradient>
+<linearGradient id="l-appint" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E7157B"/><stop offset="1" stop-color="#B81062"/></linearGradient>
+</defs>
+<rect x="0" y="0" width="900" height="560" class="aml-bg__dg-aws-stack-legend"/>
+<text x="36" y="42" class="aml-ttl__dg-aws-stack-legend" font-size="22">AWS service stack — role legend</text>
+<text x="36" y="66" class="aml-sub__dg-aws-stack-legend" font-size="13">Solid tile = AWS managed service   ·   dashed tile = 3rd-party engine (runs in-VPC)</text>
+<rect x="36" y="96" width="52" height="52" rx="13" fill="url(#l-mlai)"/>
+<g transform="translate(62,122)"><path d="M0,-12.5 L3.4,-3.4 L12.5,0 L3.4,3.4 L0,12.5 L-3.4,3.4 L-12.5,0 L-3.4,-3.4 Z" fill="#fff"/><path d="M9.6,-11.8 L10.9,-8.9 L13.8,-7.6 L10.9,-6.3 L9.6,-3.4 L8.3,-6.3 L5.4,-7.6 L8.3,-8.9 Z" fill="#fff" opacity="0.85"/></g>
+<text x="104" y="117" class="aml-ttl-sm__dg-aws-stack-legend" font-size="15">Amazon Bedrock</text>
+<text x="104" y="136" class="aml-sub__dg-aws-stack-legend" font-size="12">Reasoning-agent runtime · Converse + Guardrails</text>
+<rect x="36" y="184" width="52" height="52" rx="13" fill="url(#l-mlai)"/>
+<g transform="translate(62,210)"><path d="M-12.5,-10 L12.5,-10 L4,0.5 L4,11.5 L-4,11.5 L-4,0.5 Z" fill="#fff"/></g>
+<text x="104" y="205" class="aml-ttl-sm__dg-aws-stack-legend" font-size="15">Amazon SageMaker</text>
+<text x="104" y="224" class="aml-sub__dg-aws-stack-legend" font-size="12">Fine-tuned triage SLM · fast lane (10–50× latency)</text>
+<rect x="36" y="272" width="52" height="52" rx="13" fill="url(#l-compute)"/>
+<g transform="translate(62,298)"><path d="M-3,-11.5 L9,11.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><path d="M1.2,-1.5 L-9,11.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/></g>
+<text x="104" y="293" class="aml-ttl-sm__dg-aws-stack-legend" font-size="15">AWS Lambda / ECS</text>
+<text x="104" y="312" class="aml-sub__dg-aws-stack-legend" font-size="12">Agent + tool host · Strands control flow</text>
+<rect x="36" y="360" width="52" height="52" rx="13" fill="url(#l-graph)"/>
+<rect x="38" y="362" width="48" height="48" rx="11" fill="none" stroke="#fff" stroke-opacity="0.85" stroke-width="1.5" stroke-dasharray="4 3"/>
+<g transform="translate(62,386)"><line x1="0" y1="-9" x2="-9" y2="8" stroke="#fff" stroke-width="2.4"/><line x1="0" y1="-9" x2="9" y2="8" stroke="#fff" stroke-width="2.4"/><line x1="-9" y1="8" x2="9" y2="8" stroke="#fff" stroke-width="2.4"/><circle cx="0" cy="-9" r="4.6" fill="#fff"/><circle cx="-9" cy="8" r="4.6" fill="#fff"/><circle cx="9" cy="8" r="4.6" fill="#fff"/></g>
+<text x="104" y="381" class="aml-ttl-sm__dg-aws-stack-legend" font-size="15">Neo4j graph engine</text>
+<g><rect x="262" y="369" width="66" height="17" rx="8.5" fill="url(#l-graph)"/><text x="295" y="381" font-size="10.5" font-weight="700" fill="#fff" text-anchor="middle">3rd-party</text></g>
+<text x="104" y="400" class="aml-sub__dg-aws-stack-legend" font-size="12">Relationship graph (read) · Neptune was AWS-native alt</text>
+<rect x="36" y="448" width="52" height="52" rx="13" fill="url(#l-search)"/>
+<g transform="translate(62,474)"><circle cx="-3" cy="-3" r="8" fill="none" stroke="#fff" stroke-width="2.8"/><line x1="3.7" y1="3.7" x2="11.5" y2="11.5" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/></g>
+<text x="104" y="469" class="aml-ttl-sm__dg-aws-stack-legend" font-size="15">OpenSearch Serverless</text>
+<text x="104" y="488" class="aml-sub__dg-aws-stack-legend" font-size="12">Vector store · typology + reg RAG, metadata filter</text>
+<rect x="474" y="96" width="52" height="52" rx="13" fill="url(#l-sec)"/>
+<g transform="translate(500,122)"><path d="M0,-12.5 L11.5,-8 L11.5,1 C11.5,8.2 6,12 0,13.6 C-6,12 -11.5,8.2 -11.5,1 L-11.5,-8 Z" fill="#fff"/><path d="M-5,-0.5 L-1,4 L6,-5.2" fill="none" stroke="#C7131F" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="542" y="117" class="aml-ttl-sm__dg-aws-stack-legend" font-size="15">Verified Permissions · Cedar</text>
+<text x="542" y="136" class="aml-sub__dg-aws-stack-legend" font-size="12">Authorises every tool call · permit / deny</text>
+<rect x="474" y="184" width="52" height="52" rx="13" fill="url(#l-sec)"/>
+<g transform="translate(500,210)"><path d="M-4.5,-11 L-11,-11 L-11,11 L-4.5,11" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5,-11 L11,-11 L11,11 L4.5,11" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><line x1="-5.5" y1="0" x2="5.5" y2="0" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></g>
+<text x="542" y="205" class="aml-ttl-sm__dg-aws-stack-legend" font-size="15">Bedrock Guardrails</text>
+<text x="542" y="224" class="aml-sub__dg-aws-stack-legend" font-size="12">Text in / out filter · PII, topics, grounding</text>
+<rect x="474" y="272" width="52" height="52" rx="13" fill="url(#l-sec)"/>
+<g transform="translate(500,298)"><circle cx="0" cy="-6" r="5.5" fill="none" stroke="#fff" stroke-width="2.6"/><line x1="0" y1="-0.6" x2="0" y2="12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><line x1="0" y1="6" x2="5.5" y2="6" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><line x1="0" y1="9.5" x2="4" y2="9.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></g>
+<text x="542" y="293" class="aml-ttl-sm__dg-aws-stack-legend" font-size="15">AWS KMS</text>
+<text x="542" y="312" class="aml-sub__dg-aws-stack-legend" font-size="12">Encryption · KB, evidence, audit, graph</text>
+<rect x="474" y="360" width="52" height="52" rx="13" fill="url(#l-net)"/>
+<g transform="translate(500,386)"><rect x="-13" y="-5.5" width="16.5" height="11" rx="5.5" fill="none" stroke="#fff" stroke-width="2.6"/><rect x="-3.5" y="-5.5" width="16.5" height="11" rx="5.5" fill="none" stroke="#fff" stroke-width="2.6"/></g>
+<text x="542" y="381" class="aml-ttl-sm__dg-aws-stack-legend" font-size="15">PrivateLink / VPC</text>
+<text x="542" y="400" class="aml-sub__dg-aws-stack-legend" font-size="12">Private model path · no public endpoint</text>
+<rect x="474" y="448" width="52" height="52" rx="13" fill="url(#l-appint)"/>
+<g transform="translate(500,474)"><rect x="-12" y="-10.5" width="24" height="6" rx="3" fill="#fff"/><rect x="-12" y="-2.5" width="24" height="6" rx="3" fill="#fff"/><rect x="-12" y="5.5" width="24" height="6" rx="3" fill="#fff"/></g>
+<text x="542" y="469" class="aml-ttl-sm__dg-aws-stack-legend" font-size="15">Alert Queue (App-Integration)</text>
+<text x="542" y="488" class="aml-sub__dg-aws-stack-legend" font-size="12">Async lane boundary · durable, elastic seam</text>
+<text x="36" y="534" class="aml-sub__dg-aws-stack-legend" font-size="11.5">Tile colour = AWS service category · dashed tile = 3rd-party engine (runs in-VPC) · text &amp; rules follow the light / dark theme.</text>
+</svg></div>
+<figcaption>The AWS and third-party services in play, and the job each one does.</figcaption>
+</figure>
+
+<p>The two-lane picture is the easy part to draw. The weight of the work is in what keeps that recall floor honest when nobody is watching, and two costs are visible from the outset and stay visible through this document. A bank-owned triage model is itself a "model" under supervisory guidance, so it adds model-risk burden rather than removing it. And the counterparty graph runs on Neo4j — chosen against the isolation-optimal recommendation on the strength of existing investment and ecosystem maturity, a trade paid back later in mandatory hardening. The evaluation harness and the drift program that would prove the floor holds are designed in this exercise, not built. Hold the asymmetry in mind through everything that follows; it is the line the whole system is bent to protect.</p>
+</section>
+
+<section id="requirements" class="sec">
+<h2>What the system must be, and what we build it on</h2>
+
+<p>Two errors land on this system's desk, and they are not the same size. Clear a real launderer and the bank owns a regulatory failure: a consent order, an examiner's finding, a name in the enforcement press. Escalate a clean customer and the bank has spent one investigator-hour. Everything downstream — which qualities we rank first, which AWS service we reach for, which cheaper option we refuse — is an answer to that gap between a catastrophe and an hour.</p>
+
+<blockquote>You cannot buy the false-positive reduction with recall &mdash; so the qualities below are ranked to make sure the system never has to try.</blockquote>
+
+<p>Rule-based transaction monitoring runs at 85–95% false positives (industry-reported). Take a hypothetical mid-size bank — fifty investigators, roughly 100,000 alerts a year at about 97% false positives — and the analyst time spent clearing noise is the whole problem. Public deployments report 45–65% false-positive reductions (HSBC, Danske Bank, and Valley Bank are cited across industry reporting; Tookitaki reported roughly 45% at a digital bank), and one documented agent reportedly reviewed 20,000+ alerts a month at a 65% automation rate for sanctions adjudication. From the brief, cutting our bank's rate toward 85% could save $15–25M and around 400,000 analyst hours. Those are the numbers that fund the project. None of them changes the asymmetry: the savings come from the false-alarm side, and not one dollar of them may be paid for by letting a real hit through.</p>
+
+<h3>Seven qualities, and the three that are regulatory events</h3>
+
+<p>Drive the design from the qualities the business cannot compromise, and only three of the seven are of that kind — getting them wrong is an enforcement event, not a line-item overrun. Recall-safety, auditability, and customer-isolation are the top tier. The remaining four — performance, scalability and elasticity, evolvability, and observability — are how the system stays usable and alive, and getting them wrong costs money and mornings rather than a regulator's attention. Each quality is defined so it can be measured, because a characteristic you cannot test is a slogan, and under SR 11-7 a slogan does not clear a model validator.</p>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>Characteristic</th><th>Priority</th><th>Objective bar</th><th>The tension it carries</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Recall-safety (correctness, fail toward escalation)</td><td>Top-3</td><td>Recall floor ≥99% on AML typologies; zero auto-clear on a true sanctions hit</td><td>Against the business case — every point of recall you hold costs precision you could have banked</td></tr>
+    <tr><td>Auditability / explainability</td><td>Top-3</td><td>Every decision evidence-cited, immutable, reconstructable by an examiner</td><td>Against performance — each cited, logged step adds latency</td></tr>
+    <tr><td>Customer-isolation (security)</td><td>Top-3</td><td>No cross-customer leakage; evasion-resistant</td><td>Against network traversal — detecting layering means crossing entity boundaries</td></tr>
+    <tr><td>Performance</td><td>Supporting</td><td>p95/p99 per-alert latency inside the SLA / turnaround time</td><td>Against auditability — the audit tax lands on the tail</td></tr>
+    <tr><td>Scalability & elasticity</td><td>Supporting</td><td>Sustained growth plus burst absorption</td><td>Against recall-safety — load must never loosen the gate</td></tr>
+    <tr><td>Evolvability</td><td>Supporting</td><td>Change is cheap <em>and</em> re-validatable</td><td>Against auditability / MRM — every change is a re-validation event</td></tr>
+    <tr><td>Observability</td><td>Supporting</td><td>Drift detection, outcomes analysis, silent-degradation alarms</td><td>Against a feedback loop that rarely tells you when you were wrong</td></tr>
+  </tbody>
+</table></div>
+
+<p>Read the table one more way and it splits down the middle. Performance and scale form a fast, cheap lane; recall and auditability form a slow, deep lane. That seam is not cosmetic. It is the first sign that this system wants to be two independently scalable things rather than one, and it is the reason the service selection below arrives in two parts instead of one.</p>
+
+<h3>The operating point: a recall floor first, precision underneath it</h3>
+
+<p>Where you set the dial is the single most consequential decision in the whole design, so set it explicitly and record why. We hold a high recall floor and then optimize precision <em>beneath</em> that floor toward the 85% false-positive-reduction target — sanctions always at zero tolerance. We rejected pure zero-tolerance-max-recall, which never touches the mountain and leaves the investigators exactly where they started, and we rejected chasing the business case, which trades away the recall that keeps the bank out of a consent order. The recall floor is a constraint, not a variable. Precision is the variable we tune under it. That ordering is the asymmetry made operational: the hour is negotiable, the catastrophe is not.</p>
+
+<h3>Bursts, and why elasticity never buys off safety</h3>
+
+<p>Load on this system is spiky by nature, and the spikes are correlated with exactly the moments that matter. A sanctions-list drop triggers mass re-screening; a confirmed burst pattern, not a hypothetical one. The system must absorb that surge without falling over, which is why elasticity earns its place among the seven. But elasticity and recall-safety pull against each other, and the resolution is a rule with no exceptions: under a burst the queue grows and the turnaround time stretches, and the recall gate never loosens. You may buy throughput with more queue, with more compute, with a longer TAT. You may never buy it with safety. An architecture that quietly relaxes its recall floor to clear a backlog has inverted the asymmetry — trading the catastrophe to save the hour — and that inversion is the specific failure this rule exists to forbid.</p>
+
+<h3>Measuring the tail, not the average</h3>
+
+<p>Latency is a promise to the investigator and to the SLA, and the honest way to state that promise is in percentiles, not averages. The mean hides the slow tail, and the tail is where the SLA actually breaks — so we measure at p95 and p99 and quote the mean alongside them, never instead of them. There is a domain twist here that turns a performance metric into a risk signal. The slowest alerts are the ones that fire the most tool calls and the deepest graph traversal: the tangled, network-heavy, genuinely suspicious cases. The slow tail is correlated with risk. That means the p99 is not just an engineering annoyance to be optimized away; it is disproportionately made of the alerts you most need the system to get right, and shaving it carelessly would shave attention off the riskiest work. Watch the tail, and understand what lives there.</p>
+
+<h3>Two lanes: a reasoning agent and a triage model</h3>
+
+<p>The fast/slow seam in the characteristics resolves into two AWS lanes with different jobs and different economics. The deep lane is generative and agentic on Amazon Bedrock — the Converse API with Guardrails and hybrid retrieval, driven by a frontier Claude model reached through an inference profile — and it does the reasoning that produces a cited clear-or-escalate recommendation. The fast lane is a fine-tuned small model on Amazon SageMaker that triages the high-volume inflow and decides which alerts even deserve the deep loop. The triage lane became a live option for one concrete reason: the bank already holds labeled, historically adjudicated alerts, so there is something to train on. The justification is latency and throughput, not cost — a domain-specific small model reportedly reaches 90–95% accuracy on compliance tasks against 60–75% for a generic model without tuning, at 10–50x lower latency (industry-reported) — and it absorbs bursts the deep loop could not. Be plain about the price of that lane: a bank-owned model is itself a "model" under SR 11-7, so it adds model-risk-management burden the reasoning lane's retrieval approach avoids.</p>
+
+<h3>The customization ladder: buy knowledge with retrieval, buy behavior with tuning</h3>
+
+<p>There is a ladder of ways to specialize a model — prompt, then retrieval-augmented generation, then parameter-efficient tuning, then full fine-tune, then training from scratch — and each rung costs more to build and far more to keep validated than the one below it. The discipline is to climb only to the cheapest rung that clears the bar, and the two lanes land on different rungs for a principled reason.</p>
+
+<figure class="diagram">
+<div class="diagram-scroll"><svg class="cl__dg-customization-ladder" viewBox="0 0 760 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Customization ladder: prompt, RAG, parameter-efficient tuning, full fine-tune, from scratch. Cost, energy and complexity rise together. RAG is the reasoning lane; full fine-tune is the triage lane." style="width:100%;height:auto;max-width:760px;display:block;margin:24px auto"><style>
+.cl__dg-customization-ladder{color:#1b2430;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+@media (prefers-color-scheme:dark){.cl__dg-customization-ladder{color:#e9eef4}}
+:root[data-theme="dark"] .cl__dg-customization-ladder{color:#e9eef4}
+:root[data-theme="light"] .cl__dg-customization-ladder{color:#1b2430}
+.cl__dg-customization-ladder .ink__dg-customization-ladder{fill:currentColor}.cl__dg-customization-ladder .mut__dg-customization-ladder{fill:currentColor;opacity:.62}.cl__dg-customization-ladder .wt__dg-customization-ladder{fill:#fff}
+.cl__dg-customization-ladder .ln__dg-customization-ladder{stroke:currentColor;fill:none}.cl__dg-customization-ladder .bs__dg-customization-ladder{stroke:currentColor;stroke-opacity:.28}
+</style>
+
+<defs>
+<linearGradient id="cl_teal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2E9E8F"/><stop offset="1" stop-color="#1B827A"/></linearGradient>
+<linearGradient id="cl_slate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5B6675"/><stop offset="1" stop-color="#3C4552"/></linearGradient>
+<marker id="cl_arr" markerWidth="9" markerHeight="9" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="currentColor"/></marker>
+</defs>
+<text class="ink__dg-customization-ladder" x="36" y="34" font-size="19" font-weight="700">Customization ladder</text>
+<text class="mut__dg-customization-ladder" x="36" y="54" font-size="12.5">Pick the cheapest rung that clears the bar — the gap decides how high you climb.</text>
+<rect x="558" y="26" width="14" height="14" rx="3" fill="url(#cl_teal)"/>
+<text class="mut__dg-customization-ladder" x="578" y="37" font-size="11.5">teal = where our two lanes sit</text>
+<line class="ln__dg-customization-ladder" x1="46" y1="392" x2="46" y2="118" stroke-width="2" marker-end="url(#cl_arr)"/>
+<text class="mut__dg-customization-ladder" transform="rotate(-90 28 262)" x="28" y="262" text-anchor="middle" font-size="11.5" font-weight="600" letter-spacing=".04em">cost · energy · complexity rise →</text>
+<line class="ln__dg-customization-ladder" x1="46" y1="392" x2="716" y2="392" stroke-width="1.5" stroke-opacity=".5"/>
+<rect class="bs__dg-customization-ladder" x="60" y="320" width="110" height="70" rx="7" fill="url(#cl_slate)"/>
+<text class="wt__dg-customization-ladder" x="115" y="363" text-anchor="middle" font-size="22" font-weight="700">1</text>
+<text class="ink__dg-customization-ladder" x="115" y="412" text-anchor="middle" font-size="12" font-weight="600">Prompt</text>
+<rect class="bs__dg-customization-ladder" x="185" y="272" width="110" height="118" rx="7" fill="url(#cl_teal)"/>
+<text class="wt__dg-customization-ladder" x="240" y="339" text-anchor="middle" font-size="22" font-weight="700">2</text>
+<text class="ink__dg-customization-ladder" x="240" y="412" text-anchor="middle" font-size="12" font-weight="600">RAG</text>
+<rect x="186" y="244" width="108" height="22" rx="11" fill="url(#cl_teal)"/>
+<text class="wt__dg-customization-ladder" x="240" y="259" text-anchor="middle" font-size="11.5" font-weight="700">Reasoning lane</text>
+<rect class="bs__dg-customization-ladder" x="310" y="224" width="110" height="166" rx="7" fill="url(#cl_slate)"/>
+<text class="wt__dg-customization-ladder" x="365" y="315" text-anchor="middle" font-size="22" font-weight="700">3</text>
+<text class="ink__dg-customization-ladder" x="365" y="412" text-anchor="middle" font-size="12" font-weight="600">Parameter-efficient</text>
+<text class="ink__dg-customization-ladder" x="365" y="427" text-anchor="middle" font-size="12" font-weight="600">tuning</text>
+<rect class="bs__dg-customization-ladder" x="435" y="176" width="110" height="214" rx="7" fill="url(#cl_teal)"/>
+<text class="wt__dg-customization-ladder" x="490" y="291" text-anchor="middle" font-size="22" font-weight="700">4</text>
+<text class="ink__dg-customization-ladder" x="490" y="412" text-anchor="middle" font-size="12" font-weight="600">Full fine-tune</text>
+<rect x="436" y="148" width="108" height="22" rx="11" fill="url(#cl_teal)"/>
+<text class="wt__dg-customization-ladder" x="490" y="163" text-anchor="middle" font-size="11.5" font-weight="700">Triage lane</text>
+<rect class="bs__dg-customization-ladder" x="560" y="128" width="110" height="262" rx="7" fill="url(#cl_slate)"/>
+<text class="wt__dg-customization-ladder" x="615" y="267" text-anchor="middle" font-size="22" font-weight="700">5</text>
+<text class="ink__dg-customization-ladder" x="615" y="412" text-anchor="middle" font-size="12" font-weight="600">From scratch</text>
+<text class="mut__dg-customization-ladder" x="36" y="454" font-size="11.5">Reasoning lane stops at RAG — the gap is knowledge (typologies, this customer), re-indexed weekly, not behavior.</text>
+<text class="mut__dg-customization-ladder" x="36" y="470" font-size="11.5">Triage lane climbs to fine-tune — labeled, historically-adjudicated alerts exist and the narrow task benefits.</text>
+</svg></div>
+<figcaption>The customization ladder. Reasoning stays on RAG; only high-volume triage climbs to a fine-tuned model.</figcaption>
+</figure>
+
+<p>The reasoning lane stops at prompt plus retrieval, because the gap it has to close is <em>knowledge</em>, not <em>behavior</em>. The agent already reasons well; what it lacks is this customer's context and the current typologies and regulations — and regulations change weekly, so you want to update an index, not retrain a model, every time guidance moves. Retrieval also keeps the citation trail intact, which the top-3 auditability requirement demands. The triage lane climbs to a fine-tune, because there the labeled data exists and the task is narrow enough to benefit from tuned weights, and speed at volume is the whole point. Fine-tuning a large model on typologies was considered for the reasoning lane and rejected: it fights evolvability, it presumes labeled data you may not have for every typology, and retrieval updates far more cheaply.</p>
+
+<h3>Retrieval is hybrid, and the metadata filter is a correctness lever</h3>
+
+<p>Retrieval for the reasoning lane is two-headed by necessity. A vector Knowledge Base answers the typology and regulatory questions, and a graph traversal — GraphRAG over the relationship graph — answers the network questions that vectors cannot: shared counterparties, layering paths, hidden links. Vector-only retrieval fails the schema-bound network queries outright, and worse, it cannot hand an examiner an explainable path, which fails auditability twice over. We use the Knowledge Base's <code>retrieve</code> call and own generation ourselves, rather than <code>retrieve_and_generate</code>, because owning generation is what lets every claim carry a citation.</p>
+
+<p>The metadata filter is not plumbing; it is a first-class correctness lever. Tag each chunk with jurisdiction, regulation, typology class, and effective and expiration dates, then filter so a superseded rule or a wrong-jurisdiction typology can never surface in the first place. That matters acutely given the 2026 revised MRM guidance (from the brief): a filter that respects effective dates is the difference between citing current law and citing a rule that no longer applies. The vector store is Amazon OpenSearch Serverless, chosen for its filtering maturity — cost is non-binding here against the savings at stake, so the filtering capability wins.</p>
+
+<h3>What we rejected, and the one thing that sank each</h3>
+
+<p>Every serious alternative was rejected for a single, nameable reason, and naming it is how the decision survives an examiner asking why the bank did not take the cheaper or simpler path.</p>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>Option considered</th><th>What it promised</th><th>The one thing that sank it</th><th>What we chose instead</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Amazon Q Business</td><td>A turnkey employee Q&amp;A portal, little to build</td><td>Wrong shape — this needs custom orchestration, tool use, graph traversal, and per-decision audit, none of which a turnkey portal exposes</td><td>Bedrock Converse with our own orchestration</td></tr>
+    <tr><td>Self-host the reasoning model on a SageMaker real-time endpoint</td><td>Full control of the reasoning model</td><td>The idle-endpoint trap — a real-time endpoint bills 24×7 for traffic that is spiky at roughly 20K a month, and it rebuilds governance Bedrock already provides</td><td>Bedrock on-demand through an inference profile</td></tr>
+    <tr><td>Fine-tune a large model on typologies for the reasoning lane</td><td>One model that "knows" the typologies</td><td>Evolvability — regulations change weekly and you may not have labeled data for every typology; retrieval updates cheaply, weights do not</td><td>Prompt plus RAG for reasoning</td></tr>
+    <tr><td>Vector-only RAG</td><td>Simple retrieval, one store</td><td>Auditability — it fails schema-bound network queries and cannot give an examiner an explainable path</td><td>Hybrid vector KB plus GraphRAG</td></tr>
+    <tr><td>Full autonomy — the agent files the SAR</td><td>Maximum automation of the workflow</td><td>Regulatory non-starter — a human always makes the final call and the agent never files a SAR autonomously; vendor-model responsibility stays with the bank</td><td>Human-in-the-loop; the agent recommends, a person decides</td></tr>
+  </tbody>
+</table></div>
+
+<p>Read down that last column and the same discipline appears in every row. Retrieval keeps the knowledge current and cited, which serves recall and auditability at once. GraphRAG makes the network path explainable, so the examiner can follow the reasoning that flagged a counterparty. The triage model shaves the mountain toward the 85% target without ever touching the recall gate. And the human keeps the pen, because the one error the system must never make is the one no automation is allowed to make on its own. The cost envelope follows from the same choices — on the order of $0.05 per alert, roughly $1K a month of inference at 20K alerts, trivial against $15–25M in savings, and lower still because the expensive deep loop runs only on the fraction of alerts that survive triage. The economics are real, but they were never the point. The point is that a missed launderer is a catastrophe and a false alarm is an hour, and not one service on this list was chosen in a way that lets the bank pay for the hour with the catastrophe.</p>
+</section>
+
+<section id="blocks" class="sec">
+<h2>The building blocks, and the shape</h2>
+
+<p>Fifteen responsibilities stand between fifty investigators and the alert mountain, and where each one sits decides whether the mountain shrinks without a real launderer ever walking through. Decomposition here is not a diagramming courtesy. It is the act of placing each rule where the asymmetry can be enforced: clearing a real launderer is a regulatory failure, a false alarm costs an investigator an hour, so every boundary is cut to make the miss nearly impossible while the false-alarm pile is shaved toward the operating point's target &mdash; cutting the false-positive rate from roughly 97% toward 85%, the figure the brief sets &mdash; a reduction chased only <em>under</em> a fixed recall floor, never by trading recall away.</p>
+
+<blockquote>You cannot buy the false-positive reduction with recall. The building blocks exist to shrink the pile from below the floor, not to lower the floor.</blockquote>
+
+<h3>Why the boxes are named for verbs</h3>
+
+<p>A box named for a noun is an open invitation. Call it "Case" or "Alert Manager" and it accretes fields, then methods, then every concern that touches that noun, until it is a god-object no examiner can reason about and no test can pin down — the entity trap in its familiar form. Naming each box for the action it performs holds the line. "Receive Alert," "Screen Sanctions," "Verify Clear": each name commits the box to one verb, keeps its fan-in and fan-out legible, and makes an overreaching component obvious the moment it starts doing two things at once. The names below are load-bearing, not cosmetic.</p>
+
+<p>The fifteen sort into three functional groups. A fast, cheap lane admits and triages. A deep lane runs the investigation. A governance backbone commits, presents, records, and watches. Those groups are not yet deployables — that reckoning comes with the quanta — but they are how the responsibilities cluster by characteristic.</p>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>Group</th><th>Component (verb-role)</th><th>What it is responsible for</th></tr>
+  </thead>
+  <tbody>
+    <tr><td rowspan="2"><strong>Fast lane</strong><br>(elastic, high-volume)</td><td>Receive Alert</td><td>Admit valid, de-duplicated alerts onto the work queue.</td></tr>
+    <tr><td>Triage Alert</td><td>Score risk and route to the fast or the deep lane.</td></tr>
+    <tr><td rowspan="8"><strong>Deep lane</strong><br>(reasoning, network)</td><td>Assemble Context</td><td>Gather KYC, transaction history, and adverse media.</td></tr>
+    <tr><td>Screen Sanctions</td><td>Match entities to sanctions lists; a hit is a hard-stop signal.</td></tr>
+    <tr><td>Trace Network</td><td>Traverse the relationship graph for shared counterparties, layering, and hidden links.</td></tr>
+    <tr><td>Match Typology</td><td>Identify which typologies fit, grounded in retrieved guidance.</td></tr>
+    <tr><td>Reason &amp; Decide</td><td>Orchestrate the investigation and synthesize a cited clear/escalate recommendation — the ReAct agent.</td></tr>
+    <tr><td>Verify Clear</td><td>Independently re-check any proposed clear.</td></tr>
+    <tr><td>Compile Case File</td><td>Assemble a SAR-ready case file for escalations.</td></tr>
+    <tr><td>Scope Guard</td><td>Mediate every data access and graph traversal to keep customers isolated.</td></tr>
+    <tr><td rowspan="5"><strong>Governance backbone</strong><br>(choke points, system-of-record)</td><td>Gate Decision</td><td>Enforce hard invariants on every disposition — the safety choke point.</td></tr>
+    <tr><td>Present for Review</td><td>Present to the investigator and capture clear / escalate / override — the human-in-the-loop boundary.</td></tr>
+    <tr><td>Record Decision</td><td>Persist the final disposition as mutable operational state.</td></tr>
+    <tr><td>Preserve Audit Trail</td><td>Hold an immutable, tamper-evident record of every step.</td></tr>
+    <tr><td>Watch Outcomes</td><td>Track outcomes and typology-hit drift; raise degradation alarms.</td></tr>
+  </tbody>
+</table></div>
+
+<p>Two coupling facts matter downstream. Reason &amp; Decide has high fan-out — it calls the tools — but it depends on their <em>contracts</em>, not their internals, so a tool can be re-implemented without touching the agent. Gate Decision and Preserve Audit Trail are high fan-in by design: everything funnels through them precisely because they are where the invariants and the evidence must converge.</p>
+
+<h3>Three splits the asymmetry forced</h3>
+
+<p>Every split adds edges, and edges cost. Three of them are still worth the cost, because each separates two things the happy-path instinct would fuse and the regulator would later find fused in the wrong place.</p>
+
+<ul>
+  <li><strong>Screen Sanctions, pulled out of Assemble Context — for criticality.</strong> A sanctions hit is not one signal among many KYC facts; it is a hard stop that carries zero tolerance and drives a deterministic no-clear. Bury it inside context assembly and a catastrophic signal becomes a line item in a report. Standing alone, it is a control the Gate and the Cedar policy can key off directly.</li>
+  <li><strong>Verify Clear, separated from Reason &amp; Decide — for independence.</strong> A model checking its own work is not a second opinion; it is the same opinion restated. The split exists for independence, not capability, which is why Verify Clear is a distinct component with an even narrower role than the agent it audits. It re-checks proposed clears — the direction where a mistake is unrecoverable.</li>
+  <li><strong>Preserve Audit Trail, split from Record Decision — for immutability.</strong> Operational state must be updatable; a disposition changes as an investigator overrides it. An audit record must be the opposite: append-only, tamper-evident, and permanent. One store cannot honestly be both. Splitting them lets each meet its own requirement instead of a compromise that satisfies neither.</li>
+</ul>
+
+<h3>Scope Guard: traverse to detect, disclose in scope</h3>
+
+<p>Two of the top-three characteristics pull against each other, and their collision runs straight through the graph. Finding layering and shared counterparties <em>requires</em> traversing across entities — that is where money-laundering hides, in the paths between customers. Customer isolation <em>forbids</em> one customer's private data from surfacing in another's adjudication. Trace Network needs breadth; the rationale needs a fence. Resolve it the wrong way and you either blind the detector or leak PII into an audit record an examiner will read.</p>
+
+<p>Scope Guard resolves it by separating the traversal from the disclosure. Trace Network is allowed to walk broadly across the relationship graph to <em>detect</em> a suspicious structure. Scope Guard then mediates what leaves: the rationale receives "there is a three-hop path to a flagged counterparty," not customer B's identity, balances, or private context. The detector sees the network; the decision record sees only what is in scope to disclose.</p>
+
+<blockquote>Traverse broadly to detect; disclose narrowly in scope. Isolation becomes a property of the output boundary, not a limit on what the investigation is allowed to notice.</blockquote>
+
+<h3>Two quanta, not one and not three</h3>
+
+<p>An architecture quantum is an independently deployable unit with its own characteristics and its own data. Count them wrong and the design either cannot scale under the burst it is guaranteed to face, or it pays a distributed transaction on the one operation that must never be uncertain. The characteristics already told us the shape: they split into a fast, cheap lane (performance, scale) and a slow, deep lane (recall, auditability). That two-signal split becomes two quanta.</p>
+
+<ul>
+  <li><strong>Q1 — Intake &amp; Triage.</strong> Elastic, high-volume, cheap. It absorbs the flow, de-duplicates, and scores. Under a sanctions-list drop that triggers mass re-screening, this is the surface that must stretch.</li>
+  <li><strong>Q2 — Adjudication &amp; Governance.</strong> The reasoning loop and the system-of-record together: the agent, the verifier, the Gate, and the tightly-coupled evidence, decision, and audit stores. Judgment and the record of judgment live in one deployable because they must commit as one.</li>
+</ul>
+
+<figure class="diagram">
+<div class="diagram-scroll"><svg class="qm__dg-quantum-map" viewBox="0 0 860 492" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two architecture quanta: Q1 Intake and Triage (elastic) and Q2 Adjudication and Governance, separated by a durable async work queue. A synchronous call across the seam would collapse them into one quantum." style="width:100%;height:auto;max-width:860px;display:block;margin:24px auto"><style>
+.qm__dg-quantum-map{color:#1b2430;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+@media (prefers-color-scheme:dark){.qm__dg-quantum-map{color:#e9eef4}}
+:root[data-theme="dark"] .qm__dg-quantum-map{color:#e9eef4}
+:root[data-theme="light"] .qm__dg-quantum-map{color:#1b2430}
+.qm__dg-quantum-map .ink__dg-quantum-map{fill:currentColor}.qm__dg-quantum-map .mut__dg-quantum-map{fill:currentColor;opacity:.62}.qm__dg-quantum-map .wt__dg-quantum-map{fill:#fff}
+.qm__dg-quantum-map .box__dg-quantum-map{stroke:currentColor;fill:none;stroke-dasharray:2 6;stroke-opacity:.6;stroke-width:1.5}
+.qm__dg-quantum-map .flow__dg-quantum-map{stroke:currentColor;fill:none;stroke-width:2}
+.qm__dg-quantum-map .aflow__dg-quantum-map{stroke:currentColor;fill:none;stroke-width:2;stroke-dasharray:6 5}
+.qm__dg-quantum-map .gl__dg-quantum-map{stroke:#fff;fill:none;stroke-width:1.8}
+</style>
+
+<defs>
+<linearGradient id="qm_teal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2E9E8F"/><stop offset="1" stop-color="#1B827A"/></linearGradient>
+<linearGradient id="qm_org" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ED7100"/><stop offset="1" stop-color="#C55A0B"/></linearGradient>
+<linearGradient id="qm_pink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E7157B"/><stop offset="1" stop-color="#B81062"/></linearGradient>
+<linearGradient id="qm_red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C7131F"/><stop offset="1" stop-color="#A30E18"/></linearGradient>
+<marker id="qm_arr" markerWidth="9" markerHeight="9" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="currentColor"/></marker>
+</defs>
+<text class="ink__dg-quantum-map" x="32" y="32" font-size="19" font-weight="700">Two quanta, one async seam</text>
+<text class="mut__dg-quantum-map" x="32" y="52" font-size="12">A quantum = an independently deployable unit with its own characteristics and its own data.</text>
+<line class="flow__dg-quantum-map" x1="636" y1="30" x2="666" y2="30"/><text class="mut__dg-quantum-map" x="672" y="34" font-size="11">synchronous commit</text>
+<line class="aflow__dg-quantum-map" x1="636" y1="48" x2="666" y2="48"/><text class="mut__dg-quantum-map" x="672" y="52" font-size="11">async (queue / eventing)</text>
+<rect class="box__dg-quantum-map" x="40" y="104" width="286" height="252" rx="14"/>
+<text class="ink__dg-quantum-map" x="56" y="130" font-size="14.5" font-weight="700">Q1 — Intake and Triage</text>
+<text class="mut__dg-quantum-map" x="56" y="148" font-size="11">elastic · high-volume · cheap</text>
+<rect x="58" y="170" width="124" height="82" rx="9" fill="url(#qm_org)"/>
+<path class="gl__dg-quantum-map" d="M120,188 v12 M114,196 l6,6 l6,-6 M108,210 h24"/>
+<text class="wt__dg-quantum-map" x="120" y="228" text-anchor="middle" font-size="12" font-weight="700">Receive</text>
+<text class="wt__dg-quantum-map" x="120" y="243" text-anchor="middle" font-size="10.5">admit · dedupe</text>
+<rect x="194" y="170" width="120" height="82" rx="9" fill="url(#qm_teal)"/>
+<path class="gl__dg-quantum-map" d="M254,188 v10 M254,198 l-9,10 M254,198 l9,10"/>
+<text class="wt__dg-quantum-map" x="254" y="228" text-anchor="middle" font-size="12" font-weight="700">Triage</text>
+<text class="wt__dg-quantum-map" x="254" y="243" text-anchor="middle" font-size="10.5">SLM · fast lane</text>
+<text class="mut__dg-quantum-map" x="20" y="204" font-size="10.5">alerts in</text>
+<line class="aflow__dg-quantum-map" x1="20" y1="211" x2="56" y2="211" marker-end="url(#qm_arr)"/>
+<line class="flow__dg-quantum-map" x1="182" y1="211" x2="192" y2="211" marker-end="url(#qm_arr)"/>
+<text class="mut__dg-quantum-map" x="56" y="340" font-size="10.5">own data · work queue · SageMaker fine-tuned SLM</text>
+<text class="mut__dg-quantum-map" x="412" y="150" text-anchor="middle" font-size="11" font-weight="700">async lane boundary</text>
+<rect x="352" y="176" width="120" height="80" rx="10" fill="url(#qm_pink)"/>
+<path class="gl__dg-quantum-map" d="M392,200 h40 M392,209 h40 M392,218 h40"/>
+<text class="wt__dg-quantum-map" x="412" y="243" text-anchor="middle" font-size="11.5" font-weight="700">Durable queue</text>
+<text class="mut__dg-quantum-map" x="412" y="278" text-anchor="middle" font-size="10.5">the elasticity seam</text>
+<line class="aflow__dg-quantum-map" x1="314" y1="211" x2="352" y2="211" marker-end="url(#qm_arr)"/>
+<line class="aflow__dg-quantum-map" x1="472" y1="205" x2="560" y2="200" marker-end="url(#qm_arr)"/>
+<rect class="box__dg-quantum-map" x="560" y="104" width="286" height="252" rx="14"/>
+<text class="ink__dg-quantum-map" x="576" y="130" font-size="14.5" font-weight="700">Q2 — Adjudication and Governance</text>
+<text class="mut__dg-quantum-map" x="576" y="148" font-size="11">reasoning · system-of-record</text>
+<rect x="576" y="166" width="256" height="74" rx="9" fill="url(#qm_teal)"/>
+<text class="wt__dg-quantum-map" x="592" y="196" font-size="12" font-weight="700">Single ReAct investigator (Bedrock)</text>
+<text class="wt__dg-quantum-map" x="592" y="216" font-size="11">+ independent Verify-Clear checker</text>
+<rect x="576" y="256" width="256" height="74" rx="9" fill="url(#qm_red)"/>
+<text class="wt__dg-quantum-map" x="592" y="286" font-size="12" font-weight="700">Governance backbone</text>
+<text class="wt__dg-quantum-map" x="592" y="306" font-size="11">Gate · Present · Record · Audit · Watch</text>
+<line class="flow__dg-quantum-map" x1="592" y1="240" x2="592" y2="256" marker-end="url(#qm_arr)"/>
+<text class="mut__dg-quantum-map" x="704" y="252" text-anchor="middle" font-size="10">sync commit · verify → gate → record</text>
+<text class="mut__dg-quantum-map" x="576" y="346" font-size="10.5">own data · evidence + decision + immutable audit</text>
+<line class="aflow__dg-quantum-map" x1="412" y1="256" x2="412" y2="372" marker-end="url(#qm_arr)"/>
+<rect class="box__dg-quantum-map" x="250" y="372" width="360" height="86" rx="12"/>
+<text class="ink__dg-quantum-map" x="270" y="396" font-size="12.5" font-weight="700">Dynamic Quantum Entanglement</text>
+<text class="mut__dg-quantum-map" x="270" y="414" font-size="10.5">Make this seam a synchronous call and the fast lane inherits</text>
+<text class="mut__dg-quantum-map" x="270" y="429" font-size="10.5">the deep lane's latency — the two quanta collapse into one.</text>
+<text class="mut__dg-quantum-map" x="270" y="447" font-size="10.5">Keeping it async is what keeps them two.</text>
+<text class="mut__dg-quantum-map" x="32" y="478" font-size="11">Under a burst the queue grows and TAT stretches — the recall gate never loosens. Never buy throughput with safety.</text>
+</svg></div>
+<figcaption>Two architecture quanta, joined by an async queue that is what keeps them independent.</figcaption>
+</figure>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>Count</th><th>The one thing that sinks it</th><th>Verdict</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>One (modular monolith)</td><td>Cannot scale triage alone during a burst, and forces a fine-tuned SLM endpoint and a frontier-agent runtime into a single deployable with a single scaling knob and two incompatible runtimes.</td><td>Rejected</td></tr>
+    <tr><td>Two</td><td>The seam falls exactly on the elasticity boundary; evidence, decision, and audit still commit together inside Q2.</td><td><strong>Chosen</strong></td></tr>
+    <tr><td>Three (governance split out)</td><td>Buys a distributed transaction on every decision commit, because evidence ↔ decision ↔ audit are tightly coupled and want to commit as one unit; splitting them trades an in-process commit for a two-phase dance.</td><td>Rejected</td></tr>
+  </tbody>
+</table></div>
+
+<p>Governance therefore rides <em>with</em> adjudication, not beside it. That is a deliberate trade: Q2 carries more inside one boundary in exchange for committing the disposition, its evidence, and its audit record atomically, which is the property the auditability characteristic actually needs.</p>
+
+<h3>The backbone and the seam</h3>
+
+<p>The style follows from the count. Coarse services matched to the quanta give a service-based backbone with a synchronous decision-commit at its core, and event-driven ingestion carries the async work at the edges. The rejected alternatives each break on a characteristic already fixed: a modular monolith fights the elasticity and the heterogeneous runtimes; microservices over-decompose a semantically coupled workflow and reintroduce the distributed transaction across evidence, decision, and audit; pure event-driven turns the synchronous recall-gate → verify → commit into an awkward eventual-consistency dance about whether a sanctions hit was cleared.</p>
+
+<p>The seam between the two quanta is a single durable queue, and it is doing two jobs at once. It is the elasticity boundary — the place where a burst piles up harmlessly instead of propagating. It is also the thing that keeps the quanta from collapsing back into one.</p>
+
+<blockquote>Dynamic quantum entanglement: if Triage called the deep lane synchronously and waited, the fast lane would inherit the deep lane's latency and the two quanta would fuse into a single slow one. The async boundary is not a convenience — it is what preserves the separation the whole design rests on.</blockquote>
+
+<p>Under a burst, the honest consequence shows here: the queue grows and turnaround time stretches. That cost is real and stays visible. What does not move is the recall gate — throughput is never bought with safety. The elastic lane absorbs the pressure so the deep lane can keep its floor.</p>
+
+<h3>Where consistency is bought, and where it is not</h3>
+
+<p>Not every interaction wants the same guarantee, and spending strong consistency everywhere would be as wrong as spending it nowhere. The rule is to be synchronous exactly where a wrong answer is unrecoverable and asynchronous everywhere the system can safely catch up.</p>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>Seam</th><th>Pattern</th><th>Why here</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Intake (TM system → Receive Alert)</td><td>Async event</td><td>Absorb arrival bursts and decouple ingestion from the work that follows.</td></tr>
+    <tr><td>Lane boundary (Triage → Adjudication)</td><td>Durable async queue</td><td>The elasticity seam; also what keeps the two quanta independent.</td></tr>
+    <tr><td>Decision commit (Verify → Gate → Record)</td><td>Synchronous, immediately consistent</td><td>You cannot be eventually-consistent about whether a sanctions hit was cleared; the disposition and its checks commit together or not at all.</td></tr>
+    <tr><td>Audit write (Preserve Audit Trail)</td><td>Durable async, outbox pattern</td><td>Do not block the decision on the audit write, but never lose an event — the record is written through an outbox so a network failure delays it, never drops it.</td></tr>
+  </tbody>
+</table></div>
+
+<p>Storage follows the same discipline: polyglot by necessity, because the responsibilities have genuinely different shapes. A work queue for the flow. A knowledge graph and a vector store, both read-only to the investigation, for network questions and typology retrieval. And a tightly-coupled cluster of evidence, decision, and audit that commits as a unit inside Q2 — with one deliberate separation held firm: the immutable audit is a distinct append-only store from the mutable operational decision record. That is the same split that Preserve Audit Trail and Record Decision made at the component level, now made again at the data level, because the requirement it serves — tamper-evidence forever versus freely-updatable state — does not soften just because the two records sit near each other.</p>
+
+<p>Read the map back and it is the asymmetry rendered as topology. Q1 is allowed to stretch; Q2's gate is not allowed to bend. The durable queue between them is the pressure-release that lets a burst grow into latency instead of into a lowered floor. Speed lives on one side of the seam, judgment on the other, and the seam itself is the mechanism that keeps a hard day from ever becoming a missed launderer.</p>
+</section>
+
+<section id="awsdesign" class="sec">
+<h2>The AWS solution design</h2>
+
+<p>Every architecture choice from here answers one question: can this system almost never miss a real launderer while it shaves the false-positive mountain toward the 85% target the brief sets &mdash; a false-positive rate down from about 97%? The topology, the retrieval, the memory model, and above all the safety layers are not independent design tastes. They are the mechanical expression of an asymmetry the bank cannot trade away — clearing a real launderer is a regulatory failure, a false alarm is an investigator-hour — and that asymmetry decides where each rule lives, which model is allowed to check which, and what a Lambda execution role is permitted to touch.</p>
+
+<h3>One agent, and the test it had to pass</h3>
+
+<p>The heart of the deep lane is a single ReAct investigator agent, not a committee of specialists. Multi-agent is the fashionable default and the wrong reflex here, so the design owes the "why not one?" test an explicit answer on three counts.</p>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>The usual reason to split</th><th>Why it does not apply</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Context-window overflow forces division of labor</td><td>No real overflow. Tools fetch the relevant slice on demand — this KYC record, this counterparty subgraph — rather than loading a customer's whole history into the prompt.</td></tr>
+    <tr><td>Parallel work needs parallel agents</td><td>Tool-parallelism is not multi-agent. One agent fans out four tool calls in a single turn; concurrency is a property of the tool loop, not of the org chart.</td></tr>
+    <tr><td>Different sub-tasks are different expertises</td><td>Adjudication is one judgment. Typology-matching and network-tracing are tools that judgment reaches for, not separate experts holding separate opinions that then need reconciling.</td></tr>
+  </tbody>
+</table></div>
+
+<p>There is exactly one place a second reasoning model earns its seat, and the reason is independence, not capability. Verify Clear re-checks any proposed clear with its own model call, because a model grading its own homework is not a second opinion — it inherits the same blind spot that produced the answer. Count the reasoning models and the discipline shows: the investigator, the verifier, and upstream the fine-tuned triage classifier. Two adjudication models, deliberately, with the split drawn along the fault line that matters to recall.</p>
+
+<blockquote>The verifier is not smarter than the investigator. It is separate. On the catastrophic side of the asymmetry — a clear that should have been an escalation — you do not want a better first opinion, you want a genuinely uncorrelated second one.</blockquote>
+
+<p>The control flow is a fixed, auditable DAG with the investigator at its center, not a Swarm. This is the compliance-path choice: a Graph/DAG suits fixed, auditable, approval-chain flows where an examiner must later walk the exact route a decision took, while a Swarm hands control between agents in autonomous, unpredictable ways that no audit can reconstruct in advance. For a system whose output may be read back by a regulator, an unpredictable handoff is not flexibility — it is an unexplainable decision waiting to happen.</p>
+
+<p>Inside that DAG, the first investigative turn fans out its tool calls — <code>get_kyc</code>, <code>screen_sanctions</code>, <code>trace_network</code>, <code>retrieve_typology</code> — in parallel rather than in sequence. This is a latency decision aimed straight at the tail. Recall the domain twist in the percentiles: the slowest alerts are the ones that fire the most tool calls and the deepest graph traversal, which are the most tangled, network-heavy, genuinely suspicious ones. The slow tail is correlated with risk. Serializing the opening round would stretch p99 exactly on the alerts the bank can least afford to rush, so the fan-out buys back the tail where it is most dangerous.</p>
+
+<figure class="diagram">
+<div class="diagram-scroll"><svg viewBox="0 0 1160 660" style="width:100%;height:auto;max-width:1160px;font-family:Arial,Helvetica,sans-serif" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Request path with three-layer safety on every tool call"><style>
+.aml-bg__dg-request-path{fill:#ffffff}.aml-ttl__dg-request-path{fill:#14202f;font-weight:700}.aml-ttl-sm__dg-request-path{fill:#14202f;font-weight:700}
+.aml-sub__dg-request-path{fill:#5a6675}.aml-klabel__dg-request-path{fill:#39465a;font-weight:700}.aml-elab__dg-request-path{fill:#5a6675}
+.aml-node__dg-request-path{fill:#ffffff;stroke:#c3ccd8;stroke-width:1.4}
+.aml-agent__dg-request-path{fill:#ffffff;stroke:#2E9E8F;stroke-width:2.2}
+.aml-panel__dg-request-path{fill:#f5f7fa;stroke:#d5dbe3;stroke-width:1.2}
+.aml-ext__dg-request-path{fill:#eef1f5;stroke:#9aa7b6;stroke-width:1.4;stroke-dasharray:5 4}
+.aml-choke__dg-request-path{fill:#fff7f6;stroke:#C7131F;stroke-width:1.9}
+.aml-trust__dg-request-path{fill:#f6f5fd;stroke:#7A3FF2;stroke-width:1.8;stroke-dasharray:9 6}
+.aml-edge__dg-request-path{fill:none;stroke:#48566b;stroke-width:2}.aml-async__dg-request-path{stroke-dasharray:7 5}
+.aml-ahead__dg-request-path{fill:#48566b}.aml-inkf__dg-request-path{fill:#48566b}
+@media (prefers-color-scheme:dark){
+.aml-bg__dg-request-path{fill:#0d1117}.aml-ttl__dg-request-path,.aml-ttl-sm__dg-request-path{fill:#eaf0f7}.aml-sub__dg-request-path,.aml-elab__dg-request-path{fill:#9aa7b6}.aml-klabel__dg-request-path{fill:#c4cede}
+.aml-node__dg-request-path{fill:#171d27;stroke:#33404e}.aml-agent__dg-request-path{fill:#141c22;stroke:#39c3ad}.aml-panel__dg-request-path{fill:#141a23;stroke:#2b3541}
+.aml-ext__dg-request-path{fill:#1b222c;stroke:#4a5666}.aml-choke__dg-request-path{fill:#241417;stroke:#f2555f}.aml-trust__dg-request-path{fill:#17132a;stroke:#9a6bff}
+.aml-edge__dg-request-path{stroke:#9fb0c4}.aml-ahead__dg-request-path{fill:#9fb0c4}.aml-inkf__dg-request-path{fill:#9fb0c4}}
+:root[data-theme="dark"] .aml-bg__dg-request-path{fill:#0d1117}:root[data-theme="dark"] .aml-ttl__dg-request-path, :root[data-theme="dark"] .aml-ttl-sm__dg-request-path{fill:#eaf0f7}:root[data-theme="dark"] .aml-sub__dg-request-path, :root[data-theme="dark"] .aml-elab__dg-request-path{fill:#9aa7b6}:root[data-theme="dark"] .aml-klabel__dg-request-path{fill:#c4cede}:root[data-theme="dark"] .aml-node__dg-request-path{fill:#171d27;stroke:#33404e}:root[data-theme="dark"] .aml-agent__dg-request-path{fill:#141c22;stroke:#39c3ad}:root[data-theme="dark"] .aml-panel__dg-request-path{fill:#141a23;stroke:#2b3541}:root[data-theme="dark"] .aml-ext__dg-request-path{fill:#1b222c;stroke:#4a5666}:root[data-theme="dark"] .aml-choke__dg-request-path{fill:#241417;stroke:#f2555f}:root[data-theme="dark"] .aml-trust__dg-request-path{fill:#17132a;stroke:#9a6bff}:root[data-theme="dark"] .aml-edge__dg-request-path{stroke:#9fb0c4}:root[data-theme="dark"] .aml-ahead__dg-request-path{fill:#9fb0c4}:root[data-theme="dark"] .aml-inkf__dg-request-path{fill:#9fb0c4}:root[data-theme="light"] .aml-bg__dg-request-path{fill:#ffffff}:root[data-theme="light"] .aml-ttl__dg-request-path{fill:#14202f;font-weight:700}:root[data-theme="light"] .aml-ttl-sm__dg-request-path{fill:#14202f;font-weight:700}:root[data-theme="light"] .aml-sub__dg-request-path{fill:#5a6675}:root[data-theme="light"] .aml-klabel__dg-request-path{fill:#39465a;font-weight:700}:root[data-theme="light"] .aml-elab__dg-request-path{fill:#5a6675}:root[data-theme="light"] .aml-node__dg-request-path{fill:#ffffff;stroke:#c3ccd8;stroke-width:1.4}:root[data-theme="light"] .aml-agent__dg-request-path{fill:#ffffff;stroke:#2E9E8F;stroke-width:2.2}:root[data-theme="light"] .aml-panel__dg-request-path{fill:#f5f7fa;stroke:#d5dbe3;stroke-width:1.2}:root[data-theme="light"] .aml-ext__dg-request-path{fill:#eef1f5;stroke:#9aa7b6;stroke-width:1.4;stroke-dasharray:5 4}:root[data-theme="light"] .aml-choke__dg-request-path{fill:#fff7f6;stroke:#C7131F;stroke-width:1.9}:root[data-theme="light"] .aml-trust__dg-request-path{fill:#f6f5fd;stroke:#7A3FF2;stroke-width:1.8;stroke-dasharray:9 6}:root[data-theme="light"] .aml-edge__dg-request-path{fill:none;stroke:#48566b;stroke-width:2}:root[data-theme="light"] .aml-async__dg-request-path{stroke-dasharray:7 5}:root[data-theme="light"] .aml-ahead__dg-request-path{fill:#48566b}:root[data-theme="light"] .aml-inkf__dg-request-path{fill:#48566b}</style>
+
+<defs>
+<linearGradient id="r-mlai" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E9E8F"/><stop offset="1" stop-color="#1B827A"/></linearGradient>
+<linearGradient id="r-compute" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ED7100"/><stop offset="1" stop-color="#C55A0B"/></linearGradient>
+<linearGradient id="r-graph" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4581C3"/><stop offset="1" stop-color="#2F5A8A"/></linearGradient>
+<linearGradient id="r-search" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8C4FFF"/><stop offset="1" stop-color="#6B2FBB"/></linearGradient>
+<linearGradient id="r-sec" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C7131F"/><stop offset="1" stop-color="#A30E18"/></linearGradient>
+<marker id="r-arw" viewBox="0 0 10 10" refX="8.4" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 L3,5 Z" class="aml-ahead__dg-request-path"/></marker>
+</defs>
+<rect x="0" y="0" width="1160" height="660" class="aml-bg__dg-request-path"/>
+<text x="36" y="40" class="aml-ttl__dg-request-path" font-size="22">Request path — three-layer safety on every tool call</text>
+<text x="36" y="62" class="aml-sub__dg-request-path" font-size="13">Guardrails filter TEXT · Cedar governs ACTIONS · Gate enforces BUSINESS invariants. The layers deliberately live apart.</text>
+<rect x="360" y="82" width="692" height="428" rx="16" class="aml-trust__dg-request-path"/>
+<text x="376" y="104" class="aml-klabel__dg-request-path" font-size="12">VPC · PrivateLink (aws:sourceVpce → no public path) · KMS-encrypted (KB · evidence · audit · graph)</text>
+<rect x="32" y="250" width="150" height="70" rx="10" class="aml-ext__dg-request-path"/>
+<text x="107" y="282" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="13">Alert data</text>
+<text x="107" y="299" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">untrusted ·</text>
+<text x="107" y="312" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">injection-influenced</text>
+<rect x="200" y="250" width="140" height="70" rx="10" class="aml-node__dg-request-path"/>
+<rect x="205" y="228" width="118" height="17" rx="8.5" fill="url(#r-sec)"/><text x="264" y="240.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">LAYER 1 · TEXT</text>
+<text x="270" y="280" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12.5">Guardrail (in)</text>
+<text x="270" y="296" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">text filter · PII ·</text>
+<text x="270" y="309" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">denied topics</text>
+<rect x="384" y="112" width="168" height="58" rx="9" class="aml-node__dg-request-path"/>
+<text x="468" y="134" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12.5">Knowledge Base</text>
+<rect x="402" y="146" width="132" height="16" rx="8" fill="url(#r-search)"/><text x="468" y="158" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">retrieve · OpenSearch</text>
+<rect x="384" y="232" width="168" height="106" rx="12" class="aml-agent__dg-request-path"/>
+<text x="468" y="272" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="13.5">Reason &amp; Decide</text>
+<text x="468" y="289" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">ReAct agent</text>
+<rect x="393" y="304" width="64" height="16" rx="8" fill="url(#r-mlai)"/><text x="425" y="316" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">Bedrock</text>
+<rect x="463" y="304" width="80" height="16" rx="8" fill="url(#r-compute)"/><text x="503" y="316" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">Strands</text>
+<rect x="384" y="396" width="168" height="58" rx="9" class="aml-node__dg-request-path"/>
+<text x="468" y="420" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12.5">Per-alert memory</text>
+<text x="468" y="436" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">session-only · no long-term</text>
+<text x="468" y="449" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">isolation by construction</text>
+<rect x="596" y="232" width="176" height="106" rx="11" class="aml-node__dg-request-path"/>
+<rect x="600" y="210" width="168" height="17" rx="8.5" fill="url(#r-sec)"/><text x="684" y="222.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">LAYER 2 · ACTIONS</text>
+<text x="684" y="268" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12.5">Verified Permissions</text>
+<text x="684" y="284" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">Cedar · is_authorized()</text>
+<text x="684" y="298" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">every tool call · permit / deny</text>
+<text x="684" y="312" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">reads authed user attrs</text>
+<rect x="612" y="318" width="144" height="15" rx="7.5" fill="url(#r-sec)"/><text x="684" y="329.5" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">deny clear when sanctions_hit</text>
+<rect x="820" y="140" width="200" height="52" rx="9" class="aml-node__dg-request-path"/>
+<text x="920" y="162" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12">Screen Sanctions</text>
+<text x="920" y="178" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">via MCP</text>
+<rect x="820" y="204" width="200" height="52" rx="9" class="aml-node__dg-request-path"/>
+<text x="920" y="224" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12">Trace Network</text>
+<rect x="850" y="234" width="140" height="15" rx="7.5" fill="url(#r-graph)"/><text x="920" y="245.5" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">Neo4j · MCP (3rd-party)</text>
+<rect x="820" y="316" width="200" height="52" rx="9" class="aml-node__dg-request-path"/>
+<text x="920" y="338" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12">get_kyc · txn · adverse</text>
+<text x="920" y="354" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">customer context</text>
+<rect x="820" y="380" width="200" height="52" rx="9" class="aml-node__dg-request-path"/>
+<text x="920" y="400" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12">retrieve_typology</text>
+<rect x="866" y="410" width="108" height="15" rx="7.5" fill="url(#r-search)"/><text x="920" y="421.5" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">KB · OpenSearch</text>
+<rect x="384" y="548" width="160" height="58" rx="9" class="aml-node__dg-request-path"/>
+<rect x="389" y="526" width="118" height="17" rx="8.5" fill="url(#r-sec)"/><text x="448" y="538.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">LAYER 1 · TEXT</text>
+<text x="464" y="573" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12.5">Guardrail (out)</text>
+<text x="464" y="589" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">block unsupported claims</text>
+<text x="464" y="601" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">contextual grounding</text>
+<rect x="576" y="548" width="150" height="58" rx="9" class="aml-node__dg-request-path"/>
+<text x="651" y="573" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12.5">Verify Clear</text>
+<text x="651" y="589" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">independent re-check</text>
+<text x="651" y="601" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">Bedrock</text>
+<rect x="758" y="548" width="150" height="58" rx="9" class="aml-choke__dg-request-path"/>
+<rect x="763" y="526" width="140" height="17" rx="8.5" fill="url(#r-sec)"/><text x="833" y="538.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff">LAYER 3 · BUSINESS</text>
+<text x="833" y="573" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12.5">Gate Decision</text>
+<text x="833" y="589" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">recall floor ·</text>
+<text x="833" y="601" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">no-auto-clear double-check</text>
+<rect x="940" y="548" width="150" height="58" rx="9" class="aml-ext__dg-request-path"/>
+<circle cx="966" cy="571" r="5.4" class="aml-inkf__dg-request-path"/><path d="M957,588 C957,578 975,578 975,588 Z" class="aml-inkf__dg-request-path"/>
+<text x="1024" y="573" text-anchor="middle" class="aml-ttl-sm__dg-request-path" font-size="12.5">Investigator</text>
+<text x="1024" y="589" text-anchor="middle" class="aml-sub__dg-request-path" font-size="10.5">human · final call</text>
+<line x1="182" y1="285" x2="200" y2="285" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<line x1="340" y1="285" x2="384" y2="285" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<line x1="468" y1="232" x2="468" y2="170" class="aml-edge__dg-request-path" marker-start="url(#r-arw)" marker-end="url(#r-arw)"/>
+<text x="500" y="204" text-anchor="middle" class="aml-elab__dg-request-path" font-size="9.5">retrieve</text>
+<line x1="468" y1="338" x2="468" y2="396" class="aml-edge__dg-request-path" marker-start="url(#r-arw)" marker-end="url(#r-arw)"/>
+<text x="500" y="372" text-anchor="middle" class="aml-elab__dg-request-path" font-size="9.5">read</text>
+<line x1="552" y1="285" x2="596" y2="285" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<text x="574" y="277" text-anchor="middle" class="aml-elab__dg-request-path" font-size="9">each call</text>
+<line x1="772" y1="268" x2="820" y2="166" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<line x1="772" y1="278" x2="820" y2="230" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<line x1="772" y1="300" x2="820" y2="342" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<line x1="772" y1="310" x2="820" y2="406" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<text x="800" y="200" text-anchor="middle" class="aml-elab__dg-request-path" font-size="9">permit</text>
+<path d="M400,338 C 372,418 372,470 402,548" class="aml-edge__dg-request-path" fill="none" marker-end="url(#r-arw)"/>
+<text x="352" y="446" text-anchor="middle" class="aml-elab__dg-request-path" font-size="9.5">response</text>
+<line x1="544" y1="577" x2="576" y2="577" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<line x1="726" y1="577" x2="758" y2="577" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<line x1="908" y1="577" x2="940" y2="577" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<rect x="28" y="360" width="308" height="252" rx="14" class="aml-panel__dg-request-path"/>
+<text x="44" y="386" class="aml-klabel__dg-request-path" font-size="14">Three-layer safety</text>
+<text x="44" y="410" class="aml-sub__dg-request-path" font-size="11.5">L1 Guardrails — filter TEXT; never see a tool call</text>
+<text x="44" y="434" class="aml-sub__dg-request-path" font-size="11.5">L2 Cedar — govern ACTIONS; ignore prompt phrasing</text>
+<text x="44" y="458" class="aml-sub__dg-request-path" font-size="11.5">L3 Gate — BUSINESS invariants (recall floor)</text>
+<line x1="46" y1="484" x2="86" y2="484" class="aml-edge__dg-request-path" marker-end="url(#r-arw)"/>
+<text x="96" y="488" class="aml-sub__dg-request-path" font-size="11.5">synchronous request / response</text>
+<line x1="46" y1="510" x2="86" y2="510" class="aml-edge__dg-request-path" marker-start="url(#r-arw)" marker-end="url(#r-arw)"/>
+<text x="96" y="514" class="aml-sub__dg-request-path" font-size="11.5">call + return (retrieve · memory)</text>
+<rect x="46" y="528" width="40" height="22" rx="6" class="aml-trust__dg-request-path"/>
+<text x="96" y="543" class="aml-sub__dg-request-path" font-size="11.5">VPC · PrivateLink trust boundary</text>
+<text x="44" y="576" class="aml-klabel__dg-request-path" font-size="11.5">no-auto-clear = Cedar deny + Gate check</text>
+<text x="44" y="594" class="aml-sub__dg-request-path" font-size="11.5">(defence-in-depth, never model judgement)</text>
+</svg></div>
+<figcaption>One alert's path through the deep lane — guardrails at the model boundary, Cedar at every tool call, a human at the decision.</figcaption>
+</figure>
+
+<h3>Retrieval, and why the citation is the audit trail</h3>
+
+<p>The agent grounds its reasoning through the Bedrock Knowledge Base <code>retrieve</code> call — ranked chunks returned to us — rather than <code>retrieve_and_generate</code>. We keep generation because the synthesis of a clear-or-escalate recommendation is the regulated act; handing that to a managed generate step would surrender the control surface the top-3 characteristics demand. Retrieval is hybrid by necessity: the vector Knowledge Base answers typology and regulatory questions, and graph traversal, exposed as a tool, answers the network questions — shared counterparties, layering paths — that a vector index structurally cannot.</p>
+
+<p>Metadata filtering is treated as a correctness lever, not a convenience. Every chunk is tagged with jurisdiction, regulation, typology_class, and effective_date/expiration_date, and the retrieve call filters on them so a superseded rule or a wrong-jurisdiction typology can never surface. That matters more than usual right now: with the 2026 revised MRM guidance in play (from the brief), a retrieval layer that could quietly serve last year's rule is a silent-error generator.</p>
+
+<p>Every claim the agent makes carries a citation back to the retrieved evidence. This is not documentation hygiene bolted on afterward. An un-cited RAG answer is indistinguishable from a hallucination — you cannot tell a grounded claim from an invented one without the pointer to its source — and here the citations <em>are</em> the audit trail an examiner reconstructs the decision from. Auditability is not a report generated at the end; it is a property the reasoning has while it happens.</p>
+
+<h3>Memory as isolation, by construction</h3>
+
+<p>The agent runs with per-alert session memory and no long-term extraction strategy configured. In an ordinary assistant that omission is a silent gap you would flag; here it is the design. No cross-alert memory means customer A's data has no path to bleed into customer B's adjudication through the agent's own recollection. Isolation is achieved by construction rather than by a filter that has to remember to fire.</p>
+
+<p>The system still knows things across time — "we saw this entity last week" — but that fact arrives through a scoped, audited tool that reads the decision store under Scope Guard's mediation, not through ambient memory the agent accumulates on its own. The difference is everything to the customer-isolation characteristic: a tool read is scoped, logged, and permissioned; an ambient memory is none of those, and it is exactly how a private detail from one investigation leaks into another.</p>
+
+<h3>Tools, narrow on purpose</h3>
+
+<p>Each tool is single-purpose, and its docstring is written as the model's selection prompt — the agent chooses a tool from that description, so the description is part of the control surface, not commentary. Shared, reusable capabilities that other systems also need — sanctions screening, graph traversal — are exposed as MCP servers so the contract is owned once and consumed many times.</p>
+
+<p>One capability is excluded by name: <code>use_aws</code>. The agent never receives a general "run the AWS CLI under my credentials" tool. In a system where the alert content itself is attacker-influenceable, a broad execution primitive is an open door; the agent gets narrow, purpose-built tools whose blast radius is bounded by their own contract, and nothing that can be steered into arbitrary calls.</p>
+
+<h3>Three layers of safety, and why they cannot share a home</h3>
+
+<p>This is the part regulated agents get wrong, and the failure is always the same shape: the safety rules are all dropped into one place, and that place cannot see the thing it was trusted to stop. The rules live in three layers because they govern three different substances — text, actions, and business invariants — and a control built for one is blind to the others.</p>
+
+<figure class="diagram">
+<div class="diagram-scroll"><svg class="tl__dg-three-layer-safety" viewBox="0 0 860 492" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three-layer safety. Bedrock Guardrails see text and are blind to tool calls; Cedar / Verified Permissions see every tool call plus user attributes; Gate Decision sees the full disposition and evidence." style="width:100%;height:auto;max-width:860px;display:block;margin:24px auto"><style>
+.tl__dg-three-layer-safety{color:#1b2430;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+@media (prefers-color-scheme:dark){.tl__dg-three-layer-safety{color:#e9eef4}}
+:root[data-theme="dark"] .tl__dg-three-layer-safety{color:#e9eef4}
+:root[data-theme="light"] .tl__dg-three-layer-safety{color:#1b2430}
+.tl__dg-three-layer-safety .ink__dg-three-layer-safety{fill:currentColor}.tl__dg-three-layer-safety .mut__dg-three-layer-safety{fill:currentColor;opacity:.62}.tl__dg-three-layer-safety .wt__dg-three-layer-safety{fill:#fff}
+.tl__dg-three-layer-safety .flow__dg-three-layer-safety{stroke:currentColor;fill:none;stroke-width:2}
+</style>
+
+<defs>
+<linearGradient id="tl_r1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C7131F"/><stop offset="1" stop-color="#A30E18"/></linearGradient>
+<linearGradient id="tl_r2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A30E18"/><stop offset="1" stop-color="#7C0B12"/></linearGradient>
+<linearGradient id="tl_st" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A5563"/><stop offset="1" stop-color="#333c47"/></linearGradient>
+<marker id="tl_arr" markerWidth="9" markerHeight="9" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="currentColor"/></marker>
+</defs>
+<text class="ink__dg-three-layer-safety" x="32" y="32" font-size="19" font-weight="700">Three-layer safety</text>
+<text class="mut__dg-three-layer-safety" x="32" y="52" font-size="12">The rules do not all live in the same place — putting one in the wrong layer is how regulated agents fail. Each layer sees a different input.</text>
+<text class="mut__dg-three-layer-safety" x="24" y="150" font-size="10.5">Model text</text><text class="mut__dg-three-layer-safety" x="24" y="163" font-size="10.5">(prompt + response)</text>
+<line class="flow__dg-three-layer-safety" x1="150" y1="155" x2="210" y2="155" marker-end="url(#tl_arr)"/>
+<text class="mut__dg-three-layer-safety" x="24" y="268" font-size="10.5">A tool call</text><text class="mut__dg-three-layer-safety" x="24" y="281" font-size="10.5">(clear_alert, get_kyc…)</text>
+<line class="flow__dg-three-layer-safety" x1="150" y1="273" x2="210" y2="273" marker-end="url(#tl_arr)"/>
+<text class="mut__dg-three-layer-safety" x="24" y="386" font-size="10.5">Proposed disposition</text><text class="mut__dg-three-layer-safety" x="24" y="399" font-size="10.5">+ evidence</text>
+<line class="flow__dg-three-layer-safety" x1="150" y1="391" x2="210" y2="391" marker-end="url(#tl_arr)"/>
+<rect x="210" y="104" width="614" height="102" rx="12" fill="url(#tl_r1)"/>
+<circle cx="246" cy="155" r="18" fill="#fff"/><text x="246" y="161" text-anchor="middle" font-size="18" font-weight="700" fill="#C7131F">1</text>
+<text class="wt__dg-three-layer-safety" x="278" y="145" font-size="15" font-weight="700">Bedrock Guardrails</text>
+<text class="wt__dg-three-layer-safety" x="278" y="164" font-size="11" opacity=".85">text filter · in and out</text>
+<rect x="440" y="135" width="176" height="24" rx="12" fill="#fff"/><text x="528" y="151" text-anchor="middle" font-size="12" font-weight="700" fill="#C7131F">SEES: text tokens</text>
+<text class="wt__dg-three-layer-safety" x="440" y="182" font-size="11" opacity=".92">BLIND TO tool calls — never sees the agent's actions</text>
+<text class="wt__dg-three-layer-safety" x="628" y="140" font-size="11">PII redaction · denied topics ·</text>
+<text class="wt__dg-three-layer-safety" x="628" y="157" font-size="11">contextual-grounding threshold</text>
+<text class="wt__dg-three-layer-safety" x="628" y="174" font-size="11">blocks unsupported claims.</text>
+<rect x="210" y="222" width="614" height="102" rx="12" fill="url(#tl_r2)"/>
+<circle cx="246" cy="273" r="18" fill="#fff"/><text x="246" y="279" text-anchor="middle" font-size="18" font-weight="700" fill="#A30E18">2</text>
+<text class="wt__dg-three-layer-safety" x="278" y="263" font-size="15" font-weight="700">Cedar / Verified Permissions</text>
+<text class="wt__dg-three-layer-safety" x="278" y="282" font-size="11" opacity=".85">action authorizer · is_authorized()</text>
+<rect x="440" y="253" width="176" height="24" rx="12" fill="#fff"/><text x="528" y="269" text-anchor="middle" font-size="11.5" font-weight="700" fill="#A30E18">SEES: every tool call</text>
+<text class="wt__dg-three-layer-safety" x="440" y="300" font-size="11" opacity=".92">+ authenticated user attributes</text>
+<text class="wt__dg-three-layer-safety" x="628" y="258" font-size="11">Deterministic permit / deny,</text>
+<text class="wt__dg-three-layer-safety" x="628" y="275" font-size="11">regardless of prompt phrasing ·</text>
+<text class="wt__dg-three-layer-safety" x="628" y="292" font-size="11">per-customer scope · no-auto-clear deny.</text>
+<rect x="210" y="340" width="614" height="102" rx="12" fill="url(#tl_st)"/>
+<circle cx="246" cy="391" r="18" fill="#fff"/><text x="246" y="397" text-anchor="middle" font-size="18" font-weight="700" fill="#3B4451">3</text>
+<text class="wt__dg-three-layer-safety" x="278" y="381" font-size="15" font-weight="700">Gate Decision</text>
+<text class="wt__dg-three-layer-safety" x="278" y="400" font-size="11" opacity=".85">application code</text>
+<rect x="440" y="371" width="176" height="24" rx="12" fill="#fff"/><text x="528" y="387" text-anchor="middle" font-size="11" font-weight="700" fill="#3B4451">SEES: full disposition</text>
+<text class="wt__dg-three-layer-safety" x="440" y="418" font-size="11" opacity=".92">+ retrieved evidence</text>
+<text class="wt__dg-three-layer-safety" x="628" y="376" font-size="11">Business invariants — recall floor ·</text>
+<text class="wt__dg-three-layer-safety" x="628" y="393" font-size="11">citation completeness ·</text>
+<text class="wt__dg-three-layer-safety" x="628" y="410" font-size="11">sanctions no-clear double-check.</text>
+<text class="mut__dg-three-layer-safety" x="32" y="468" font-size="11.5">no-auto-clear lives in TWO layers — Cedar deny + Gate check: defense-in-depth, never left to model judgment or a text filter.</text>
+</svg></div>
+<figcaption>Three controls, three layers — each enforcing what only it can see.</figcaption>
+</figure>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>Layer</th><th>Governs</th><th>Enforces here</th><th>Cannot see</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Bedrock Guardrails</td>
+      <td>Text in and out</td>
+      <td>PII redaction, denied topics, a contextual-grounding threshold that blocks unsupported claims</td>
+      <td>Tool calls. If the agent decides to call a tool with a dangerous argument, the text filter never observes that decision.</td>
+    </tr>
+    <tr>
+      <td>Cedar via Amazon Verified Permissions</td>
+      <td>Actions</td>
+      <td>Per-customer scope; a deterministic deny on a clear action when the sanctions_hit flag is set — <code>is_authorized</code> called in code, because we host on Lambda/ECS</td>
+      <td>Whether a claim is grounded or a document is well-formed. It reasons over the authenticated user's attributes and the requested action, not prose.</td>
+    </tr>
+    <tr>
+      <td>Gate Decision (application code)</td>
+      <td>Business invariants</td>
+      <td>Recall-floor enforcement, citation completeness, the sanctions no-clear double-check on every disposition</td>
+      <td>Nothing at its own layer — it is the last choke point, but it trusts that text and actions were already policed upstream.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>The layers are ordered by what they can observe. Guardrails read text and are deaf to intent, so they can strip PII from a rationale but would never notice a decision to clear a flagged account. Cedar intercepts each tool call before it executes and returns a deterministic permit or deny regardless of how the prompt was phrased — the same words that might jailbreak a text filter carry no weight against a policy engine reading authenticated attributes. Gate Decision, in our own code, enforces the invariants that are neither text nor generic authorization but the bank's specific rules about what a valid disposition looks like.</p>
+
+<p>The no-auto-clear rule sits deliberately in two of these layers at once: Cedar denies the clear action when a sanctions hit is flagged, and Gate Decision double-checks the same invariant in code. That redundancy is the point. On the catastrophic side of the asymmetry, the prohibition on auto-clearing a sanctions hit is never left to model judgment and never entrusted to a text filter that cannot see the action — it is defense-in-depth across the deterministic action layer and the deterministic business layer, so both would have to fail silently for a true hit to clear itself.</p>
+
+<blockquote>Putting the no-auto-clear rule in the prompt would be asking the model to police itself, which is the verifier problem again. It lives in Cedar and in Gate because those layers do not negotiate, do not get talked out of it by a crafted transaction memo, and do not drift.</blockquote>
+
+<p>Honesty about the residual: this deny is only as strong as the hit signal that feeds it. If upstream screening misses an entity through an alias or a transliteration, no flag fires, and a deterministic rule that never triggers protects nothing. The real residual on sanctions did not vanish — it moved upstream to screening recall, where it is tracked as its own risk rather than assumed away.</p>
+
+<h3>IAM, and the trap that passes every console test</h3>
+
+<p>The permission model is where a correct design quietly breaks in production, and one trap deserves naming because its symptom is so misleading. A Bedrock execution role needs <em>both</em> the <code>foundation-model/*</code> and the <code>inference-profile/*</code> resource ARNs, because any modern <code>us.</code> or <code>global.</code> model id is an inference-profile id, not a bare foundation-model id. Grant only the first and calls fail with an <code>AccessDenied</code> whose message never says which ARN is missing. It works in the console — the console resolves the profile for you — and the Lambda gets denied on the same model, and worse, the failure is intermittent: it fires only when the profile routes to a region the role does not allow. A team can burn a day on a bug that reads like flaky infrastructure and is actually a missing resource ARN.</p>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>Concern</th><th>Control</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Model id drifts monthly; ids are inference-profile-only with a region prefix</td><td>Write the id as a startup-resolved pattern (e.g. <code>inference-profile/us.anthropic.claude-*</code>) — a pattern, never a pinned constant that a monthly deprecation silently breaks.</td></tr>
+    <tr><td>Blast radius per role</td><td>Least-privilege split roles by trust level: investigator, verifier narrower still, triage narrower again. Never <code>AmazonBedrockFullAccess</code>.</td></tr>
+    <tr><td>Data at rest across the stores</td><td>KMS with a <code>kms:ViaService</code>-scoped key policy on the Knowledge Base, evidence, audit, and graph.</td></tr>
+    <tr><td>No public path to the model</td><td>PrivateLink interface endpoints with an <code>aws:sourceVpce</code> IAM condition, so a model call is rejected unless it arrives through our endpoint.</td></tr>
+    <tr><td>Data residency</td><td>Region-pinning the inference profile — the same pin that satisfies routing also keeps data in-region.</td></tr>
+  </tbody>
+</table></div>
+
+<p>These controls are not decorative defense in depth. The <code>aws:sourceVpce</code> condition and the KMS key policies are the same customer-isolation and no-public-path story the top-3 characteristics require, expressed at the IAM layer instead of the application layer — which matters more here than in most designs, because the decision to run Neo4j in-VPC rather than adopt the isolation-optimal managed graph pushed extra isolation weight down onto exactly these boundary controls. The region pin illustrates the economy of the whole approach: one configuration that resolves the inference profile also enforces residency. The design does not spend a separate mechanism where one honest control already does the work.</p>
+</section>
+
+<section id="decisionsrisk" class="sec">
+<h2>The decisions on record, and attacking our own design</h2>
+
+<p>A decision you cannot reopen is a decision you cannot defend to an examiner. Writing them down as ADRs does two jobs in one motion: it fixes each trade firmly enough that the model-risk board can approve it, and it names the price we agreed to pay so no one downstream can pretend the price was zero. This section is deliberately uncomfortable. It records the spine of choices that were straightforward, then turns on the two that were not, and then it tries to break the finished design before a launderer or a regulator gets the chance.</p>
+
+<p>What governs which risks we are allowed to accept is the same asymmetry that has run through every stage. Clearing a real launderer is catastrophic and a regulatory failure; a false alarm costs one investigator an hour. That imbalance is not a footnote to the risk register — it is the scoring rule. It is why a residual on recall reads as high and a residual on latency reads as low even when the raw numbers look similar, and it is why we could never let the drive to cut the false-positive rate toward 85% (the brief's target, not an industry-reported figure) reach up and shave the recall floor.</p>
+
+<blockquote>You cannot buy the false-positive reduction with recall. Every decision below either protects that line or is honest about where it bends the line and by how much.</blockquote>
+
+<h3>The spine we did not argue about</h3>
+
+<p>Six decisions carried no genuine second option once the characteristics were fixed, so they are recorded and accepted rather than debated. They are the load-bearing wall; the two contested calls hang off it.</p>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>ADR</th><th>Decision</th><th>The one thing it settles</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>001</td><td>Two lanes: Bedrock reasoning agent for depth, a fine-tuned SageMaker small model for high-volume triage</td><td>Latency and burst throughput on the cheap lane without diluting the deep lane; accepts that a bank-owned triage model is itself a model under SR 11-7</td><td>Accepted</td></tr>
+    <tr><td>002</td><td>Two quanta, service-based backbone with event-driven seams, async lane boundary, polyglot persistence</td><td>Triage can scale alone under a burst without dragging the adjudication runtime with it</td><td>Accepted</td></tr>
+    <tr><td>003</td><td>Hybrid retrieval: GraphRAG plus a vector Knowledge Base, <code>retrieve</code> not <code>retrieve_and_generate</code>, jurisdiction and version metadata filtering, OpenSearch Serverless</td><td>Network questions get an explainable path; a superseded rule or wrong-jurisdiction typology can never surface</td><td>Accepted</td></tr>
+    <tr><td>004</td><td>Single ReAct investigator on a fixed, auditable DAG, plus an independent verifier as a separate reasoning model</td><td>One coherent judgment, checked by something that is not itself; rejects full autonomy and rejects an unpredictable swarm</td><td>Accepted</td></tr>
+    <tr><td>005</td><td>Three-layer safety (Guardrails on text, Cedar on actions, Gate Decision on business invariants), no-auto-clear as defense-in-depth, least-privilege roles with <code>use_aws</code> excluded entirely</td><td>The safety rules live in the layer that can actually enforce them; the sanctions no-clear is checked twice, never left to model judgment</td><td>Accepted</td></tr>
+    <tr><td>006</td><td>Customer isolation by construction: Scope Guard, traverse-to-detect and disclose-in-scope, per-alert-only memory, Cedar per-customer scope</td><td>Customer A data cannot bleed into customer B adjudication through the agent's memory or its rationale</td><td>Accepted</td></tr>
+  </tbody>
+</table></div>
+
+<h3>ADR-007: the graph substrate, where we chose against our own analysis</h3>
+
+<p>This is the decision the trade-off matrix lost. On the criteria that matter most to our top three characteristics, Amazon Neptune was the recommended substrate, and the reason is precise: native AWS IAM, VPC, PrivateLink and KMS are not conveniences here, they <em>are</em> the customer-isolation and no-public-path story. Neptune also lowers data gravity and hands operations to the managed service. Neo4j wins on a different axis — GraphRAG and Cypher fluency, the GDS ecosystem, and a match to the original brief — and that is where the existing investment already sat.</p>
+
+<p>The decision was Neo4j. State it without softening: we chose against the isolation-optimal option, and we did it for ecosystem maturity and an investment already made, not because the isolation argument was wrong. The argument was right, and we accepted a cost to overrule it.</p>
+
+<p>That cost is on the record as a consequence, not a hope. Neo4j must run in-VPC behind PrivateLink with KMS, which we now enforce as a fitness function rather than trust as a habit. More consequentially, the isolation weight that a native-AWS graph would have carried in its own IAM boundary now shifts onto Scope Guard and Amazon Verified Permissions — they hold more of the line because the substrate holds less of it. That shift is exactly why cross-customer leakage sits in the high band below with a note that the Neo4j choice elevated it. The trade was made with the number on the table, and the number did not disappear when we signed.</p>
+
+<h3>ADR-008: the host, where conservative was the point</h3>
+
+<p>Two questions resolved together here, and both went to the boring answer on purpose. On orchestration, we author the control flow in the Strands framework rather than hand it to managed Bedrock Agents. The reason is our own top three: the explicit DAG, the independent verifier, and the Gate Decision choke point are the things an examiner reconstructs, and managed orchestration hides precisely that control flow inside the service. If we cannot point to the code that enforces the recall gate, we cannot govern it.</p>
+
+<p>On the runtime, we host on Lambda or ECS with Verified Permissions, calling Cedar through <code>is_authorized</code> in application code, rather than on the newer AgentCore Runtime. AgentCore is attractive — native Cedar, native memory — but for a regulated bank the deciding property is a host proven under production load and portable off it, and its GA status needs re-verifying before it could carry a compliance workload. We spent our novelty budget on the reasoning itself. We did not spend it on the substrate that has to survive an examination.</p>
+
+<figure class="diagram">
+<div class="diagram-scroll"><svg class="ds__dg-decision-spine" viewBox="0 0 800 792" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The decision spine: eight architecture stages, each mapped to its key decision, from characteristics through validate and govern." style="width:100%;height:auto;max-width:800px;display:block;margin:24px auto"><style>
+.ds__dg-decision-spine{color:#1b2430;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+@media (prefers-color-scheme:dark){.ds__dg-decision-spine{color:#e9eef4}}
+:root[data-theme="dark"] .ds__dg-decision-spine{color:#e9eef4}
+:root[data-theme="light"] .ds__dg-decision-spine{color:#1b2430}
+.ds__dg-decision-spine .ink__dg-decision-spine{fill:currentColor}.ds__dg-decision-spine .mut__dg-decision-spine{fill:currentColor;opacity:.66}.ds__dg-decision-spine .wt__dg-decision-spine{fill:#fff}
+.ds__dg-decision-spine .ln__dg-decision-spine{stroke:currentColor;fill:none}
+.ds__dg-decision-spine .card__dg-decision-spine{stroke:currentColor;fill:none;stroke-opacity:.3}
+</style>
+
+<text class="ink__dg-decision-spine" x="36" y="34" font-size="19" font-weight="700">The decision spine</text>
+<text class="mut__dg-decision-spine" x="36" y="55" font-size="12">Eight stages, one throughline: a missed true positive is catastrophic; a false alarm is only an investigator-hour.</text>
+<line class="ln__dg-decision-spine" x1="64" y1="100" x2="64" y2="764" stroke-width="2" stroke-opacity=".35"/>
+<g>
+<line class="ln__dg-decision-spine" x1="83" y1="128" x2="112" y2="128" stroke-opacity=".35"/>
+<circle cx="64" cy="128" r="19" fill="#2E9E8F"/><text class="wt__dg-decision-spine" x="64" y="134" text-anchor="middle" font-size="17" font-weight="700">1</text>
+<rect class="card__dg-decision-spine" x="112" y="95" width="656" height="66" rx="10"/><rect x="112" y="95" width="6" height="66" rx="3" fill="#2E9E8F"/>
+<text class="ink__dg-decision-spine" x="132" y="119" font-size="13.5" font-weight="700">Characteristics — the -ilities</text>
+<text class="mut__dg-decision-spine" x="132" y="137" font-size="11">Top-3: recall-safety · auditability · customer-isolation.</text>
+<text class="mut__dg-decision-spine" x="132" y="153" font-size="11">Hold the recall floor, then shave false positives toward the 85% target.</text>
+</g>
+<g>
+<line class="ln__dg-decision-spine" x1="83" y1="214" x2="112" y2="214" stroke-opacity=".35"/>
+<circle cx="64" cy="214" r="19" fill="#ED7100"/><text class="wt__dg-decision-spine" x="64" y="220" text-anchor="middle" font-size="17" font-weight="700">2</text>
+<rect class="card__dg-decision-spine" x="112" y="181" width="656" height="66" rx="10"/><rect x="112" y="181" width="6" height="66" rx="3" fill="#ED7100"/>
+<text class="ink__dg-decision-spine" x="132" y="205" font-size="13.5" font-weight="700">Service selection — AWS</text>
+<text class="mut__dg-decision-spine" x="132" y="223" font-size="11">Two lanes: Bedrock reasoning (prompt + RAG) and a SageMaker fine-tuned triage model.</text>
+<text class="mut__dg-decision-spine" x="132" y="239" font-size="11">Hybrid retrieval with metadata filtering; use retrieve, not retrieve_and_generate.</text>
+</g>
+<g>
+<line class="ln__dg-decision-spine" x1="83" y1="300" x2="112" y2="300" stroke-opacity=".35"/>
+<circle cx="64" cy="300" r="19" fill="#8C4FFF"/><text class="wt__dg-decision-spine" x="64" y="306" text-anchor="middle" font-size="17" font-weight="700">3</text>
+<rect class="card__dg-decision-spine" x="112" y="267" width="656" height="66" rx="10"/><rect x="112" y="267" width="6" height="66" rx="3" fill="#8C4FFF"/>
+<text class="ink__dg-decision-spine" x="132" y="291" font-size="13.5" font-weight="700">Logical components</text>
+<text class="mut__dg-decision-spine" x="132" y="309" font-size="11">15 verb-role components; earned splits: Screen Sanctions, Verify Clear, Preserve Audit Trail.</text>
+<text class="mut__dg-decision-spine" x="132" y="325" font-size="11">Scope Guard: traverse broadly to detect, disclose narrowly in scope.</text>
+</g>
+<g>
+<line class="ln__dg-decision-spine" x1="83" y1="386" x2="112" y2="386" stroke-opacity=".35"/>
+<circle cx="64" cy="386" r="19" fill="#E7157B"/><text class="wt__dg-decision-spine" x="64" y="392" text-anchor="middle" font-size="17" font-weight="700">4</text>
+<rect class="card__dg-decision-spine" x="112" y="353" width="656" height="66" rx="10"/><rect x="112" y="353" width="6" height="66" rx="3" fill="#E7157B"/>
+<text class="ink__dg-decision-spine" x="132" y="377" font-size="13.5" font-weight="700">Style — quanta and shape</text>
+<text class="mut__dg-decision-spine" x="132" y="395" font-size="11">Two quanta; service-based backbone + event-driven ingestion.</text>
+<text class="mut__dg-decision-spine" x="132" y="411" font-size="11">The async lane boundary is the elasticity seam that keeps the quanta separate.</text>
+</g>
+<g>
+<line class="ln__dg-decision-spine" x1="83" y1="472" x2="112" y2="472" stroke-opacity=".35"/>
+<circle cx="64" cy="472" r="19" fill="#C7131F"/><text class="wt__dg-decision-spine" x="64" y="478" text-anchor="middle" font-size="17" font-weight="700">5</text>
+<rect class="card__dg-decision-spine" x="112" y="439" width="656" height="66" rx="10"/><rect x="112" y="439" width="6" height="66" rx="3" fill="#C7131F"/>
+<text class="ink__dg-decision-spine" x="132" y="463" font-size="13.5" font-weight="700">AWS solution design</text>
+<text class="mut__dg-decision-spine" x="132" y="481" font-size="11">Fixed auditable DAG · single ReAct agent · independent verifier · three-layer safety.</text>
+<text class="mut__dg-decision-spine" x="132" y="497" font-size="11">IAM: two-ARN Bedrock role · PrivateLink + sourceVpce · KMS everywhere.</text>
+</g>
+<g>
+<line class="ln__dg-decision-spine" x1="83" y1="558" x2="112" y2="558" stroke-opacity=".35"/>
+<circle cx="64" cy="558" r="19" fill="#7A3FF2"/><text class="wt__dg-decision-spine" x="64" y="564" text-anchor="middle" font-size="17" font-weight="700">6</text>
+<rect class="card__dg-decision-spine" x="112" y="525" width="656" height="66" rx="10"/><rect x="112" y="525" width="6" height="66" rx="3" fill="#7A3FF2"/>
+<text class="ink__dg-decision-spine" x="132" y="549" font-size="13.5" font-weight="700">Architecture decisions — ADRs</text>
+<text class="mut__dg-decision-spine" x="132" y="567" font-size="11">ADR-001 to 008. ADR-007 chose Neo4j against the isolation-optimal option (recorded consequence).</text>
+<text class="mut__dg-decision-spine" x="132" y="583" font-size="11">ADR-008: Strands on Lambda / ECS + Amazon Verified Permissions (Cedar in code).</text>
+</g>
+<g>
+<line class="ln__dg-decision-spine" x1="83" y1="644" x2="112" y2="644" stroke-opacity=".35"/>
+<circle cx="64" cy="644" r="19" fill="#A30E18"/><text class="wt__dg-decision-spine" x="64" y="650" text-anchor="middle" font-size="17" font-weight="700">7</text>
+<rect class="card__dg-decision-spine" x="112" y="611" width="656" height="66" rx="10"/><rect x="112" y="611" width="6" height="66" rx="3" fill="#A30E18"/>
+<text class="ink__dg-decision-spine" x="132" y="635" font-size="13.5" font-weight="700">Risk</text>
+<text class="mut__dg-decision-spine" x="132" y="653" font-size="11">Silent drift = 9, the sleeper #1. False clear · leakage · prompt-injection · sanctions FN = 6.</text>
+<text class="mut__dg-decision-spine" x="132" y="669" font-size="11">Full drift program accepted; every HIGH knocked to MED, none eliminated.</text>
+</g>
+<g>
+<line class="ln__dg-decision-spine" x1="83" y1="730" x2="112" y2="730" stroke-opacity=".35"/>
+<circle cx="64" cy="730" r="19" fill="#3F8624"/><text class="wt__dg-decision-spine" x="64" y="736" text-anchor="middle" font-size="17" font-weight="700">8</text>
+<rect class="card__dg-decision-spine" x="112" y="697" width="656" height="66" rx="10"/><rect x="112" y="697" width="6" height="66" rx="3" fill="#3F8624"/>
+<text class="ink__dg-decision-spine" x="132" y="721" font-size="13.5" font-weight="700">Validate and govern</text>
+<text class="mut__dg-decision-spine" x="132" y="739" font-size="11">Nine intersections; the team-topology gap resolved by an independent model-risk function.</text>
+<text class="mut__dg-decision-spine" x="132" y="755" font-size="11">The fitness-function table IS the SR 11-7 / MRM package. Eval harness designed, not built.</text>
+</g>
+</svg></div>
+<figcaption>The decision spine: eight stages, eight load-bearing calls.</figcaption>
+</figure>
+
+<h3>Scoring the risks, and what the scores are not</h3>
+
+<p>Every risk is scored impact times likelihood, each on a one-to-three scale, banded low at 1–2, medium at 3–4, high at 6–9. The risk-storm ran three lenses — operations, security and data, implementation — but those lenses are dimensional coverage, not independent statistical votes. They are correlated judges looking at the same design through the same model, so a risk flagged three times has been seen from three angles, not confirmed by three witnesses. The human arbitrates; the scores organize the argument, they do not settle it.</p>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>Risk</th><th>Impact</th><th>Likelihood</th><th>Score</th><th>Band</th><th>Note</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Silent drift / undetectable decay</td><td>3</td><td>3</td><td>9</td><td>HIGH</td><td>The sleeper; the feedback loop is genuinely broken</td></tr>
+    <tr><td>False clear / missed true positive</td><td>3</td><td>2</td><td>6</td><td>HIGH</td><td>The catastrophic side of the asymmetry</td></tr>
+    <tr><td>Cross-customer leakage</td><td>3</td><td>2</td><td>6</td><td>HIGH</td><td>Elevated by the Neo4j choice (ADR-007)</td></tr>
+    <tr><td>Prompt-injection via alert data</td><td>3</td><td>2</td><td>6</td><td>HIGH</td><td>Surfaced by the storm; alert content is attacker-influenceable</td></tr>
+    <tr><td>Upstream sanctions false-negative</td><td>3</td><td>2</td><td>6</td><td>HIGH</td><td>Surfaced by the storm; the residual moved upstream to screening</td></tr>
+    <tr><td>Hallucinated typology</td><td>2</td><td>2</td><td>4</td><td>MED</td><td>Held by citation-required retrieval</td></tr>
+    <tr><td>Throttling → SLA breach</td><td>2</td><td>2</td><td>4</td><td>MED</td><td>Adaptive retries or provisioned throughput, a cost lever</td></tr>
+    <tr><td>Model deprecation / MRM lag</td><td>2</td><td>2</td><td>4</td><td>MED</td><td>Resolve model ids dynamically, never pin a constant</td></tr>
+    <tr><td>Audit-event loss</td><td>3</td><td>1</td><td>3</td><td>MED</td><td>Needs the outbox pattern to close</td></tr>
+    <tr><td>Auto-clear logic failure</td><td>3</td><td>1</td><td>3</td><td>MED</td><td>Well-mitigated by the ADR-005 double check</td></tr>
+    <tr><td>Graph traversal p99</td><td>2</td><td>1</td><td>2</td><td>LOW</td><td>Real but bounded</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Three things the happy path never showed us</h3>
+
+<p>The value of storming a design is that it surfaces the risks the build plan is structurally blind to. Three did, and they reorder the whole register.</p>
+
+<p><strong>Silent drift scored highest, and it deserves the top slot.</strong> The others are failures you can eventually see. This one you cannot. We rarely learn that we cleared a real launderer, because the ground truth for a false clear almost never comes back — the OCC has noted that back-testing is weak for AML. So recall can decay quietly while every dashboard stays green, and the system reports health right up until an examiner or an indictment reveals it was wrong for months. This is the risk the confusion-matrix mindset misses completely, because it assumes the labels arrive.</p>
+
+<blockquote>You cannot manage what you cannot see, and the one thing this system is worst at seeing is its own most expensive failure. That is why drift, not the dramatic false clear, is the number-one risk.</blockquote>
+
+<p><strong>Prompt-injection rides in on the alert data itself.</strong> Transaction memos and counterparty names are written by the parties under investigation, which makes them attacker-influenceable input, not neutral fact. A crafted memo can try to talk the agent into a clear. The moment we treat alert content as trusted context, we have handed the adversary a channel into our reasoning. The data is untrusted, and the control flow must not be steerable by it.</p>
+
+<p><strong>The deterministic no-auto-clear is only as strong as the hit signal that arms it.</strong> Our proudest safety property — Cedar forbids a clear when a sanctions-hit flag is set, and the Gate re-checks it — does nothing if the flag never fires. If upstream screening misses an entity to an alias or a transliteration, no hit is raised, the deny never triggers, and the agent clears in perfectly good faith. The invariant did not fail; it was never invoked. The real residual is not in our logic, it moved upstream into screening recall, where we have less control and, until the storm, less attention.</p>
+
+<h3>What we decided to do, and what stays on the books</h3>
+
+<p>The mitigations are human decisions, and they are matched to the three surprises rather than sprayed across the register. Against silent drift we accepted a full program, because a single control cannot see an invisible failure: synthetic known-positive canaries seeded through the pipeline to confirm bad patterns are caught, distribution-drift alarms on typology-hit, clear and escalate rates, periodic blind re-adjudication of samples by senior investigators as a champion against the agent, and champion-challenger on model changes. Against the graph-substrate risk we keep Neo4j and pair it with a mandatory hardening bundle — in-VPC, PrivateLink, KMS, a hard Scope Guard output filter, CI scope-tests, and red-teaming — the bundle being the price ADR-007 named. Against prompt-injection we harden the untrusted-data handling so alert content never enters the instruction channel and the control flow is never data-driven, and we red-team the injection surface directly. Against the upstream sanctions gap we check the vendor's published recall and SLA first, because a contractual SLA can bound the risk without building anything, and we back it with alias and fuzzy matching plus a second source on high-risk names.</p>
+
+<p>Here is the part with no victory lap. Every high risk was knocked from high to medium; not one was eliminated. Silent drift is structural and never reaches zero — the feedback loop stays broken no matter how good the canaries are. The Neo4j isolation burden is a cost we chose to carry, not a cost we removed. The upstream residual is bounded by someone else's SLA, not closed by our code. What the storm bought us is not safety, it is visibility: the residuals are now named, scored, owned, and instrumented, so when one of them moves we will see it move. For AML, that is the honest definition of managed, and it is the most any of these controls can truthfully claim.</p>
+
+<figure class="diagram">
+<div class="diagram-scroll"><svg class="rm__dg-risk-matrix" viewBox="0 0 880 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Risk matrix, impact times likelihood on a 3 by 3 grid. Silent drift scores 9 high; false clear, cross-customer leakage, prompt-injection and upstream sanctions false-negative score 6 high; graph traversal p99 is low." style="width:100%;height:auto;max-width:880px;display:block;margin:24px auto"><style>
+.rm__dg-risk-matrix{color:#1b2430;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+@media (prefers-color-scheme:dark){.rm__dg-risk-matrix{color:#e9eef4}}
+:root[data-theme="dark"] .rm__dg-risk-matrix{color:#e9eef4}
+:root[data-theme="light"] .rm__dg-risk-matrix{color:#1b2430}
+.rm__dg-risk-matrix .ink__dg-risk-matrix{fill:currentColor}.rm__dg-risk-matrix .mut__dg-risk-matrix{fill:currentColor;opacity:.66}.rm__dg-risk-matrix .wt__dg-risk-matrix{fill:#fff}
+.rm__dg-risk-matrix .ln__dg-risk-matrix{stroke:currentColor;fill:none}
+.rm__dg-risk-matrix .chip__dg-risk-matrix{fill:#fff;stroke:#2a2f38;stroke-width:1}
+.rm__dg-risk-matrix .cn__dg-risk-matrix{fill:#1b2430;font-weight:700}
+</style>
+
+<defs><marker id="rm_arr" markerWidth="9" markerHeight="9" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="currentColor"/></marker></defs>
+<text class="ink__dg-risk-matrix" x="32" y="34" font-size="19" font-weight="700">Risk matrix — impact × likelihood</text>
+<text class="mut__dg-risk-matrix" x="32" y="54" font-size="12">Bands: 1–2 low · 3–4 medium · 6–9 high. Score = impact × likelihood.</text>
+<line class="ln__dg-risk-matrix" x1="150" y1="452" x2="150" y2="82" stroke-width="1.5" marker-end="url(#rm_arr)"/>
+<text class="ink__dg-risk-matrix" transform="rotate(-90 126 272)" x="126" y="272" text-anchor="middle" font-size="12" font-weight="700">Impact →</text>
+<text class="ink__dg-risk-matrix" x="138" y="157" text-anchor="middle" font-size="12" font-weight="700">3</text>
+<text class="ink__dg-risk-matrix" x="138" y="277" text-anchor="middle" font-size="12" font-weight="700">2</text>
+<text class="ink__dg-risk-matrix" x="138" y="397" text-anchor="middle" font-size="12" font-weight="700">1</text>
+<line class="ln__dg-risk-matrix" x1="150" y1="452" x2="510" y2="452" stroke-width="1.5" marker-end="url(#rm_arr)"/>
+<text class="ink__dg-risk-matrix" x="330" y="486" text-anchor="middle" font-size="12" font-weight="700">Likelihood →</text>
+<text class="ink__dg-risk-matrix" x="210" y="472" text-anchor="middle" font-size="12" font-weight="700">1</text>
+<text class="ink__dg-risk-matrix" x="330" y="472" text-anchor="middle" font-size="12" font-weight="700">2</text>
+<text class="ink__dg-risk-matrix" x="450" y="472" text-anchor="middle" font-size="12" font-weight="700">3</text>
+<rect x="150" y="92" width="120" height="120" fill="#E08A1E"/>
+<rect x="270" y="92" width="120" height="120" fill="#C7131F"/>
+<rect x="390" y="92" width="120" height="120" fill="#C7131F"/>
+<rect x="150" y="212" width="120" height="120" fill="#3F8624"/>
+<rect x="270" y="212" width="120" height="120" fill="#E08A1E"/>
+<rect x="390" y="212" width="120" height="120" fill="#C7131F"/>
+<rect x="150" y="332" width="120" height="120" fill="#3F8624"/>
+<rect x="270" y="332" width="120" height="120" fill="#3F8624"/>
+<rect x="390" y="332" width="120" height="120" fill="#E08A1E"/>
+<g fill="#fff" font-size="13" font-weight="700" opacity=".85">
+<text x="162" y="110">3</text><text x="282" y="110">6</text><text x="402" y="110">9</text>
+<text x="162" y="230">2</text><text x="282" y="230">4</text><text x="402" y="230">6</text>
+<text x="162" y="350">1</text><text x="282" y="350">2</text><text x="402" y="350">3</text>
+</g>
+<g class="ln__dg-risk-matrix" stroke-opacity=".5" stroke-width="1">
+<rect x="150" y="92" width="360" height="360" fill="none"/>
+<line x1="270" y1="92" x2="270" y2="452"/><line x1="390" y1="92" x2="390" y2="452"/>
+<line x1="150" y1="212" x2="510" y2="212"/><line x1="150" y1="332" x2="510" y2="332"/>
+</g>
+<g font-size="12">
+<circle class="chip__dg-risk-matrix" cx="450" cy="152" r="13"/><text class="cn__dg-risk-matrix" x="450" y="156" text-anchor="middle">1</text>
+<circle class="chip__dg-risk-matrix" cx="302" cy="132" r="13"/><text class="cn__dg-risk-matrix" x="302" y="136" text-anchor="middle">2</text>
+<circle class="chip__dg-risk-matrix" cx="358" cy="132" r="13"/><text class="cn__dg-risk-matrix" x="358" y="136" text-anchor="middle">3</text>
+<circle class="chip__dg-risk-matrix" cx="302" cy="174" r="13"/><text class="cn__dg-risk-matrix" x="302" y="178" text-anchor="middle">4</text>
+<circle class="chip__dg-risk-matrix" cx="358" cy="174" r="13"/><text class="cn__dg-risk-matrix" x="358" y="178" text-anchor="middle">5</text>
+<circle class="chip__dg-risk-matrix" cx="294" cy="272" r="13"/><text class="cn__dg-risk-matrix" x="294" y="276" text-anchor="middle">6</text>
+<circle class="chip__dg-risk-matrix" cx="330" cy="272" r="13"/><text class="cn__dg-risk-matrix" x="330" y="276" text-anchor="middle">7</text>
+<circle class="chip__dg-risk-matrix" cx="366" cy="272" r="13"/><text class="cn__dg-risk-matrix" x="366" y="276" text-anchor="middle">8</text>
+<circle class="chip__dg-risk-matrix" cx="188" cy="152" r="13"/><text class="cn__dg-risk-matrix" x="188" y="156" text-anchor="middle">9</text>
+<circle class="chip__dg-risk-matrix" cx="232" cy="152" r="13"/><text class="cn__dg-risk-matrix" x="232" y="156" text-anchor="middle">10</text>
+<circle class="chip__dg-risk-matrix" cx="330" cy="392" r="13"/><text class="cn__dg-risk-matrix" x="330" y="396" text-anchor="middle">11</text>
+</g>
+<text class="ink__dg-risk-matrix" x="540" y="98" font-size="13" font-weight="700">Named risks</text>
+<rect x="540" y="112" width="15" height="15" fill="#C7131F"/><text class="mut__dg-risk-matrix" x="562" y="124" font-size="11">6–9 high</text>
+<rect x="628" y="112" width="15" height="15" fill="#E08A1E"/><text class="mut__dg-risk-matrix" x="650" y="124" font-size="11">3–4 medium</text>
+<rect x="736" y="112" width="15" height="15" fill="#3F8624"/><text class="mut__dg-risk-matrix" x="758" y="124" font-size="11">1–2 low</text>
+<g font-size="11">
+<circle class="chip__dg-risk-matrix" cx="550" cy="152" r="10"/><text class="cn__dg-risk-matrix" x="550" y="156" text-anchor="middle" font-size="10">1</text><text class="ink__dg-risk-matrix" x="568" y="156">Silent drift / undetectable decay — 9 · HIGH (sleeper #1)</text>
+<circle class="chip__dg-risk-matrix" cx="550" cy="182" r="10"/><text class="cn__dg-risk-matrix" x="550" y="186" text-anchor="middle" font-size="10">2</text><text class="ink__dg-risk-matrix" x="568" y="186">False clear / missed true positive — 6 · HIGH</text>
+<circle class="chip__dg-risk-matrix" cx="550" cy="212" r="10"/><text class="cn__dg-risk-matrix" x="550" y="216" text-anchor="middle" font-size="10">3</text><text class="ink__dg-risk-matrix" x="568" y="216">Cross-customer leakage — 6 · HIGH (Neo4j-elevated)</text>
+<circle class="chip__dg-risk-matrix" cx="550" cy="242" r="10"/><text class="cn__dg-risk-matrix" x="550" y="246" text-anchor="middle" font-size="10">4</text><text class="ink__dg-risk-matrix" x="568" y="246">Prompt-injection via alert data — 6 · HIGH</text>
+<circle class="chip__dg-risk-matrix" cx="550" cy="272" r="10"/><text class="cn__dg-risk-matrix" x="550" y="276" text-anchor="middle" font-size="10">5</text><text class="ink__dg-risk-matrix" x="568" y="276">Upstream sanctions false-negative — 6 · HIGH</text>
+<circle class="chip__dg-risk-matrix" cx="550" cy="302" r="10"/><text class="cn__dg-risk-matrix" x="550" y="306" text-anchor="middle" font-size="10">6</text><text class="ink__dg-risk-matrix" x="568" y="306">Hallucinated typology — 4 · MED</text>
+<circle class="chip__dg-risk-matrix" cx="550" cy="332" r="10"/><text class="cn__dg-risk-matrix" x="550" y="336" text-anchor="middle" font-size="10">7</text><text class="ink__dg-risk-matrix" x="568" y="336">Throttling → SLA breach — 4 · MED</text>
+<circle class="chip__dg-risk-matrix" cx="550" cy="362" r="10"/><text class="cn__dg-risk-matrix" x="550" y="366" text-anchor="middle" font-size="10">8</text><text class="ink__dg-risk-matrix" x="568" y="366">Model deprecation / MRM lag — 4 · MED</text>
+<circle class="chip__dg-risk-matrix" cx="550" cy="392" r="10"/><text class="cn__dg-risk-matrix" x="550" y="396" text-anchor="middle" font-size="10">9</text><text class="ink__dg-risk-matrix" x="568" y="396">Audit-event loss — 3 · MED</text>
+<circle class="chip__dg-risk-matrix" cx="550" cy="422" r="10"/><text class="cn__dg-risk-matrix" x="550" y="426" text-anchor="middle" font-size="10">10</text><text class="ink__dg-risk-matrix" x="568" y="426">Auto-clear logic failure — 3 · MED</text>
+<circle class="chip__dg-risk-matrix" cx="550" cy="452" r="10"/><text class="cn__dg-risk-matrix" x="550" y="456" text-anchor="middle" font-size="10">11</text><text class="ink__dg-risk-matrix" x="568" y="456">Graph traversal p99 — 2 · LOW</text>
+</g>
+<text class="mut__dg-risk-matrix" x="32" y="540" font-size="11">Storm lenses are dimensional coverage, not independent votes — the human is the arbiter.</text>
+<text class="mut__dg-risk-matrix" x="32" y="560" font-size="11">Residuals: every HIGH knocked to MED, none eliminated — honest for AML, now managed and observable.</text>
+</svg></div>
+<figcaption>The risk matrix. Silent drift scores highest because it is the hardest to see.</figcaption>
+</figure>
+</section>
+
+<section id="validate" class="sec">
+<h2>Proving it holds, governing it, and what we still owe</h2>
+
+<p>A whiteboard architecture earns nothing until it survives contact with an examiner. Validation is where the design stops describing itself and starts defending itself, and the test is not whether the boxes are pretty but whether they still fit the organization, the data, and the money once those are real. We ran the design against nine kinds of alignment. Most held because we built them to hold. One did not, and the gap it exposed was not a box in the wrong place. It was a reporting line in the wrong place.</p>
+
+<h3>Nine intersections, and the one that was organizational</h3>
+
+<p>The nine intersections check the design against everything it has to live beside: the code that will implement it, the infrastructure it runs on, the data it commits, the practices that keep it honest, the teams that own it, the systems it integrates with, the enterprise standards above it, the business case beneath it, and the GenAI-specific machinery that makes an agent auditable at all. Eight of the nine were aligned by construction or reduced to a single named follow-up. That is the payoff of having carried the top-three characteristics through every prior stage rather than bolting governance on at the end.</p>
+
+<figure class="diagram">
+<div class="diagram-scroll"><svg class="ni__dg-nine-intersections" viewBox="0 0 780 660" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nine-intersections alignment check. Eight axes aligned by design; team topology is the one genuine gap, resolved by an independent model-risk function." style="width:100%;height:auto;max-width:780px;display:block;margin:24px auto"><style>
+.ni__dg-nine-intersections{color:#1b2430;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+@media (prefers-color-scheme:dark){.ni__dg-nine-intersections{color:#e9eef4}}
+:root[data-theme="dark"] .ni__dg-nine-intersections{color:#e9eef4}
+:root[data-theme="light"] .ni__dg-nine-intersections{color:#1b2430}
+.ni__dg-nine-intersections .ink__dg-nine-intersections{fill:currentColor}.ni__dg-nine-intersections .mut__dg-nine-intersections{fill:currentColor;opacity:.66}.ni__dg-nine-intersections .wt__dg-nine-intersections{fill:#fff}
+.ni__dg-nine-intersections .row__dg-nine-intersections{stroke:currentColor;fill:none;stroke-opacity:.28}
+.ni__dg-nine-intersections .gap__dg-nine-intersections{stroke:#E08A1E;fill:none;stroke-width:2}
+.ni__dg-nine-intersections .ck__dg-nine-intersections{stroke:#fff;fill:none;stroke-width:2.5}
+</style>
+
+<text class="ink__dg-nine-intersections" x="32" y="34" font-size="19" font-weight="700">Nine intersections — alignment check</text>
+<text class="mut__dg-nine-intersections" x="32" y="54" font-size="12">Eight axes aligned by design; one genuine gap — team topology — surfaced and resolved.</text>
+<g>
+<rect class="row__dg-nine-intersections" x="32" y="80" width="716" height="48" rx="9"/>
+<circle cx="60" cy="104" r="15" fill="#3F8624"/><path class="ck__dg-nine-intersections" d="M53,104 l5,5 l9,-10"/>
+<text class="ink__dg-nine-intersections" x="92" y="109" font-size="13" font-weight="700">Implementation</text>
+<text class="mut__dg-nine-intersections" x="252" y="109" font-size="11">component ↔ module test, once code exists</text>
+</g>
+<g>
+<rect class="row__dg-nine-intersections" x="32" y="136" width="716" height="48" rx="9"/>
+<circle cx="60" cy="160" r="15" fill="#3F8624"/><path class="ck__dg-nine-intersections" d="M53,160 l5,5 l9,-10"/>
+<text class="ink__dg-nine-intersections" x="92" y="165" font-size="13" font-weight="700">Infrastructure</text>
+<text class="mut__dg-nine-intersections" x="252" y="165" font-size="11">one flag: triage endpoint must be async / serverless (no idle SageMaker cost)</text>
+</g>
+<g>
+<rect class="row__dg-nine-intersections" x="32" y="192" width="716" height="48" rx="9"/>
+<circle cx="60" cy="216" r="15" fill="#3F8624"/><path class="ck__dg-nine-intersections" d="M53,216 l5,5 l9,-10"/>
+<text class="ink__dg-nine-intersections" x="92" y="221" font-size="13" font-weight="700">Data topology</text>
+<text class="mut__dg-nine-intersections" x="252" y="221" font-size="11">the audit-outbox atomicity is the make-or-break detail</text>
+</g>
+<g>
+<rect class="row__dg-nine-intersections" x="32" y="248" width="716" height="48" rx="9"/>
+<circle cx="60" cy="272" r="15" fill="#3F8624"/><path class="ck__dg-nine-intersections" d="M53,272 l5,5 l9,-10"/>
+<text class="ink__dg-nine-intersections" x="92" y="277" font-size="13" font-weight="700">Engineering practices</text>
+<text class="mut__dg-nine-intersections" x="252" y="277" font-size="11">real once the governance table is built</text>
+</g>
+<g>
+<rect class="gap__dg-nine-intersections" x="32" y="304" width="716" height="48" rx="9"/>
+<circle cx="60" cy="328" r="15" fill="#E08A1E"/><path class="ck__dg-nine-intersections" d="M53,328 l5,5 l9,-10"/>
+<text class="ink__dg-nine-intersections" x="92" y="333" font-size="13" font-weight="700">Team topology</text>
+<text class="mut__dg-nine-intersections" x="252" y="333" font-size="11">independent model-risk function owns the governance backbone (Conway)</text>
+<rect x="636" y="316" width="100" height="24" rx="12" fill="#E08A1E"/><text class="wt__dg-nine-intersections" x="686" y="332" text-anchor="middle" font-size="11" font-weight="700">gap → resolved</text>
+</g>
+<g>
+<rect class="row__dg-nine-intersections" x="32" y="360" width="716" height="48" rx="9"/>
+<circle cx="60" cy="384" r="15" fill="#3F8624"/><path class="ck__dg-nine-intersections" d="M53,384 l5,5 l9,-10"/>
+<text class="ink__dg-nine-intersections" x="92" y="389" font-size="13" font-weight="700">Integration</text>
+<text class="mut__dg-nine-intersections" x="252" y="389" font-size="11">sanctions-vendor recall / SLA probe still outstanding</text>
+</g>
+<g>
+<rect class="row__dg-nine-intersections" x="32" y="416" width="716" height="48" rx="9"/>
+<circle cx="60" cy="440" r="15" fill="#3F8624"/><path class="ck__dg-nine-intersections" d="M53,440 l5,5 l9,-10"/>
+<text class="ink__dg-nine-intersections" x="92" y="445" font-size="13" font-weight="700">Enterprise</text>
+<text class="mut__dg-nine-intersections" x="252" y="445" font-size="11">model-inventory entry · SSO / KMS conformance</text>
+</g>
+<g>
+<rect class="row__dg-nine-intersections" x="32" y="472" width="716" height="48" rx="9"/>
+<circle cx="60" cy="496" r="15" fill="#3F8624"/><path class="ck__dg-nine-intersections" d="M53,496 l5,5 l9,-10"/>
+<text class="ink__dg-nine-intersections" x="92" y="501" font-size="13" font-weight="700">Business</text>
+<text class="mut__dg-nine-intersections" x="252" y="501" font-size="11">strong — serves the 85% FP-reduction, $15–25M case</text>
+</g>
+<g>
+<rect class="row__dg-nine-intersections" x="32" y="528" width="716" height="48" rx="9"/>
+<circle cx="60" cy="552" r="15" fill="#3F8624"/><path class="ck__dg-nine-intersections" d="M53,552 l5,5 l9,-10"/>
+<text class="ink__dg-nine-intersections" x="92" y="557" font-size="13" font-weight="700">GenAI</text>
+<text class="mut__dg-nine-intersections" x="252" y="557" font-size="11">eval harness + MRM = make-or-break; designed, not yet built</text>
+</g>
+<circle cx="44" cy="606" r="9" fill="#3F8624"/><path class="ck__dg-nine-intersections" d="M39,606 l3,3 l6,-7" stroke-width="2"/>
+<text class="mut__dg-nine-intersections" x="60" y="610" font-size="11">aligned by design</text>
+<circle cx="200" cy="606" r="9" fill="#E08A1E"/><path class="ck__dg-nine-intersections" d="M195,606 l3,3 l6,-7" stroke-width="2"/>
+<text class="mut__dg-nine-intersections" x="216" y="610" font-size="11">gap surfaced → resolved</text>
+<text class="mut__dg-nine-intersections" x="32" y="638" font-size="11">The nine-intersection table plus its fitness functions IS the SR 11-7 / MRM governance package.</text>
+</svg></div>
+<figcaption>The nine alignment checks. Eight held by design; team topology was the one real gap.</figcaption>
+</figure>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>Intersection</th><th>Verdict</th><th>What it turned on</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Implementation</td><td>Aligned by design</td><td>Component-to-module tests wait on code; the verb-role components map one-to-one onto independently testable units.</td></tr>
+    <tr><td>Infrastructure</td><td>One flag to confirm</td><td>The triage endpoint must run async/serverless, or a spiky ~20K/month load pays 24x7 for an idle SageMaker endpoint.</td></tr>
+    <tr><td>Data topology</td><td>One make-or-break</td><td>Audit-outbox atomicity: the decision commit and its audit event must never be able to diverge.</td></tr>
+    <tr><td>Engineering practices</td><td>Real once wired</td><td>Concrete only after the fitness-function table lands in CI; nothing to validate before then.</td></tr>
+    <tr><td>Team topology</td><td>Genuine gap, resolved</td><td>A separate compliance/model-risk function owns the governance backbone, independent of the build team.</td></tr>
+    <tr><td>Integration</td><td>Probe outstanding</td><td>The sanctions-vendor recall/SLA number is not yet in hand and bounds a top risk.</td></tr>
+    <tr><td>Enterprise</td><td>Aligned, with tasks</td><td>Model-inventory entry plus enterprise SSO and KMS conformance.</td></tr>
+    <tr><td>Business</td><td>Aligned, strong</td><td>Serves the 85% false-positive-reduction target and the $15-25M, ~400K-hour case cited in the brief.</td></tr>
+    <tr><td>GenAI</td><td>Make-or-break, designed not built</td><td>The eval harness and the MRM package are specified here and coded later; the design stands or falls on them.</td></tr>
+  </tbody>
+</table></div>
+
+<p>The team-topology gap is the one worth dwelling on, because it is the intersection an engineering-only review would miss entirely. The runtime design already insists that a model checking its own clear is not an independent second opinion, which is why Verify-Clear runs as a separate reasoning model answerable to no one in the investigation loop. Conway's Law says the org chart will quietly re-impose its own coupling on the system. If the team that builds the agent also owns Gate Decision, Preserve Audit Trail, the eval harness, and the approval criteria, then the independence we engineered into the runtime is organizational fiction — the reviewer reports to the reviewed. So the governance backbone moves to a separate compliance and model-risk function. The org chart is made to mirror the verifier: a second opinion is worth something only when it does not answer to the thing it is judging.</p>
+
+<h3>The governance table is the model-risk package</h3>
+
+<p>These fitness functions are not engineering hygiene dressed up for a slide. Under the 2021 interagency statement, an AML transaction-monitoring system is a "model" under SR 11-7; the bank-owned triage classifier is a second model; and responsibility for the vendor foundation model stays with the bank rather than transferring to the provider. The 2026 revised MRM guidance raises the evidentiary bar again (from the brief). What that means concretely is that every row below is an artifact an examiner can ask to see on demand, and the table as a whole is what lets a human defend the machine underneath — because a human always makes the final call, and the agent never files a SAR on its own.</p>
+
+<div class="tablewrap"><table>
+  <thead>
+    <tr><th>Fitness function (the gate)</th><th>Characteristic it guards</th><th>How it is checked</th><th>Cadence</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Recall &ge;99% on typologies; false-clear = 0 on sanctions</td><td>Recall-safety</td><td>Automated eval gate on the golden set</td><td>Per release</td></tr>
+    <tr><td>Citation coverage and validity on every rationale</td><td>Auditability</td><td>Automated citation check</td><td>Per release + runtime</td></tr>
+    <tr><td>No auto-clear when a sanctions-hit flag is set</td><td>Recall-safety</td><td>Cedar policy test <em>and</em> Gate unit test (defense-in-depth)</td><td>Per release</td></tr>
+    <tr><td>No out-of-scope attribute in any rationale</td><td>Customer-isolation</td><td>CI scope-tests</td><td>Per release</td></tr>
+    <tr><td>Two-ARN role, PrivateLink + sourceVpce, KMS, Neo4j-in-VPC</td><td>Customer-isolation / security</td><td>IaC checks (cfn-lint, cdk-nag)</td><td>Per deploy</td></tr>
+    <tr><td>Audit-outbox atomicity</td><td>Auditability</td><td>Integration test</td><td>Per release</td></tr>
+    <tr><td>Drift canaries caught; distribution alarms armed</td><td>Observability</td><td>Synthetic known-positives + rate monitors</td><td>Continuous</td></tr>
+    <tr><td>Blind re-adjudication agreement</td><td>Recall-safety / observability</td><td>Periodic senior sample (champion vs agent)</td><td>Periodic</td></tr>
+    <tr><td>Prompt-injection resistance</td><td>Security</td><td>Red-team suite against untrusted alert data</td><td>Periodic</td></tr>
+    <tr><td>Model add or retrain triggers MRM re-validation</td><td>Evolvability / governance</td><td>Manual model-risk board gate</td><td>On change</td></tr>
+  </tbody>
+</table></div>
+
+<p>Two of these deserve their pairing called out. The no-auto-clear invariant appears twice on purpose: Cedar denies the clear action deterministically the instant the hit flag is set, and the Gate re-checks the same invariant in application code, so neither a reworded prompt nor a single failed layer can let a sanctioned entity through. And the IaC checks encode the Neo4j consequence directly — because the graph substrate is self-hosted rather than a native AWS service, the in-VPC, PrivateLink, and KMS posture that would otherwise be a managed default is now a test that fails the build if it regresses.</p>
+
+<h3>The eval harness, and why recall is the primary number</h3>
+
+<p>The harness is the deliverable the whole design leans on, and its shape follows from a single asymmetry that has run through every stage. Clearing a real launderer is catastrophic and a regulatory failure; a false alarm costs an investigator an hour. So the harness does not report one accuracy figure and call it a grade. It measures recall as the primary number, then precision, false-clear rate, graph-path precision and recall, and Cohen's Kappa against senior investigators as an agreement score. Offline, it runs against a golden set of historically adjudicated alerts — the same labeled history that made the fine-tuned triage lane possible. Online, before go-live, it runs in shadow mode alongside senior investigators so the agent is graded against live human judgment without touching a live disposition.</p>
+
+<p>The drift program is heavier than an accuracy dashboard, and the reason is uncomfortable: the feedback loop for AML is genuinely broken. You rarely learn that you cleared someone you should have escalated, so recall can decay in silence while every visible metric looks fine — the OCC has noted that back-testing is weak for AML. That is why silent drift scored highest of every risk we surfaced, and why the program leans on signals that do not need a confessed miss to fire: synthetic known-positive canaries seeded to confirm the bad patterns are still caught, distribution alarms on typology-hit, clear, and escalate rates, periodic blind re-adjudication of a sample by seniors, and champion/challenger comparison. You cannot manage what you cannot see, so the design spends to make decay visible.</p>
+
+<h3>What we still owe</h3>
+
+<p>An honest close keeps the residuals on the page rather than in a footnote. Two are structural. Silent drift is never zero — the program above knocks it from high to medium and makes it observable, but a broken feedback loop cannot be closed by monitoring alone. And the Neo4j substrate is a burden we chose with the cost on the table: the trade-off matrix recommended Amazon Neptune precisely because its native IAM, VPC, PrivateLink, and KMS integration <em>is</em> the customer-isolation story, and the team selected Neo4j against that recommendation for the existing investment and GDS maturity. The consequence is real and recorded — Scope Guard and Verified Permissions now carry more of the isolation weight, the hardening bundle became mandatory rather than optional, and cross-customer leakage sits at high risk, elevated by this exact decision.</p>
+
+<p>The open probes are named, not hidden: the sanctions-vendor recall and SLA figure that could bound the upstream false-negative risk without our building anything; the triage endpoint mode that must be confirmed async/serverless; enterprise-standards conformance for SSO and KMS; and the investigator, examiner, and admin UIs that were surfaced and deliberately deferred. And the line between design and implementation is drawn on purpose. The eval harness, the offline Stubber/moto contract tests, and the gated real-AWS smoke are not built here. They require real code and real credentials, and this exercise ends at the whiteboard. Code comes next.</p>
+
+<p>What the design does buy is favorable economics that never came at recall's expense. Inference runs near $0.05 per alert, roughly $1K/month for ~20K alerts, and the triage pre-filter lowers even that by sending only the ~15% of alerts that survive triage into the expensive deep reasoning loop — trivial against the $15-25M in savings the brief attributes to cutting the false-positive rate toward 85%. The money was never the hard part. The hard part was spending it without ever trading away the one thing that cannot be traded.</p>
+
+<blockquote>The whole design comes down to one refusal. It buys down the false-positive mountain so fifty investigators stop drowning, and it buys none of that reduction with recall. It holds that line with gates, fitness functions, and an independent second opinion: a false alarm is an hour, a missed launderer is a consent order, and the system is built to almost never miss.</blockquote>
+</section>
+<div class="footer">
+<p><strong>What this is, and is not.</strong> This is a design narrative for a hypothetical institution, not an AWS publication and not a description of any real bank. The reasoning, trade-offs, and matrices are complete through the design stage. The evaluation harness, the offline contract tests, and the gated real-AWS smoke test are specified here but deliberately not built &mdash; that is where code begins. Reported industry figures (false-positive rates, savings, model-accuracy claims) are attributed and hedged, never presented as settled fact.</p>
+</div>
+</main>
+</body>
+</html>

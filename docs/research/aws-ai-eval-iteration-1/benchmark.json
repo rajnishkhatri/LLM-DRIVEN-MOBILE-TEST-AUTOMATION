@@ -1,0 +1,504 @@
+{
+  "metadata": {
+    "skill_name": "aws-ai-family",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-08-12T23:18:26Z",
+    "evals_run": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0,
+        "tokens": 18786,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends RAG / a Knowledge Base over fine-tuning, with a stated reason",
+          "passed": true,
+          "evidence": "matched: \u2026on Bedrock** \u2014 specifically **Knowledge Bases for Amazon    Bedrock** (man\u2026"
+        },
+        {
+          "text": "Frames the choice as a managed-vs-self-hosted trade-off rather than one true answer",
+          "passed": true,
+          "evidence": "matched: \u2026ases for Amazon    Bedrock** (managed retrieval-augmented generatio\u2026"
+        },
+        {
+          "text": "Does not jump straight to writing implementation code",
+          "passed": true,
+          "evidence": "matched: \u2026stays at assessment altitude\u2026"
+        },
+        {
+          "text": "Does not ask for or use real AWS credentials",
+          "passed": true,
+          "evidence": "matched: \u2026no credential request\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0,
+        "tokens": 22737,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Makes a single-vs-multi-agent recommendation with reasoning",
+          "passed": true,
+          "evidence": "matched: \u2026on up front:  - **Topology:** one agent, not a few. Split only along\u2026"
+        },
+        {
+          "text": "Names a concrete vector store (OpenSearch / S3 Vectors / pgvector) with a trade-off",
+          "passed": true,
+          "evidence": "matched: \u2026- **Vector store:** default **S3 Vectors**; OpenSearch Serverless if y\u2026"
+        },
+        {
+          "text": "Places guardrails explicitly in the request path",
+          "passed": true,
+          "evidence": "matched: \u2026already lives in Aurora. - **Guardrails:** two controls in two layer\u2026"
+        },
+        {
+          "text": "Specifies least-privilege IAM and flags the need for BOTH foundation-model and inference-profile ARNs",
+          "passed": true,
+          "evidence": "matched: \u2026ion-model/*` ARN **and** the `inference-profile/*` ARN. Grant only one and yo\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0,
+        "tokens": 7049,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses the native Converse API (bedrock-runtime.converse), not invoke_model with a completion body",
+          "passed": true,
+          "evidence": "matched: \u2026# Bedrock Converse tool-use loop (`get_policy_st\u2026"
+        },
+        {
+          "text": "Does NOT use the legacy \\n\\nHuman:/max_tokens_to_sample completion format",
+          "passed": true,
+          "evidence": "matched: \u2026no legacy completion format used (a 'do not use' warning is fine)\u2026"
+        },
+        {
+          "text": "Implements the tool-use loop: toolConfig, stopReason tool_use, a toolResult echoing toolUseId, loop to end_turn",
+          "passed": true,
+          "evidence": "matched: \u2026ply on a **user** turn whose `toolResult` **echoes the same `toolUseId\u2026"
+        },
+        {
+          "text": "Passes the model id as a parameter/constant rather than a hard-coded permanent id",
+          "passed": true,
+          "evidence": "matched: \u2026def converse_with_tools(brt, model_id, user_prompt,\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 0,
+        "tokens": 13374,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Produces AWS CDK v2 Python (aws-cdk-lib) with a Lambda and an execution role",
+          "passed": true,
+          "evidence": "matched: \u2026eFunction variant. \"\"\" import aws_cdk as cdk from aws_cdk import (\u2026"
+        },
+        {
+          "text": "Grants bedrock:InvokeModel on BOTH a foundation-model ARN AND an inference-profile ARN (the two-ARN trap)",
+          "passed": true,
+          "evidence": "matched: \u2026ws:bedrock:<region>:<account>:inference-profile/...  <- HAS your account id `\u2026"
+        },
+        {
+          "text": "Mentions offline validation (cdk synth / cfn-lint / cdk-nag) or that no real deploy happens without approval",
+          "passed": true,
+          "evidence": "matched: \u2026at right.  Everything below **synthesizes offline** (`cdk synth`,\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0,
+        "tokens": 15437,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends botocore Stubber for bedrock-runtime (and sagemaker-runtime) contract tests",
+          "passed": true,
+          "evidence": "matched: \u2026ime.converse`** \u2192 **botocore `Stubber`**. This is not a preference\u2026"
+        },
+        {
+          "text": "Notes that moto cannot mock bedrock-runtime, so Stubber is required for it",
+          "passed": true,
+          "evidence": "matched: \u2026This is not a preference \u2014 **`moto` cannot mock `bedrock-runtime` at all**, so the Stubber is\u2026"
+        },
+        {
+          "text": "Uses moto (or equivalent) for supporting infra / SageMaker control plane",
+          "passed": true,
+          "evidence": "matched: \u2026This is not a preference \u2014 **`moto` cannot mock `bedrock-runtime\u2026"
+        },
+        {
+          "text": "Reinforces offline-first / no real credentials in CI",
+          "passed": true,
+          "evidence": "matched: \u2026g a Bedrock + SageMaker agent offline (no CI account, no cost)  Sho\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 0,
+        "tokens": 12809,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Starts by assessing the capability and selecting the AWS service (does not jump to code or deployment)",
+          "passed": true,
+          "evidence": "matched: \u2026fore anyone has decided *what capability you actually need and which A\u2026"
+        },
+        {
+          "text": "Lays out the stage progression assess -> design -> build -> deploy -> validate",
+          "passed": true,
+          "evidence": "5/5 stage names present"
+        },
+        {
+          "text": "Emphasizes offline-first and that real credentials are gated to the validate step",
+          "passed": true,
+          "evidence": "matched: \u2026n\u2192endpoint). | Not for real \u2014 offline test harness | | 4 | **Deploy\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 0,
+        "tokens": 7303,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends RAG / a Knowledge Base over fine-tuning, with a stated reason",
+          "passed": true,
+          "evidence": "matched: \u2026S  Short version: **this is a Retrieval-Augmented Generation (RAG) pr\u2026"
+        },
+        {
+          "text": "Frames the choice as a managed-vs-self-hosted trade-off rather than one true answer",
+          "passed": false,
+          "evidence": "no managed-vs-self-host framing"
+        },
+        {
+          "text": "Does not jump straight to writing implementation code",
+          "passed": true,
+          "evidence": "matched: \u2026stays at assessment altitude\u2026"
+        },
+        {
+          "text": "Does not ask for or use real AWS credentials",
+          "passed": true,
+          "evidence": "matched: \u2026no credential request\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0,
+        "tokens": 12226,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Makes a single-vs-multi-agent recommendation with reasoning",
+          "passed": true,
+          "evidence": "matched: \u2026s out of the box.  ---  ## 1. Single agent or a few?  **Start with a sin\u2026"
+        },
+        {
+          "text": "Names a concrete vector store (OpenSearch / S3 Vectors / pgvector) with a trade-off",
+          "passed": true,
+          "evidence": "matched: \u2026\u25bc         \u2502   Vector store (OpenSearch Serverless / Aurora pgvector)\u2026"
+        },
+        {
+          "text": "Places guardrails explicitly in the request path",
+          "passed": true,
+          "evidence": "matched: \u2026ay / AppSync            \u2502  \u2502  Guardrail    \u2502  \u2502         \u2502\u2026"
+        },
+        {
+          "text": "Specifies least-privilege IAM and flags the need for BOTH foundation-model and inference-profile ARNs",
+          "passed": true,
+          "evidence": "matched: \u2026ially when using cross-region inference profiles, one call touches *more than\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 0,
+        "tokens": 6001,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Uses the native Converse API (bedrock-runtime.converse), not invoke_model with a completion body",
+          "passed": true,
+          "evidence": "matched: \u2026a compact, working Bedrock **Converse API** tool-use loop for Claud\u2026"
+        },
+        {
+          "text": "Does NOT use the legacy \\n\\nHuman:/max_tokens_to_sample completion format",
+          "passed": true,
+          "evidence": "matched: \u2026no legacy completion format used (a 'do not use' warning is fine)\u2026"
+        },
+        {
+          "text": "Implements the tool-use loop: toolConfig, stopReason tool_use, a toolResult echoing toolUseId, loop to end_turn",
+          "passed": true,
+          "evidence": "matched: \u2026d the model's turn **and** a `toolResult` block back into `messages`,\u2026"
+        },
+        {
+          "text": "Passes the model id as a parameter/constant rather than a hard-coded permanent id",
+          "passed": true,
+          "evidence": "matched: \u2026ofile, not the raw model ID). MODEL_ID = \"us.anthropic.claude-3-5-so\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 3,
+        "failed": 0,
+        "total": 3,
+        "time_seconds": 0,
+        "tokens": 6881,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Produces AWS CDK v2 Python (aws-cdk-lib) with a Lambda and an execution role",
+          "passed": true,
+          "evidence": "matched: \u2026ent_stack.py`  ```python from aws_cdk import (     Stack,     Durat\u2026"
+        },
+        {
+          "text": "Grants bedrock:InvokeModel on BOTH a foundation-model ARN AND an inference-profile ARN (the two-ARN trap)",
+          "passed": true,
+          "evidence": "matched: \u2026vokeModel`/`Converse` with an inference-profile ID like `us.anthropic.claude-\u2026"
+        },
+        {
+          "text": "Mentions offline validation (cdk synth / cfn-lint / cdk-nag) or that no real deploy happens without approval",
+          "passed": true,
+          "evidence": "matched: \u2026t(region=\"us-east-1\"), )  app.synth() ```  ## `lambda/handler.py`\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 0,
+        "tokens": 10192,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends botocore Stubber for bedrock-runtime (and sagemaker-runtime) contract tests",
+          "passed": true,
+          "evidence": "matched: \u2026Recommended tool: botocore's `Stubber`  For the two data-plane call\u2026"
+        },
+        {
+          "text": "Notes that moto cannot mock bedrock-runtime, so Stubber is required for it",
+          "passed": false,
+          "evidence": "does not note moto's bedrock-runtime gap"
+        },
+        {
+          "text": "Uses moto (or equivalent) for supporting infra / SageMaker control plane",
+          "passed": true,
+          "evidence": "matched: \u2026.stub.Stubber`** rather than `moto` (see the moto note below for\u2026"
+        },
+        {
+          "text": "Reinforces offline-first / no real credentials in CI",
+          "passed": true,
+          "evidence": "matched: \u2026Unit-testing a Bedrock agent offline (no AWS account in CI)  You h\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.3333,
+        "passed": 1,
+        "failed": 2,
+        "total": 3,
+        "time_seconds": 0,
+        "tokens": 6512,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Starts by assessing the capability and selecting the AWS service (does not jump to code or deployment)",
+          "passed": true,
+          "evidence": "matched: \u2026he technology. Start with the problem, then work down to the smalle\u2026"
+        },
+        {
+          "text": "Lays out the stage progression assess -> design -> build -> deploy -> validate",
+          "passed": false,
+          "evidence": "only 2/5 stage names present"
+        },
+        {
+          "text": "Emphasizes offline-first and that real credentials are gated to the validate step",
+          "passed": false,
+          "evidence": "no offline-first/credential-gating emphasis"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      },
+      "tokens": {
+        "mean": 15032.0,
+        "stddev": 5385.9548,
+        "min": 7049,
+        "max": 22737
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.8056,
+        "stddev": 0.2618,
+        "min": 0.3333,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      },
+      "tokens": {
+        "mean": 8185.8333,
+        "stddev": 2465.9623,
+        "min": 6001,
+        "max": 12226
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.19",
+      "time_seconds": "+0.0",
+      "tokens": "+6846"
+    }
+  },
+  "notes": []
+}

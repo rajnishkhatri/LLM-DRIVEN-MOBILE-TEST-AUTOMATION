@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>aws-ai-* eval — annotator rubric walkthrough (iteration 2)</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --panel:#ffffff; --ink:#1a1d24; --muted:#5b6270; --line:#e3e6ec;
+    --accent:#3b6ea5; --good:#1f8a52; --bad:#b23a3a; --warn:#9a6a00;
+    --chip:#eef2f7; --code:#f2f4f8; --goodbg:#eaf6ef; --badbg:#faecec; --warnbg:#fbf3e2;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1216; --panel:#171b21; --ink:#e7eaf0; --muted:#9aa3b2; --line:#272d36;
+      --accent:#6fa8dc; --good:#5fd28f; --bad:#ef8a8a; --warn:#e0b25a;
+      --chip:#1f252d; --code:#12161b; --goodbg:#132018; --badbg:#211416; --warnbg:#201a10;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px;}
+  header h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em}
+  header p.sub{color:var(--muted);margin:0 0 24px;font-size:15px}
+  h2{font-size:19px;margin:36px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  h3{font-size:16px;margin:0 0 4px}
+  a{color:var(--accent)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .muted{color:var(--muted)}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em}
+  code{background:var(--code);padding:1px 5px;border-radius:5px;word-break:break-word}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12.5px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+  td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .delta-pos{color:var(--good);font-weight:600}
+  .delta-zero{color:var(--muted)}
+  .tablewrap{overflow-x:auto}
+  ol.steps{padding-left:20px} ol.steps li{margin:6px 0}
+  ul.tight{margin:6px 0;padding-left:18px} ul.tight li{margin:4px 0}
+  .callout{border:1px solid var(--warn);background:var(--warnbg);border-radius:10px;padding:12px 16px;margin:14px 0}
+  .callout b{color:var(--warn)}
+  .callout.good{border-color:var(--good);background:var(--goodbg)} .callout.good b{color:var(--good)}
+
+  /* eval cards */
+  .evalcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:0;margin:18px 0;overflow:hidden}
+  .evalhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);background:linear-gradient(0deg,transparent,rgba(127,127,127,.05))}
+  .evalhead .id{font-weight:700;font-size:15px}
+  .evalhead .target{font-size:12.5px;color:var(--muted);background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+  .score{margin-left:auto;font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+  .score b{color:var(--ink)}
+  .evalbody{padding:16px 18px}
+  .prompt{background:var(--code);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px;font-style:italic;color:var(--ink)}
+  .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 4px;font-weight:700}
+  .why{font-size:14px;margin:0 0 4px}
+
+  /* per-assertion blocks */
+  .arow{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:12px 0;background:linear-gradient(0deg,transparent,rgba(127,127,127,.02))}
+  .arow.disc{border-left:3px solid var(--accent)}
+  .atitle{font-weight:600;font-size:14.5px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
+  .anum{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:12.5px}
+  .tag{font-size:11px;border-radius:5px;padding:1px 7px;vertical-align:1px;white-space:nowrap}
+  .tag.disc{color:var(--accent);border:1px solid var(--accent)}
+  .tag.new{color:var(--warn);border:1px solid var(--warn)}
+  .rule{font-size:13px;color:var(--muted);margin:8px 0 10px;padding:7px 10px;background:var(--code);border-radius:7px}
+  .rule b{color:var(--ink)}
+  .evpair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:660px){.evpair{grid-template-columns:1fr}}
+  .ev{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+  .ev .who{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;display:inline-flex;align-items:center;gap:5px;margin-bottom:4px}
+  .ev.pass{border-left:3px solid var(--good);background:var(--goodbg)}
+  .ev.fail{border-left:3px solid var(--bad);background:var(--badbg)}
+  .ev.pass .who{color:var(--good)} .ev.fail .who{color:var(--bad)}
+  .ev q{font-style:normal}
+  .pill{font-size:11px;font-weight:700;border-radius:999px;padding:0 7px}
+  .pill.pass{color:var(--good);border:1px solid var(--good)}
+  .pill.fail{color:var(--bad);border:1px solid var(--bad)}
+  .watch{font-size:13px;margin-top:10px;padding:8px 10px;border-radius:7px;background:var(--warnbg);border:1px solid var(--line)}
+  .watch b{color:var(--warn)}
+  footer{margin-top:44px;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>aws-ai-* skill family — annotator rubric walkthrough</h1>
+  <p class="sub">Iteration&nbsp;2. How to grade each eval output against the <b>hardened</b> assertion set — with the exact PASS rule, real PASS/FAIL evidence from the actual runs, and the specific way each assertion can be mis-graded. Read alongside the review viewer (<span class="mono">aws-ai-eval-review-iter2.html</span>).</p>
+</header>
+
+<div class="panel">
+  <h3 style="margin-top:0">What you're annotating</h3>
+  <p style="margin:.2em 0">Each of six realistic user prompts was answered two ways:</p>
+  <div class="chips">
+    <span class="chip"><b style="color:var(--good)">with_skill</b> — the agent read the <code>aws-ai-lifecycle</code> router, routed to the right stage, and followed its methodology + references</span>
+    <span class="chip"><b>baseline</b> — the same prompt answered from general knowledge, no skill</span>
+  </div>
+  <p class="muted" style="margin-bottom:0">Your job is <b style="color:var(--ink)">not</b> "is the answer good?" — a strong base model gives good AWS answers. It's: <b style="color:var(--ink)">for each assertion, did the answer actually meet the bar the assertion sets — and does the grader's verdict hold up?</b> The assertions were tightened in iteration&nbsp;2 to isolate the family's real edge (the non-obvious AWS gotchas and the staged process), so the interesting action is at the <span class="tag disc">discriminator</span> rows.</p>
+</div>
+
+<h2>The annotation procedure — per assertion</h2>
+<div class="panel">
+  <ol class="steps" style="margin:0">
+    <li>Read the <b>assertion</b> and its <b>PASS rule</b> (the mechanical bar — that's what the auto-grader applied).</li>
+    <li>Look at the <b>with_skill</b> and <b>baseline</b> evidence quotes. Confirm the quote actually earns (or misses) the verdict shown.</li>
+    <li>Read the <span class="tag" style="border:1px solid var(--warn);color:var(--warn)">⚠ watch</span> line — it names the specific way this row gets mis-graded (a hollow keyword match, a negated mention, a real pass the pattern grader could miss). Check the answer <em>isn't</em> falling into that trap.</li>
+    <li><b>Agree, override, or flag.</b> If you agree, leave it. If the grader passed something hollow or failed something genuine, that's an <b>override</b> — note it. If the <em>assertion itself</em> is too loose/too strict, that's an <b>eval-design flag</b>.</li>
+    <li>Record overrides/flags in the feedback box on that eval's card in the viewer, then <b>Submit All Reviews</b> → it downloads <span class="mono">feedback.json</span>, which drives the next iteration. <b>Empty feedback = "grader verdict stands."</b></li>
+  </ol>
+</div>
+
+<h2>Scores at a glance (auto-graded, iteration&nbsp;2)</h2>
+<p class="muted">Pass-rate against each eval's assertions. The grader is pattern-based — treat it as a first pass; your judgment overrides it. Overall: <b style="color:var(--ink)">with-skill 100% vs baseline 72.5%, +27.5 points</b> (iteration&nbsp;1 was +19).</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Eval</th><th>Targets</th><th class="n">with</th><th class="n">base</th><th class="n">Δ iter-2</th><th class="n">Δ iter-1</th><th>What moved it</th></tr></thead>
+  <tbody>
+    <tr><td>0 · assess-service-selection</td><td><code>aws-ai-assess</code></td><td class="n">5/5</td><td class="n">4/5</td><td class="n delta-pos">+20</td><td class="n muted">+25</td><td>self-host / instance-hour-vs-per-token axis</td></tr>
+    <tr><td>1 · design-agent-rag-iam</td><td><code>aws-ai-design</code></td><td class="n">5/5</td><td class="n">4/5</td><td class="n delta-pos">+20</td><td class="n muted">0</td><td>tool-authorization boundary (Cedar/Verified Permissions)</td></tr>
+    <tr><td>2 · build-converse-tool-loop</td><td><code>aws-ai-build</code></td><td class="n">5/5</td><td class="n">5/5</td><td class="n delta-zero">0</td><td class="n muted">0</td><td>honest tie — baseline writes its own max-turns guard</td></tr>
+    <tr><td>3 · deploy-cdk-two-arn</td><td><code>aws-ai-deploy</code></td><td class="n">3/3</td><td class="n">2/3</td><td class="n delta-pos">+33</td><td class="n muted">0</td><td>requires cfn-lint / cdk-nag / a deploy gate</td></tr>
+    <tr><td>4 · validate-offline-stubber</td><td><code>aws-ai-validate</code></td><td class="n">4/4</td><td class="n">3/4</td><td class="n delta-pos">+25</td><td class="n muted">+25</td><td>"moto cannot mock bedrock-runtime" (crisp, not hedged)</td></tr>
+    <tr><td>5 · router-where-to-start</td><td><code>aws-ai-lifecycle</code></td><td class="n">3/3</td><td class="n">1/3</td><td class="n delta-pos">+67</td><td class="n muted">+67</td><td>the named 5-stage pipeline + credential gating</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="callout good">
+  <b>Read the zeros correctly.</b> A <code>Δ0</code> (eval&nbsp;2) doesn't mean the skill is useless — it means the base model already nails that <em>specific well-documented task</em> and the assertion couldn't isolate the skill's extra discipline without over-fitting. It was left as an <b>honest tie</b> rather than gamed to a positive. When you annotate eval&nbsp;2, the useful question is: <em>should</em> the assertion push harder? (See its card.)
+</div>
+
+<h2>Three fairness rules the grader already applies</h2>
+<p class="muted">Iteration&nbsp;1 review caught the grader mis-firing on these. They're now baked in — <b>don't re-introduce the false verdicts they prevent</b>:</p>
+<div class="panel">
+  <ul class="tight" style="margin:0">
+    <li><b>Negation-awareness.</b> A "<em>do NOT use</em> the legacy <code>\n\nHuman:</code> format" warning is <b>correct guidance</b>, not a violation. The grader only flags a bad pattern that's actually <em>used</em>, not one that's named to forbid it. (Eval&nbsp;2 · [1].)</li>
+    <li><b>OR-predicates.</b> Some assertions pass on <em>any</em> of several routes — e.g. eval&nbsp;2 · [4] passes on an injected client <em>or</em> a two-ARN note <em>or</em> a max-turns guard; eval&nbsp;1 · [4] on Cedar <em>or</em> a guardrail-blindness note <em>or</em> <code>aws:sourceVpce</code> <em>or</em> a read/write split. Don't demand one specific route.</li>
+    <li><b>Altitude / use-case awareness.</b> Naming an API (<code>RetrieveAndGenerate</code>) is <em>not</em> "writing code" (eval&nbsp;0 · [3]); asking for business inputs is <em>not</em> a credential request (eval&nbsp;0 · [4]); a "define the use case first" opening passes the assess-first bar even without the literal word "assess" (eval&nbsp;5 · [0]).</li>
+  </ul>
+</div>
+
+<h2>Per-eval walkthrough</h2>
+<p class="muted">For each eval: the prompt, the skill's specific job, why the Δ is what it is, then every assertion with its PASS rule, the real evidence from both runs, and the mis-grading trap. Quotes are from the iteration-2 outputs (lightly de-marked for readability).</p>
+
+<!-- ================= EVAL 0 ================= -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 0 — assess-service-selection</span><span class="target">aws-ai-assess</span><span class="score">with <b>100%</b> · base <b>80%</b> · <span class="delta-pos">+20</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"Mid-size insurance co. Internal support portal to answer employees' questions from ~4,000 policy PDFs (change a few times a year). VP says 'just fine-tune a model on Bedrock'. Which service, do we need to fine-tune, rough cost?"</div>
+    <div class="lbl">The skill's job here</div>
+    <p class="why">Select the service at assessment altitude — recommend RAG over fine-tuning, surface Amazon Q Business as the purpose-built managed assistant, <b>and</b> frame the managed-vs-self-hosted (SageMaker / instance-hour-vs-per-token) trade-off — with no code and no credentials.</p>
+    <div class="lbl">Why the Δ is +20</div>
+    <p class="why muted">Skill 5/5 vs baseline 4/5 on the single axis of <b>[1]</b>: it named a SageMaker self-host tier and an instance-hour-vs-per-token cost spectrum; the baseline stayed inside managed-RAG land (Bedrock KB vs Q Business, per-user pricing) and never named a self-host axis.</p>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[0]</span> Recommends RAG / a Knowledge Base over fine-tuning, with a stated reason</div>
+      <div class="rule"><b>PASS rule:</b> names RAG/KB <b>and</b> fine-tuning <b>and</b> a preference phrase (instead of / rather than / over / no need / overkill / start with).</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"Approach: RAG, not fine-tuning. It matches the need (fresh knowledge + citations)."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"…is a textbook retrieval-augmented generation (RAG) problem, not a fine-tuning problem."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> both later add a "when fine-tuning <em>would</em> make sense" caveat — don't misread that acknowledgment as an endorsement. The load-bearing signal is the explicit "not fine-tuning" preference, not the caveat.</div>
+    </div>
+
+    <div class="arow disc">
+      <div class="atitle"><span class="anum">[1]</span> Frames a real managed-vs-self-hosted trade-off <span class="tag disc">discriminator</span></div>
+      <div class="rule"><b>PASS rule:</b> names Bedrock <b>and</b> (SageMaker/self-host <b>or</b> both "instance-hour" and "per-token") <b>and</b> a trade-off word. "managed RAG" alone is insufficient.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"SageMaker is for training/hosting your own models. Using it here means paying for GPU/CPU instance-hours 24×7 to serve what Bedrock serves per-token." (table: "Per instance-hour, 24×7" vs "Per token")</q></div>
+        <div class="ev fail"><div class="who">baseline <span class="pill fail">✗</span></div><q>No SageMaker/self-host tier and no instance-hour-vs-per-token axis. The only trade-off is Bedrock KB vs Q Business (both managed), per-user pricing — "managed RAG" alone.</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the baseline <em>does</em> say Provisioned Throughput is "billed by the hour" and Q Business is "per user per month" — a hollow skim could match an hour/token axis and wrongly PASS it. But that hourly cost is for a fine-tuned <em>hosted</em> model, not a self-host-vs-managed spectrum, and SageMaker is never named. This is the exact discriminating axis — hold the line.</div>
+    </div>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[2]</span> Surfaces Amazon Q Business as the purpose-built managed assistant <span class="tag new">new in iter-2</span></div>
+      <div class="rule"><b>PASS rule:</b> mentions "Q Business" or "Amazon Q". (This is the one axis the baseline used to beat the skill on — now an honest tie.)</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"Recommended service: start with Amazon Q Business, AWS's purpose-built, permission-aware Q&amp;A assistant over your own documents."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"…or Amazon Q Business if you want a more turnkey, less-code option."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> genuine string-match tie, but placement differs — the skill <em>leads</em> with Q Business; the baseline offers it as a secondary fallback. The rule only needs the mention; don't over-credit or dock for placement.</div>
+    </div>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[3]</span> Does not jump straight to writing implementation code</div>
+      <div class="rule"><b>PASS rule:</b> FAIL only if it contains <code>import boto3</code> <b>and</b> a <code>def name(...)</code>; otherwise PASS.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>Prose + comparison tables only; no <code>import boto3</code>, no <code>def</code>; closes "it's a design-time recommendation."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>Names APIs ("RetrieveAndGenerate API — one call returns a grounded answer") but writes no code block.</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the baseline drops code-adjacent names (<code>RetrieveAndGenerate</code>, API Gateway + Lambda, Titan embeddings) that <em>look</em> like jumping to implementation. Naming an API is not writing code — the rule fails only on <code>import boto3</code> AND a <code>def</code>.</div>
+    </div>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[4]</span> Does not ask for or use real AWS credentials</div>
+      <div class="rule"><b>PASS rule:</b> FAIL if it asks for an access key / secret / credentials / profile, or embeds a real <code>aws_access_key_id=…</code>; else PASS.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"No AWS account was touched to produce this; it's a design-time recommendation."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>No credentials requested; asks only to "validate with the AWS Pricing Calculator before you commit."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the skill's "What I need from you to firm this up" asks for headcount, where the PDFs live, compliance rules — don't conflate a <em>business-input</em> ask with a credential request. None of it requests a key/secret/profile.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= EVAL 1 ================= -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 1 — design-agent-rag-iam</span><span class="target">aws-ai-design</span><span class="score">with <b>100%</b> · base <b>80%</b> · <span class="delta-pos">+20</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"Going Bedrock + RAG for the insurance support assistant. Design it. Single agent or a few? Vector store? Where do guardrails sit, and what IAM does the Lambda need to call the model?"</div>
+    <div class="lbl">The skill's job here</div>
+    <p class="why">Design the Bedrock+RAG assistant <b>and</b> surface the tool-authorization boundary — Cedar/Verified Permissions gating tool <em>calls</em> before dispatch, which text guardrails structurally cannot see.</p>
+    <div class="lbl">Why the Δ is +20</div>
+    <p class="why muted">The entire delta rides on <b>[4]</b>: with_skill adds a second control layer (Verified Permissions/Cedar at the tool boundary, "never sees a tool call", a read/write split, <code>aws:sourceVpce</code>); the baseline never names Cedar/Verified Permissions or any tool-authorization boundary. The other four assertions are honest ties.</p>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[0]</span> Makes a single-vs-multi-agent recommendation with reasoning</div>
+      <div class="rule"><b>PASS rule:</b> names single/multi-agent <b>and</b> a reason word (because / since / simpler / start with / no need / keep it).</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"One agent with several focused tools. A support assistant doesn't clear the bar for multi-agent; going multi would roughly triple latency and multiply failure points for no gain."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"Start with a single agent. Resist the urge to build a multi-agent supervisor system on day one — it multiplies latency, token cost, and operational surface."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the baseline also debates "Bedrock Agents vs. self-orchestrated Lambda" — a managed-vs-DIY axis, not agent count. Don't let that hedge read as indecision; "Start with a single agent" is unambiguous.</div>
+    </div>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[1]</span> Names a concrete vector store with a trade-off</div>
+      <div class="rule"><b>PASS rule:</b> names OpenSearch / S3 Vectors / pgvector / Aurora / Pinecone / Kendra <b>and</b> a trade-off word.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"Bedrock Knowledge Base backed by S3 Vectors as the default (idle-cheap, ~90% under OpenSearch Serverless's OCU floor)."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"Amazon OpenSearch Serverless | Default / fastest path… | Aurora PostgreSQL + pgvector | …want lower steady-state cost."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the trade-off word must attach to a <em>named</em> store, not float free. Both satisfy it — no hollow-match risk here.</div>
+    </div>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[2]</span> Places guardrails explicitly in the request path</div>
+      <div class="rule"><b>PASS rule:</b> "guardrail" <b>and</b> a placement word (input / output / before / after / request / response / apply / both).</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"input Guardrail → agent (Converse) → [per tool call] Verified Permissions IsAuthorized → tool → output Guardrail (+ grounding)."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"…applied at the inference boundary — i.e., wrapping the model call on both the way in and the way out."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> with_skill says "model boundary" / "input…output Guardrail" rather than the literal "request path" — don't miss it over wording. Placement words are abundant in both.</div>
+    </div>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[3]</span> Least-privilege IAM flagging BOTH foundation-model AND inference-profile ARNs</div>
+      <div class="rule"><b>PASS rule:</b> IAM/role/policy <b>and</b> "inference-profile" <b>and</b> "foundation-model".</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"the execution role must allow the action on both the <code>foundation-model/*</code> ARN and the <code>inference-profile/*</code> ARN — because your model id is a <code>us.</code>-prefixed inference profile."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"the permission needs two kinds of ARN — the inference-profile ARN and the underlying foundation-model ARNs in every region the profile can route to."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> both strings appear verbatim, so the grader auto-passes both — but it's a <em>real</em> conceptual pass (each explains WHY both ARNs are needed: silent AccessDenied), not a keyword coincidence.</div>
+    </div>
+
+    <div class="arow disc">
+      <div class="atitle"><span class="anum">[4]</span> Flags the tool-authorization boundary guardrails cannot cover <span class="tag disc">discriminator</span><span class="tag new">new in iter-2</span></div>
+      <div class="rule"><b>PASS rule:</b> (Cedar/Verified Permissions <b>and</b> "tool") <b>or</b> a "guardrails don't see tool calls" phrasing <b>or</b> <code>aws:sourceVpce</code> <b>or</b> a read/write trust split tied to a role/agent.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"Cedar authorization at the tool boundary (governs actions)… Critically, it never sees a tool call… evaluated in-process by calling <code>verifiedpermissions:IsAuthorized</code> before each tool dispatch."</q></div>
+        <div class="ev fail"><div class="who">baseline <span class="pill fail">✗</span></div><q>No Cedar, no Verified Permissions, no <code>aws:sourceVpce</code>, no read/write trust split. Guardrails are only "at the model I/O boundary, not inside retrieval" — a retrieval caveat, never a tool-authorization boundary.</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> <b>THE discriminator.</b> The baseline's "Separate the client Lambda role from the agent/KB service roles — least privilege per component" <em>looks</em> like a trust split and could be mis-passed — but it's per-component role separation, NOT the read-vs-write tool-authorization boundary the rule wants, and there is zero Cedar/Verified-Permissions/sourceVpce. Do not credit it.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= EVAL 2 ================= -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 2 — build-converse-tool-loop</span><span class="target">aws-ai-build</span><span class="score">with <b>100%</b> · base <b>100%</b> · <span class="delta-zero">0 (honest)</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"Write the Python (boto3) for a Bedrock tool-use loop — model can call get_policy_status(policy_id) then answer. Claude Sonnet. Core loop is fine."</div>
+    <div class="lbl">The skill's job here</div>
+    <p class="why">Produce a correct native Converse tool-use loop <b>and</b> bake in cross-stage discipline (dependency-injected client, two-ARN IAM note, max-turns guard) that makes it offline-testable.</p>
+    <div class="lbl">Why the Δ is 0 (and that's correct)</div>
+    <p class="why muted">Honest 5/5 vs 5/5. Both write a correct Converse loop with a named model-id constant, and the baseline independently adds its <em>own</em> max-turns guard, which satisfies <b>[4]</b>'s OR-clause — so the grader can't reward the skill's extra discipline (injected <code>brt</code> client + two-ARN note). This is the one eval where the assertion can't fully isolate skill value; see [4]'s watch line.</p>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[0]</span> Uses the native Converse API, not invoke_model completions</div>
+      <div class="rule"><b>PASS rule:</b> <code>.converse(</code> / "converse" / <code>converse_stream</code> / <code>bedrock-runtime</code> appears.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"native <code>bedrock-runtime.converse()</code> function-calling round-trip … <code>resp = brt.converse(messages=messages, **kwargs)</code>"</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"The cleanest way to do this on Bedrock is the Converse API (<code>bedrock-runtime.converse</code>) … <code>response = bedrock.converse(</code>"</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> with_skill spells out <code>invoke_model</code> inside a "deliberately NOT" warning — don't mistake that mention for actual <code>invoke_model</code> use.</div>
+    </div>
+
+    <div class="arow disc">
+      <div class="atitle"><span class="anum">[1]</span> Does NOT use the legacy <code>\n\nHuman:</code> / <code>max_tokens_to_sample</code> format <span class="tag disc">discriminator</span></div>
+      <div class="rule"><b>PASS rule:</b> FAIL <em>only</em> if a legacy marker is actually USED. A "do NOT use this legacy format" warning is negation-aware → PASS.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"Deliberately not the legacy <code>invoke_model</code> + <code>\n\nHuman:</code> + <code>response["completion"]</code> format, which is broken against current Claude models."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>No <code>\n\nHuman:</code>, <code>max_tokens_to_sample</code>, or completion body anywhere; Converse messages throughout.</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> negation-aware. with_skill <em>does</em> print <code>\n\nHuman:</code> and <code>invoke_model</code> — but only to forbid them. A naive grep would false-FAIL the skill answer; the baseline is clean by simple absence. Both correctly PASS.</div>
+    </div>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[2]</span> Implements the full tool-use loop (toolConfig, stopReason tool_use, toolResult echoing toolUseId)</div>
+      <div class="rule"><b>PASS rule:</b> <code>toolConfig</code> <b>and</b> (<code>tool_use</code>/<code>stopReason</code>) <b>and</b> <code>toolResult</code> <b>and</b> <code>toolUseId</code> all present.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q><code>kwargs = {"modelId": model_id, "toolConfig": TOOL_CONFIG}</code> … <code>if resp["stopReason"] != "tool_use":</code> … <code>"toolUseId": tool_use_id,  # echo the id so the model pairs the result</code></q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q><code>toolConfig=TOOL_CONFIG</code> … <code>stop_reason = response["stopReason"]</code> … <code>"toolResult": {"toolUseId": tool_use["toolUseId"]</code> … "If it's <code>end_turn</code> … the model gave a final answer."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the assertion text names <code>end_turn</code>, but the rule does <em>not</em> require the literal token. with_skill exits via <code>stopReason != "tool_use"</code> and never prints "end_turn" — don't fail it for that (the baseline happens to print it).</div>
+    </div>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[3]</span> Passes the model id as a parameter/constant, not a hard-coded permanent id</div>
+      <div class="rule"><b>PASS rule:</b> <code>MODEL_ID</code>/<code>model_id</code> assigned with <code>=</code> or <code>:</code>.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q><code>DEFAULT_MODEL_ID = "us.anthropic.claude-sonnet-4-5-…"</code> … <code>def run_conversation(brt, user_text, model_id=DEFAULT_MODEL_ID, …)</code></q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q><code>MODEL_ID = "us.anthropic.claude-sonnet-4-…"</code> … "Swap for the one enabled in your account."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> both assign a concrete id, so a skimmer could argue "still hard-coded." The rule only wants a <em>named, swappable</em> constant — both satisfy it; with_skill additionally threads it as a function param.</div>
+    </div>
+
+    <div class="arow disc">
+      <div class="atitle"><span class="anum">[4]</span> Bakes in cross-stage discipline the baseline lacks <span class="tag disc">intended discriminator — honest tie</span><span class="tag new">new in iter-2</span></div>
+      <div class="rule"><b>PASS rule:</b> an injected client <code>def f(...client...)</code> <b>or</b> both foundation-model + inference-profile <b>or</b> a max-turns/max-iterations guard.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"the <code>bedrock-runtime</code> client is dependency-injected … an inference-profile call needs both the <code>foundation-model/*</code> and the <code>inference-profile/*</code> resource ARNs … <code>MAX_TURNS = 10</code>" (all three routes)</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q><code>def run_conversation(user_prompt, max_turns=5)</code> … "Safety guardrail: the <code>max_turns</code> cap stops a runaway loop" … <code>raise RuntimeError("Exceeded max turns…")</code></q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the intended discriminator, but an honest Δ0. The baseline passes <em>solely</em> on its own max-turns guard (module-level client, single-ARN note). The OR-rule includes max-turns, so it legitimately passes; with_skill uniquely has <em>all three</em> routes. This is the one place the skill's real edge — an offline-testable injected client that pre-wires the eval-4 Stubber seam — isn't isolated by the assertion. <b>If you think the eval should push harder here, this is the row to flag.</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= EVAL 3 ================= -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 3 — deploy-cdk-two-arn</span><span class="target">aws-ai-deploy</span><span class="score">with <b>100%</b> · base <b>67%</b> · <span class="delta-pos">+33</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"Give me AWS CDK (Python) to deploy this agent as a Lambda with the right Bedrock permissions. Heads up: we use the us. cross-region model ids."</div>
+    <div class="lbl">The skill's job here</div>
+    <p class="why">Emit CDK v2 Python that encodes the two-ARN cross-region Bedrock grant <b>and</b>, as the deploy stage, stops at offline validation (cfn-lint + cdk-nag + a human gate) instead of running a real <code>cdk deploy</code>.</p>
+    <div class="lbl">Why the Δ is +33</div>
+    <p class="why muted">with_skill adds a cdk-nag Aspect, a cfn-lint step, and an explicit "Human gate" that refuses <code>cdk deploy</code> here → passes the tightened <b>[2]</b>; the baseline jumps straight to <code>cdk bootstrap</code>/<code>synth</code>/<code>deploy</code> with none → fails <b>[2]</b>. Sole delta (3/3 vs 2/3).</p>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[0]</span> Produces AWS CDK v2 Python (aws-cdk-lib) with a Lambda and an execution role</div>
+      <div class="rule"><b>PASS rule:</b> <code>aws_cdk</code>/<code>aws-cdk-lib</code>/<code>cdk.Stack</code>/<code>constructs</code> <b>and</b> "lambda".</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q><code>import aws_cdk as cdk</code> / <code>aws_lambda as lambda_</code> … <code>agent_fn = lambda_.Function(</code> … <code>agent_fn.add_to_role_policy(</code></q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q><code>from aws_cdk import (Stack, Duration, aws_lambda as _lambda, …)</code> … <code>agent_fn = _lambda.Function(</code> … <code>agent_fn.add_to_role_policy(</code></q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> neither declares an explicit <code>iam.Role</code>; both let <code>add_to_role_policy</code> auto-create the execution role. A human hunting for a literal <code>Role</code> construct could wrongly fail both — the mechanical rule passes both.</div>
+    </div>
+
+    <div class="arow disc">
+      <div class="atitle"><span class="anum">[1]</span> Grants bedrock:InvokeModel on BOTH a foundation-model ARN AND an inference-profile ARN <span class="tag disc">discriminator</span></div>
+      <div class="rule"><b>PASS rule:</b> both "foundation-model" <b>and</b> "inference-profile" appear (the two-ARN trap).</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q><code>resources=[ …:inference-profile/{profile_id}", ]</code> … <code>resources=[ f"arn:aws:bedrock:{r}::foundation-model/{model_id}" for r in US_PROFILE_MEMBER_REGIONS ]</code></q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q><code>resources=inference_profile_arns + foundation_model_arns</code> … <code>…:inference-profile/{INFERENCE_PROFILE_ID}</code> … <code>…::foundation-model/{FOUNDATION_MODEL_ID}</code></q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> both say the ARN names in prose warnings too, so the grep matches trivially — <b>verify the two ARNs are actually GRANTED</b> in a <code>PolicyStatement resources=</code> list (both are), not merely described. This eval's iteration-1 weakness (the prompt telegraphs the answer with "us. cross-region model ids") still applies — the discriminating work here is now <b>[2]</b>, not this row.</div>
+    </div>
+
+    <div class="arow disc">
+      <div class="atitle"><span class="anum">[2]</span> Requires validation discipline beyond <code>cdk synth</code> — cfn-lint OR cdk-nag OR a deploy gate <span class="tag disc">discriminator</span><span class="tag new">tightened in iter-2</span></div>
+      <div class="rule"><b>PASS rule:</b> cfn-lint / cdk-nag / NagSuppression / AwsSolutionsChecks <b>or</b> a deploy gate/approval/human-confirm phrasing. <b>A bare <code>cdk synth</code> now FAILS.</b></div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q><code>from cdk_nag import AwsSolutionsChecks, NagSuppressions</code> … <code>pip install cfn-lint &amp;&amp; cfn-lint template.json</code> … "it is not run here — it happens at the validate stage with throwaway sandbox credentials and explicit approval."</q></div>
+        <div class="ev fail"><div class="who">baseline <span class="pill fail">✗</span></div><q>Only a bare deploy block — <code>cdk bootstrap … cdk synth … cdk deploy</code> — no cfn-lint, no cdk-nag, no human/approval gate.</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the baseline is padded with "Notes and things to check", least-privilege warnings against <code>resources=["*"]</code>, and a post-deploy <code>aws lambda invoke</code> smoke test — all of which <em>read</em> like validation discipline. Under the tightened rule <b>none of that counts</b>: no cfn-lint/cdk-nag/gate, and it runs <code>cdk deploy</code> unguarded. Don't let security prose or the smoke test trigger a false pass.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= EVAL 4 ================= -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 4 — validate-offline-stubber</span><span class="target">aws-ai-validate</span><span class="score">with <b>100%</b> · base <b>75%</b> · <span class="delta-pos">+25</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"How do I unit-test this Bedrock agent offline? No CI hitting a real account. It calls Converse and also invokes a SageMaker endpoint for a risk score."</div>
+    <div class="lbl">The skill's job here</div>
+    <p class="why">Surface the load-bearing fact that <b>moto cannot mock <code>bedrock-runtime</code></b> — so botocore Stubber is mandatory for the Converse side — while still using moto for the SageMaker control plane and locking CI offline with dummy creds plus a network tripwire.</p>
+    <div class="lbl">Why the Δ is +25</div>
+    <p class="why muted">with_skill states "moto cannot mock bedrock-runtime" outright → 4/4; the baseline only <em>hedges</em> ("not well supported by moto") and the grader failed <b>[1]</b> → 3/4. The crispness of that claim is the entire delta.</p>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[0]</span> Recommends botocore Stubber for bedrock-runtime (and sagemaker-runtime)</div>
+      <div class="rule"><b>PASS rule:</b> "stubber" <b>and</b> (bedrock-runtime / converse / sagemaker-runtime).</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"Short answer: use the botocore <code>Stubber</code> for both calls, dependency-inject the two boto3 clients."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"use <code>botocore.stub.Stubber</code> to feed canned responses to Converse and to the SageMaker endpoint's <code>invoke_endpoint</code>."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> "stubber" matches trivially; the real check is that it's tied to <em>both</em> the Converse call and sagemaker-runtime <code>invoke_endpoint</code> — both do, so it's a genuine pass.</div>
+    </div>
+
+    <div class="arow disc">
+      <div class="atitle"><span class="anum">[1]</span> Notes that moto CANNOT mock bedrock-runtime, so Stubber is required <span class="tag disc">discriminator</span></div>
+      <div class="rule"><b>PASS rule:</b> a phrase stating moto can't / doesn't mock / support / cover bedrock(-runtime).</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"moto cannot mock <code>bedrock-runtime</code>. Neither <code>converse</code> nor <code>invoke_model</code>. So for the Bedrock side there is exactly one pure-unit path: botocore <code>Stubber</code>."</q></div>
+        <div class="ev fail"><div class="who">baseline <span class="pill fail">✗</span></div><q>Hedged: "Bedrock Runtime Converse and SageMaker Runtime <code>invoke_endpoint</code> are not well supported by moto" — never the crisp "moto cannot mock bedrock-runtime". Grader marked it fail.</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> <b>the borderline call to scrutinize.</b> The baseline <em>does</em> say "not well supported by moto", which literally brushes the rule's "…support…bedrock" wording — a skimmer (or the grader) could over-credit it. But it's hedged ("not well supported" ≠ "cannot mock") and lumps bedrock-runtime with sagemaker-runtime instead of isolating moto's bedrock-runtime gap; authoritative <code>grading.json</code> fails it. <b>If you judge "not well supported" close enough, this is exactly the override to record</b> — it's the one grade in the set most open to reasonable disagreement.</div>
+    </div>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[2]</span> Uses moto (or equivalent) for supporting infra / SageMaker control plane</div>
+      <div class="rule"><b>PASS rule:</b> "moto" <b>and</b> (s3 / iam / lambda / step functions / control plane / infra / dynamodb).</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"SageMaker <em>control</em> plane (create endpoint/model, IAM) | moto <code>@mock_aws</code>."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"moto | Control-plane / stateful services (S3, DynamoDB, SQS…)."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> both mention moto twice — once <em>negatively</em> (runtime "not well supported") and once <em>positively</em> (control plane). Score the positive control-plane use for this assertion; don't let the neg-context runtime mention be mistaken for the infra match.</div>
+    </div>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[3]</span> Reinforces offline-first / no real credentials in CI</div>
+      <div class="rule"><b>PASS rule:</b> offline / no-real-credential / dummy-credential / don't-hit-AWS phrasing.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"Everything below runs pure-Python, no Docker, no network, no credentials."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"No credentials, no network, fully deterministic."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> "offline" / "no credentials" matches instantly — verify it's backed by real CI enforcement (both add dummy-cred env scrubbing plus a network tripwire), so it's substantive, not a title-only keyword pass.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= EVAL 5 ================= -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 5 — router-where-to-start</span><span class="target">aws-ai-lifecycle</span><span class="score">with <b>100%</b> · base <b>33%</b> · <span class="delta-pos">+67</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"We want to add some GenAI to our AWS app but have no idea where to start. What's the actual process/steps?"</div>
+    <div class="lbl">The skill's job here</div>
+    <p class="why">The router must open by framing the capability and selecting the service (not code), name the five-stage <b>assess → design → build → deploy → validate</b> progression as its signature, and gate real credentials to the final validate step.</p>
+    <div class="lbl">Why the Δ is +67</div>
+    <p class="why muted">with_skill laid out all five named stages in a table and gated credentials to the last step → 3/3; the baseline used ad-hoc "Step 1–9" labels (only "Build" coincides) and had the user enable Bedrock / request model access early → satisfies only the use-case-first assertion (1/3). This is the router's core value, and where the skill most outperforms a generic answer.</p>
+
+    <div class="arow">
+      <div class="atitle"><span class="anum">[0]</span> Starts by assessing the capability and selecting the AWS service (not code/deploy)</div>
+      <div class="rule"><b>PASS rule:</b> opens with assess / select-service / which-service / capability / use-case-first / define-the-problem.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"the honest first step is not 'pick a model.' It's frame the need and pick the service."</q></div>
+        <div class="ev pass"><div class="who">baseline <span class="pill pass">✓</span></div><q>"Step 1 — Nail down the use case before touching AWS … Don't start with the tech."</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the rule allows a use-case-first opening, so the baseline passes on "Nail down the use case" even without any explicit "assess"/"select-service" framing. A skimmer keying only on the literal word "assess" (which only with_skill uses) would wrongly fail the baseline — this is a deliberate fairness allowance, not a miss.</div>
+    </div>
+
+    <div class="arow disc">
+      <div class="atitle"><span class="anum">[1]</span> Lays out the stage progression assess → design → build → deploy → validate <span class="tag disc">discriminator</span></div>
+      <div class="rule"><b>PASS rule:</b> ≥4 of {assess, design, build, deploy, validate} appear as stage <b>names</b>.</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>5-stage table: "Assess — frame the need + pick the service" … "Design" … "Build" … "Deploy" … "Validate — prove it holds up."</q></div>
+        <div class="ev fail"><div class="who">baseline <span class="pill fail">✗</span></div><q>Stages labeled "Step 1 … Step 9"; only "Step 5 — Build a tiny prototype" matches a router stage name; no assess/design/deploy/validate as names (1/5).</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the baseline has near-miss words that inflate a loose count: "Build a tiny prototype", "Step 7 — … evaluation", "Productionize" (Step 9). Don't credit "evaluation"→validate or "prototype/productionize"→deploy — the rule needs them as the actual stage <b>names</b>. Only "Build" qualifies → 1/5, not 3–4/5.</div>
+    </div>
+
+    <div class="arow disc">
+      <div class="atitle"><span class="anum">[2]</span> Emphasizes offline-first and that real credentials are gated to the validate step <span class="tag disc">discriminator</span></div>
+      <div class="rule"><b>PASS rule:</b> offline <b>or</b> a credential-gating phrase (credentials gated to / only at validate / never before).</div>
+      <div class="evpair">
+        <div class="ev pass"><div class="who">with_skill <span class="pill pass">✓</span></div><q>"you don't touch a real AWS account, credentials, or anything that costs money until the very last step … This is the only place real credentials appear."</q></div>
+        <div class="ev fail"><div class="who">baseline <span class="pill fail">✗</span></div><q>No offline-first/credential-gating; instead sends the user to real AWS early: "Step 4 … Enable Bedrock", "Request model access", then a live Converse call.</q></div>
+      </div>
+      <div class="watch"><b>⚠ Watch:</b> the baseline's Step-1 heading "Nail down the use case <em>before touching AWS</em>" is a hollow near-match — a skimmer could read "before touching AWS" as credential-gating and wrongly PASS it. But it scopes only the use-case step; Steps 4–5 immediately enable Bedrock and make a real credentialed call, so nothing is actually gated.</div>
+    </div>
+  </div>
+</div>
+
+<h2>Calibration notes for annotators</h2>
+<div class="panel">
+  <ul class="tight" style="margin:0">
+    <li><b>The grader is pattern-based.</b> It checks for keywords/structures, not deep correctness. Where it passed something hollow or failed something genuine, that's the highest-value feedback — record it as an override.</li>
+    <li><b>A strong baseline is expected and healthy.</b> Opus already knows well-documented AWS APIs, so a Δ0 on a documented task (eval&nbsp;2) is honest, not a failure. The skill's measured lift lives at the <span class="tag disc">discriminator</span> rows — the non-obvious gotchas (eval&nbsp;1's tool-auth boundary, eval&nbsp;4's moto gap) and the family's staged process (eval&nbsp;5).</li>
+    <li><b>The one grade most open to disagreement</b> is eval&nbsp;4 · [1] — the baseline's hedged "not well supported by moto". If you'd credit it, say so; that's the calibration signal iteration&nbsp;3 needs.</li>
+    <li><b>Two eval-design flags carried from iteration&nbsp;1:</b> eval&nbsp;2 · [4] still can't isolate the skill's injected-client edge (honest Δ0); eval&nbsp;3 · [1] still telegraphs the two-ARN answer in the prompt (the discriminating work moved to [2]). If you agree these should change, flag them.</li>
+    <li><b>Where to push the skill harder:</b> if a with-skill answer was merely as-good-as baseline, note what would make the skill's version <em>distinctly</em> better — that's what turns an honest tie into a real, isolated win.</li>
+  </ul>
+</div>
+
+<footer>aws-ai-* skill family · eval iteration 2 · annotator rubric walkthrough · grounded in the actual run outputs</footer>
+</div>
+</body>
+</html>

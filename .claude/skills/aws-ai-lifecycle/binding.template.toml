@@ -1,0 +1,20 @@
+# AWS-AI workspace-binding — template (copy to .aws-ai/binding.toml and confirm)
+
+[binding]
+methodology_source    = "cases/aws-ai"        # modern "AI Agents on AWS" corpus (Strands + AgentCore)
+methodology_secondary = "cases/aws"           # "System Design on AWS" — concept/decision backdrop
+research_home         = "docs/research"        # external-research OKF Concepts the stages defer to
+constitution          = "<none>"               # workspace AI principles file consulted before human gates
+primary_language      = "python"
+iac_tool              = "cdk-python"           # deploy surface: boto3 + AWS CDK (Python)
+region_default        = "us-east-1"
+aws_profile           = "<none>"               # set ONLY at the gated aws-ai-validate real-path
+test_stack            = "stubber+moto"         # offline default (botocore Stubber + moto)
+localstack            = "off"                  # opt-in integration layer (needs Docker running)
+assess_home           = ".aws-ai/assess/"      # capability briefs + service-selection matrices
+design_home           = ".aws-ai/design/"      # solution designs (topology, RAG, IAM boundaries)
+build_home            = ".aws-ai/build/"        # implementation scaffolds / notebooks
+deploy_home           = ".aws-ai/deploy/"       # CDK apps + cdk synth output
+validate_home         = ".aws-ai/validate/"     # test/eval/harness reports
+diagram_notation      = "mermaid"
+breadth_read_tool     = "explore subagent"

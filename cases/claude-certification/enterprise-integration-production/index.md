@@ -1,0 +1,23 @@
+# Claude Architect — enterprise integration & production — bundle index
+
+OKF bundle. Each entry is a typed Concept. See the convention in [CONVENTIONS.md](../../../docs/CONVENTIONS.md).
+
+- [A/B testing and observability at scale](ab-testing-observability.md) — Hypothesis, assignment, primary metric, and sample size before a live split. Shadow testing when exposure is too risky. Trace, aggregate, detect, attribute.
+- [Checkpoint: cost and reliability calculator](cost-reliability-calculator.md) — Find a configuration that meets an $800/month ceiling and 3s p95. Prompt caching on a stable 5,000-token system prompt is the load-bearing lever.
+- [Checkpoint: critique the integration diagram](critique-integration.md) — Find the identity, data-handling, observability, and entry-point problems in a multi-tenant customer-service diagram. Leave sound components unselected.
+- [Watch-out: the demo cost profile that became the production bill](demo-cost-profile.md) — Failure trace: a document-triage POC bill was treated as a production cost and reliability model. Volume, token tail, and a missing fallback all failed together.
+- [Exercise: define the evaluation framework](eval-framework-exercise.md) — Draft metrics and grading methods for a claims intake system across accuracy, latency, safety, security, and cost. Prefer code-based checks wherever the behavior is unambiguous.
+- [Checkpoint: sort the eval types](eval-types-sort.md) — Place eight evaluation tasks into code-based or model-based buckets. The split is whether the check is deterministic or needs a judgment call.
+- [Watch-out: the eval suite that measured the wrong thing](eval-wrong-thing.md) — Failure trace: a contract-review assistant shipped on ten familiar contracts. The suite was not representative and was never updated after the prompt changed.
+- [Evals as acceptance criteria: building quality into the build process](evals-acceptance.md) — Write the eval suite before production code. Distinguish code-based, model-based, and human-review evals, and use the suite as the gate for every production change.
+- [Watch-out: the 50-session winner that wasn't](fifty-session-winner.md) — Failure trace: a 50-session prompt comparison looked like a 6-point win. The sample was underpowered, inputs were uncontrolled, and the metric was chosen after the fact.
+- [Glossary](glossary.md) — Module 2 key terms from 5xx errors through transient error: evals, caching, circuit breaker, data-residency pinning, RAG, p95, SSO, and related production vocabulary.
+- [Enterprise integration patterns: identity, auth, data, and observability](integration-patterns.md) — Compliance eliminates entry points first. Then decide identity, authorization, data handling, and observability. Server-side identity; minimum necessary data in context.
+- [Checkpoint: justify the feasibility call](justify-feasibility.md) — For each scenario, name both the feasibility verdict and the single load-bearing constraint. A verdict without the constraint is not defensible.
+- [Module introduction: quality, cost, and enterprise integration](orientation.md) — Module 2 intro. Five outcomes: evals as a quality gate before code, POC-to-production cost and reliability, use-case sizing, enterprise integration, and structured experiments.
+- [Watch-out: the PII field that went straight into the prompt](pii-in-prompt.md) — Failure trace: a clinical intake summarizer put SSN and insurance ID in the user message. Application request logs captured PHI that the language task did not need.
+- [From POC to production: cost, latency, and reliability](poc-to-production.md) — A demo hides cost, p95 latency, retries/fallbacks/circuit breakers, and architecture-specific failure modes. Model volume and tokens before committing.
+- [Production readiness builder](production-readiness-builder.md) — Capstone for an internal knowledge assistant: eval strategy, POC-to-production checklist, sizing against the four AI properties, integration pattern, and A/B posture.
+- [Watch-out: the scoping call that skipped the constraints](scoping-skipped-constraints.md) — Failure trace: capability was confirmed before volume, document length, and latency were gathered. The verdict was issued before the design was possible.
+- [Five takeaways](takeaways.md) — Evals as acceptance criteria, POC-to-production reliability, use-case sizing, enterprise integration patterns, and A/B testing with observability. Pointers into Module 3.
+- [Use-case sizing and feasibility](use-case-sizing.md) — Size call volume, token budget, model tier, and sensitivity. Scope capabilities to owners, then issue feasible / feasible-with-constraints / not-feasible plus an ROI map.

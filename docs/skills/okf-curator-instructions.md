@@ -22,8 +22,9 @@ repair. It is the short, path-resolved playbook.
 | Agent pointers | [../../AGENTS.md](../../AGENTS.md) |
 
 **This repo is the design workspace.** OKF here governs architecture and
-coding-rules *case* bundles — not a live `recipes/` tree. Keys marked `<none>`
-in the binding mean “skip that rule and say so.”
+case-study bundles (`cases/coding-rules`, `cases/aws`, `cases/aws-ai`,
+`cases/claude-certification`) — not a live `recipes/` tree. Keys marked `<none>` in the binding mean “skip that rule
+and say so.”
 
 ---
 
@@ -47,8 +48,8 @@ in the binding mean “skip that rule and say so.”
 | authored_research_home | `<none>` |
 | evidence_home | `<none>` |
 | context_mention_prefix | `<none>` |
-| knowledge_globs | `cases/coding-rules/**/*.md`, `docs/architecture/**/*.md`, `docs/sdd/**/*.md`, `docs/research/**/*.md`, `docs/skills/**/*.md` |
-| `[lint].declared_bundles` | `cases/coding-rules`, `docs/architecture` |
+| knowledge_globs | `cases/coding-rules/**/*.md`, `cases/aws/**/*.md`, `cases/aws-ai/**/*.md`, `cases/claude-certification/**/*.md`, `docs/architecture/**/*.md`, `docs/sdd/**/*.md`, `docs/research/**/*.md`, `docs/skills/**/*.md` |
+| `[lint].declared_bundles` | `cases/coding-rules`, `cases/aws`, `cases/aws-ai`, `cases/claude-certification`, `cases/claude-certification/platform-design`, `cases/claude-certification/enterprise-integration-production`, `cases/claude-certification/responsible-ai`, `cases/claude-certification/stakeholder-engagement`, `cases/claude-certification/team-enablement`, `docs/architecture` |
 | reserved | `index.md`, `log.md`, `README.md` |
 
 Skill body: `.cursor/skills/okf-curator/`. Scripts live next to `SKILL.md`.
@@ -97,7 +98,7 @@ Always finish with **Routine 4** (lint gate).
 ```text
 Load okf-curator. Resolve .okf/binding.toml (not placeholders). Capture:
 <what shipped or changed>. Prefer a home under a declared bundle
-(docs/architecture/ or cases/coding-rules/) or docs/research/ / docs/sdd/ as
+(docs/architecture/ or cases/{coding-rules,aws,aws-ai,claude-certification}/) or docs/research/ / docs/sdd/ as
 appropriate — recipes_home is <none> here. Add typed frontmatter, regenerate
 catalogs if the dir is a bundle, run lint_gate, paste exit code. STOP if a new
 declared_bundle registration is needed.

@@ -40,7 +40,10 @@ owning stage (or spawn an ADR).
    components?). "Unknown" is a legitimate verdict that names what probe
    would resolve it. Misalignments get a severity and an owner-stage
    (wrong data topology → arch-style; component/code drift →
-   arch-components + a fitness function here).
+   arch-components + a fitness function here). For the **GenAI**
+   intersection, when the system has an AWS AI/ML component, use the
+   Well-Architected GenAI + ML Lens checklist that **aws-ai-validate**
+   (the aws-ai-* family) supplies as this axis's criteria.
 3. **Wire governance.** Collect every ADR Compliance section and the
    fitness-function seeds from the characteristics worksheet into a
    governance table: what's automated (tool + rule sketch — ArchUnit /

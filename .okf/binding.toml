@@ -12,6 +12,9 @@ evidence_home          = "<none>"
 context_mention_prefix = "<none>"
 knowledge_globs        = [
   "cases/coding-rules/**/*.md",
+  "cases/aws/**/*.md",
+  "cases/aws-ai/**/*.md",
+  "cases/claude-certification/**/*.md",
   "docs/architecture/**/*.md",
   "docs/sdd/**/*.md",
   "docs/research/**/*.md",
@@ -19,7 +22,7 @@ knowledge_globs        = [
 ]
 
 [lint]
-declared_bundles  = ["cases/coding-rules", "docs/architecture"]
+declared_bundles  = ["cases/coding-rules", "cases/aws", "cases/aws-ai", "cases/claude-certification", "cases/claude-certification/platform-design", "cases/claude-certification/enterprise-integration-production", "cases/claude-certification/responsible-ai", "cases/claude-certification/stakeholder-engagement", "cases/claude-certification/team-enablement", "docs/architecture"]
 # `evals` = local live-evidence trees (probe reports, evidence bundles) that the
 # sdd-roles plans reference by relative path but that stay uncommitted per
 # evidence_home = <none>; classify as evidence so any such file is skipped as a

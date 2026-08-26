@@ -30,7 +30,10 @@ arch-decide as ADR(s).
    domain understood, characteristics worksheet on file, data architecture
    constraints, cloud/on-prem intent, organizational factors (budget, M&A
    posture), process/team maturity. Missing inputs are named, not assumed —
-   each becomes a `needs-input` tag on affected candidates.
+   each becomes a `needs-input` tag on affected candidates. When a candidate
+   involves an AWS AI/ML capability (Bedrock / SageMaker / agents), scope it as
+   a style option through **aws-ai-assess** (the aws-ai-* family), which returns
+   a managed-vs-self-hosted-vs-framework trade-off to fold into the matrix.
 2. **Determination 1 — one quantum or many?** Cluster the worksheet's
    characteristics (arch-characteristics step 7 output). One coherent set →
    monolithic family; multiple counteracting sets → distributed

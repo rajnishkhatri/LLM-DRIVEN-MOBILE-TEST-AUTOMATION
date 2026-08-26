@@ -1,0 +1,10 @@
+# apps/html-site/manifest.toml — commit-time allowlist (FR-1).
+catalog = "index.html"
+
+[[document]]
+source = "docs/ccar-p-prep-guide-v3.html"
+publish_as = "ccar-p-prep-guide-v3.html"
+
+[[document]]
+source = "docs/claude-architect-m1-atlas.html"
+publish_as = "claude-architect-m1-atlas.html"

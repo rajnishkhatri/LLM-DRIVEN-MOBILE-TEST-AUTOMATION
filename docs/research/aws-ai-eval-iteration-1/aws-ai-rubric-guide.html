@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>aws-ai-* eval — reviewer rubric guide</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --panel:#ffffff; --ink:#1a1d24; --muted:#5b6270; --line:#e3e6ec;
+    --accent:#3b6ea5; --good:#1f8a52; --bad:#b23a3a; --warn:#9a6a00;
+    --chip:#eef2f7; --code:#f2f4f8;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1216; --panel:#171b21; --ink:#e7eaf0; --muted:#9aa3b2; --line:#272d36;
+      --accent:#6fa8dc; --good:#5fd28f; --bad:#ef8a8a; --warn:#e0b25a;
+      --chip:#1f252d; --code:#12161b;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px;}
+  header h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em}
+  header p.sub{color:var(--muted);margin:0 0 24px;font-size:15px}
+  h2{font-size:19px;margin:34px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  h3{font-size:16px;margin:0 0 4px}
+  a{color:var(--accent)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .muted{color:var(--muted)}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+  code{background:var(--code);padding:1px 5px;border-radius:5px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12.5px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+  td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .delta-pos{color:var(--good);font-weight:600}
+  .delta-zero{color:var(--muted)}
+  .tablewrap{overflow-x:auto}
+  .evalcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:0;margin:16px 0;overflow:hidden}
+  .evalhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);background:linear-gradient(0deg,transparent,rgba(127,127,127,.04))}
+  .evalhead .id{font-weight:700;font-size:15px}
+  .evalhead .target{font-size:12.5px;color:var(--muted);background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+  .score{margin-left:auto;font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+  .score b{color:var(--ink)}
+  .evalbody{padding:16px 18px}
+  .prompt{background:var(--code);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 14px;font-style:italic;color:var(--ink)}
+  .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 4px;font-weight:700}
+  ul.rubric{margin:4px 0 0;padding-left:0;list-style:none}
+  ul.rubric li{padding:7px 0 7px 26px;position:relative;border-bottom:1px dashed var(--line)}
+  ul.rubric li:last-child{border-bottom:none}
+  ul.rubric li::before{content:"✓";position:absolute;left:2px;top:7px;color:var(--good);font-weight:700}
+  ul.rubric li .disc{display:inline-block;margin-left:6px;font-size:11.5px;color:var(--warn);border:1px solid var(--warn);border-radius:5px;padding:0 6px;vertical-align:1px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+  @media (max-width:640px){.cols{grid-template-columns:1fr}}
+  .col{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .col.good{border-left:3px solid var(--good)}
+  .col.poor{border-left:3px solid var(--bad)}
+  .col h4{margin:0 0 4px;font-size:13px}
+  .col.good h4{color:var(--good)} .col.poor h4{color:var(--bad)}
+  .note{font-size:13.5px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+  ol.steps{padding-left:20px} ol.steps li{margin:5px 0}
+  .callout{border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);border-radius:10px;padding:12px 16px;margin:12px 0}
+  .callout b{color:var(--warn)}
+  footer{margin-top:40px;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>aws-ai-* skill family — reviewer rubric guide</h1>
+  <p class="sub">How to review the eval outputs and leave feedback that improves the skills. Read this alongside the review viewer (<span class="mono">aws-ai-eval-review.html</span>).</p>
+</header>
+
+<div class="panel">
+  <h3 style="margin-top:0">What you're looking at</h3>
+  <p>Each of six realistic user prompts was answered two ways:</p>
+  <div class="chips">
+    <span class="chip"><b style="color:var(--good)">with_skill</b> — the agent read the <code>aws-ai-lifecycle</code> router, routed to the right stage, and followed its methodology + references</span>
+    <span class="chip"><b>without_skill</b> — the same prompt answered from general knowledge, no skill</span>
+  </div>
+  <p class="muted" style="margin-bottom:0">Your job isn't "is the answer good?" — a strong base model gives good AWS answers. Your job is: <b style="color:var(--ink)">does the skill make the answer reliably better on the things that matter</b> — the family's process and the non-obvious AWS gotchas the skill exists to encode?</p>
+</div>
+
+<h2>Scores at a glance (auto-graded)</h2>
+<p class="muted">Pass-rate against each eval's assertions. The grader is pattern-based, so treat it as a first pass — your judgment overrides it. Overall: <b style="color:var(--ink)">with-skill 100% vs baseline 80.6%, +19 points</b>.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Eval</th><th>Targets</th><th class="n">with_skill</th><th class="n">baseline</th><th class="n">Δ</th></tr></thead>
+  <tbody>
+    <tr><td>0 · assess-service-selection</td><td><code>aws-ai-assess</code></td><td class="n">100%</td><td class="n">75%</td><td class="n delta-pos">+25</td></tr>
+    <tr><td>1 · design-agent-rag-iam</td><td><code>aws-ai-design</code></td><td class="n">100%</td><td class="n">100%</td><td class="n delta-zero">0</td></tr>
+    <tr><td>2 · build-converse-tool-loop</td><td><code>aws-ai-build</code></td><td class="n">100%</td><td class="n">100%</td><td class="n delta-zero">0</td></tr>
+    <tr><td>3 · deploy-cdk-two-arn</td><td><code>aws-ai-deploy</code></td><td class="n">100%</td><td class="n">100%</td><td class="n delta-zero">0</td></tr>
+    <tr><td>4 · validate-offline-stubber</td><td><code>aws-ai-validate</code></td><td class="n">100%</td><td class="n">75%</td><td class="n delta-pos">+25</td></tr>
+    <tr><td>5 · router-where-to-start</td><td><code>aws-ai-lifecycle</code></td><td class="n">100%</td><td class="n">33%</td><td class="n delta-pos">+67</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="callout">
+  <b>Read the zeros correctly.</b> A <code>Δ0</code> doesn't mean the skill is useless — it means the base model already nails that <em>specific well-documented task</em> (writing a Converse loop, a RAG design, a CDK stack). The skill's measured lift shows up where the base model lacks knowledge: the family's <b>process</b> (eval&nbsp;5) and the <b>non-obvious gotchas</b> (eval&nbsp;4's moto gap, eval&nbsp;0's RAG-vs-fine-tune discipline). When you review, weigh whether the with-skill answer is <em>more reliable / safer / more grounded</em> even when both "pass."</div>
+
+<h2>How to leave feedback</h2>
+<ol class="steps">
+  <li>Open <span class="mono">aws-ai-eval-review.html</span>. The <b>Outputs</b> tab shows one eval at a time — the prompt, the with-skill output, and (expandable) the baseline + the assertion grades.</li>
+  <li>For each eval, use the rubric card below to check the <b>discriminating signals</b> (marked <span class="disc">discriminator</span>). Did the with-skill answer actually produce them? Did the baseline miss them?</li>
+  <li>Type into the <b>Feedback</b> box on any card where something's off — a wrong claim, a missed gotcha, an assertion that passed but shouldn't have, or a place the skill should push harder. <b>Empty feedback = "looks fine."</b></li>
+  <li>Click <b>Submit All Reviews</b> — it downloads <span class="mono">feedback.json</span>. Send that back and it drives the next iteration of the skills.</li>
+</ol>
+
+<h2>Per-eval rubric</h2>
+<p class="muted">For each: the prompt, what the skill is <em>supposed</em> to do that a naive answer wouldn't, the pass/fail assertions, and what good vs poor looks like.</p>
+
+<!-- EVAL 0 -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 0 — assess-service-selection</span><span class="target">aws-ai-assess</span><span class="score">with <b>100%</b> · base <b>75%</b> · <span class="delta-pos">+25</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"…support portal to answer from our ~4,000 policy PDFs… My VP keeps saying 'just fine-tune a model on Bedrock'… which service, and do we actually need to fine-tune? Rough cost?"</div>
+    <div class="lbl">The skill's job here</div>
+    <p style="margin:0">Push back on the fine-tune instinct with a reasoned <b>RAG-over-fine-tune</b> recommendation, frame Bedrock-managed vs SageMaker-self-host as a trade-off, and stay at assessment altitude (no code, no credentials).</p>
+    <div class="lbl">Rubric (assertions)</div>
+    <ul class="rubric">
+      <li>Recommends RAG / a Knowledge Base over fine-tuning, <b>with a stated reason</b> <span class="disc">discriminator</span></li>
+      <li>Frames it as a managed-vs-self-hosted trade-off, not one true answer</li>
+      <li>Does not jump straight to implementation code</li>
+      <li>Does not ask for or use real AWS credentials</li>
+    </ul>
+    <div class="cols">
+      <div class="col good"><h4>Good</h4>"Your PDFs change a few times a year → RAG/Knowledge Base keeps answers fresh without retraining; fine-tuning is overkill and costlier. Bedrock-managed if you want low ops; SageMaker if you need model control."</div>
+      <div class="col poor"><h4>Poor</h4>Agrees to fine-tune without questioning it, or jumps straight to boto3 code, or asks for an AWS account/keys.</div>
+    </div>
+    <div class="note">Baseline missed one assertion here — worth confirming which in the viewer.</div>
+  </div>
+</div>
+
+<!-- EVAL 1 -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 1 — design-agent-rag-iam</span><span class="target">aws-ai-design</span><span class="score">with <b>100%</b> · base <b>100%</b> · <span class="delta-zero">0</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"We're going Bedrock + RAG… Design it. Single agent or a few? Vector store? Where do guardrails sit, and what IAM does the Lambda need?"</div>
+    <div class="lbl">The skill's job here</div>
+    <p style="margin:0">A concrete topology decision with reasoning, a named vector store with a trade-off, explicit guardrail placement, and least-privilege IAM that flags the <b>two-ARN</b> requirement (foundation-model <em>and</em> inference-profile).</p>
+    <div class="lbl">Rubric (assertions)</div>
+    <ul class="rubric">
+      <li>Single-vs-multi-agent recommendation with reasoning</li>
+      <li>Names a concrete vector store (OpenSearch / S3 Vectors / pgvector) with a trade-off</li>
+      <li>Places guardrails explicitly in the request path</li>
+      <li>Least-privilege IAM flagging BOTH foundation-model &amp; inference-profile ARNs <span class="disc">discriminator</span></li>
+    </ul>
+    <div class="cols">
+      <div class="col good"><h4>Good</h4>"Single agent — one job, don't over-engineer. OpenSearch Serverless for vectors (managed, scales; pgvector if you already run Aurora). Guardrail on input and output. IAM: InvokeModel on the model ARN <em>and</em> the inference-profile ARN."</div>
+      <div class="col poor"><h4>Poor</h4>Hand-waves "set up IAM roles" without the two-ARN nuance; no vector-store trade-off; guardrails unmentioned.</div>
+    </div>
+    <div class="note">Δ0 because the base model (Opus) is genuinely strong on design and already knew inference profiles here. Judge whether the with-skill answer is <em>better grounded</em> (cites the boundaries more precisely) even at equal pass rate.</div>
+  </div>
+</div>
+
+<!-- EVAL 2 -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 2 — build-converse-tool-loop</span><span class="target">aws-ai-build</span><span class="score">with <b>100%</b> · base <b>100%</b> · <span class="delta-zero">0</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"Write the Python (boto3) for a Bedrock tool-use loop — model can call get_policy_status(policy_id) then answer. Claude Sonnet. Core loop is fine."</div>
+    <div class="lbl">The skill's job here</div>
+    <p style="margin:0">Use the <b>native Converse API</b> with a correct tool-use loop, and specifically <b>avoid the legacy</b> <code>\n\nHuman:</code>/<code>max_tokens_to_sample</code> completion format (a real bug in the corpus the skill corrects).</p>
+    <div class="lbl">Rubric (assertions)</div>
+    <ul class="rubric">
+      <li>Uses native Converse (<code>bedrock-runtime.converse</code>), not <code>invoke_model</code> completions</li>
+      <li>Does NOT use the legacy <code>\n\nHuman:</code>/<code>max_tokens_to_sample</code> format <span class="disc">discriminator</span></li>
+      <li>Real tool-use loop: <code>toolConfig</code> → <code>stopReason tool_use</code> → <code>toolResult</code> echoing <code>toolUseId</code> → <code>end_turn</code></li>
+      <li>Model id passed as a parameter/constant, not a hard-coded permanent id</li>
+    </ul>
+    <div class="cols">
+      <div class="col good"><h4>Good</h4>Clean <code>converse()</code> loop; on <code>tool_use</code> it runs the tool and returns a <code>toolResult</code> block echoing the exact <code>toolUseId</code>; explicitly warns off the legacy completion format.</div>
+      <div class="col poor"><h4>Poor</h4>Uses <code>invoke_model</code> with an Anthropic completion body, or forgets to echo <code>toolUseId</code>, or hard-codes a model id as if permanent.</div>
+    </div>
+    <div class="note">Δ0 — both produced a valid Converse loop. The base model knows this well. The skill's edge is insurance against the legacy-format trap; check the with-skill note that calls it out.</div>
+  </div>
+</div>
+
+<!-- EVAL 3 -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 3 — deploy-cdk-two-arn</span><span class="target">aws-ai-deploy</span><span class="score">with <b>100%</b> · base <b>100%</b> · <span class="delta-zero">0</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"Give me AWS CDK (Python) to deploy this agent as a Lambda with the right Bedrock permissions. Heads up: we use the us. cross-region model ids."</div>
+    <div class="lbl">The skill's job here</div>
+    <p style="margin:0">CDK v2 Python with an execution role granting <code>bedrock:InvokeModel</code> on <b>both</b> a foundation-model ARN and an inference-profile ARN — the classic AccessDenied trap — plus offline <code>cdk synth</code> validation.</p>
+    <div class="lbl">Rubric (assertions)</div>
+    <ul class="rubric">
+      <li>AWS CDK v2 Python (<code>aws-cdk-lib</code>) with a Lambda + execution role</li>
+      <li>InvokeModel on BOTH foundation-model AND inference-profile ARNs <span class="disc">discriminator</span></li>
+      <li>Mentions offline validation (<code>cdk synth</code>/<code>cfn-lint</code>/<code>cdk-nag</code>) or deploy-gating</li>
+    </ul>
+    <div class="cols">
+      <div class="col good"><h4>Good</h4>Both ARNs in the policy, with a comment on why cross-region inference needs the inference-profile ARN; notes synth is offline and no real deploy without approval.</div>
+      <div class="col poor"><h4>Poor</h4>Grants the foundation-model ARN only → the exact AccessDenied the skill exists to prevent.</div>
+    </div>
+    <div class="callout" style="margin:12px 0 0"><b>Weak eval — flag it.</b> The prompt says "we use the us. cross-region model ids," which basically <em>tells</em> both configs to add the inference-profile ARN. That's why baseline also passed. If you agree, note it — iteration 2 should drop that hint so the eval tests whether the skill catches the trap <em>unprompted</em>.</div>
+  </div>
+</div>
+
+<!-- EVAL 4 -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 4 — validate-offline-stubber</span><span class="target">aws-ai-validate</span><span class="score">with <b>100%</b> · base <b>75%</b> · <span class="delta-pos">+25</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"How do I unit-test this Bedrock agent offline? No CI hitting a real account. It calls Converse and also invokes a SageMaker endpoint."</div>
+    <div class="lbl">The skill's job here</div>
+    <p style="margin:0">Recommend <b>botocore Stubber</b> for the runtime calls and — critically — note that <b>moto cannot mock <code>bedrock-runtime</code></b>, so Stubber is the only pure-unit path for it. Use moto for supporting infra; keep CI credential-free.</p>
+    <div class="lbl">Rubric (assertions)</div>
+    <ul class="rubric">
+      <li>Recommends botocore Stubber for bedrock-runtime (&amp; sagemaker-runtime)</li>
+      <li>Notes moto CANNOT mock bedrock-runtime → Stubber required <span class="disc">discriminator</span></li>
+      <li>Uses moto for supporting infra / SageMaker control plane</li>
+      <li>Reinforces offline-first / no real credentials in CI</li>
+    </ul>
+    <div class="cols">
+      <div class="col good"><h4>Good</h4>Stubber for Converse + invoke_endpoint; explicit "moto doesn't support bedrock-runtime, so Stubber for that one"; moto for S3/IAM; dummy creds in CI.</div>
+      <div class="col poor"><h4>Poor</h4>"Just use moto for everything" — which silently fails for bedrock-runtime. This is the exact gap the baseline fell into.</div>
+    </div>
+    <div class="note">A real, honest win: the baseline reached for moto broadly and missed its bedrock-runtime blind spot; the skill flags it.</div>
+  </div>
+</div>
+
+<!-- EVAL 5 -->
+<div class="evalcard">
+  <div class="evalhead"><span class="id">Eval 5 — router-where-to-start</span><span class="target">aws-ai-lifecycle</span><span class="score">with <b>100%</b> · base <b>33%</b> · <span class="delta-pos">+67</span></span></div>
+  <div class="evalbody">
+    <div class="prompt">"We want to add some GenAI to our AWS app but honestly have no idea where to start. What's the actual process/steps?"</div>
+    <div class="lbl">The skill's job here</div>
+    <p style="margin:0">Route the user through the family's staged process — <b>assess → design → build → deploy → validate</b> — and set the offline-first / credential-gated ground rules. This is the router's core value and where the skill most outperforms a generic answer.</p>
+    <div class="lbl">Rubric (assertions)</div>
+    <ul class="rubric">
+      <li>Starts by assessing the capability / selecting the service (not code or deploy)</li>
+      <li>Lays out the assess → design → build → deploy → validate progression <span class="disc">discriminator</span></li>
+      <li>Emphasizes offline-first and credentials gated to the validate step <span class="disc">discriminator</span></li>
+    </ul>
+    <div class="cols">
+      <div class="col good"><h4>Good</h4>Names the five stages in order, points to what each produces, and states that no real AWS credentials are touched until validation.</div>
+      <div class="col poor"><h4>Poor</h4>A reasonable-but-generic "define your use case, pick a model, build a POC" that lacks the family's named stages and the credential-gating discipline.</div>
+    </div>
+    <div class="note">The baseline gave a sensible generic process (it correctly starts with the use case → +1 assertion) but lacked the family's staged pipeline and offline-gating — exactly the router's contribution.</div>
+  </div>
+</div>
+
+<h2>Calibration notes for reviewers</h2>
+<div class="panel">
+  <ul style="margin:0;padding-left:18px">
+    <li><b>The grader is pattern-based.</b> It checks for keywords/structures, not deep correctness. If it passed something hollow or failed something good, that's exactly the feedback to leave.</li>
+    <li><b>A strong baseline is expected.</b> Opus already knows well-documented AWS APIs, so the skill's job is reliability + the non-obvious. Reward the skill for catching traps, not for restating what any good answer contains.</li>
+    <li><b>Two evals need tightening</b> (say so if you agree): eval 3 telegraphs the inference-profile answer in the prompt; evals 1–2 test tasks the base model already aces, so they don't isolate skill value. Iteration 2 should harden these.</li>
+    <li><b>Where to push the skill harder:</b> if a with-skill answer was merely as-good-as baseline, note what would have made the skill's version <em>distinctly</em> better — that's the highest-value feedback.</li>
+  </ul>
+</div>
+
+<footer>aws-ai-* skill family · eval iteration 1 · reviewer rubric guide</footer>
+</div>
+</body>
+</html>

@@ -8,10 +8,14 @@ and then by target, mirroring `.arch/`. Orientation and the layout rules are in
 stage — regenerating this file with `make_bundle.py --recurse-index` restores plain
 alphabetical order, so re-group by hand after a regeneration.
 
+**html-site** (GitHub Pages origin for the study-cluster HTML — ADR 0001 Accepted 2026-08-26):
+
+- [ADR 0001 — Serve the study-cluster HTML from GitHub Pages as a static origin](adrs/application/html-site/0001-static-github-pages-origin-for-study-html.md) — public HTTP origin `https://rajnishkhatri.github.io/LLM-DRIVEN-MOBILE-TEST-AUTOMATION/` for the catalog plus prep-guide v3 and the M1 atlas as siblings (canonicals stay under `docs/`; generated `dist/` uploaded by Actions). Prep-guide C4 is overridden for those two only; v1 and v2 stay repo-only. Distinct from mobile-test-automation ADRs 0001–0017.
+
 **tooling / sdd-roles** (kernel ADRs 0001–0004 Accepted; battle-test 2026-08-09):
 
 - [IR-gate arm/role ownership guide](adrs/tooling/sdd-roles/ir-gate-arm-role-ownership.md) — Proposed guide (not yet an ADR): closes the battle-test finding that o7's IR gate is undeclarable in the current gate vocabulary by splitting kernel gate id `ir-gate` from role-stage work (specifier law, architect ADR, maker implementation, hardener/qa verification), with Arm A/B/C/C-dbg maps and anti-patterns (do not fold into `build`/`tests`; do not prose-only patch role bodies).
-- Series ADRs (Accepted): [0001 corpus-as-contract](adrs/tooling/sdd-roles/0001-adopt-corpus-as-contract-with-conformance-gated-reference-validator.md) · [0002 golden-run conformance](adrs/tooling/sdd-roles/0002-golden-run-conformance-for-the-gate-orchestrator.md) · [0003 catalog-as-source](adrs/tooling/sdd-roles/0003-catalog-as-source-projections-as-build-outputs.md) · [0004 kata rig](adrs/tooling/sdd-roles/0004-kata-rig-deterministic-instrument.md). Eval evidence: [battle-test report](../skills/sdd-roles/evals/battle-test-report.md).
+- Series ADRs (Accepted): [0001 corpus-as-contract](adrs/tooling/sdd-roles/0001-adopt-corpus-as-contract-with-conformance-gated-reference-validator.md) · [0002 golden-run conformance](adrs/tooling/sdd-roles/0002-golden-run-conformance-for-the-gate-orchestrator.md) · [0003 catalog-as-source](adrs/tooling/sdd-roles/0003-catalog-as-source-projections-as-build-outputs.md) · [0004 kata rig](adrs/tooling/sdd-roles/0004-kata-rig-deterministic-instrument.md).
 
 **mobile-test-automation** (stages 1–4 gates closed 2026-07-26 — **all ten ADRs Accepted, no open blockers**; the spine spec was signed off 2026-07-26 and stage 5 arch-risk is now in progress):
 

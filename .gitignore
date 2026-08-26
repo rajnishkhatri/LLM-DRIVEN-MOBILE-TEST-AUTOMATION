@@ -1,9 +1,11 @@
 .DS_Store
 .venv/
 __pycache__/
+.pytest_cache/
 *.pyc
 *.egg-info/
 .idea/
 .vscode/
 *.zip
 selftest-report.json
+apps/html-site/dist/

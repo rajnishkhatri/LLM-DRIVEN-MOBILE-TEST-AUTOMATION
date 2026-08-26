@@ -17,6 +17,17 @@ source = ".cursor/skills"
 members = ["arch-lifecycle", "arch-characteristics", "arch-components", "arch-style", "arch-decide", "arch-risk", "arch-validate"]
 projections = [".claude/skills"]
 
+# aws-ai — AWS AI/ML capability arm supplementing arch-* (Bedrock/SageMaker/agents).
+# Same shape as arch: Cursor is the source of truth, Claude is the projection.
+# Bundled runnable scripts (deploy CDK app, validate pytest harness) ship as
+# authored source; their generated __pycache__/.pytest_cache are gitignored — run
+# the harness from a workspace copy, not in-place, to keep this projection pristine.
+[[family]]
+id = "aws-ai"
+source = ".cursor/skills"
+members = ["aws-ai-lifecycle", "aws-ai-assess", "aws-ai-design", "aws-ai-build", "aws-ai-deploy", "aws-ai-validate"]
+projections = [".claude/skills"]
+
 [[family]]
 id = "role-agents"
 source = "tooling/sdd-roles/kernel/corpus/catalog-projections/claude-code/agents"

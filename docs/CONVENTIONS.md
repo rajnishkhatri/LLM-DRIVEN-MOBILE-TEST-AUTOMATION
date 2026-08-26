@@ -61,6 +61,14 @@ before inventing new ones):
 | Kind | Home |
 |---|---|
 | Coding-rules case studies (OKF bundle) | `cases/coding-rules/` |
+| AWS system-design case studies (OKF bundle) | `cases/aws/` |
+| AWS AI-agent case studies (OKF bundle) | `cases/aws-ai/` |
+| Claude Architect certification notes (OKF bundle) | `cases/claude-certification/` |
+| Claude Architect — platform design (nested topic bundle) | `cases/claude-certification/platform-design/` |
+| Claude Architect — enterprise integration & production (nested topic bundle) | `cases/claude-certification/enterprise-integration-production/` |
+| Claude Architect — responsible AI (nested topic bundle) | `cases/claude-certification/responsible-ai/` |
+| Claude Architect — team enablement (nested topic bundle) | `cases/claude-certification/team-enablement/` |
+| Claude Architect — stakeholder engagement (nested topic bundle) | `cases/claude-certification/stakeholder-engagement/` |
 | `arch-*` delivery-project artifacts (MTA) | `docs/architecture/<artifact-home>/mobile-test-automation/` — declared bundle |
 | SDD specs / plans | `docs/sdd/{specs,plans}/` (in `knowledge_globs`, not a declared bundle) |
 | Research / option studies | `docs/research/` (in `knowledge_globs`) |

@@ -1,0 +1,86 @@
+{
+  "skill_name": "aws-ai-lifecycle",
+  "note": "Family-level eval set for the aws-ai-* skills. Each eval targets one stage's distinctive, verifiable behavior; the with_skill run starts from the aws-ai-lifecycle router and follows its routing, the baseline answers from general AWS knowledge.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "assess-service-selection",
+      "target_skill": "aws-ai-assess",
+      "prompt": "We're a mid-size insurance company. I want our internal support portal to answer employees' questions from our ~4,000 policy PDFs (they change a few times a year). My VP keeps saying 'just fine-tune a model on Bedrock', but I'm not sure. Which AWS service should we use, and do we actually need to fine-tune? Rough idea of what it'd cost to run?",
+      "expected_output": "Recommends Bedrock + RAG/Knowledge Base over fine-tuning with reasoning (data changes, cost), frames Bedrock-managed vs SageMaker-self-host as a trade-off, does not jump to code, requests no credentials.",
+      "expectations": [
+        "Recommends RAG / a Knowledge Base over fine-tuning, with a stated reason",
+        "Frames a real managed-vs-self-hosted trade-off — names a self-hosted/SageMaker tier OR an instance-hour-vs-per-token cost axis (not just 'managed RAG')",
+        "Surfaces Amazon Q Business as the purpose-built managed-assistant option for an internal-document Q&A portal",
+        "Does not jump straight to writing implementation code",
+        "Does not ask for or use real AWS credentials"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "design-agent-rag-iam",
+      "target_skill": "aws-ai-design",
+      "prompt": "Good news, we're going Bedrock + RAG for the insurance support assistant. Can you design it? Single agent or a few? What do we use for the vector store, where do the guardrails sit, and what IAM does the Lambda actually need to call the model?",
+      "expected_output": "Gives a single-vs-multi-agent recommendation with reasoning, names a vector store with a trade-off, places guardrails in the request path, and specifies least-privilege IAM including the inference-profile + foundation-model ARN pair.",
+      "expectations": [
+        "Makes a single-vs-multi-agent recommendation with reasoning",
+        "Names a concrete vector store (OpenSearch / S3 Vectors / pgvector) with a trade-off",
+        "Places guardrails explicitly in the request path",
+        "Specifies least-privilege IAM and flags the need for BOTH foundation-model and inference-profile ARNs",
+        "Flags the tool-authorization boundary guardrails cannot cover (Cedar/Verified Permissions on tool calls, a read/write trust split, or PrivateLink aws:sourceVpce)"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "build-converse-tool-loop",
+      "target_skill": "aws-ai-build",
+      "prompt": "Write me the Python (boto3) for a Bedrock tool-use loop - the model should be able to call a get_policy_status(policy_id) tool and then answer the user. We're on Claude Sonnet. Just the core loop is fine.",
+      "expected_output": "Uses the native Converse API (bedrock-runtime converse) with a toolConfig, handles stopReason tool_use by returning a toolResult that echoes toolUseId, loops to end_turn. Does NOT use invoke_model with the legacy completion body.",
+      "expectations": [
+        "Uses the native Converse API (bedrock-runtime.converse), not invoke_model with a completion body",
+        "Does NOT use the legacy \\n\\nHuman:/\\n\\nAssistant: or max_tokens_to_sample completion format",
+        "Implements the tool-use loop: toolConfig, stopReason tool_use, a toolResult echoing toolUseId, loop to end_turn",
+        "Passes the model id as a parameter/constant rather than presenting a hard-coded id as permanent",
+        "Bakes in cross-stage discipline the baseline lacks — a dependency-injected client, the two-ARN IAM note, or a max-turns loop guard",
+        "Wires the boto3 client as an injected parameter (an offline-testable seam that pre-wires the validate-stage Stubber), not a module-level global"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "deploy-cdk-two-arn",
+      "target_skill": "aws-ai-deploy",
+      "prompt": "Give me AWS CDK in Python to deploy this Bedrock agent (it calls Claude Sonnet) as a Lambda with the right Bedrock permissions.",
+      "expected_output": "CDK (aws-cdk-lib, Python) with a Lambda + execution role granting bedrock:InvokeModel on BOTH foundation-model/* and inference-profile/* ARNs (the two-ARN trap), and mentions offline cdk synth validation / no real deploy without approval.",
+      "expectations": [
+        "Produces AWS CDK v2 Python (aws-cdk-lib) with a Lambda and an execution role",
+        "Grants bedrock:InvokeModel on BOTH a foundation-model ARN AND an inference-profile ARN (the two-ARN trap)",
+        "Requires validation discipline beyond 'cdk synth' — cfn-lint OR cdk-nag OR an explicit deploy gate / human confirmation"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "validate-offline-stubber",
+      "target_skill": "aws-ai-validate",
+      "prompt": "How do I unit-test this Bedrock agent offline? I do NOT want CI hitting a real AWS account. The code calls Converse and also invokes a SageMaker endpoint for a risk score.",
+      "expected_output": "Recommends botocore Stubber for bedrock-runtime (and sagemaker-runtime), notes moto cannot mock bedrock-runtime, uses moto for supporting infra, and reinforces offline-first with no real credentials in CI.",
+      "expectations": [
+        "Recommends botocore Stubber for bedrock-runtime (and sagemaker-runtime) contract tests",
+        "Notes that moto cannot mock bedrock-runtime, so Stubber is required for it",
+        "Uses moto (or equivalent) for supporting infra / SageMaker control plane",
+        "Reinforces offline-first / no real credentials in CI"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "router-where-to-start",
+      "target_skill": "aws-ai-lifecycle",
+      "prompt": "We want to add some GenAI to our AWS app but honestly have no idea where to start. What's the actual process/steps?",
+      "expected_output": "Routes to assessing the capability & selecting the service first (not code/deploy), lays out the assess -> design -> build -> deploy -> validate progression, and emphasizes offline-first + credential gating.",
+      "expectations": [
+        "Starts by assessing the capability and selecting the AWS service (does not jump to code or deployment)",
+        "Lays out the stage progression assess -> design -> build -> deploy -> validate",
+        "Emphasizes offline-first and that real credentials are gated to the validate step"
+      ]
+    }
+  ]
+}

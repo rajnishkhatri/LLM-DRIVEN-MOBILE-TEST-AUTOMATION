@@ -216,6 +216,8 @@ def main(argv: list[str] | None = None) -> int:
         )
 
         for md in sorted(bundle_dir.rglob("*.md")):
+            if not md.is_file():
+                continue  # a directory named *.md is not a Concept
             if any(md.is_relative_to(n) for n in nested):
                 continue  # owned by a deeper declared bundle
             if _is_evidence(md, bundle_dir):

@@ -10,7 +10,7 @@ tags: [sdd-roles, o7, ir-gate, guide, roles, arms, ownership]
 status: ratified-by-adr-0005
 supersedes: none
 adr: ./0005-ir-gate-first-class-gate-vocabulary.md
-sourced_from: ../../../../skills/sdd-roles/evals/battle-test-report.md
+sourced_from: sdd-roles battle-test report (Architect workspace eval artifact; not vendored here)
 ---
 
 # IR-gate arm/role ownership guide
@@ -20,8 +20,7 @@ sourced_from: ../../../../skills/sdd-roles/evals/battle-test-report.md
 freezes the gate id, the `ir-gate-checker` tool pin, the
 `ir_gate_violations_max: 0` threshold, and the declaration table below.
 Originally a proposed guide capturing the ownership decision shape after the
-sdd-roles battle-test on the o7 IR-gate slice
-([battle-test-report.md](../../../../skills/sdd-roles/evals/battle-test-report.md)).
+sdd-roles battle-test on the o7 IR-gate slice.
 **Date:** 2026-08-09. **Kernel:** sdd-roles 1.4.0 (gate vocab now
 `{build, tests, crap, mutation, ir-gate}` per ADR 0005; the checker tool is
 **built** at `tooling/sdd-roles/tools/ir-gate-checker/` (1.0.0), with
@@ -256,6 +255,4 @@ checkers prove it; the **kernel** is what makes "done" impossible without it.
   projections, and restamped the kata instrument (ADR-0004 amendment).
 - Spec + plan the checker tool and KernelConfig allowlist entry.
 - Do not claim battle-test [D] risks closed until Copilot live / kata tooling /
-  cursor headless seams are real
-  ([battle-test-report.md](../../../../skills/sdd-roles/evals/battle-test-report.md)
-  §5).
+  cursor headless seams are real (battle-test report §5).

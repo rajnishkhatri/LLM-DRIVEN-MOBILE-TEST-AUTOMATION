@@ -1,0 +1,875 @@
+<title>The Quantum You Already Have — Architectural Styles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    /* ---- chosen neutrals, biased warm toward the teal ink ---- */
+    --paper:      #F5F1E7;
+    --paper-2:    #EEE8DA;   /* raised panels */
+    --paper-edge: #E2DAC6;   /* hairlines on paper */
+    --ink:        #1B2A2B;   /* deep ink-teal, body text */
+    --ink-soft:   #4A5A59;   /* secondary text */
+    --ink-faint:  #7A8683;   /* captions */
+
+    /* ---- meaning colors (the honesty key) ---- */
+    --det:        #1F6F6B;   /* deterministic / machine / trustworthy */
+    --det-wash:   #DCECE9;
+    --llm:        #B0742A;   /* LLM / authoring / "fuzzy" reasoning */
+    --llm-wash:   #F1E3CE;
+    --proposed:   #6A5A9C;   /* proposed enhancement — never confused with real */
+    --proposed-wash:#E7E1F1;
+    --human:      #495C77;   /* human decision */
+
+    --pass:       #2E7D5B;
+    --fail:       #A6402F;
+
+    --accent:     var(--det);
+    --rule:       #D8CFBB;
+
+    --measure: 66ch;
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "Menlo", Consolas, "Liberation Mono", monospace;
+
+    --shadow: 0 1px 2px rgba(27,42,43,.06), 0 8px 24px rgba(27,42,43,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #14201F;
+      --paper-2:    #1B2B29;
+      --paper-edge: #263A37;
+      --ink:        #E7EBE7;
+      --ink-soft:   #AEBCB8;
+      --ink-faint:  #7E908B;
+      --det:        #6FC9C0;
+      --det-wash:   #17332F;
+      --llm:        #E0A65A;
+      --llm-wash:   #33280F;
+      --proposed:   #A99AD6;
+      --proposed-wash:#241E38;
+      --human:      #8BA3C4;
+      --pass:       #6BC79A;
+      --fail:       #E48374;
+      --rule:       #2A3D39;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  /* explicit toggle overrides — must win both directions */
+  :root[data-theme="light"] {
+    --paper:#F5F1E7;--paper-2:#EEE8DA;--paper-edge:#E2DAC6;--ink:#1B2A2B;--ink-soft:#4A5A59;--ink-faint:#7A8683;
+    --det:#1F6F6B;--det-wash:#DCECE9;--llm:#B0742A;--llm-wash:#F1E3CE;--proposed:#6A5A9C;--proposed-wash:#E7E1F1;
+    --human:#495C77;--pass:#2E7D5B;--fail:#A6402F;--rule:#D8CFBB;
+    --shadow:0 1px 2px rgba(27,42,43,.06),0 8px 24px rgba(27,42,43,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper:#14201F;--paper-2:#1B2B29;--paper-edge:#263A37;--ink:#E7EBE7;--ink-soft:#AEBCB8;--ink-faint:#7E908B;
+    --det:#6FC9C0;--det-wash:#17332F;--llm:#E0A65A;--llm-wash:#33280F;--proposed:#A99AD6;--proposed-wash:#241E38;
+    --human:#8BA3C4;--pass:#6BC79A;--fail:#E48374;--rule:#2A3D39;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* faint survey-grid texture on the ground */
+  body::before {
+    content:""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(var(--paper-edge) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-edge) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: .28;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 80%);
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+  .measure { max-width: var(--measure); margin-left: auto; margin-right: auto; }
+
+  /* ---------- masthead ---------- */
+  header.mast {
+    max-width: 1000px; margin: 0 auto; padding: 64px 24px 28px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--det); margin: 0 0 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow::before {
+    content:""; width: 34px; height: 2px; background: var(--det); display:inline-block;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 700; line-height: 1.05;
+    font-size: clamp(2.4rem, 6vw, 4.1rem); margin: 0 0 .35em; letter-spacing: -.01em;
+    text-wrap: balance; color: var(--ink);
+  }
+  .dek {
+    font-family: var(--serif); font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    line-height: 1.4; color: var(--ink-soft); max-width: 40ch; text-wrap: balance;
+    font-style: italic; margin: 0 0 26px;
+  }
+  .byline {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    letter-spacing: .04em; border-top: 1px solid var(--rule);
+    padding-top: 14px; display:flex; gap: 18px 26px; flex-wrap: wrap;
+  }
+  .byline b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- body typography ---------- */
+  main { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  p { margin: 0 0 1.15em; }
+  main > .measure > p,
+  main > .measure > h2,
+  main > .measure > h3,
+  main > .measure > ul,
+  main > .measure > ol,
+  main > .measure > .callout { }
+
+  h2 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.01em;
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem); line-height: 1.12;
+    margin: 2.2em 0 .1em; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .5em; color: var(--det); font-weight: 500;
+    letter-spacing: .1em; vertical-align: middle; margin-right: .8em;
+    border: 1px solid var(--det); border-radius: 3px; padding: .18em .5em;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.16rem;
+    margin: 1.9em 0 .3em; color: var(--ink); letter-spacing: -.005em;
+  }
+  .lede { font-size: 1.28rem; line-height: 1.5; color: var(--ink);
+    font-family: var(--serif); }
+  .lede b { color: var(--det); }
+  a { color: var(--det); text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { }
+  code {
+    font-family: var(--mono); font-size: .84em;
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 4px; padding: .08em .38em; color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .drop::first-letter {
+    font-family: var(--serif); float: left; font-size: 3.7em; line-height: .78;
+    padding: .06em .12em 0 0; color: var(--det); font-weight: 700;
+  }
+
+  ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--det); }
+
+  /* ---------- the honesty key (persistent legend) ---------- */
+  .key {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    margin: 0 -24px 0; padding: 10px 24px;
+  }
+  .key-inner {
+    max-width: 1000px; margin: 0 auto; display: flex; gap: 8px 22px;
+    flex-wrap: wrap; align-items: center;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .02em;
+  }
+  .key-inner .klabel { color: var(--ink-faint); text-transform: uppercase; letter-spacing:.12em; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+  .sw { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .sw.det { background: var(--det); }
+  .sw.llm { background: var(--llm); }
+  .sw.human { background: var(--human); }
+  .sw.prop { background: var(--proposed-wash); border: 1.5px dashed var(--proposed); }
+
+  /* ---------- figure bands (break the measure) ---------- */
+  figure {
+    margin: 2.4em 0; padding: 0;
+  }
+  figure svg { display: block; width: 100%; height: auto; }
+  .fig-card {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 12px; padding: 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    margin-top: 12px; line-height: 1.5; letter-spacing: .01em;
+    max-width: 74ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--det); background: var(--det-wash);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 1.6em 0;
+    font-size: .98rem;
+  }
+  .callout .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--det); display:block; margin-bottom: 6px; font-weight: 600;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout.proposed { border-left-color: var(--proposed); background: var(--proposed-wash); border-left-style: dashed; }
+  .callout.proposed .tag { color: var(--proposed); }
+
+  /* ---------- proposed section wrapper ---------- */
+  .proposed-zone {
+    border: 1.5px dashed var(--proposed); border-radius: 14px;
+    background: color-mix(in srgb, var(--proposed-wash) 55%, transparent);
+    padding: 8px 26px 26px; margin: 2.4em 0;
+  }
+  .proposed-banner {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--proposed); font-weight: 700;
+    background: var(--paper); border: 1.5px dashed var(--proposed); border-radius: 999px;
+    padding: 7px 16px; transform: translateY(-20px); box-shadow: var(--shadow);
+  }
+  .proposed-zone h2, .proposed-zone h3 { }
+  .proposed-zone h2 .num { color: var(--proposed); border-color: var(--proposed); }
+
+  /* ---------- scorecard table ---------- */
+  .table-wrap { overflow-x: auto; margin: 1.8em 0; border-radius: 10px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--paper-2); font-size: .95rem; }
+  caption { text-align: left; font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint); padding: 0 0 10px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--paper-edge); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600; background: color-mix(in srgb, var(--paper-2) 60%, var(--paper)); }
+  tbody tr:last-child td { border-bottom: none; }
+  td .who { font-weight: 700; }
+  td .who.det { color: var(--det); }
+  td .who.llm { color: var(--llm); }
+  td .who.human { color: var(--human); }
+  td .who.excl { color: var(--fail); }
+
+  .owner-pill {
+    display:inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .owner-pill.det { background: var(--det-wash); color: var(--det); border:1px solid var(--det); }
+  .owner-pill.llm { background: var(--llm-wash); color: var(--llm); border:1px solid var(--llm); }
+  .owner-pill.human { background: color-mix(in srgb,var(--human) 16%, transparent); color: var(--human); border:1px solid var(--human); }
+  .owner-pill.excl { background: color-mix(in srgb,var(--fail) 12%, transparent); color: var(--fail); border:1px dashed var(--fail); }
+
+  /* ---------- section rule ---------- */
+  .rule-orn { display: flex; align-items: center; gap: 16px; margin: 3em 0 0; color: var(--rule); }
+  .rule-orn::before, .rule-orn::after { content:""; height: 1px; background: var(--rule); flex: 1; }
+  .rule-orn span { font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: var(--ink-faint); }
+
+  /* ---------- pull quote ---------- */
+  .pull {
+    font-family: var(--serif); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.28;
+    color: var(--ink); font-style: italic; text-wrap: balance;
+    border-top: 2px solid var(--det); border-bottom: 2px solid var(--det);
+    padding: .7em 0; margin: 1.8em 0;
+  }
+  .pull b { font-style: normal; color: var(--det); }
+
+  /* footer */
+  footer {
+    max-width: 1000px; margin: 60px auto 0; padding: 26px 24px 0;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+  footer b { color: var(--ink-soft); }
+
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    header.mast { padding-top: 40px; }
+    .key-inner { font-size: 11px; gap: 6px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<header class="mast">
+  <p class="eyebrow">System design patterns · Group E · Architectural styles</p>
+  <h1>The Quantum You Already Have</h1>
+  <p class="dek">A style is a deployment-and-coupling bet — not a vendor, not a folder layout. You pick it by how many independently runnable parts you actually have, who owns the data, and what a wrong cut costs.</p>
+  <div class="byline">
+    <span><b>Audience</b> Engineering &amp; architecture</span>
+    <span><b>Reading time</b> ~13 min</span>
+    <span><b>Status</b> Explainer — catalog group E</span>
+  </div>
+</header>
+
+<div class="key">
+  <div class="key-inner">
+    <span class="klabel">How to read the colours:</span>
+    <span class="chip"><span class="sw det"></span> Verified mechanic</span>
+    <span class="chip"><span class="sw llm"></span> Judgment / when-not</span>
+    <span class="chip"><span class="sw human"></span> Operator or product decision</span>
+    <span class="chip"><span class="sw prop"></span> Uncertain in the source</span>
+  </div>
+</div>
+
+<main>
+
+  <div class="measure">
+    <p class="lede drop">Architects keep buying names. Microservices. Hexagonal. Serverless. The names sound like folders, vendors, or a slide title. Group&nbsp;E is thirteen Concepts that look like a menu and are actually <b>one question asked four ways</b>: how many independently runnable parts do you have, who owns the data, how do those parts collaborate, and what does a wrong cut cost?</p>
+
+    <p>A style is not a product you purchased, and it is not a directory tree. It is a <strong>deployment-and-coupling bet</strong>. The catalog’s name for the independently runnable part is the <em>architecture quantum</em>: the smallest unit that can run on its own. The database sits <em>inside</em> that unit. A shared store, or a synchronous call that inherits the callee’s availability, silently merges two hoped-for quanta back into one.</p>
+
+    <p class="pull">A style is a <b>deployment-and-coupling bet</b>, not a vendor or a folder layout. Pick by <b>quantum</b>, <b>data ownership</b>, and the <b>cost of being wrong</b>.</p>
+
+    <p>If you remember only that, you can retell Group&nbsp;E. The rest of this page is the four clusters that question sorts into — one deployable, independently deployable, collaboration overlay, integration hub — and the cuts the Concepts refuse to collapse.</p>
+  </div>
+
+  <div class="rule-orn"><span>THE LANDSCAPE</span></div>
+
+  <div class="measure">
+    <h2><span class="num">01</span>Four clusters, not thirteen cards</h2>
+    <p>Do not walk E1 through E13. The Concepts already tell you the sort key is the quantum, not the catalog number. One characteristics set and one shared store keep you in the monolith family. Own data <em>and</em> own release is how you leave. Events and read/write splits are overlays you can run on either side. A message hub is an integration topology, not an application style you start a product with.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 520" role="img" aria-labelledby="land-t">
+        <title id="land-t">Four clusters of architectural styles: one deployable, independently deployable, collaboration overlay, and integration hub. Client–server quantum count is marked uncertain.</title>
+        <text x="20" y="28" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">GROUP E · SORTED BY QUANTUM, NOT BY CARD NUMBER</text>
+
+        <!-- cluster 1 -->
+        <rect x="16" y="48" width="216" height="452" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.6"/>
+        <text x="32" y="76" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--det)" font-weight="700">ONE DEPLOYABLE</text>
+        <text x="32" y="102" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">Same process image</text>
+        <text x="32" y="122" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">one release train</text>
+        <rect x="32" y="142" width="184" height="36" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="44" y="165" font-size="13" font-family="var(--sans)" fill="var(--ink)">Monolith family</text>
+        <rect x="32" y="186" width="184" height="36" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="44" y="209" font-size="13" font-family="var(--sans)" fill="var(--ink)">Modular monolith</text>
+        <rect x="32" y="230" width="184" height="36" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="44" y="253" font-size="13" font-family="var(--sans)" fill="var(--ink)">Layered · Hexagonal</text>
+        <rect x="32" y="274" width="184" height="36" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="44" y="297" font-size="13" font-family="var(--sans)" fill="var(--ink)">Microkernel</text>
+        <rect x="32" y="318" width="184" height="36" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="44" y="341" font-size="13" font-family="var(--sans)" fill="var(--ink)">Client–server roles</text>
+        <text x="32" y="390" font-family="var(--mono)" font-size="11" fill="var(--det)">quanta = 1</text>
+        <text x="32" y="410" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Shared DB keeps one.</text>
+        <text x="32" y="428" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Replicas do not raise it.</text>
+        <rect x="32" y="448" width="184" height="34" rx="6" fill="var(--proposed-wash)" stroke="var(--proposed)" stroke-width="1.4" stroke-dasharray="3 3"/>
+        <text x="44" y="470" font-family="var(--mono)" font-size="11" fill="var(--proposed)">E5 count Uncertain</text>
+
+        <!-- cluster 2 -->
+        <rect x="244" y="48" width="216" height="452" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.6"/>
+        <text x="260" y="76" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--llm)" font-weight="700">INDEPENDENTLY</text>
+        <text x="260" y="92" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--llm)" font-weight="700">DEPLOYABLE</text>
+        <text x="260" y="122" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">Own release —</text>
+        <text x="260" y="142" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">data decides quanta</text>
+        <rect x="260" y="164" width="184" height="36" rx="6" fill="var(--paper)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="272" y="187" font-size="13" font-family="var(--sans)" fill="var(--ink)">Service-based / SOA</text>
+        <rect x="260" y="208" width="184" height="36" rx="6" fill="var(--paper)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="272" y="231" font-size="13" font-family="var(--sans)" fill="var(--ink)">Microservices</text>
+        <rect x="260" y="252" width="184" height="36" rx="6" fill="var(--paper)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="272" y="275" font-size="13" font-family="var(--sans)" fill="var(--ink)">Serverless / FaaS</text>
+        <rect x="260" y="296" width="184" height="36" rx="6" fill="var(--paper)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="272" y="319" font-size="13" font-family="var(--sans)" fill="var(--ink)">Cell-based</text>
+        <text x="260" y="372" font-family="var(--mono)" font-size="11" fill="var(--llm)">data ownership is the cut</text>
+        <text x="260" y="396" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Shared schema + HTTP</text>
+        <text x="260" y="414" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">is still one quantum.</text>
+        <text x="260" y="440" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Cells stamp fate, not</text>
+        <text x="260" y="458" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">domain. Functions host;</text>
+        <text x="260" y="476" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">they are not the domain.</text>
+
+        <!-- cluster 3 -->
+        <rect x="472" y="48" width="216" height="452" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.6"/>
+        <text x="488" y="76" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--det)" font-weight="700">COLLABORATION</text>
+        <text x="488" y="92" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--det)" font-weight="700">OVERLAY</text>
+        <text x="488" y="122" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">How parts react —</text>
+        <text x="488" y="142" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">not which bus you bought</text>
+        <rect x="488" y="164" width="184" height="52" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="500" y="187" font-size="13" font-family="var(--sans)" fill="var(--ink)">Event-driven</text>
+        <text x="500" y="205" font-size="11.5" font-family="var(--mono)" fill="var(--ink-soft)">broker · mediator</text>
+        <rect x="488" y="228" width="184" height="52" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="500" y="251" font-size="13" font-family="var(--sans)" fill="var(--ink)">CQRS / event sourcing</text>
+        <text x="500" y="269" font-size="11.5" font-family="var(--mono)" fill="var(--ink-soft)">inside one context</text>
+        <text x="488" y="318" font-family="var(--mono)" font-size="11" fill="var(--det)">EDA quanta 1–many</text>
+        <text x="488" y="346" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Queues and outbox are</text>
+        <text x="488" y="364" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">mechanisms, not the style.</text>
+        <text x="488" y="390" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">A log as source of truth</text>
+        <text x="488" y="408" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">is persistence, not EDA.</text>
+        <text x="488" y="442" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Can live in one deployable</text>
+        <text x="488" y="460" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">or across many.</text>
+
+        <!-- cluster 4 -->
+        <rect x="700" y="48" width="204" height="452" rx="12" fill="color-mix(in srgb, var(--human) 14%, var(--paper))" stroke="var(--human)" stroke-width="1.6"/>
+        <text x="716" y="76" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--human)" font-weight="700">INTEGRATION</text>
+        <text x="716" y="92" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--human)" font-weight="700">HUB</text>
+        <text x="716" y="122" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">Replace the</text>
+        <text x="716" y="142" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">app-to-app mesh</text>
+        <rect x="716" y="164" width="172" height="52" rx="6" fill="var(--paper)" stroke="var(--human)" stroke-width="1"/>
+        <text x="728" y="187" font-size="13" font-family="var(--sans)" fill="var(--ink)">Hub-and-spoke</text>
+        <text x="728" y="205" font-size="11.5" font-family="var(--mono)" fill="var(--ink-soft)">message broker / EAI</text>
+        <text x="716" y="252" font-family="var(--mono)" font-size="11" fill="var(--human)">not a WAN drawing</text>
+        <text x="716" y="280" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Not cloud hub-spoke.</text>
+        <text x="716" y="298" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Not an API gateway.</text>
+        <text x="716" y="316" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Not SOA-by-purchase.</text>
+        <text x="716" y="350" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Centre brokers messages.</text>
+        <text x="716" y="368" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Spokes never talk past it.</text>
+        <rect x="716" y="400" width="172" height="76" rx="6" fill="var(--proposed-wash)" stroke="var(--proposed)" stroke-width="1.4" stroke-dasharray="3 3"/>
+        <text x="728" y="424" font-family="var(--mono)" font-size="11" fill="var(--proposed)">No FSA row</text>
+        <text x="728" y="444" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Do not invent “1+N”</text>
+        <text x="728" y="462" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">as a typical count.</text>
+      </svg>
+    </div>
+    <figcaption><b>Thirteen styles, four bets.</b> Teal clusters record verified mechanics from the Concepts. Amber is the leave-the-family trade-off. Slate is an integration topology you choose to operate. Dashed violet marks counts the sources refuse to invent — client–server has no typical quantum, and hub-and-spoke has no style-selection row.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <div class="callout">
+      <span class="tag">Verified mechanic · the coupling test</span>
+      <p>Two things are coupled if changing one might break the other. The database is part of the quantum: a single shared store means a quantum of one, however many processes sit in front of it. After you pick sync or async, re-check — a blocking call on the user path lets checkout inherit payments’ availability, latency budget, and release nerve.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>ONE TRAIN</span></div>
+
+  <div class="measure">
+    <h2><span class="num">02</span>One deployable is a family, not a mess</h2>
+    <p>A monolith is a <strong>deployment decision</strong>: one logical executable, one release train, one primary quantum. Internally it may be layers, domain modules, a hexagon, or a kernel with plug-ins. Those are <em>partitioning</em> choices. Cloned replicas behind a load balancer are still one quantum — same bits, same schema. A container image does not split it.</p>
+    <p>It is not a Big Ball of Mud. A BBOM is a failure of internal structure (Foote &amp; Yoder). Shopify’s 2016 Rails estate — no boundaries, fragile changes, cascading tests — was a mud; the 2019 target was not. They <span class="who human">rejected microservices</span> and moved monolith → modular monolith: one application, strictly enforced domain boundaries. That is the family staying on one train on purpose.</p>
+
+    <h3>Family versus partition</h3>
+    <p><strong>Monolith</strong> answers “one quantum?” <strong>Modular monolith</strong> answers “is that quantum cut on the domain, with published interfaces and enforced seams?” Recovered modular row: cost / simplicity / modularity <em>HI</em>; deploy / test 2★; scale / elasticity 1★; fault tolerance <em>unsupported</em>. Those stars belong to the <em>enforced</em> variant — not a folder tree, and not the family’s scorecard. The book has no star row labelled “Monolithic architecture.” If every type is <code>public</code>, layered / hexagonal / modular collapse to the same graph.</p>
+
+    <h3>Who is the dependency sink?</h3>
+    <p>Layered and hexagonal can share a drawing and a quantum and still be opposite arrows. Layered is horizontal <em>technical</em> bands — presentation / business / persistence / database — arrows top → bottom. <strong>The store is the sink.</strong> Hexagonal: ports are conversations, adapters are technology, <strong>the domain is the sink</strong>. Adding a “service layer” does not invert anything if business still compiles against the DAL. Folders labelled Clean whose arrows still run down onto a store are layered mechanics under a hexagonal name. Choose layered when change is technical. Choose hexagonal <em>inside the same quantum</em> when the domain must not depend on a store at compile time. That is not “add a layer.”</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 340" role="img" aria-labelledby="sink-t">
+        <title id="sink-t">Layered architecture sends compile-time arrows down onto the database. Hexagonal inverts the sink so adapters depend inward on the domain.</title>
+        <text x="20" y="28" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">THE E3 / E8 CUT · WHO IS THE DEPENDENCY SINK?</text>
+
+        <!-- layered -->
+        <rect x="20" y="48" width="420" height="270" rx="12" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.2"/>
+        <text x="40" y="76" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--llm)" font-weight="700">LAYERED · SOURCE AT THE UI</text>
+        <rect x="56" y="96" width="348" height="40" rx="8" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.2"/>
+        <text x="230" y="122" text-anchor="middle" font-size="14" font-family="var(--sans)" fill="var(--ink)">Presentation</text>
+        <path d="M230,136 L230,150" stroke="var(--ink-soft)" stroke-width="1.6"/>
+        <rect x="56" y="152" width="348" height="40" rx="8" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.2"/>
+        <text x="230" y="178" text-anchor="middle" font-size="14" font-family="var(--sans)" fill="var(--ink)">Business</text>
+        <path d="M230,192 L230,206" stroke="var(--ink-soft)" stroke-width="1.6"/>
+        <rect x="56" y="208" width="348" height="40" rx="8" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.2"/>
+        <text x="230" y="234" text-anchor="middle" font-size="14" font-family="var(--sans)" fill="var(--ink)">Persistence</text>
+        <path d="M230,248 L230,262" stroke="var(--ink-soft)" stroke-width="1.6"/>
+        <rect x="56" y="264" width="348" height="36" rx="8" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.6"/>
+        <text x="230" y="288" text-anchor="middle" font-size="14" font-family="var(--sans)" font-weight="700" fill="var(--det)">Database ← sink</text>
+
+        <!-- hex -->
+        <rect x="480" y="48" width="420" height="270" rx="12" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.2"/>
+        <text x="500" y="76" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--det)" font-weight="700">HEXAGONAL · SINK AT THE DOMAIN</text>
+        <rect x="516" y="96" width="160" height="48" rx="8" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.2"/>
+        <text x="596" y="126" text-anchor="middle" font-size="13" font-family="var(--sans)" fill="var(--ink)">HTTP / UI adapter</text>
+        <rect x="764" y="96" width="112" height="48" rx="8" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.2"/>
+        <text x="820" y="126" text-anchor="middle" font-size="13" font-family="var(--sans)" fill="var(--ink)">SQL adapter</text>
+        <path d="M596,144 L596,168" stroke="var(--ink-soft)" stroke-width="1.4"/>
+        <path d="M820,144 L820,210 L760,210" stroke="var(--ink-soft)" stroke-width="1.4" fill="none"/>
+        <rect x="548" y="172" width="284" height="88" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.8"/>
+        <text x="690" y="208" text-anchor="middle" font-size="16" font-family="var(--serif)" font-weight="700" fill="var(--det)">Domain ← sink</text>
+        <text x="690" y="232" text-anchor="middle" font-size="12" font-family="var(--mono)" fill="var(--ink-soft)">ports sit on the inside</text>
+        <text x="500" y="292" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">Same quantum. Opposite arrow. Fowler’s mapper that frees the domain is hexagonal, not a thicker stack.</text>
+      </svg>
+    </div>
+    <figcaption><b>The sink is the fact, not the drawing.</b> Layered: presentation is the source, persistence is the sink — a store swap ripples up. Hexagonal: adapters are the source, the domain depends on no DAL. Two ports can look like a layered stack; Cockburn drew the hexagon to escape that picture, including the case of more than two conversations.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <h3>Kernel, roles, and what still does not add a quantum</h3>
+    <p>A <strong>microkernel</strong> is still the family: stable core, independently developed plug-ins, a <em>registry</em> that names them. Recovered row: simplicity / cost HI; most other attributes 3★; scale / elasticity / fault tolerance LO. One Strategy selected by config is a modular seam, not a kernel. Remote plug-ins with their own store leave the family. Class-loader isolation is not process isolation.</p>
+    <p><strong>Client–server</strong> is a style of <em>roles</em>, not a protocol and not a deployable count. One side initiates; the other listens, performs or rejects, and replies. The wire is request–response; bands inside a process are layered; how many server-side deployables you have is the family. Client–server owns who starts the exchange and where UI / rules / data sit. Typical quantum count is <em>Uncertain</em> — no style-selection row. Empty CRUD tiers are layered’s sinkhole wearing a hop: collapse the hop.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="fam-t">
+        <title id="fam-t">The monolith family is one deployable. Layered, hexagonal, microkernel, and modular monolith are internal partitions. Client–server is the initiating perimeter, not a second quantum.</title>
+        <text x="20" y="28" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">ONE QUANTUM · FIVE INTERNAL SHAPES · ONE PERIMETER</text>
+        <rect x="200" y="48" width="520" height="220" rx="14" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.8"/>
+        <text x="220" y="76" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--det)" font-weight="700">MONOLITH FAMILY · ONE RELEASE TRAIN</text>
+        <rect x="220" y="96" width="150" height="70" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.1"/>
+        <text x="295" y="126" text-anchor="middle" font-size="13" font-family="var(--sans)" font-weight="700" fill="var(--ink)">Layered</text>
+        <text x="295" y="148" text-anchor="middle" font-size="11" font-family="var(--mono)" fill="var(--ink-soft)">technical bands</text>
+        <rect x="384" y="96" width="150" height="70" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.1"/>
+        <text x="459" y="126" text-anchor="middle" font-size="13" font-family="var(--sans)" font-weight="700" fill="var(--ink)">Hexagonal</text>
+        <text x="459" y="148" text-anchor="middle" font-size="11" font-family="var(--mono)" fill="var(--ink-soft)">domain is sink</text>
+        <rect x="548" y="96" width="150" height="70" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.1"/>
+        <text x="623" y="126" text-anchor="middle" font-size="13" font-family="var(--sans)" font-weight="700" fill="var(--ink)">Microkernel</text>
+        <text x="623" y="148" text-anchor="middle" font-size="11" font-family="var(--mono)" fill="var(--ink-soft)">registry + plug-ins</text>
+        <rect x="220" y="180" width="478" height="68" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.6"/>
+        <text x="459" y="210" text-anchor="middle" font-size="15" font-family="var(--serif)" font-weight="700" fill="var(--ink)">Modular monolith</text>
+        <text x="459" y="232" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">domain modules · published APIs · enforced seams</text>
+
+        <rect x="20" y="88" width="160" height="140" rx="10" fill="color-mix(in srgb, var(--human) 14%, var(--paper))" stroke="var(--human)" stroke-width="1.4"/>
+        <text x="100" y="118" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--human)" font-weight="700">CLIENT</text>
+        <text x="100" y="148" text-anchor="middle" font-size="13" font-family="var(--sans)" fill="var(--ink)">initiates</text>
+        <text x="100" y="172" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">UI / rules / data</text>
+        <text x="100" y="194" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">placement is E5</text>
+        <path d="M180,158 L198,158" stroke="var(--human)" stroke-width="1.6"/>
+
+        <rect x="740" y="88" width="160" height="140" rx="10" fill="var(--proposed-wash)" stroke="var(--proposed)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="820" y="118" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--proposed)" font-weight="700">NOT A QUANTUM</text>
+        <text x="820" y="150" text-anchor="middle" font-size="12.5" font-family="var(--sans)" fill="var(--ink)">threads · folders</text>
+        <text x="820" y="170" text-anchor="middle" font-size="12.5" font-family="var(--sans)" fill="var(--ink)">internal queue</text>
+        <text x="820" y="190" text-anchor="middle" font-size="12.5" font-family="var(--sans)" fill="var(--ink)">second container</text>
+        <text x="820" y="210" text-anchor="middle" font-size="12.5" font-family="var(--sans)" fill="var(--ink)">that must ship together</text>
+      </svg>
+    </div>
+    <figcaption><b>Partitions live inside the family; the perimeter is who calls.</b> E1 decides one quantum. E10 decides the domain cut. E3 / E8 / E7 decide the internal shape. E5 decides who initiates and where work sits. An internal queue does not make the system event-driven. HTTP plus one schema is still one quantum — a distributed monolith, worse than staying.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <div class="callout" style="border-left-color:var(--llm);background:var(--llm-wash)">
+      <span class="tag" style="color:var(--llm)">Judgment · when to stay, when to leave</span>
+      <p>Stay when you have one characteristics set, unknown bounded contexts, a team that can hold the system, cheap local ACID, or missing microservice prerequisites. Leave when counteracting sets fail the coupling test; when a named part must scale, fail, reside, or release independently; or when several teams are blocked on one train <em>and</em> fracture planes are known. Isolation is a reason to leave — the modular row records fault tolerance as unsupported. Fashion is not a fracture. Fowler: do not even consider microservices unless the system is already too complex as a monolith.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>MANY TRAINS</span></div>
+
+  <div class="measure">
+    <h2><span class="num">03</span>Independently deployable only if the data splits</h2>
+    <p>The word “services” does not decide. <strong>Data ownership, not process count,</strong> is the discriminator.</p>
+    <p><strong>Service-based</strong> (modern E6): separately deployed UI, usually ≤12 coarse domain services, <em>usually one database</em>. Processes deploy; the quantum rises only when a service gets its own persistence <em>and</em> you do not re-entangle it with a sync call. ≤12 is a service-count ceiling, not twelve quanta. Recovered differentiator: cost + simplicity — agility / test / deploy 4★, FT / availability 4★, scalability 3★, elasticity 2★, <em>no 5★ anywhere</em>. Best <em>distributed</em> style for ACID, because the transaction stays in one coarse service. Heavy chatter means the cut is wrong.</p>
+    <p><strong>Orchestration-driven SOA</strong> (historical E6): taxonomy layers stitched by a smart bus. Residual fit is integration over <em>someone else’s</em> legacy. Recovered line: deploy / test “disastrous,” simplicity / cost inverted, quantum <strong>1</strong>. Do not pick it for a new product because a governance page said “orchestration.”</p>
+    <p><strong>Microservices</strong> need the invariants together: out-of-process service; independently deployable (coordinated releases fail); owns its state; business-capability boundaries; dumb pipes; failure as a design input. Size is not the discriminator. Star figures 1–5 did not survive; deploy / test are HI if independence holds; fault tolerance is HI only after the per-hop tax; scale is HI <em>as a capability</em> (Fowler 2015: no convincing “selective scale is cheaper” report); performance is “often an issue.” Most quanta of any style — a topology fact, not a headcount to chase.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 360" role="img" aria-labelledby="data-t">
+        <title id="data-t">Service-based architecture usually keeps one database and therefore often one quantum. Microservices own data per service. Many functions on one table are still one quantum.</title>
+        <text x="20" y="28" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">THE E6 / E2 CUT · DATA OWNERSHIP, NOT PROCESS COUNT</text>
+
+        <rect x="16" y="48" width="440" height="292" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="36" y="76" font-family="var(--mono)" font-size="12" letter-spacing="1.1" fill="var(--llm)" font-weight="700">SERVICE-BASED · USUALLY ONE DB</text>
+        <rect x="36" y="96" width="400" height="36" rx="7" fill="var(--paper)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="236" y="120" text-anchor="middle" font-size="13" font-family="var(--sans)" fill="var(--ink)">UI (separately deployed)</text>
+        <rect x="36" y="148" width="120" height="56" rx="7" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1"/>
+        <text x="96" y="182" text-anchor="middle" font-size="12.5" font-family="var(--sans)" fill="var(--ink)">Ordering</text>
+        <rect x="176" y="148" width="120" height="56" rx="7" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1"/>
+        <text x="236" y="182" text-anchor="middle" font-size="12.5" font-family="var(--sans)" fill="var(--ink)">Shipping</text>
+        <rect x="316" y="148" width="120" height="56" rx="7" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1"/>
+        <text x="376" y="182" text-anchor="middle" font-size="12.5" font-family="var(--sans)" fill="var(--ink)">Catalog</text>
+        <path d="M96,204 L96,230" stroke="var(--ink-soft)" stroke-width="1.3"/>
+        <path d="M236,204 L236,230" stroke="var(--ink-soft)" stroke-width="1.3"/>
+        <path d="M376,204 L376,230" stroke="var(--ink-soft)" stroke-width="1.3"/>
+        <rect x="36" y="230" width="400" height="50" rx="8" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="236" y="260" text-anchor="middle" font-size="14" font-family="var(--sans)" font-weight="700" fill="var(--det)">Usually one database → quantum often 1</text>
+        <text x="36" y="308" font-size="12.5" font-family="var(--sans)" fill="var(--ink-soft)">Best distributed style for ACID. ≤12 services is a ceiling, not 12 quanta. Chatter = wrong cut.</text>
+
+        <rect x="472" y="48" width="432" height="292" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="492" y="76" font-family="var(--mono)" font-size="12" letter-spacing="1.1" fill="var(--det)" font-weight="700">MICROSERVICES · DB PER SERVICE</text>
+        <rect x="492" y="96" width="120" height="48" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.1"/>
+        <text x="552" y="126" text-anchor="middle" font-size="12.5" font-family="var(--sans)" fill="var(--ink)">Ordering</text>
+        <rect x="628" y="96" width="120" height="48" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.1"/>
+        <text x="688" y="126" text-anchor="middle" font-size="12.5" font-family="var(--sans)" fill="var(--ink)">Shipping</text>
+        <rect x="764" y="96" width="120" height="48" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.1"/>
+        <text x="824" y="126" text-anchor="middle" font-size="12.5" font-family="var(--sans)" fill="var(--ink)">Catalog</text>
+        <rect x="492" y="160" width="120" height="40" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="552" y="186" text-anchor="middle" font-size="12" font-family="var(--mono)" fill="var(--det)">own store</text>
+        <rect x="628" y="160" width="120" height="40" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="688" y="186" text-anchor="middle" font-size="12" font-family="var(--mono)" fill="var(--det)">own store</text>
+        <rect x="764" y="160" width="120" height="40" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="824" y="186" text-anchor="middle" font-size="12" font-family="var(--mono)" fill="var(--det)">own store</text>
+        <path d="M552,144 L552,160" stroke="var(--det)" stroke-width="1.3"/>
+        <path d="M688,144 L688,160" stroke="var(--det)" stroke-width="1.3"/>
+        <path d="M824,144 L824,160" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="492" y="230" font-size="13" font-family="var(--sans)" fill="var(--ink)">Most quanta of any style — if independence holds.</text>
+        <text x="492" y="256" font-size="12.5" font-family="var(--sans)" fill="var(--ink-soft)">Shared CUSTOMERS table = not this style.</text>
+        <text x="492" y="278" font-size="12.5" font-family="var(--sans)" fill="var(--ink-soft)">N functions on one table = still one quantum.</text>
+        <text x="492" y="308" font-size="12.5" font-family="var(--sans)" fill="var(--ink-soft)">Sync on the user path can merge them back.</text>
+      </svg>
+    </div>
+    <figcaption><b>HTTP is not a style change.</b> Service-based keeps ACID by not splitting the database. Microservices require independently deployable services that own their data — smart endpoints, dumb pipes. A function can host a service; twenty zip files on one orders table are one domain wearing twenty deployables. Microservices are not “SOA with REST.”</figcaption>
+  </figure>
+
+  <div class="measure">
+    <h3>Hosting is not a domain cut; cells are not a domain cut</h3>
+    <p><strong>Serverless</strong> is a hosting style: the vendor starts compute because an event or request arrived, and stops it when that unit ends. The unit of deployment is the function. The unit of domain is not. No serverless matrix row — the quantum is the function <em>plus its managed store plus its sync callers</em>. A queue trigger is an event-driven <em>edge</em>, not proof you adopted event-driven architecture. Long-running sync work and uniformly high utilization (FaaS can cost more than a box) are when-nots. Group&nbsp;E has no product timeout tables.</p>
+    <p><strong>Cell-based</strong> asks how much of the <em>fleet</em> one poison tenant, bad deploy, or noisy neighbour can take. <em>N</em> complete-stack replicas plus a thin router and a control plane that places tenants. Shape: <strong>one design quantum, stamped N times, plus one shared router</strong>. A shared database collapses the costume. Cells partition <em>load and fate</em>; microservices partition <em>domain and ownership</em>. Picking one does not pick the other. Bulkheads live inside a cell. The router must stay thinner than the app. Well-Architected’s 1/<em>N</em> (10 cells → about 10% of keys) is still 100% for the tenants in the burning cell.</p>
+  </div>
+
+  <div class="rule-orn"><span>OVERLAYS</span></div>
+
+  <div class="measure">
+    <h2><span class="num">04</span>Collaboration is a style; a topic is a mechanism</h2>
+    <p>Event-driven architecture’s default collaboration is reaction to facts that already happened. It can be standalone or embedded — an in-process bus is still this style at quantum&nbsp;1; processors with their own stores are many. Recovered row: evolvability 5★; performance / scale / fault tolerance 4★ (“4 not 5 because of the database”); simplicity / testability LO.</p>
+    <p>The two topologies are <strong>who owns the workflow</strong>, not which product you bought. Broker / choreography: no one owns multi-step state; unused events are legal. Mediator / orchestration: the mediator keeps state and can restart. A topic plus a process manager is mediator topology. A reply-queue over a broker is request–response wearing a queue. Pub/sub and outbox are mechanisms. An internal queue does not make a monolith event-driven. Processors that keep HTTP-GETting each other silently merge quanta while the diagram still shows a bus.</p>
+    <p><strong>CQRS and event sourcing</strong> are persistence overlays inside one bounded context — not a first-class Richards/Ford style, and not event-driven architecture. CQRS is two objects where there was one; a second database is enabled, not required. Event sourcing makes the log the system of record. They are independent and often paired. Fowler 2017: CQRS “isn’t really about events”; event sourcing “need not be asynchronous.” People who blamed “event sourcing” for updating two models were usually doing CQRS. Same store first. Fowler found the majority of CQRS cases he had seen were harmful.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 380" role="img" aria-labelledby="eda-t">
+        <title id="eda-t">Event-driven broker versus mediator topologies, with CQRS and event sourcing shown as a persistence overlay inside one processor, not as the collaboration style.</title>
+        <text x="20" y="28" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">STYLE OF COLLABORATION · PERSISTENCE OVERLAY · NOT THE BUS PRODUCT</text>
+
+        <rect x="16" y="48" width="444" height="150" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="36" y="74" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--det)" font-weight="700">BROKER · CHOREOGRAPHY</text>
+        <rect x="36" y="90" width="110" height="40" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="91" y="116" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink)">Initiating</text>
+        <rect x="170" y="90" width="110" height="40" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="225" y="116" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink)">Processor</text>
+        <rect x="304" y="78" width="68" height="28" rx="6" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1"/>
+        <text x="338" y="97" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">Quote</text>
+        <rect x="304" y="114" width="68" height="28" rx="6" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1"/>
+        <text x="338" y="133" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">Claims</text>
+        <text x="36" y="174" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">No one restarts “the relocation.” Unused events are legal.</text>
+
+        <rect x="476" y="48" width="428" height="150" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.4"/>
+        <text x="496" y="74" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--llm)" font-weight="700">MEDIATOR · ORCHESTRATION</text>
+        <rect x="496" y="90" width="100" height="40" rx="7" fill="var(--paper)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="546" y="116" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink)">Initiating</text>
+        <rect x="620" y="84" width="120" height="52" rx="7" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.4"/>
+        <text x="680" y="116" text-anchor="middle" font-size="12.5" font-family="var(--sans)" font-weight="700" fill="var(--ink)">Mediator</text>
+        <rect x="764" y="78" width="120" height="28" rx="6" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1"/>
+        <text x="824" y="97" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">command</text>
+        <rect x="764" y="114" width="120" height="28" rx="6" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1"/>
+        <text x="824" y="133" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">command</text>
+        <text x="496" y="174" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">Owned state and restart. The mediator is the bottleneck you accepted.</text>
+
+        <rect x="16" y="214" width="888" height="146" rx="12" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.3"/>
+        <text x="36" y="240" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--ink-faint)" font-weight="700">CQRS / EVENT SOURCING · INSIDE ONE BOUNDED CONTEXT</text>
+        <rect x="36" y="258" width="100" height="36" rx="6" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1"/>
+        <text x="86" y="282" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink)">Command</text>
+        <rect x="156" y="258" width="110" height="36" rx="6" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1"/>
+        <text x="211" y="282" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink)">Write model</text>
+        <rect x="286" y="258" width="130" height="36" rx="6" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="351" y="282" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--det)">Event log or SoR</text>
+        <rect x="436" y="258" width="100" height="36" rx="6" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="486" y="282" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink)">Projector</text>
+        <rect x="556" y="258" width="110" height="36" rx="6" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="611" y="282" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink)">Read model</text>
+        <rect x="686" y="258" width="90" height="36" rx="6" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="731" y="282" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink)">Query</text>
+        <text x="36" y="328" font-size="12.5" font-family="var(--sans)" fill="var(--ink-soft)">Same store first = still one quantum. A broker is not a substitute source of truth. Dual-write when stores split is the outbox card’s job, not “more events.”</text>
+      </svg>
+    </div>
+    <figcaption><b>Richards’s insurance relocation is the EDA worked example; Azure’s conference seats are the CQRS/ES one.</b> Broker: CustomerAddressChanged fans out to quote and claims; no one restarts the relocation. Mediator: a RelocationMediator owns the steps and can resume. CQRS/ES: ReserveSeats appends SeatsReserved; a projector updates availability. Channel, outbox, and saga stay on their own cards.</figcaption>
+  </figure>
+
+  <div class="rule-orn"><span>THE HUB</span></div>
+
+  <div class="measure">
+    <h2><span class="num">05</span>A hub brokers messages, not IP packets</h2>
+    <p>Hub-and-spoke, here, is the <strong>enterprise integration hub</strong>: an active Message Broker that replaces a fully-connected application graph. Hohpe: a wheel has <em>n</em> edges; the undirected mesh has n/2 · (n−1) — 4 apps → 6, 8 → 28. The lasting benefit is location transparency that is real only with protocol translation. Without a canonical model, n-square returns at <em>format</em>.</p>
+    <p>The same words appear on Azure VNet and AWS Transit Gateway diagrams. That is a lookalike. Integration nodes are applications; spoke-to-spoke traffic always goes via the hub; hub failure stops integration. Network nodes are VNets; peering is nontransitive; a spoke may still run locally. Do not migrate an integration problem by adding a Transit Gateway, or a network problem by buying an ESB. It is also not an API gateway, and not SOA-by-purchase. Hohpe wants a canonical model and stateless scale-out; Mason’s EAI hub usually maps formats directly and parks state in a shared DB — easy PoC, SPOF. Averaging them hides the decision. No style-selection row: do not invent stars or “typical = 1 + N spokes.”</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="hub-t">
+        <title id="hub-t">Integration hub-and-spoke brokers application messages. Cloud WAN hub-spoke routes IP and is a lookalike, not this style. Cells stamp complete stacks behind a thin router and partition fate, not domain.</title>
+        <text x="20" y="28" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">THREE DRAWINGS THAT SHARE A WHEEL · ONLY ONE IS E9</text>
+
+        <rect x="16" y="48" width="290" height="232" rx="12" fill="color-mix(in srgb, var(--human) 14%, var(--paper))" stroke="var(--human)" stroke-width="1.5"/>
+        <text x="32" y="74" font-family="var(--mono)" font-size="11" letter-spacing="1" fill="var(--human)" font-weight="700">E9 INTEGRATION</text>
+        <circle cx="161" cy="150" r="28" fill="var(--human)"/>
+        <text x="161" y="155" text-anchor="middle" font-size="11" font-family="var(--mono)" fill="var(--paper)" font-weight="700">HUB</text>
+        <rect x="36" y="108" width="70" height="28" rx="5" fill="var(--paper)" stroke="var(--human)" stroke-width="1"/>
+        <text x="71" y="127" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">ERP</text>
+        <rect x="216" y="108" width="70" height="28" rx="5" fill="var(--paper)" stroke="var(--human)" stroke-width="1"/>
+        <text x="251" y="127" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">WMS</text>
+        <rect x="36" y="176" width="70" height="28" rx="5" fill="var(--paper)" stroke="var(--human)" stroke-width="1"/>
+        <text x="71" y="195" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">CRM</text>
+        <rect x="216" y="176" width="70" height="28" rx="5" fill="var(--paper)" stroke="var(--human)" stroke-width="1"/>
+        <text x="251" y="195" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">Shop</text>
+        <text x="32" y="236" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">Messages. Translate. SPOF</text>
+        <text x="32" y="254" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">if the centre holds state.</text>
+
+        <rect x="318" y="48" width="290" height="232" rx="12" fill="var(--proposed-wash)" stroke="var(--proposed)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="334" y="74" font-family="var(--mono)" font-size="11" letter-spacing="1" fill="var(--proposed)" font-weight="700">NOT E9 · WAN LOOKALIKE</text>
+        <circle cx="463" cy="150" r="28" fill="var(--proposed)"/>
+        <text x="463" y="155" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--paper)" font-weight="700">VNET</text>
+        <rect x="338" y="108" width="78" height="28" rx="5" fill="var(--paper)" stroke="var(--proposed)" stroke-width="1"/>
+        <text x="377" y="127" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">spoke A</text>
+        <rect x="510" y="108" width="78" height="28" rx="5" fill="var(--paper)" stroke="var(--proposed)" stroke-width="1"/>
+        <text x="549" y="127" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">spoke B</text>
+        <rect x="338" y="176" width="78" height="28" rx="5" fill="var(--paper)" stroke="var(--proposed)" stroke-width="1"/>
+        <text x="377" y="195" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">spoke C</text>
+        <rect x="510" y="176" width="78" height="28" rx="5" fill="var(--paper)" stroke="var(--proposed)" stroke-width="1"/>
+        <text x="549" y="195" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">on-prem</text>
+        <text x="334" y="236" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">L3 packets. Peering is</text>
+        <text x="334" y="254" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">nontransitive. Not E9.</text>
+
+        <rect x="620" y="48" width="284" height="232" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="636" y="74" font-family="var(--mono)" font-size="11" letter-spacing="1" fill="var(--det)" font-weight="700">E13 CELLS · FATE, NOT DOMAIN</text>
+        <rect x="636" y="92" width="252" height="28" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1.2"/>
+        <text x="762" y="111" text-anchor="middle" font-size="12" font-family="var(--sans)" fill="var(--ink)">thin cell router</text>
+        <rect x="636" y="132" width="76" height="56" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="674" y="156" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">cell 1</text>
+        <text x="674" y="174" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--ink-soft)">full stack</text>
+        <rect x="724" y="132" width="76" height="56" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="762" y="156" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">cell 2</text>
+        <text x="762" y="174" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--ink-soft)">full stack</text>
+        <rect x="812" y="132" width="76" height="56" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="850" y="156" text-anchor="middle" font-size="11" font-family="var(--sans)" fill="var(--ink)">cell N</text>
+        <text x="850" y="174" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--ink-soft)">full store</text>
+        <text x="636" y="216" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">1 design quantum × N copies.</text>
+        <text x="636" y="234" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">Shared DB collapses it.</text>
+        <text x="636" y="252" font-size="12" font-family="var(--sans)" fill="var(--ink-soft)">Not a gateway. Not E2.</text>
+      </svg>
+    </div>
+    <figcaption><b>Name the column before you pick the style.</b> Four retailer systems through a message hub is E9 (Hohpe 4 → 6 undirected edges). Four spoke VNets through a firewall is networking. N complete checkout stacks behind a partition-key router is cell-based — the same service graph stamped, not a new domain cut. An API gateway in front of one product is still a façade, not a hub.</figcaption>
+  </figure>
+
+  <div class="rule-orn"><span>THE COST OF BEING WRONG</span></div>
+
+  <div class="measure">
+    <h2><span class="num">06</span>Migration is cheap only in one direction</h2>
+    <p>Inside the family, the default first move is <strong>impose seams, stay on one deployable</strong>. Shopify rejected microservices and moved monolith → modular monolith (2020: 2.8M lines, 37 components). Isolating “Platform Essentials” still took months after a checker’s todos hit zero. Fowler had few success stories of designing as if services while staying in-process.</p>
+    <p>The priced exit is coarse services, often still one database — service-based, not a leap to microservices. Extract after prerequisites <em>and</em> a named fracture. Split that service’s data or the quantum count does not change. SnapCI knew CI, still got boundaries wrong, and merged back. Merging is cheaper than inventing a distributed transaction. The day you leave one process you pay the fallacies (network, latency, versioning, compensating updates, observability). A fashion extract buys them before you have a fracture that pays for them.</p>
+
+    <h3>This workspace’s receipts</h3>
+    <p>The style-decision (2026-07-26) and ADR 0005 picked <strong>one quantum</strong>: one Spring Boot deployable, three domain modules (conversion, validation-certification, evidence), one primary datastore. Layered as macro was rejected — change streams are domain clusters. Microservices lost on semantic coupling plus the fashion check. Service-based was the strongest distributed candidate and lost because Determination&nbsp;1 found <strong>no quantum boundary</strong>: the IR spine is shared; Preserve Provenance has CA = 13 of 16; a synchronous Certify→Models call would collapse a split. Replay-on-devices and cluster C looked extractable and failed — shared lineage store; audit writes that must share a <em>local</em> transaction.</p>
+    <p>Named destination: service-based, when a named flip appears (residency; a second live execution backend reopens a <em>localized</em> SPI). CI asserts exactly one deployable. A microkernel registry was declined (Volatile Core on conversion). Orchestration-driven SOA was rejected in one line. Client–server is the <em>perimeter</em> — operators initiate; the process reacts. Hexagonal is available <em>inside</em> a cluster, not as top-level packages.</p>
+
+    <div class="callout" style="border-left-color:var(--llm);background:var(--llm-wash)">
+      <span class="tag" style="color:var(--llm)">Judgment · the cost of the wrong cut</span>
+      <p>Wrong modular seams are a refactor. Wrong service seams are a network migration. A distributed monolith — HTTP plus shared schema plus lock-step release — pays both taxes and keeps one quantum. Grains of sand, saga sprawl, a gateway that owns the workflow, dual-write onto a bus, and a shared-DB “cell” are the same mistake in different clothes: you advertised many quanta and shipped one.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>THE SCORECARD</span></div>
+
+  <div class="measure">
+    <h2><span class="num">07</span>What each cluster actually decides</h2>
+    <p>Pulling the four bets together. Teal is a mechanic the Concepts state. Amber is a when-not or trade-off. Slate is an operator or product pick. Violet means the source left the cell empty — do not fill it.</p>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <caption>Group E — cluster scorecard, grounded in the Concepts</caption>
+      <thead>
+        <tr><th>The cut</th><th>What you are choosing</th><th>Honesty</th><th>Cost of being wrong</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>One quantum or not?</td>
+          <td>Family (monolith) versus leave. Shared store or sync merge keeps you at one. Replicas do not raise the count.</td>
+          <td><span class="owner-pill det">Verified</span></td>
+          <td>Leave early and you buy the network fallacies with no fracture. Stay forever on uneven load and you clone the cold path with the hot one.</td>
+        </tr>
+        <tr>
+          <td>Is that quantum modular?</td>
+          <td>Domain modules, published APIs, enforced seams. Folders are not this cut. Recovered modular row: HI cost/simplicity/modularity; deploy/test 2★; scale/elasticity 1★; FT unsupported.</td>
+          <td><span class="owner-pill det">Verified</span></td>
+          <td>Public-everything packages make layered, hexagonal, and modular the same graph. Recovery is access modifiers, not HTTP.</td>
+        </tr>
+        <tr>
+          <td>Where do compile-time arrows end?</td>
+          <td>Layered: the store is the sink. Hexagonal: the domain is the sink. Same quantum. Opposite dependency rule.</td>
+          <td><span class="owner-pill det">Verified</span></td>
+          <td>Label hexagonal, keep a DAL sink. Or wrap CRUD in ports and pay ceremony for no isolation (sinkhole plus types).</td>
+        </tr>
+        <tr>
+          <td>Where does product variation register?</td>
+          <td>Microkernel: core + registry + plug-ins. One config-selected Strategy is the modular seam, not a kernel. Quantum 1 unless remote plug-ins leave.</td>
+          <td><span class="owner-pill det">Verified</span></td>
+          <td>Volatile Core, plug-in-to-plug-in matrices, or a registry as costume jewelry. This workspace declined the registry.</td>
+        </tr>
+        <tr>
+          <td>Who initiates, where does work sit?</td>
+          <td>Client–server: roles and two-tier / n-tier / fat / thin / mobile. Not the wire, not the layer stack, not the server-side quantum count.</td>
+          <td><span class="owner-pill excl">Uncertain count</span></td>
+          <td>Empty CRUD tiers; chatty objects; fat-client version skew. Typical quantum is Uncertain — no style-selection row.</td>
+        </tr>
+        <tr>
+          <td>Own data, or keep ACID on one store?</td>
+          <td>Service-based: ≤12 coarse services, usually one DB, quanta ≥1. Microservices: own data + independent deploy; most quanta. Orchestration-SOA: residual legacy; quantum 1; deploy/test disastrous.</td>
+          <td><span class="owner-pill llm">Trade-off</span></td>
+          <td>HTTP + shared schema = distributed monolith. Cross-service transactions dominate → coarsen, do not “fix” with a better orchestrator (that rebuilds SOA).</td>
+        </tr>
+        <tr>
+          <td>How is compute hosted?</td>
+          <td>Serverless: vendor starts and stops the unit. Function is the deployable, not the domain. Quantum = function + store + sync callers. No FSA row.</td>
+          <td><span class="owner-pill llm">Trade-off</span></td>
+          <td>Twenty zip files on one table. Cold-start as an undeclared tail. FaaSify a modular monolith into grains of sand.</td>
+        </tr>
+        <tr>
+          <td>How much of the fleet can one poison take?</td>
+          <td>Cells: one design quantum stamped N times plus a thin router. Partitions fate, not domain. Inner style is orthogonal.</td>
+          <td><span class="owner-pill det">Verified shape</span></td>
+          <td>Shared DB, fat router, deploy-all-cells, or shuffle-shard <em>across</em> cells. No recovered star card — do not invent one.</td>
+        </tr>
+        <tr>
+          <td>Default collaboration?</td>
+          <td>Event-driven: react to facts. Broker versus mediator is who owns the workflow. Quanta 1–many. Queues and outbox are mechanisms.</td>
+          <td><span class="owner-pill det">Verified</span></td>
+          <td>Request-reply over the bus; dual-write; invisible flow; shared-DB “distributed” EDA (4 not 5 because of the database).</td>
+        </tr>
+        <tr>
+          <td>Read model versus write model?</td>
+          <td>CQRS / event sourcing: overlays inside one bounded context. Independent; often paired; not required to be async. No FSA row.</td>
+          <td><span class="owner-pill llm">When-not</span></td>
+          <td>Cookie-cutter every module. God event store. Broker-as-store. Fowler: majority of CQRS cases he had seen were harmful.</td>
+        </tr>
+        <tr>
+          <td>Replace the app-to-app mesh?</td>
+          <td>Integration hub. Not WAN hub-spoke, not a product gateway, not SOA-by-purchase. Hohpe versus Mason is a fork, not an average.</td>
+          <td><span class="owner-pill human">Operate the centre</span></td>
+          <td>Hub as SPOF; n-square at metadata; über-broker; hub as the application. No typical “1+N” FACT.</td>
+        </tr>
+        <tr>
+          <td>What did this workspace pick?</td>
+          <td>One quantum, three domain modules, one store. E6 named later. E2 / E3-as-macro / E7-registry / ch17 SOA declined. Perimeter is client–server.</td>
+          <td><span class="owner-pill human">Product decision</span></td>
+          <td>A named residency or second execution backend reopens a localized extract — not a fashion split.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="proposed-zone">
+    <div class="proposed-banner">◆ Uncertain in the source — do not invent a number</div>
+    <div class="measure" style="margin-top:-6px">
+      <h2><span class="num">08</span>Cells the Concepts left empty</h2>
+      <p>Everything above this line is a claim a Group&nbsp;E Concept actually makes. What follows is parked so a review cannot “complete” the matrix.</p>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · typical quantum</span>
+        <p><strong>Client–server has no style-selection row.</strong> Typical quantum count is Uncertain. There is no star scorecard. Do not invent “2+.” Azure tiers are scalability / security / reliability boundaries, not automatically new quanta. Whether an org-unowned browser or a BFF is a quantum is left open. This workspace’s “one server-side quantum” is a local pick, not a catalog FACT.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · no matrix row</span>
+        <p><strong>Hexagonal, hub-and-spoke, serverless, and CQRS/event sourcing have no Richards/Ford matrix row</strong> — no typical-quanta cell, no stars. An absent row is not a 3★. Cell-based likewise has no prose-recovered stars; the “1 design quantum × N copies” shape is Well-Architected plus quantum machinery, not a book rating. “Typical hub = 1 + N spokes” is explicitly <em>not</em> a catalog FACT.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · unrecovered stars</span>
+        <p><strong>Microservices star figures 1–5 did not survive</strong> into the workspace notes; simplicity / cost stays —. Layered’s FSA chapter-10 scorecard is —. Richards 2015 High/Low prose is a different book — do not merge it with later stars. Orchestration-SOA and service-based have recovered cells only where style-selection recorded them; other cells stay —.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · unsettled arguments</span>
+        <p><strong>Start-distributed versus monolith-first remains unsettled</strong> as a law — Fowler’s 2015 observation (greenfield-as-microservices ended in trouble) is recorded; do not treat MonolithFirst as a statute. IBM’s “faster because teams per tier” contradicts Fowler’s vote against layer-teams — contested, not a law. Accidental SOA and shared-entity-library <em>mechanics</em> are name-checks; the source file that would define them is missing. Exact FSA sentences for Volatile Core and Plug-In Dependencies were unrecovered on the research fetch.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="measure">
+    <p class="pull">A style is a <b>deployment-and-coupling bet</b>. Count the quanta you actually have — store included — and price the cut you cannot cheaply undo.</p>
+    <p>If you can say that without opening a Concept, Group&nbsp;E did its job. The thirteen cards are the receipts, not the menu.</p>
+  </div>
+
+</main>
+
+<footer>
+  <p><b>Grounded in.</b> Group E Concepts actually used: <code>Monolith.md</code>, <code>Microservices.md</code>, <code>LayeredArchitecture.md</code>, <code>EventDriven.md</code>, <code>ClientServer.md</code>, <code>ServiceOriented.md</code>, <code>Microkernel.md</code>, <code>Hexagonal.md</code>, <code>HubAndSpoke.md</code>, <code>ModularMonolith.md</code>, <code>Serverless.md</code>, <code>CqrsEventSourcing.md</code>, <code>CellBased.md</code>. No extra knobs from research notes. No library-defaults tables — Group E has none.</p>
+  <p><b>Honesty note.</b> Teal marks verified mechanics and recovered FACT cells (quantum counts and stars only where a Concept records them). Amber marks trade-offs and when-nots. Slate marks operator or product decisions (Shopify’s reject-microservices move; this workspace’s ADR 0005 pick). Dashed violet marks Uncertain items — parked in the proposed zone, never filled with invented vendors, SLAs, regions, replica counts, latencies, or coverage percentages.</p>
+  <p><b>Siblings.</b> <a href="a-communication.html">Group A — Communication</a> · <a href="b-scaling.html">Group B — Scaling</a> · <a href="c-availability.html">Group C — Availability</a> · <a href="d-reliability-monitoring.html">Group D — Reliability &amp; monitoring</a> · <a href="e-architectural-styles.html">Group E — Architectural styles</a></p>
+</footer>

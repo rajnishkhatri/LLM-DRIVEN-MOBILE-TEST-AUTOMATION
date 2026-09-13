@@ -1,0 +1,863 @@
+<title>Seeing Enough to Page — Reliability &amp; Monitoring</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    /* ---- chosen neutrals, biased warm toward the teal ink ---- */
+    --paper:      #F5F1E7;
+    --paper-2:    #EEE8DA;   /* raised panels */
+    --paper-edge: #E2DAC6;   /* hairlines on paper */
+    --ink:        #1B2A2B;   /* deep ink-teal, body text */
+    --ink-soft:   #4A5A59;   /* secondary text */
+    --ink-faint:  #7A8683;   /* captions */
+
+    /* ---- meaning colors (the honesty key) ---- */
+    --det:        #1F6F6B;   /* deterministic / machine / trustworthy */
+    --det-wash:   #DCECE9;
+    --llm:        #B0742A;   /* LLM / authoring / "fuzzy" reasoning */
+    --llm-wash:   #F1E3CE;
+    --proposed:   #6A5A9C;   /* proposed enhancement — never confused with real */
+    --proposed-wash:#E7E1F1;
+    --human:      #495C77;   /* human decision */
+
+    --pass:       #2E7D5B;
+    --fail:       #A6402F;
+
+    --accent:     var(--det);
+    --rule:       #D8CFBB;
+
+    --measure: 66ch;
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "Menlo", Consolas, "Liberation Mono", monospace;
+
+    --shadow: 0 1px 2px rgba(27,42,43,.06), 0 8px 24px rgba(27,42,43,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #14201F;
+      --paper-2:    #1B2B29;
+      --paper-edge: #263A37;
+      --ink:        #E7EBE7;
+      --ink-soft:   #AEBCB8;
+      --ink-faint:  #7E908B;
+      --det:        #6FC9C0;
+      --det-wash:   #17332F;
+      --llm:        #E0A65A;
+      --llm-wash:   #33280F;
+      --proposed:   #A99AD6;
+      --proposed-wash:#241E38;
+      --human:      #8BA3C4;
+      --pass:       #6BC79A;
+      --fail:       #E48374;
+      --rule:       #2A3D39;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  /* explicit toggle overrides — must win both directions */
+  :root[data-theme="light"] {
+    --paper:#F5F1E7;--paper-2:#EEE8DA;--paper-edge:#E2DAC6;--ink:#1B2A2B;--ink-soft:#4A5A59;--ink-faint:#7A8683;
+    --det:#1F6F6B;--det-wash:#DCECE9;--llm:#B0742A;--llm-wash:#F1E3CE;--proposed:#6A5A9C;--proposed-wash:#E7E1F1;
+    --human:#495C77;--pass:#2E7D5B;--fail:#A6402F;--rule:#D8CFBB;
+    --shadow:0 1px 2px rgba(27,42,43,.06),0 8px 24px rgba(27,42,43,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper:#14201F;--paper-2:#1B2B29;--paper-edge:#263A37;--ink:#E7EBE7;--ink-soft:#AEBCB8;--ink-faint:#7E908B;
+    --det:#6FC9C0;--det-wash:#17332F;--llm:#E0A65A;--llm-wash:#33280F;--proposed:#A99AD6;--proposed-wash:#241E38;
+    --human:#8BA3C4;--pass:#6BC79A;--fail:#E48374;--rule:#2A3D39;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* faint survey-grid texture on the ground */
+  body::before {
+    content:""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(var(--paper-edge) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-edge) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: .28;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 80%);
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+  .measure { max-width: var(--measure); margin-left: auto; margin-right: auto; }
+
+  /* ---------- masthead ---------- */
+  header.mast {
+    max-width: 1000px; margin: 0 auto; padding: 64px 24px 28px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--det); margin: 0 0 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow::before {
+    content:""; width: 34px; height: 2px; background: var(--det); display:inline-block;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 700; line-height: 1.05;
+    font-size: clamp(2.4rem, 6vw, 4.1rem); margin: 0 0 .35em; letter-spacing: -.01em;
+    text-wrap: balance; color: var(--ink);
+  }
+  .dek {
+    font-family: var(--serif); font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    line-height: 1.4; color: var(--ink-soft); max-width: 40ch; text-wrap: balance;
+    font-style: italic; margin: 0 0 26px;
+  }
+  .byline {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    letter-spacing: .04em; border-top: 1px solid var(--rule);
+    padding-top: 14px; display:flex; gap: 18px 26px; flex-wrap: wrap;
+  }
+  .byline b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- body typography ---------- */
+  main { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  p { margin: 0 0 1.15em; }
+  main > .measure > p,
+  main > .measure > h2,
+  main > .measure > h3,
+  main > .measure > ul,
+  main > .measure > ol,
+  main > .measure > .callout { }
+
+  h2 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.01em;
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem); line-height: 1.12;
+    margin: 2.2em 0 .1em; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .5em; color: var(--det); font-weight: 500;
+    letter-spacing: .1em; vertical-align: middle; margin-right: .8em;
+    border: 1px solid var(--det); border-radius: 3px; padding: .18em .5em;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.16rem;
+    margin: 1.9em 0 .3em; color: var(--ink); letter-spacing: -.005em;
+  }
+  .lede { font-size: 1.28rem; line-height: 1.5; color: var(--ink);
+    font-family: var(--serif); }
+  .lede b { color: var(--det); }
+  a { color: var(--det); text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { }
+  code {
+    font-family: var(--mono); font-size: .84em;
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 4px; padding: .08em .38em; color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .drop::first-letter {
+    font-family: var(--serif); float: left; font-size: 3.7em; line-height: .78;
+    padding: .06em .12em 0 0; color: var(--det); font-weight: 700;
+  }
+
+  ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--det); }
+
+  /* ---------- the honesty key (persistent legend) ---------- */
+  .key {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    margin: 0 -24px 0; padding: 10px 24px;
+  }
+  .key-inner {
+    max-width: 1000px; margin: 0 auto; display: flex; gap: 8px 22px;
+    flex-wrap: wrap; align-items: center;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .02em;
+  }
+  .key-inner .klabel { color: var(--ink-faint); text-transform: uppercase; letter-spacing:.12em; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+  .sw { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .sw.det { background: var(--det); }
+  .sw.llm { background: var(--llm); }
+  .sw.human { background: var(--human); }
+  .sw.prop { background: var(--proposed-wash); border: 1.5px dashed var(--proposed); }
+
+  /* ---------- figure bands (break the measure) ---------- */
+  figure {
+    margin: 2.4em 0; padding: 0;
+  }
+  figure svg { display: block; width: 100%; height: auto; }
+  .fig-card {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 12px; padding: 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    margin-top: 12px; line-height: 1.5; letter-spacing: .01em;
+    max-width: 74ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--det); background: var(--det-wash);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 1.6em 0;
+    font-size: .98rem;
+  }
+  .callout .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--det); display:block; margin-bottom: 6px; font-weight: 600;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout.proposed { border-left-color: var(--proposed); background: var(--proposed-wash); border-left-style: dashed; }
+  .callout.proposed .tag { color: var(--proposed); }
+
+  /* ---------- proposed section wrapper ---------- */
+  .proposed-zone {
+    border: 1.5px dashed var(--proposed); border-radius: 14px;
+    background: color-mix(in srgb, var(--proposed-wash) 55%, transparent);
+    padding: 8px 26px 26px; margin: 2.4em 0;
+  }
+  .proposed-banner {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--proposed); font-weight: 700;
+    background: var(--paper); border: 1.5px dashed var(--proposed); border-radius: 999px;
+    padding: 7px 16px; transform: translateY(-20px); box-shadow: var(--shadow);
+  }
+  .proposed-zone h2, .proposed-zone h3 { }
+  .proposed-zone h2 .num { color: var(--proposed); border-color: var(--proposed); }
+
+  /* ---------- scorecard table ---------- */
+  .table-wrap { overflow-x: auto; margin: 1.8em 0; border-radius: 10px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--paper-2); font-size: .95rem; }
+  caption { text-align: left; font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint); padding: 0 0 10px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--paper-edge); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600; background: color-mix(in srgb, var(--paper-2) 60%, var(--paper)); }
+  tbody tr:last-child td { border-bottom: none; }
+  td .who { font-weight: 700; }
+  td .who.det { color: var(--det); }
+  td .who.llm { color: var(--llm); }
+  td .who.human { color: var(--human); }
+  td .who.excl { color: var(--fail); }
+
+  .owner-pill {
+    display:inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .owner-pill.det { background: var(--det-wash); color: var(--det); border:1px solid var(--det); }
+  .owner-pill.llm { background: var(--llm-wash); color: var(--llm); border:1px solid var(--llm); }
+  .owner-pill.human { background: color-mix(in srgb,var(--human) 16%, transparent); color: var(--human); border:1px solid var(--human); }
+  .owner-pill.excl { background: color-mix(in srgb,var(--fail) 12%, transparent); color: var(--fail); border:1px dashed var(--fail); }
+
+  /* ---------- section rule ---------- */
+  .rule-orn { display: flex; align-items: center; gap: 16px; margin: 3em 0 0; color: var(--rule); }
+  .rule-orn::before, .rule-orn::after { content:""; height: 1px; background: var(--rule); flex: 1; }
+  .rule-orn span { font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: var(--ink-faint); }
+
+  /* ---------- pull quote ---------- */
+  .pull {
+    font-family: var(--serif); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.28;
+    color: var(--ink); font-style: italic; text-wrap: balance;
+    border-top: 2px solid var(--det); border-bottom: 2px solid var(--det);
+    padding: .7em 0; margin: 1.8em 0;
+  }
+  .pull b { font-style: normal; color: var(--det); }
+
+  /* footer */
+  footer {
+    max-width: 1000px; margin: 60px auto 0; padding: 26px 24px 0;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+  footer b { color: var(--ink-soft); }
+
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    header.mast { padding-top: 40px; }
+    .key-inner { font-size: 11px; gap: 6px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<header class="mast">
+  <p class="eyebrow">System design patterns · Group D · Reliability &amp; monitoring</p>
+  <h1>Seeing Enough to Page</h1>
+  <p class="dek">You cannot operate what you cannot see. First name the signals, then collect them on the device and on the server, join them across hops, and only then decide which burn rates deserve a page.</p>
+  <div class="byline">
+    <span><b>Audience</b> Engineering &amp; architecture</span>
+    <span><b>Reading time</b> ~14 min</span>
+    <span><b>Status</b> Explainer — catalog group D</span>
+  </div>
+</header>
+
+<div class="key">
+  <div class="key-inner">
+    <span class="klabel">How to read the colours:</span>
+    <span class="chip"><span class="sw det"></span> Verified mechanic / default</span>
+    <span class="chip"><span class="sw llm"></span> Judgment / trade-off / when-not</span>
+    <span class="chip"><span class="sw human"></span> Operator or product decision</span>
+    <span class="chip"><span class="sw prop"></span> Uncertain in the source</span>
+  </div>
+</div>
+
+<main>
+
+  <div class="measure">
+    <p class="lede drop">A checkout can return <b>200</b> while the user’s main thread is frozen. The load balancer can be green while the payment pool is queued. The Collector can drop the record of that night while the product stays up. Operating that system is not “having three stores.” It is four jobs, in order.</p>
+
+    <p>Name the signals so every card means the same thing by <em>metric</em> and <em>trace</em>. Collect them where the user sits and where the server works — those are different courts. Join one request across hops so the three signals are one investigation. Then decide, as policy, which spend of the leftover unreliability should wake a human.</p>
+
+    <p class="pull">You cannot operate what you cannot see: <b>which signals exist</b>, <b>where they are collected</b>, <b>how they join across hops</b>, and <b>which burn rates deserve a page</b>.</p>
+
+    <p>If you remember only that sequence, the rest of this piece is why each job is a different owner — and why collapsing them produces a dashboard that replaced the feedback loop.</p>
+  </div>
+
+  <!-- ============ FIG 1: LANDSCAPE ============ -->
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 320" role="img" aria-labelledby="fig-land">
+        <title id="fig-land">Four jobs in order: name the signals, collect on the device and the server, join one request across hops, then decide which burn rates page a human.</title>
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="var(--ink-soft)"/>
+          </marker>
+        </defs>
+
+        <text x="20" y="28" font-family="var(--mono)" font-size="11" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">THE WHOLE GROUP IN ONE PICTURE · FOUNDATIONS → CLIENT → SERVER → JOIN → POLICY</text>
+
+        <rect x="16" y="48" width="168" height="196" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.6"/>
+        <text x="32" y="74" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">D1 · NAME</text>
+        <text x="32" y="104" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">Signals</text>
+        <text x="32" y="130" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Metric · log · trace</text>
+        <text x="32" y="148" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">exemplar · baggage</text>
+        <text x="32" y="176" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">RED · USE · golden</text>
+        <text x="32" y="204" font-family="var(--mono)" font-size="11" fill="var(--det)">one vocabulary</text>
+        <text x="32" y="222" font-family="var(--mono)" font-size="11" fill="var(--det)">D2–D5 consume it</text>
+
+        <rect x="204" y="48" width="168" height="88" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="220" y="74" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">D2 · DEVICE</text>
+        <text x="220" y="98" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">User court</text>
+        <text x="220" y="120" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">CWV · crash · ANR</text>
+
+        <rect x="204" y="148" width="168" height="96" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="220" y="174" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">D3 · SERVER</text>
+        <text x="220" y="198" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">Operator court</text>
+        <text x="220" y="220" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">host / process / RPC</text>
+
+        <rect x="392" y="48" width="200" height="196" rx="12" fill="var(--paper)" stroke="var(--det)" stroke-width="1.6"/>
+        <text x="408" y="74" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">D4 · JOIN</text>
+        <text x="408" y="104" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">One request</text>
+        <text x="408" y="130" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">traceparent on every hop</text>
+        <text x="408" y="148" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">trace_id on the log</text>
+        <text x="408" y="166" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">exemplar on the metric</text>
+        <text x="408" y="196" font-family="var(--mono)" font-size="11" fill="var(--det)">alert on metrics</text>
+        <text x="408" y="214" font-family="var(--mono)" font-size="11" fill="var(--det)">attach a trace</text>
+
+        <rect x="612" y="48" width="292" height="196" rx="12" fill="color-mix(in srgb,var(--human) 12%, var(--paper))" stroke="var(--human)" stroke-width="1.6"/>
+        <text x="628" y="74" font-family="var(--mono)" font-size="11" fill="var(--human)" font-weight="700">D5 · POLICY</text>
+        <text x="628" y="104" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">Which burn pages</text>
+        <text x="628" y="130" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">SLI → SLO → budget → burn</text>
+        <text x="628" y="148" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">page at 14.4× and 6×</text>
+        <text x="628" y="166" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">ticket at 1× · freeze when empty</text>
+        <text x="628" y="196" font-family="var(--mono)" font-size="11" fill="var(--human)">not D3 wiring</text>
+        <text x="628" y="214" font-family="var(--mono)" font-size="11" fill="var(--human)">not a fourth signal type</text>
+
+        <line x1="184" y1="146" x2="200" y2="146" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="372" y1="146" x2="388" y2="146" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="592" y1="146" x2="608" y2="146" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <text x="20" y="276" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Actuators stay off this picture. A breaker, a shed, a limiter, and a degraded path</text>
+        <text x="20" y="296" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">place these signals. They do not invent a fifth type, and they are not the SLO.</text>
+      </svg>
+    </div>
+    <figcaption><b>Four jobs, one sequence.</b> D1 names the signals and the three golden-metric frameworks. D2 and D3 only instantiate them — on the device and on the server. D4 stitches one request. D5 decides which spend of the leftover unreliability is a page. Mixing the boxes is how a CPU page fires while users are fine, or a green server hides a frozen checkout.</figcaption>
+  </figure>
+
+  <div class="rule-orn"><span>PART ONE · FOUNDATIONS</span></div>
+
+  <div class="measure">
+    <h2><span class="num">01</span>Name the signals first</h2>
+    <p><strong>Monitoring</strong> is collecting, processing, aggregating, and displaying real-time quantitative data. <strong>Observability</strong> is inferring internal behaviour from external outputs — a data-management problem first. Having three stores does not make a system observable. The quality attributes in play are diagnosability (you can name what broke and why), operability (pages are urgent, actionable, and user-visible), cost (cardinality is both the bill and the correctness bound), and reliability of the telemetry path itself.</p>
+    <p>This group’s first owner is vocabulary. A metric, a log, a trace, and a profile mean one thing from here on. Client RUM, server dashboards, trace propagation, and SLO math consume those definitions; they must not re-derive them. Breaker dashboards are placement of these signals — state, trip rate, not-permitted calls — not a fourth type.</p>
+    <p>OpenTelemetry’s word is <strong>signal</strong>, not pillar: system outputs that describe the underlying activity of the operating system and applications. Each signal is built on context propagation. Specification <strong>1.60.0</strong> (released 2026-08-07): tracing, metrics protocol, logging bridge, and baggage API/SDK are stable; the metrics SDK is mixed; profiles protocol is development. Semantic conventions are <strong>1.44.0</strong>. OTLP <strong>1.11.0</strong> is stable for traces, metrics, and logs.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 280" role="img" aria-labelledby="fig-signals">
+        <title id="fig-signals">Catalog signal types: metric, log, and trace are first-class; exemplar joins a histogram bucket to a trace; baggage is contextual key-value, not an observability tool; profile is still development.</title>
+        <text x="20" y="26" font-family="var(--mono)" font-size="11" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">D1 TAXONOMY · ONE DEFINITION EACH · D2–D5 MUST NOT REWRITE THESE BOXES</text>
+
+        <rect x="16" y="44" width="218" height="150" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="32" y="70" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">METRIC</text>
+        <text x="32" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink)">Runtime measurement + time</text>
+        <text x="32" y="116" font-family="var(--sans)" font-size="13" fill="var(--ink)">+ metadata. Aggregate stats,</text>
+        <text x="32" y="134" font-family="var(--sans)" font-size="13" fill="var(--ink)">not a request lifecycle.</text>
+        <text x="32" y="164" font-family="var(--mono)" font-size="11" fill="var(--det)">cheap to alert on</text>
+
+        <rect x="250" y="44" width="218" height="150" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="266" y="70" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">LOG</text>
+        <text x="266" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink)">Timestamped record. Events</text>
+        <text x="266" y="116" font-family="var(--sans)" font-size="13" fill="var(--ink)">are a type of log; not all</text>
+        <text x="266" y="134" font-family="var(--sans)" font-size="13" fill="var(--ink)">logs are events.</text>
+        <text x="266" y="164" font-family="var(--mono)" font-size="11" fill="var(--det)">names the root cause</text>
+
+        <rect x="484" y="44" width="218" height="150" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="500" y="70" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">TRACE</text>
+        <text x="500" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink)">Path of a request. A span is</text>
+        <text x="500" y="116" font-family="var(--sans)" font-size="13" fill="var(--ink)">a structured log with</text>
+        <text x="500" y="134" font-family="var(--sans)" font-size="13" fill="var(--ink)">hierarchy and causality.</text>
+        <text x="500" y="164" font-family="var(--mono)" font-size="11" fill="var(--det)">sampling is D4</text>
+
+        <rect x="718" y="44" width="186" height="150" rx="10" fill="var(--proposed-wash)" stroke="var(--proposed)" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <text x="734" y="70" font-family="var(--mono)" font-size="11" fill="var(--proposed)" font-weight="700">PROFILE</text>
+        <text x="734" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink)">Code-level resource use.</text>
+        <text x="734" y="116" font-family="var(--sans)" font-size="13" fill="var(--ink)">pprof-based. Protocol</text>
+        <text x="734" y="134" font-family="var(--sans)" font-size="13" fill="var(--ink)">still development.</text>
+        <text x="734" y="164" font-family="var(--mono)" font-size="11" fill="var(--proposed)">not equivalent yet</text>
+
+        <rect x="16" y="208" width="444" height="56" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="32" y="232" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">EXEMPLAR</text>
+        <text x="32" y="250" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Join from a histogram bucket back to a trace — not a sixth signal.</text>
+
+        <rect x="476" y="208" width="428" height="56" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.3"/>
+        <text x="492" y="232" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">BAGGAGE</text>
+        <text x="492" y="250" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Rides next to context. “Not an observability tool.” No OTLP component.</text>
+      </svg>
+    </div>
+    <figcaption><b>Six names, two of them not first-class pages.</b> A metric is for aggregates; high-cardinality attributes belong elsewhere. A log is not a paging signal by default — it names a root cause a metric cannot. Sampling, W3C Trace Context on the wire, and correlation operations are D4, not a redefinition of “trace.” An exemplar is connective tissue. Baggage can be promoted onto the other signals by a processor; do not put credentials or unfiltered PII in it — inbound keys have no integrity check.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>Three frameworks compose; they are complementary views of the same system, not competing scorecards. <strong>RED</strong> (Rate, Errors, Duration) is for every <em>service</em> — are users having a bad time? <strong>USE</strong> (utilization, saturation, errors) is for every <em>resource</em> — which pool is the bottleneck? The <strong>four golden signals</strong> — latency, traffic, errors, saturation — sit on a user-facing <em>system</em>. Wilkie treats them as RED plus saturation: user happiness joined to machine happiness. Golden saturation is the join — a service-level fullness measure that USE would have found per resource.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 240" role="img" aria-labelledby="fig-frameworks">
+        <title id="fig-frameworks">RED answers user happiness on a service, USE answers machine happiness on a resource, and the four golden signals join them as latency, traffic, errors, and saturation.</title>
+        <text x="20" y="26" font-family="var(--mono)" font-size="11" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">HOW THE FRAMEWORKS COMPOSE · WRONG UNIT IS THE WHEN-NOT</text>
+
+        <rect x="16" y="48" width="280" height="150" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="32" y="76" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">RED · A SERVICE</text>
+        <text x="32" y="106" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">User happiness</text>
+        <text x="32" y="134" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Rate · Errors · Duration</text>
+        <text x="32" y="160" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">D3 on servers · D2 on navigations</text>
+        <text x="32" y="180" font-family="var(--mono)" font-size="11" fill="var(--llm)">not on a disk</text>
+
+        <rect x="320" y="48" width="280" height="150" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="336" y="76" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">USE · A RESOURCE</text>
+        <text x="336" y="106" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">Machine happiness</text>
+        <text x="336" y="134" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Utilization · Saturation · Errors</text>
+        <text x="336" y="160" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">CPU, disk, lock, pool, FD table</text>
+        <text x="336" y="180" font-family="var(--mono)" font-size="11" fill="var(--llm)">not alone on a request service</text>
+
+        <rect x="624" y="48" width="280" height="150" rx="12" fill="color-mix(in srgb,var(--human) 12%, var(--paper))" stroke="var(--human)" stroke-width="1.5"/>
+        <text x="640" y="76" font-family="var(--mono)" font-size="11" fill="var(--human)" font-weight="700">GOLDEN · A SYSTEM</text>
+        <text x="640" y="106" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">The join</text>
+        <text x="640" y="134" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Latency · traffic · errors</text>
+        <text x="640" y="160" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">+ fullness of the tightest resource</text>
+        <text x="640" y="180" font-family="var(--mono)" font-size="11" fill="var(--human)">not a fifth SLO</text>
+      </svg>
+    </div>
+    <figcaption><b>Place the framework on the right unit.</b> USE alone on a request-driven service measures pod utilization, not user happiness — Wilkie’s reason for inventing RED. RED alone on a disk asks the wrong questions. Four golden signals on a batch or queue worker still work if you translate the units: traffic becomes messages/s or lag; latency becomes age-of-oldest; saturation is consumer-lag or disk. D3 picks those units. It does not redefine the signals.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <h3>Semantics that later cards must keep</h3>
+    <p><strong>Latency</strong> is time to service a request — split successful versus failed, and never design around the mean. An average of 100&nbsp;ms at 1&nbsp;000 QPS can hide 1% at 5&nbsp;s; that p99 becomes the median of a frontend that fans out. Collect counts bucketed by latency; never average percentiles. <strong>Traffic</strong> is demand in a system-specific unit. <strong>Errors</strong> are explicit (HTTP 500s), implicit (HTTP 200 with the wrong content), or by policy (a 1.2&nbsp;s success against a one-second commitment). Load-balancer 5xx miss wrong-content 200s; classify 4xx / 5xx / 429 before counting — the same table the breaker already owns. <strong>Saturation</strong> is fullness of the <em>most constrained</em> resource; systems degrade before 100% utilization. p99 over a short window, and “the disk fills in 4 hours,” are leading indicators. Shed and 429 reject latency must not enter the success histogram; a degraded path needs its own RED. USE stays Gregg’s checklist: utilization is busy-time; saturation is extra work that cannot be serviced (any non-zero can be a problem); errors include recovered ones.</p>
+
+    <h3>Cardinality is the correctness bound</h3>
+    <p>Cost scales with unique attribute combinations, not request volume. The OpenTelemetry Metrics SDK default limit <strong>SHOULD be 2000</strong>. Overflow is not dropped: it folds into one point tagged <code>otel.metric.overflow=true</code>. Totals stay correct; filtered queries undercount. A counter labelled <code>{url.path, success}</code> that overflows will fold <code>{url.path=/checkout, success=false}</code> into that point — the error-rate alert goes silent while the total looks healthy. Put user ID, request ID, raw path, and build SHA on logs, traces, or exemplars. On metrics use method, route template, status class, service, instance. A 100% metrics series plus a 1% trace sample is a deliberate fidelity split; D4 owns the sampler.</p>
+
+    <div class="callout">
+      <span class="tag">Verified mechanic · when a page is justified</span>
+      <p>D5 owns SLI/SLO documents, error budgets, and multiwindow burn-rate math. D1 owns when a page is justified, so D5 does not invent a different paging philosophy. A page detects an otherwise undetected condition that is urgent, actionable, and actively or imminently user-visible. Every page requires intelligence — a robotic response should be automated. Symptom over cause: “what’s broken” versus “why.” Causes belong on dashboards and in traces. Black-box paging forces discipline; white-box catches imminent saturation and failures masked by retries. Email alerts are alert spam. Keep the paging path simple — limited success with deep dependency hierarchies and “magic” threshold learners.</p>
+    </div>
+
+    <p>Signals without trigger, owner, and action are a dashboard that replaced the feedback loop. Start with RED histograms, USE on the bottleneck resource, and a Watchdog. You do not need every OpenTelemetry signal before the first dashboard.</p>
+
+    <h3>The pipeline is a dependency</h3>
+    <p>A Collector that drops on overflow is <strong>fail-closed for telemetry and fail-open for the product</strong>: the request succeeds, the record does not. Decide that explicitly. Documented defaults: queue 1000 (requests, not spans), 10 consumers, drop on overflow; retry 5&nbsp;s → 30&nbsp;s at 1.5×, <code>max_elapsed_time</code> 300&nbsp;s. Self-metrics scraped only on localhost never reach the Prometheus that pages you; the legacy collector health endpoint is documented as not working as expected. Watch accepted versus sent and enqueue-failed. Sustained refused means the client was told no. The Watchdog is an alert that is always firing, routed to an <em>external</em> heartbeat: its absence is the only reliable signal that the paging path has died.</p>
+  </div>
+
+  <div class="rule-orn"><span>PART TWO · THE TWO COURTS</span></div>
+
+  <div class="measure">
+    <h2><span class="num">02</span>The device is a different court</h2>
+    <p>Server metrics tell you the backend survived. Client-side monitoring tells you whether the user device did: the page painted, the tap painted, the process stayed alive. A 200 from checkout and a frozen main thread are compatible facts. This is first-party observation of browser and mobile experience — RUM, Core Web Vitals, JavaScript exceptions, crash, ANR, hang — so a release that is green on the server can still be red where the user sits.</p>
+    <p>It is not a capacity control. A RUM snippet does not shed load, trip a breaker, isolate a pool, or flip a kill switch. Those act. This card sees. D1 still owns the taxonomy: the client only instantiates those types. A browser p75 is not a server p99. Session-to-trace correlation is D4; burn-rate math is D5. p75 CWV and Play 28-day DAU rates are candidate SLIs, not a paging policy.</p>
+    <p>Field measurement has two populations that must not be treated as interchangeable. <strong>CrUX</strong> is eligible Chrome users who opted into usage statistics, on publicly discoverable and “sufficiently popular” origins, over a rolling 28 days, about two days behind. It tells you whether a public URL or origin <em>passes</em> Core Web Vitals at p75 — not why. <strong>First-party RUM</strong> is whoever your snippet reaches, minus consent, blockers, and sampling; it can attribute which element, which interaction, which navigation, which session. <strong>Lab</strong> (Lighthouse, DevTools, WebPageTest) has no real user, so INP is not measurable there — Total Blocking Time is the documented proxy. Lab cannot stand in for field INP or lifespan CLS.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="fig-client">
+        <title id="fig-client">Client monitoring instantiates D1: three measurement populations on the left, Core Web Vitals pass rule in the centre, and three error classes that must never share one denominator on the right.</title>
+        <text x="20" y="26" font-family="var(--mono)" font-size="11" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">D2 INSTANTIATES D1 · THREE POPULATIONS · THREE ERROR CLASSES · ONE PASS RULE</text>
+
+        <rect x="16" y="44" width="200" height="168" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.4"/>
+        <text x="32" y="70" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">POPULATION</text>
+        <text x="32" y="98" font-family="var(--sans)" font-size="13.5" fill="var(--ink)" font-weight="700">CrUX</text>
+        <text x="32" y="116" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">Chrome · 28-day court</text>
+        <text x="32" y="142" font-family="var(--sans)" font-size="13.5" fill="var(--ink)" font-weight="700">First-party RUM</text>
+        <text x="32" y="160" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">attribution · script survivors</text>
+        <text x="32" y="186" font-family="var(--sans)" font-size="13.5" fill="var(--ink)" font-weight="700">Lab</text>
+        <text x="32" y="204" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">pre-ship · no field INP</text>
+
+        <rect x="232" y="44" width="268" height="168" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="248" y="70" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">CWV · ALL THREE AT P75</text>
+        <text x="248" y="100" font-family="var(--sans)" font-size="14" fill="var(--ink)">LCP ≤ 2.5 s · loading</text>
+        <text x="248" y="122" font-family="var(--sans)" font-size="14" fill="var(--ink)">INP ≤ 200 ms · tap / key</text>
+        <text x="248" y="144" font-family="var(--sans)" font-size="14" fill="var(--ink)">CLS ≤ 0.1 · worst window</text>
+        <text x="248" y="176" font-family="var(--mono)" font-size="11" fill="var(--det)">mobile and desktop separately</text>
+        <text x="248" y="194" font-family="var(--mono)" font-size="11" fill="var(--det)">missing INP ≠ a perfect score</text>
+
+        <rect x="516" y="44" width="388" height="168" rx="10" fill="color-mix(in srgb,var(--human) 12%, var(--paper))" stroke="var(--human)" stroke-width="1.4"/>
+        <text x="532" y="70" font-family="var(--mono)" font-size="11" fill="var(--human)" font-weight="700">NEVER ONE DENOMINATOR</text>
+        <text x="532" y="100" font-family="var(--sans)" font-size="13.5" fill="var(--ink)" font-weight="700">Fatal crash</text>
+        <text x="532" y="118" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">process dead · counts toward crash-free</text>
+        <text x="532" y="144" font-family="var(--sans)" font-size="13.5" fill="var(--ink)" font-weight="700">ANR / hang</text>
+        <text x="532" y="162" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">often still alive · blanks crash-free charts</text>
+        <text x="532" y="188" font-family="var(--sans)" font-size="13.5" fill="var(--ink)" font-weight="700">JS exception</text>
+        <text x="532" y="206" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">tab usually survives · not availability</text>
+
+        <text x="20" y="240" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Play’s own clash: one user, three plays, one crash → vitals 100% (DAU) vs Crashlytics 33% (session).</text>
+        <text x="20" y="260" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Idle session ≈ 30 min on Crashlytics and the browser-sdk example; Play DAU is a 24 h PT window. Do not join them.</text>
+        <text x="20" y="280" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Pair RUM event volume with server request rate. Volume drop + flat server traffic = the monitor is down.</text>
+      </svg>
+    </div>
+    <figcaption><b>The client court uses D1’s frameworks, not a fourth one.</b> Traffic = navigations / sessions / soft-navs; errors = JS exception rate, fatal crash rate, user-perceived ANR rate; duration = LCP / INP / TTFB as distributions. Web Vitals are the page-experience golden set; Android vitals are the store-visibility golden set (user-perceived crash 1.09% and ANR 0.47% of 28-day DAU). Those floors are Play discoverability, not UX targets. First-party RUM exists to attribute the symptom.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>A page or origin passes Core Web Vitals only if all three meet “good” at p75, reported mobile and desktop separately. INP replaced FID on 2024-03-12. CLS is the worst session window, not a lifetime sum. Finalize INP and CLS on <code>visibilitychange</code>; mobile often skips unload, so a keepalive beacon is the transport. Soft navigations are off unless opted in — they diverge first-party RUM from Search. Two JavaScript OpenTelemetry stacks do not emit the same signals: legacy auto-web is spans only (no CWV, no exceptions, no sessions); the newer browser SDK emits <code>browser.web_vital</code> and <code>exception</code> events — metrics are out of scope. Do not average two CWV implementations. Do not treat CrUX green as a reason to skip first-party RUM.</p>
+    <p>Play’s user-perceived ANR is input-dispatch of 5 seconds. OpenTelemetry Android’s <code>device.anr</code> is a foreground 1&nbsp;s × 5 poll — not that definition. Prefer crash-free <em>sessions</em> on a fixed post-release window; crash-free <em>users</em> shrink as the window lengthens by construction. Opt-in-only collection makes the charts optimistic or near zero — a monitoring failure, not an app-quality signal.</p>
+
+    <div class="callout" style="border-left-color: var(--llm); background: var(--llm-wash);">
+      <span class="tag" style="color: var(--llm);">Judgment · client-shaped alerts</span>
+      <p>Alert on field p75 or Play’s 28-day DAU rate — never a single pageview or a Lighthouse score. Tight “N of M minutes” burns mis-fire because client series are sparse, consent-biased, and finalized late. A RUM-volume drop with stable server traffic is a <em>monitor</em> outage, not a quality win. Consent and sample-rate changes are deploys: they move the denominator. Burn-rate and paging policy stay in D5.</p>
+    </div>
+  </div>
+
+  <div class="measure">
+    <h2><span class="num">03</span>Four stacked views of one server</h2>
+    <p>The complementary question on the server is: what is the distribution of user-visible work, and is a human needed? A probe is a binary routing or restart decision. A golden-signal pipeline is histograms, counters, saturation, and paging. Crossing them produces the two classic failures already on the health-check card: a shallow TCP check that black-holes traffic onto empty 200s, and a deep dependency check in the load-balancer path that takes the fleet out when one shared backend blinks.</p>
+    <p>Treat a production instance as layers. Host, process, and runtime take USE. Inbound RPC takes RED — the inbound histogram, not host CPU. Saturation is not utilization: any queued extra work is already a problem, and five-minute CPU averages at or below 80% can hide 100% bursts. Wilkie’s shape is one duration histogram, but status as a label multiplies buckets × codes × routes. Prefer a route template and an explicit error predicate — <code>status_code!~"2.."</code> pages on 401/404/422. Prometheus <code>DefBuckets</code> top out at 10&nbsp;s and omit the extra OpenTelemetry HTTP boundaries; put a bucket <em>on</em> the SLO threshold or interpolation lies.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="fig-server">
+        <title id="fig-server">Server monitoring is four stacked layers plus a mechanical alerting path: scrape or export health, rule evaluation, notification grouping, then burn-rate shape whose thresholds belong to D5.</title>
+        <defs>
+          <marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--ink-faint)"/>
+          </marker>
+        </defs>
+        <text x="20" y="26" font-family="var(--mono)" font-size="11" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">D3 APPLIES D1 TO SERVERS · LAYERS ON THE LEFT · MECHANICS ON THE RIGHT · POLICY STAYS IN D5</text>
+
+        <rect x="16" y="44" width="200" height="48" rx="8" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.2"/>
+        <text x="28" y="64" font-family="var(--mono)" font-size="10.5" fill="var(--det)" font-weight="700">HOST · USE</text>
+        <text x="28" y="82" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">run-queue · disk wait · NIC</text>
+
+        <rect x="16" y="100" width="200" height="48" rx="8" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.2"/>
+        <text x="28" y="120" font-family="var(--mono)" font-size="10.5" fill="var(--det)" font-weight="700">PROCESS · USE</text>
+        <text x="28" y="138" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">fds · RSS vs limit · threads</text>
+
+        <rect x="16" y="156" width="200" height="48" rx="8" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.2"/>
+        <text x="28" y="176" font-family="var(--mono)" font-size="10.5" fill="var(--det)" font-weight="700">RUNTIME · USE</text>
+        <text x="28" y="194" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">heap · GC · goroutines</text>
+
+        <rect x="16" y="212" width="200" height="56" rx="8" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.6"/>
+        <text x="28" y="234" font-family="var(--mono)" font-size="10.5" fill="var(--det)" font-weight="700">INBOUND RPC · RED</text>
+        <text x="28" y="252" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">rate · errors · duration</text>
+
+        <path d="M216,170 L248,170" stroke="var(--ink-faint)" stroke-width="1.3" marker-end="url(#ah3)"/>
+
+        <rect x="256" y="56" width="148" height="72" rx="9" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="330" y="86" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">SCRAPE / EXPORT</text>
+        <text x="330" y="108" text-anchor="middle" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">up · duration · samples</text>
+
+        <rect x="428" y="56" width="148" height="72" rx="9" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="502" y="86" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">EVALUATE</text>
+        <text x="502" y="108" text-anchor="middle" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">interval 1 m · for: 0 s</text>
+
+        <rect x="600" y="56" width="148" height="72" rx="9" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="674" y="86" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">GROUP / INHIBIT</text>
+        <text x="674" y="108" text-anchor="middle" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">30 s · 5 m · 4 h</text>
+
+        <rect x="772" y="56" width="132" height="72" rx="9" fill="color-mix(in srgb,var(--human) 12%, var(--paper))" stroke="var(--human)" stroke-width="1.5"/>
+        <text x="838" y="86" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--human)" font-weight="700">BURN SHAPE</text>
+        <text x="838" y="108" text-anchor="middle" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">thresholds = D5</text>
+
+        <path d="M404,92 L424,92" stroke="var(--ink-faint)" stroke-width="1.3" marker-end="url(#ah3)"/>
+        <path d="M576,92 L596,92" stroke="var(--ink-faint)" stroke-width="1.3" marker-end="url(#ah3)"/>
+        <path d="M748,92 L768,92" stroke="var(--ink-faint)" stroke-width="1.3" marker-end="url(#ah3)"/>
+
+        <rect x="256" y="156" width="316" height="112" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="272" y="182" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">PULL GIVES up</text>
+        <text x="272" y="204" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Failed GET is itself a series. Gone</text>
+        <text x="272" y="222" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">targets go stale — graphs blank,</text>
+        <text x="272" y="240" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">not flat. Software default scrape 1 m.</text>
+
+        <rect x="588" y="156" width="316" height="112" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.3"/>
+        <text x="604" y="182" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">PUSH HAS NO AUTOMATIC up</text>
+        <text x="604" y="204" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Fits batch, NAT, the OTel edge.</text>
+        <text x="604" y="222" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Pushgateway never forgets. Last</text>
+        <text x="604" y="240" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">samples can lie that the job is up.</text>
+      </svg>
+    </div>
+    <figcaption><b>Health checks decide whether this instance receives work. Golden signals decide whether a human is needed.</b> Page on inbound RED, on saturation when nearly full, and on <code>up == 0</code> (docs example: for 5 minutes). Host and runtime USE explain why RED moved — they are debugging after the symptom page. Exemplars on the duration histogram are never a page by themselves. Do not use <code>for:</code> as a substitute for a long SLO window: a 100% outage then waits as long as a drip, and a flicker resets the timer.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>Prometheus’s software default scrape is <strong>1&nbsp;minute</strong> (timeout 10&nbsp;s), not the tutorial’s 15&nbsp;s. Alert <code>for:</code> defaults to 0&nbsp;s — first-evaluation fire. Alertmanager: 30&nbsp;s / 5&nbsp;m / 4&nbsp;h. Data more than four to five minutes stale “might significantly impact” incident response. After a failed scrape, series go stale — blank, not flat. <code>up</code> is scrape reachability, not correctness: a process can export <code>up=1</code> while every request is 500. Page one global error-rate or latency page, not one per node; inhibit children when the dependency is already firing. Saturation is the exception: page when a signal is <em>nearly</em> problematic, because black-box users have not broken yet.</p>
+
+    <div class="callout">
+      <span class="tag">Verified mechanic · the cut with D5</span>
+      <p>This section may cite workbook <em>mechanics</em> so an implementer can wire rules. It does not pick the objective. Multi-window <code>AND</code>, short window ≈ 1/12 of long, page at 14.4× and 6×, ticket at 1× — those numbers are D5’s to accept or reject. Wiring the shape without accepting the thresholds is unfinished work, not a default.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>PART THREE · THE JOIN</span></div>
+
+  <div class="measure">
+    <h2><span class="num">04</span>One request, one forest</h2>
+    <p>Metrics tell you <em>that</em> p99 moved. A sampled trace tells you <em>which</em> hop. Correlation is joining logs — and exemplars — onto the same <code>trace_id</code> so the three signals are one investigation, not three timestamp-matching sessions. Traces diagnose a page; they are not the SLO. Timeouts bound the call and propagate remaining time; this card only records the remaining budget as a custom low-cardinality duration attribute. There is no standard OpenTelemetry name for “deadline” in semantic conventions 1.44.0.</p>
+    <p>A trace is a forest of spans that share one 128-bit <code>trace-id</code>. A span is one unit of work: name, immutable <code>SpanContext</code>, parent, kind, start/end, attributes, events, links, status. Status is <code>UNSET</code>, <code>OK</code>, or <code>ERROR</code>. Kinds: <code>CLIENT</code>, <code>SERVER</code>, <code>PRODUCER</code>, <code>CONSUMER</code>, <code>INTERNAL</code>. Attributes present at creation are the only ones a sampler is guaranteed to see. HTTP span names should be <code>{method} {target}</code> when the target is a low-cardinality route template; instrumentation must not default to the raw URI path. Raw <code>/user/123</code> names are a spanmetrics outage waiting for a deploy.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 280" role="img" aria-labelledby="fig-trace">
+        <title id="fig-trace">A request becomes a forest: CLIENT to SERVER over traceparent, SERVER to PRODUCER, CONSUMER linked to the message creation context, with logs and exemplars joined on the same trace_id.</title>
+        <defs>
+          <marker id="ah4" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--ink-soft)"/>
+          </marker>
+        </defs>
+        <text x="20" y="26" font-family="var(--mono)" font-size="11" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">D4 · IDENTITY ON THE WIRE · ONE DROPPING PROXY RESTARTS THE FOREST</text>
+
+        <rect x="16" y="48" width="160" height="88" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="32" y="76" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">CLIENT</text>
+        <text x="32" y="100" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">outgoing RPC</text>
+        <text x="32" y="118" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">session.id on D2 fetch</text>
+
+        <rect x="232" y="48" width="160" height="88" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="248" y="76" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">SERVER</text>
+        <text x="248" y="100" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">incoming RPC</text>
+        <text x="248" y="118" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">D3 RED may carry exemplars</text>
+
+        <rect x="448" y="48" width="160" height="88" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="464" y="76" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">PRODUCER</text>
+        <text x="464" y="100" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">enqueue</text>
+        <text x="464" y="118" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">creation context on message</text>
+
+        <rect x="664" y="48" width="240" height="88" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="680" y="76" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">CONSUMER + LINK</text>
+        <text x="680" y="100" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">child of ambient span</text>
+        <text x="680" y="118" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">links to creation context</text>
+
+        <path d="M176,92 L228,92" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah4)"/>
+        <path d="M392,92 L444,92" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah4)"/>
+        <path d="M608,92 L660,92" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah4)"/>
+        <text x="186" y="84" font-family="var(--mono)" font-size="10" fill="var(--det)">traceparent</text>
+        <text x="402" y="84" font-family="var(--mono)" font-size="10" fill="var(--det)">traceparent</text>
+        <text x="614" y="84" font-family="var(--mono)" font-size="10" fill="var(--det)">headers</text>
+
+        <rect x="16" y="160" width="436" height="96" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="32" y="186" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">CORRELATION</text>
+        <text x="32" y="210" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">LogRecord carries TraceId / SpanId / TraceFlags.</text>
+        <text x="32" y="228" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Non-OTLP: lowercase hex trace_id (32) + span_id (16).</text>
+        <text x="32" y="246" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Exemplar filter default: trace_based.</text>
+
+        <rect x="468" y="160" width="436" height="96" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.3"/>
+        <text x="484" y="186" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">HEAD IS CHEAP · TAIL KEEPS NEEDLES</text>
+        <text x="484" y="210" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Default sampler: ParentBased(root=AlwaysOn).</text>
+        <text x="484" y="228" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Head decides before status exists — biased against rare 5xx.</text>
+        <text x="484" y="246" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Tail: collector policy, decision_wait 30 s, same-instance required.</text>
+      </svg>
+    </div>
+    <figcaption><b>Alert on metrics; attach a trace.</b> Do not page on “trace count dropped 20%” — that is usually a sampler, collector, or exporter failure, not a user-facing outage. A proxy that drops unknown headers restarts the forest (one-span traces at every hop). Pass-through services must forward even if they do not participate. Without a message creation context, the trace ends at the publisher.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>The interoperable default is W3C Trace Context Level 1: fixed-length <code>traceparent</code> plus <code>tracestate</code>. The sampled flag is a recommendation, not a mandate. Default OpenTelemetry propagators: <code>tracecontext,baggage</code>. A fleet that only configures W3C drops context at an OpenCensus gRPC peer still speaking <code>grpc-trace-bin</code>. Baggage is a separate header — the only standard way to carry tenant, debug, or canary bits without putting them on every span, and a PII channel. Prefer a short allow-list; never user identifiers; clear it at trust boundaries.</p>
+    <p>Head sampling is cheap and complete-or-absent — and biased against rare 5xx because the decision is made before status exists. Wrap ratio samplers in <code>ParentBased</code>; bare <code>TraceIdRatioBased</code> is deprecated for <code>ProbabilitySampler</code>. Health-check and <code>/metrics</code> roots should be <code>AlwaysOff</code>. There is no SDK <code>TailSampler</code>: the contrib processor (beta) waits 30&nbsp;s, caps 50&nbsp;000 traces, and requires every span on the same collector instance. Head-sampled-away errors never reach the tail policy. Logs SDK <code>trace_based=true</code> silently drops debug logs on unsampled requests. Collector <code>span.processed</code> is hand-off, not persist success.</p>
+    <p>Tool-neutral defaults: W3C headers on every hop that can carry them; baggage only for a short allow-list; <code>ParentBased</code> plus <code>ProbabilitySampler</code> at roots; inject context on every queue message; put <code>trace_id</code>/<code>span_id</code> on every log line; record remaining deadline as a duration. The 128-attribute <em>count</em> limit does not fix high-cardinality values.</p>
+
+    <div class="callout" style="border-left-color: var(--llm); background: var(--llm-wash);">
+      <span class="tag" style="color: var(--llm);">When not to install the forest</span>
+      <p>A single process with local logs; a batch job whose unit of work is not a request; hops that cannot carry headers and will not be changed; a compliance boundary that forbids request-scoped identifiers from leaving a trust zone. Then D1 metrics plus D3 logs are enough. Do not install AlwaysOn plus tail sampling “just in case” on a latency-critical path without a budget. Default <code>parentbased_always_on</code> at high QPS saturates the backend, then operators disable tracing — Dapper’s original fear. If you derive RED from spans, treat it as a sampled estimate.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>PART FOUR · POLICY</span></div>
+
+  <div class="measure">
+    <h2><span class="num">05</span>Which burn rates deserve a page</h2>
+    <p>An SLO is a target on a carefully defined SLI. The error budget is the leftover unreliability. Alerting policy is how you notice spend while budget remains. An SLA is the same idea with consequences; if nothing happens on a miss, it is an SLO. D3 wires the path; this card picks the objective. Breakers and retries feed the SLI — they are not the SLO. 429s are a product choice for the denominator; shedding and degradation are how you spend budget on purpose.</p>
+    <p>Preferred SLI: good events / total events. Example: 99.9% over four weeks and 3&nbsp;000&nbsp;000 requests → 3&nbsp;000 allowed errors; a 1&nbsp;500-error hole spends 50%. The specification is the user outcome; the implementation (logs vs probers vs in-page JS) changes quality and coverage. Server logs miss never-arrived requests; in-page JS is closest to the user and gives telemetry its own reliability requirement. Start with five or fewer SLI types and a four-week rolling window. Count well-formed requests only: 5xx, timeout, connect fail, <code>UNAVAILABLE</code> / <code>DEADLINE_EXCEEDED</code> are bad; 4xx, 401/403, and caller cancel are not. Start with the Workbook’s 5xx-only — do not silently adopt <code>5xx|429</code>. An HTTP 200 LLM refusal is a quality SLI, not availability. Traffic is not an SLO you choose. Golden signals are not a fifth SLO.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="fig-burn">
+        <title id="fig-burn">Workbook iteration 6 multi-window burn rates for a 99.9 percent roughly 30-day SLO: page at 14.4 times over 1 hour AND 5 minutes, page at 6 times over 6 hours AND 30 minutes, ticket at 1 times over 3 days AND 6 hours.</title>
+        <text x="20" y="26" font-family="var(--mono)" font-size="11" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">D5 · WORKBOOK TABLE 5-8 · 99.9% / ~30-DAY STARTING POINT · SHORT WINDOW ≈ 1/12 OF LONG</text>
+
+        <rect x="16" y="44" width="288" height="168" rx="12" fill="var(--fail)" fill-opacity="0.12" stroke="var(--fail)" stroke-width="1.6"/>
+        <text x="32" y="72" font-family="var(--mono)" font-size="11" fill="var(--fail)" font-weight="700">PAGE</text>
+        <text x="32" y="102" font-family="var(--serif)" font-size="22" fill="var(--ink)" font-weight="700">14.4×</text>
+        <text x="32" y="128" font-family="var(--sans)" font-size="14" fill="var(--ink)">1 hour AND 5 minutes</text>
+        <text x="32" y="154" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">2% of a 30-day budget</text>
+        <text x="32" y="178" font-family="var(--mono)" font-size="11" fill="var(--fail)">14.4 × 1/720 = 0.02</text>
+
+        <rect x="320" y="44" width="288" height="168" rx="12" fill="var(--fail)" fill-opacity="0.12" stroke="var(--fail)" stroke-width="1.6"/>
+        <text x="336" y="72" font-family="var(--mono)" font-size="11" fill="var(--fail)" font-weight="700">PAGE</text>
+        <text x="336" y="102" font-family="var(--serif)" font-size="22" fill="var(--ink)" font-weight="700">6×</text>
+        <text x="336" y="128" font-family="var(--sans)" font-size="14" fill="var(--ink)">6 hours AND 30 minutes</text>
+        <text x="336" y="154" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">5% of a 30-day budget</text>
+        <text x="336" y="178" font-family="var(--mono)" font-size="11" fill="var(--fail)">6 × 6/720 = 0.05</text>
+
+        <rect x="624" y="44" width="280" height="168" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.6"/>
+        <text x="640" y="72" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">TICKET</text>
+        <text x="640" y="102" font-family="var(--serif)" font-size="22" fill="var(--ink)" font-weight="700">1×</text>
+        <text x="640" y="128" font-family="var(--sans)" font-size="14" fill="var(--ink)">3 days AND 6 hours</text>
+        <text x="640" y="154" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">10% of a 30-day budget</text>
+        <text x="640" y="178" font-family="var(--mono)" font-size="11" fill="var(--llm)">also 3× over 24 h AND 2 h</text>
+
+        <text x="20" y="240" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Iterations 1–3 are teaching failures: alerting at the SLO over 10 minutes can produce 144 alerts/day while still meeting it;</text>
+        <text x="20" y="260" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">a 1-hour for: on a 100% outage spends 140% of the month before paging. The short window exists so the alert clears when spend stops.</text>
+        <text x="20" y="280" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Burn rate 1 = the pace that hits exactly 0 at window end. A 100% outage exhausts a 99.9% / 30-day budget in 43 minutes.</text>
+      </svg>
+    </div>
+    <figcaption><b>Page while budget remains — on these windows, not on last week’s p99.</b> Table 5-8 is a starting point for a 99.9% / ~30-day SLO. It cannot fire as written on a 90% SLO (a 100% outage spends only 1.4% of that budget in an hour) and is un-pageable at five nines (budget gone in 26 seconds). Google Cloud Monitoring ships a different pair (10× / 1–2&nbsp;h and 2× / 24&nbsp;h) and cannot alert on a compliance period longer than 24&nbsp;h. Do not report 14.4 as “the GCP default.”</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>Low traffic breaks the math: 10 requests/hour, one failure = 1&nbsp;000× burn versus 99.9%. Options: synthetics, combine services, change the product, or lower the SLO. Do not invent per-microservice windows — bucket request classes. <code>NO_SLO</code> is sourced for dark launches and alpha. Yield can spend the same budget as a four-hour hole, four one-hour holes, or a 0.5% drip — different happiness. The extra-9 thumb-rule: unique critical deps one nine tighter; count each once. If a dep cannot meet it, cache, queue, or degrade. Do not overachieve — Chubby synthesizes a controlled outage in any quarter that has not naturally spent the budget.</p>
+
+    <div class="callout" style="border-left-color: var(--human); background: color-mix(in srgb,var(--human) 12%, transparent);">
+      <span class="tag" style="color: var(--human);">Operator decision · the teeth</span>
+      <p>Without an approved freeze policy the SLO is “another KPI.” Appendix B: four-week budget exhausted → halt all changes except P0 / security until back in SLO. One incident over 20% of four-week budget → postmortem with a P0 action. Write the shared-fate exceptions down before the first freeze (company-wide network, another team’s frozen dependency, out-of-scope load, miscategorized errors with no user impact). Table 2-5 is how you learn the number is wrong: met + low satisfaction → tighten; missed + high satisfaction → loosen. Do not copy current performance without that review loop. Do not set an SLO you cannot win a priority argument with. Do not page to defend five nines. Do not set 100%.</p>
+    </div>
+
+    <p>OpenTelemetry is instrumentation — raw material, no SLO resource. OpenSLO v1 is a policy object, not an instrumentation standard. Neither is the other. Fail-open guardrails still look healthy: they burn a safety or quality budget while availability stays green. Fail-closed burns the product budget on purpose. Instrument both. Do not fold a synchronous judge into the user latency SLO unless it is on the path. Metamonitoring: prefer an end-to-end “alert was delivered” black-box over per-component causes. The metrics pipeline is a critical dependency; without an extra nine and a Watchdog, you learn from Twitter.</p>
+  </div>
+
+  <div class="rule-orn"><span>THE SCORECARD</span></div>
+
+  <div class="measure">
+    <h2><span class="num">06</span>Who owns the page</h2>
+    <p>Pulling the sequence together: D1 decides what a signal is and which four numbers are enough. D2 and D3 decide where those numbers are collected. D4 decides how a request is stitched. D5 decides the contract you page on. Actuators — breaker, limiter, pool, shed, degraded path — only place the signals.</p>
+  </div>
+
+  <div class="table-wrap measure" style="max-width:var(--measure)">
+    <table>
+      <caption>Group D responsibility map — grounded in the five Concepts</caption>
+      <thead>
+        <tr><th>The job</th><th>Owner</th><th>Why it lives there</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Define metric / log / trace / exemplar / baggage</td><td><span class="owner-pill det">D1</span></td><td>One vocabulary; a second local definition will drift</td></tr>
+        <tr><td>Place RED, USE, and the four golden signals</td><td><span class="owner-pill det">D1</span></td><td>Frameworks compose; D2–D3 only instantiate</td></tr>
+        <tr><td>Default cardinality limit 2000; page overflow</td><td><span class="owner-pill det">D1</span></td><td>Totals look healthy while the filtered page goes silent</td></tr>
+        <tr><td>When a page is justified (symptom, urgent, actionable)</td><td><span class="owner-pill det">D1</span></td><td>So D5 does not invent a different paging philosophy</td></tr>
+        <tr><td>Watchdog / dead-man’s switch on an external heartbeat</td><td><span class="owner-pill det">D1</span></td><td>Absence is the only reliable signal the pager died</td></tr>
+        <tr><td>Field p75 LCP / INP / CLS; Play 28-day DAU floors</td><td><span class="owner-pill det">D2</span></td><td>User-device court; not a server p99</td></tr>
+        <tr><td>Keep crash, ANR/hang, and JS exception as three series</td><td><span class="owner-pill det">D2</span></td><td>Crash-free counts fatals only; mixing denominators is a false trend</td></tr>
+        <tr><td>Pair RUM volume with server request rate</td><td><span class="owner-pill det">D2+D3</span></td><td>Volume drop + flat RED = monitor outage</td></tr>
+        <tr><td>Host / process / runtime USE vs inbound RED</td><td><span class="owner-pill det">D3</span></td><td>Wrong layer pages on CPU while users are fine</td></tr>
+        <tr><td>Scrape health, <code>for:</code>, group / inhibit</td><td><span class="owner-pill det">D3</span></td><td>Mechanical path; not the SLO objective</td></tr>
+        <tr><td>W3C <code>traceparent</code> on every hop; <code>trace_id</code> on logs</td><td><span class="owner-pill det">D4</span></td><td>One dropping proxy restarts the forest</td></tr>
+        <tr><td>Head vs tail sampler; AlwaysOff on /metrics</td><td><span class="owner-pill llm">D4 trade-off</span></td><td>Head is cheap and biased; tail keeps needles at 30&nbsp;s / memory</td></tr>
+        <tr><td>Which ratio is the SLI, which objective, which burns page</td><td><span class="owner-pill human">D5 policy</span></td><td>The contract; freeze is the teeth</td></tr>
+        <tr><td>429 in the availability denominator</td><td><span class="owner-pill human">Product</span></td><td>Workbook example = 5xx; generators may count 429</td></tr>
+        <tr><td>Page on a Lighthouse score or a single pageview</td><td><span class="owner-pill excl">Barred</span></td><td>Lab INP does not exist; client series finalize late</td></tr>
+        <tr><td>Page on CPU, raw path labels, or span count</td><td><span class="owner-pill excl">Barred</span></td><td>Cause, cardinality bomb, or sampler failure — not a user symptom</td></tr>
+        <tr><td>Treat <code>for:</code> as the SLO window</td><td><span class="owner-pill excl">Barred</span></td><td>A 100% outage waits as long as a drip</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="measure">
+    <h3>Failure modes of monitoring itself</h3>
+    <p>The monitor is another production system. The Concepts name the ways it lies, in the same sequence as the story:</p>
+    <ul>
+      <li><strong>Cardinality overflow hides the page.</strong> Totals stay correct; filtered labels undercount. Detect <code>otel.metric.overflow=true</code>.</li>
+      <li><strong>Mean latency / unsplit success+error latency.</strong> Fast 500s make the service look faster as it gets worse.</li>
+      <li><strong>Implicit and policy errors invisible to the load balancer.</strong> HTTP 200 + wrong body; SLO-late successes.</li>
+      <li><strong>Population bias and denominator clash.</strong> CrUX ≠ RUM ≠ Play DAU ≠ Crashlytics session. Play’s 100% versus 33% example is the trap.</li>
+      <li><strong>Beacon loss and next-start crash reports.</strong> A silent collector 429 looks like a perfect release. Pair volume with server traffic.</li>
+      <li><strong>Alert fatigue.</strong> Bigtable SRE paged on synthetic mean plus email as the SLO approached and missed user-visible failures. Gmail paged on every de-scheduled task; the durable fix was automating the rote poke.</li>
+      <li><strong>Pipeline drop = silent product success.</strong> Default Collector queue drops at 1000 in-flight requests. No Watchdog → you will not be paged when Prometheus dies.</li>
+      <li><strong>Head sampling the tail away</strong> and <strong>tail policies that keep only errors</strong> (the stored corpus looks like the system is always on fire).</li>
+      <li><strong>Three-store hop without correlation IDs.</strong> Metric with no exemplar, log with no <code>span_id</code>.</li>
+      <li><strong>Event-ratio blindness to outage shape</strong> and <strong>nines arithmetic on correlated deps.</strong> Same spend, different pain. Shared fate breaks the product.</li>
+      <li><strong>Guardrail fail-open.</strong> Availability stays green; safety should have burned.</li>
+      <li><strong>Observability that replaced the feedback loop.</strong> Signals without trigger, owner, and action.</li>
+    </ul>
+  </div>
+
+  <div class="proposed-zone">
+    <div class="proposed-banner">◆ Uncertain in the source — do not treat as defaults</div>
+    <div class="measure" style="margin-top:-6px">
+      <h2><span class="num">07</span>Parked, not decided</h2>
+      <p>Everything above this line is a claim the five Concepts actually make. What follows is marked Uncertain, development, or not-yet-Recommendation in those same sources. Do not promote any of it to a fleet SLO or a paging default.</p>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · D1</span>
+        <p><strong>Profiles.</strong> The Profiles format is development as of 2026-09-13 (pprof-based; OTLP path <code>/v1development/profiles</code>). Events as a log subtype are under development or proposal. Do not treat either as equivalent to traces, metrics, or logs.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · D1 / D4</span>
+        <p><strong>W3C Baggage</strong> is a Candidate Recommendation Snapshot, 2024-05-30 — not a Recommendation. OpenTelemetry’s own line: “Baggage is not an observability tool”; there is no OTLP component. <strong>Trace Context Level 2</strong> (random-trace-id flag, 56-bit randomness that <code>ProbabilitySampler</code> depends on) is still a Candidate Recommendation Draft (2024-03-28).</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · D4</span>
+        <p><strong>Messaging semantic conventions</strong> are Development as of v1.44.0 — do not freeze create/send/process structure as stable. <strong>Mesh default header sets</strong> were not re-fetched; do not assume one. The tail sampler itself is beta.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · D2</span>
+        <p><strong>OTel browser-sdk 0.4.0</strong> is experimental; metrics are out of scope; default OTLP is localhost. <strong>Android instrumentation remains alpha</strong> (agent API stable since 1.0.0). The <strong>iOS OpenTelemetry Swift crash/hang emit list was not verified</strong> from a README — use MetricKit. WWDC26 session 222 <em>claims</em> iOS 27 MetricKit diagnostics are delivered immediately; older guidance was ~24&nbsp;h delay.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · D5</span>
+        <p><strong>OpenSLO v1</strong> AlertPolicy allows one condition (issue #218) and cannot express Workbook iteration-6 AND/OR without an extension. Burn-rate 14.4 / 6 are not in that spec. <strong>Sloth</strong> generated <code>sloth_version</code> <code>dev</code> on the fetched page — no release version claimed. No numeric eval-score threshold is sourced.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="measure">
+    <p class="pull">Name the signals. Collect them on the device and on the server. Join one request. Then decide — as policy, with teeth — <b>which burn rates deserve a page</b>.</p>
+    <p>Health checks decide whether this instance receives work. Golden signals decide whether a human is needed. Traces decide which hop to open. The SLO decides how much unreliability you are allowed to ship. Do not collapse the four.</p>
+  </div>
+
+</main>
+
+<footer>
+  <p><b>Grounded in.</b> <code>MonitoringObservabilityFoundations.md</code> (D1) · <code>ClientSideMonitoring.md</code> (D2) · <code>ServerSideMonitoring.md</code> (D3) · <code>DistributedTracing.md</code> (D4) · <code>SlosErrorBudgets.md</code> (D5). No claims mined from <code>docs/research/sysdesign/</code> beyond what those Concepts already record.</p>
+  <p><b>Honesty note.</b> Teal marks verified mechanics and published defaults from those Concepts. Amber marks judgment, trade-offs, and when-not. Slate marks operator or product decisions (freeze policy, 429 in the denominator, SLO target). Dashed violet fences items the sources themselves mark Uncertain, development, or not-yet-Recommendation. This explainer invents no vendors, SLAs, regions, replica counts, latencies, or coverage percentages.</p>
+  <p><b>Siblings.</b> <a href="a-communication.html">Group A — Communication</a> · <a href="b-scaling.html">Group B — Scaling</a> · <a href="c-availability.html">Group C — Availability</a> · <a href="d-reliability-monitoring.html">Group D — Reliability &amp; monitoring</a> · <a href="e-architectural-styles.html">Group E — Architectural styles</a></p>
+</footer>

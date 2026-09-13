@@ -1,0 +1,862 @@
+<title>Four moves, four outages — Scaling as a story</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    /* ---- chosen neutrals, biased warm toward the teal ink ---- */
+    --paper:      #F5F1E7;
+    --paper-2:    #EEE8DA;   /* raised panels */
+    --paper-edge: #E2DAC6;   /* hairlines on paper */
+    --ink:        #1B2A2B;   /* deep ink-teal, body text */
+    --ink-soft:   #4A5A59;   /* secondary text */
+    --ink-faint:  #7A8683;   /* captions */
+
+    /* ---- meaning colors (the honesty key) ---- */
+    --det:        #1F6F6B;   /* deterministic / machine / trustworthy */
+    --det-wash:   #DCECE9;
+    --llm:        #B0742A;   /* LLM / authoring / "fuzzy" reasoning */
+    --llm-wash:   #F1E3CE;
+    --proposed:   #6A5A9C;   /* proposed enhancement — never confused with real */
+    --proposed-wash:#E7E1F1;
+    --human:      #495C77;   /* human decision */
+
+    --pass:       #2E7D5B;
+    --fail:       #A6402F;
+
+    --accent:     var(--det);
+    --rule:       #D8CFBB;
+
+    --measure: 66ch;
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "Menlo", Consolas, "Liberation Mono", monospace;
+
+    --shadow: 0 1px 2px rgba(27,42,43,.06), 0 8px 24px rgba(27,42,43,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #14201F;
+      --paper-2:    #1B2B29;
+      --paper-edge: #263A37;
+      --ink:        #E7EBE7;
+      --ink-soft:   #AEBCB8;
+      --ink-faint:  #7E908B;
+      --det:        #6FC9C0;
+      --det-wash:   #17332F;
+      --llm:        #E0A65A;
+      --llm-wash:   #33280F;
+      --proposed:   #A99AD6;
+      --proposed-wash:#241E38;
+      --human:      #8BA3C4;
+      --pass:       #6BC79A;
+      --fail:       #E48374;
+      --rule:       #2A3D39;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  /* explicit toggle overrides — must win both directions */
+  :root[data-theme="light"] {
+    --paper:#F5F1E7;--paper-2:#EEE8DA;--paper-edge:#E2DAC6;--ink:#1B2A2B;--ink-soft:#4A5A59;--ink-faint:#7A8683;
+    --det:#1F6F6B;--det-wash:#DCECE9;--llm:#B0742A;--llm-wash:#F1E3CE;--proposed:#6A5A9C;--proposed-wash:#E7E1F1;
+    --human:#495C77;--pass:#2E7D5B;--fail:#A6402F;--rule:#D8CFBB;
+    --shadow:0 1px 2px rgba(27,42,43,.06),0 8px 24px rgba(27,42,43,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper:#14201F;--paper-2:#1B2B29;--paper-edge:#263A37;--ink:#E7EBE7;--ink-soft:#AEBCB8;--ink-faint:#7E908B;
+    --det:#6FC9C0;--det-wash:#17332F;--llm:#E0A65A;--llm-wash:#33280F;--proposed:#A99AD6;--proposed-wash:#241E38;
+    --human:#8BA3C4;--pass:#6BC79A;--fail:#E48374;--rule:#2A3D39;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* faint survey-grid texture on the ground */
+  body::before {
+    content:""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(var(--paper-edge) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-edge) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: .28;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 80%);
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+  .measure { max-width: var(--measure); margin-left: auto; margin-right: auto; }
+
+  /* ---------- masthead ---------- */
+  header.mast {
+    max-width: 1000px; margin: 0 auto; padding: 64px 24px 28px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--det); margin: 0 0 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow::before {
+    content:""; width: 34px; height: 2px; background: var(--det); display:inline-block;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 700; line-height: 1.05;
+    font-size: clamp(2.4rem, 6vw, 4.1rem); margin: 0 0 .35em; letter-spacing: -.01em;
+    text-wrap: balance; color: var(--ink);
+  }
+  .dek {
+    font-family: var(--serif); font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    line-height: 1.4; color: var(--ink-soft); max-width: 40ch; text-wrap: balance;
+    font-style: italic; margin: 0 0 26px;
+  }
+  .byline {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    letter-spacing: .04em; border-top: 1px solid var(--rule);
+    padding-top: 14px; display:flex; gap: 18px 26px; flex-wrap: wrap;
+  }
+  .byline b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- body typography ---------- */
+  main { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  p { margin: 0 0 1.15em; }
+  main > .measure > p,
+  main > .measure > h2,
+  main > .measure > h3,
+  main > .measure > ul,
+  main > .measure > ol,
+  main > .measure > .callout { }
+
+  h2 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.01em;
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem); line-height: 1.12;
+    margin: 2.2em 0 .1em; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .5em; color: var(--det); font-weight: 500;
+    letter-spacing: .1em; vertical-align: middle; margin-right: .8em;
+    border: 1px solid var(--det); border-radius: 3px; padding: .18em .5em;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.16rem;
+    margin: 1.9em 0 .3em; color: var(--ink); letter-spacing: -.005em;
+  }
+  .lede { font-size: 1.28rem; line-height: 1.5; color: var(--ink);
+    font-family: var(--serif); }
+  .lede b { color: var(--det); }
+  a { color: var(--det); text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { }
+  code {
+    font-family: var(--mono); font-size: .84em;
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 4px; padding: .08em .38em; color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .drop::first-letter {
+    font-family: var(--serif); float: left; font-size: 3.7em; line-height: .78;
+    padding: .06em .12em 0 0; color: var(--det); font-weight: 700;
+  }
+
+  ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--det); }
+
+  /* ---------- the honesty key (persistent legend) ---------- */
+  .key {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    margin: 0 -24px 0; padding: 10px 24px;
+  }
+  .key-inner {
+    max-width: 1000px; margin: 0 auto; display: flex; gap: 8px 22px;
+    flex-wrap: wrap; align-items: center;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .02em;
+  }
+  .key-inner .klabel { color: var(--ink-faint); text-transform: uppercase; letter-spacing:.12em; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+  .sw { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .sw.det { background: var(--det); }
+  .sw.llm { background: var(--llm); }
+  .sw.human { background: var(--human); }
+  .sw.prop { background: var(--proposed-wash); border: 1.5px dashed var(--proposed); }
+
+  /* ---------- figure bands (break the measure) ---------- */
+  figure {
+    margin: 2.4em 0; padding: 0;
+  }
+  figure svg { display: block; width: 100%; height: auto; }
+  .fig-card {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 12px; padding: 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    margin-top: 12px; line-height: 1.5; letter-spacing: .01em;
+    max-width: 74ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--det); background: var(--det-wash);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 1.6em 0;
+    font-size: .98rem;
+  }
+  .callout .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--det); display:block; margin-bottom: 6px; font-weight: 600;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout.proposed { border-left-color: var(--proposed); background: var(--proposed-wash); border-left-style: dashed; }
+  .callout.proposed .tag { color: var(--proposed); }
+
+  .callout.judgment { border-left-color: var(--llm); background: var(--llm-wash); }
+  .callout.judgment .tag { color: var(--llm); }
+
+  .callout.decide { border-left-color: var(--human); background: color-mix(in srgb, var(--human) 12%, var(--paper-2)); }
+  .callout.decide .tag { color: var(--human); }
+
+  /* ---------- proposed section wrapper ---------- */
+  .proposed-zone {
+    border: 1.5px dashed var(--proposed); border-radius: 14px;
+    background: color-mix(in srgb, var(--proposed-wash) 55%, transparent);
+    padding: 8px 26px 26px; margin: 2.4em 0;
+  }
+  .proposed-banner {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--proposed); font-weight: 700;
+    background: var(--paper); border: 1.5px dashed var(--proposed); border-radius: 999px;
+    padding: 7px 16px; transform: translateY(-20px); box-shadow: var(--shadow);
+  }
+  .proposed-zone h2, .proposed-zone h3 { }
+  .proposed-zone h2 .num { color: var(--proposed); border-color: var(--proposed); }
+
+  /* ---------- scorecard table ---------- */
+  .table-wrap { overflow-x: auto; margin: 1.8em 0; border-radius: 10px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--paper-2); font-size: .95rem; }
+  caption { text-align: left; font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint); padding: 0 0 10px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--paper-edge); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600; background: color-mix(in srgb, var(--paper-2) 60%, var(--paper)); }
+  tbody tr:last-child td { border-bottom: none; }
+  td .who { font-weight: 700; }
+  td .who.det { color: var(--det); }
+  td .who.llm { color: var(--llm); }
+  td .who.human { color: var(--human); }
+  td .who.excl { color: var(--fail); }
+
+  .owner-pill {
+    display:inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .owner-pill.det { background: var(--det-wash); color: var(--det); border:1px solid var(--det); }
+  .owner-pill.llm { background: var(--llm-wash); color: var(--llm); border:1px solid var(--llm); }
+  .owner-pill.human { background: color-mix(in srgb,var(--human) 16%, transparent); color: var(--human); border:1px solid var(--human); }
+  .owner-pill.excl { background: color-mix(in srgb,var(--fail) 12%, transparent); color: var(--fail); border:1px dashed var(--fail); }
+
+  /* ---------- section rule ---------- */
+  .rule-orn { display: flex; align-items: center; gap: 16px; margin: 3em 0 0; color: var(--rule); }
+  .rule-orn::before, .rule-orn::after { content:""; height: 1px; background: var(--rule); flex: 1; }
+  .rule-orn span { font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: var(--ink-faint); }
+
+  /* ---------- pull quote ---------- */
+  .pull {
+    font-family: var(--serif); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.28;
+    color: var(--ink); font-style: italic; text-wrap: balance;
+    border-top: 2px solid var(--det); border-bottom: 2px solid var(--det);
+    padding: .7em 0; margin: 1.8em 0;
+  }
+  .pull b { font-style: normal; color: var(--det); }
+
+  /* footer */
+  footer {
+    max-width: 1000px; margin: 60px auto 0; padding: 26px 24px 0;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+  footer b { color: var(--ink-soft); }
+
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    header.mast { padding-top: 40px; }
+    .key-inner { font-size: 11px; gap: 6px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<header class="mast">
+  <p class="eyebrow">System design patterns · Group B · Scaling</p>
+  <h1>Four moves, four outages</h1>
+  <p class="dek">You add machines, split and copy data, remember answers, or grow a new system around a live one. Each of those moves fails in a different way.</p>
+  <div class="byline">
+    <span><b>Audience</b> Engineering &amp; architecture</span>
+    <span><b>Reading time</b> ~14 min</span>
+    <span><b>Status</b> Explainer — catalog group B</span>
+  </div>
+</header>
+
+<div class="key">
+  <div class="key-inner">
+    <span class="klabel">How to read the colours:</span>
+    <span class="chip"><span class="sw det"></span> Verified mechanic / default</span>
+    <span class="chip"><span class="sw llm"></span> Judgment / trade-off / when-not</span>
+    <span class="chip"><span class="sw human"></span> Operator or product decision</span>
+    <span class="chip"><span class="sw prop"></span> Uncertain in the source</span>
+  </div>
+</div>
+
+<main>
+
+  <div class="measure">
+    <p class="lede drop">Load grows. Someone says <em>scale it</em>. The tempting picture is one knob: add replicas, watch a dashboard go green. Capacity is four different jobs — add machines, split and copy data, remember so the origin does not redo the work, or replace a live system without a freeze — and <b>each job fails in a different way</b>.</p>
+
+    <p>These Concepts do not share a control loop. An autoscaler resizes compute. A partition key decides where a record lives. A replica family decides what a commit means. A cache decides what the origin may forget. A seam decides which implementation still owns a slice. Treating a hot key as a replica shortage, or a dual-write as a routing problem, is how “scale-out” becomes an outage.</p>
+
+    <p class="pull">Capacity is not one knob. You <b>add machines</b>, <b>split and copy data</b>, <b>cache</b>, or <b>replace a live system</b> — and each move fails in a different way.</p>
+
+    <p>If you remember only that, you can retell the group. Everything below is the reasoning: the verified mechanics, the trade-offs the Concepts name, and the operator decisions they refuse to pretend are defaults.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 360" role="img" aria-labelledby="landt">
+        <title id="landt">Four capacity moves side by side: add machines, split and copy data, remember answers at two cache layers, and replace a live system through a seam.</title>
+        <defs>
+          <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--ink-faint)"/>
+          </marker>
+        </defs>
+
+        <text x="20" y="28" font-family="var(--mono)" font-size="12" letter-spacing="1.6" fill="var(--ink-faint)" font-weight="700">FOUR MOVES · NOT ONE KNOB</text>
+
+        <!-- 1 add machines -->
+        <rect x="16" y="46" width="214" height="292" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="32" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--det)" font-weight="700">ADD MACHINES</text>
+        <text x="32" y="98" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">Resize compute</text>
+        <rect x="36" y="118" width="52" height="36" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1.2"/>
+        <rect x="96" y="118" width="52" height="36" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1.2"/>
+        <rect x="156" y="118" width="52" height="36" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <text x="62" y="141" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">n</text>
+        <text x="122" y="141" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">n+1</text>
+        <text x="182" y="141" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-faint)">…</text>
+        <text x="32" y="178" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Scale-up one box, or</text>
+        <text x="32" y="196" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">scale-out identical units.</text>
+        <text x="32" y="222" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Autoscaling is a delayed</text>
+        <text x="32" y="240" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">closed loop — not instant.</text>
+        <circle cx="40" cy="272" r="4" fill="var(--fail)"/>
+        <text x="52" y="276" font-family="var(--mono)" font-size="11" fill="var(--fail)">fails: scaler + DB flood</text>
+        <text x="32" y="314" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">B1 · L = λW</text>
+
+        <!-- 2 split copy -->
+        <rect x="242" y="46" width="214" height="292" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="258" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--llm)" font-weight="700">SPLIT &amp; COPY</text>
+        <text x="258" y="98" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">Key · copy · move</text>
+        <rect x="262" y="118" width="40" height="28" rx="4" fill="var(--paper)" stroke="var(--llm)"/>
+        <text x="282" y="137" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--llm)">key</text>
+        <line x1="306" y1="132" x2="328" y2="132" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah)"/>
+        <rect x="332" y="112" width="36" height="20" rx="3" fill="var(--paper)" stroke="var(--llm)"/>
+        <rect x="374" y="112" width="36" height="20" rx="3" fill="var(--paper)" stroke="var(--llm)"/>
+        <rect x="332" y="138" width="36" height="20" rx="3" fill="var(--paper)" stroke="var(--llm)"/>
+        <text x="258" y="178" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">One record, one shard;</text>
+        <text x="258" y="196" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">then a replica family;</text>
+        <text x="258" y="214" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">then a map that can move.</text>
+        <circle cx="266" cy="248" r="4" fill="var(--fail)"/>
+        <text x="278" y="252" font-family="var(--mono)" font-size="11" fill="var(--fail)">fails: hot key, wrong</text>
+        <text x="278" y="268" font-family="var(--mono)" font-size="11" fill="var(--fail)">commit, cascade</text>
+        <text x="258" y="314" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">B2 · one chapter</text>
+
+        <!-- 3 remember -->
+        <rect x="468" y="46" width="214" height="292" rx="12" fill="color-mix(in srgb, var(--human) 14%, var(--paper))" stroke="var(--human)" stroke-width="1.5"/>
+        <text x="484" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--human)" font-weight="700">REMEMBER</text>
+        <text x="484" y="98" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">Two cache keys</text>
+        <rect x="488" y="116" width="174" height="28" rx="4" fill="var(--paper)" stroke="var(--human)"/>
+        <text x="575" y="135" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--human)">HTTP edge · B8</text>
+        <rect x="508" y="156" width="134" height="28" rx="4" fill="var(--paper)" stroke="var(--human)"/>
+        <text x="575" y="175" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--human)">app cache · B3</text>
+        <rect x="528" y="196" width="94" height="24" rx="4" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="575" y="212" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">origin</text>
+        <text x="484" y="242" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Same miss identity;</text>
+        <text x="484" y="260" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">different key space.</text>
+        <circle cx="492" cy="286" r="4" fill="var(--fail)"/>
+        <text x="504" y="290" font-family="var(--mono)" font-size="11" fill="var(--fail)">fails: stampede / flush</text>
+        <text x="484" y="314" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">B3 · B8 · keep the cut</text>
+
+        <!-- 4 replace -->
+        <rect x="694" y="46" width="210" height="292" rx="12" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="710" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--det)" font-weight="700">REPLACE LIVE</text>
+        <text x="710" y="98" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">Seam + write once</text>
+        <rect x="714" y="118" width="170" height="22" rx="4" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="799" y="134" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">same URL · seam</text>
+        <rect x="714" y="150" width="78" height="40" rx="4" fill="var(--llm-wash)" stroke="var(--llm)"/>
+        <text x="753" y="174" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--llm)">legacy</text>
+        <rect x="806" y="150" width="78" height="40" rx="4" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="845" y="174" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">new</text>
+        <text x="710" y="214" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Strangle, then emit</text>
+        <text x="710" y="232" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">from one local write.</text>
+        <circle cx="718" cy="258" r="4" fill="var(--fail)"/>
+        <text x="730" y="262" font-family="var(--mono)" font-size="11" fill="var(--fail)">fails: dual-write</text>
+        <text x="710" y="314" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">B4 · B5 · B7 · B6 sits aside</text>
+      </svg>
+    </div>
+    <figcaption><b>The group as a landscape, not a catalog walk.</b> Teal is a verified compute loop. Amber is the data-plane judgment (key, then copy, then move — one chapter). Slate is two cache products that share a miss identity and not a key space. The right panel is replacement-while-live: a seam plus a single write. Sidecar (B6) is placement of a helper, not a fifth capacity family.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <div class="rule-orn"><span>01</span></div>
+    <h2><span class="num">01</span>Add machines — a delayed loop</h2>
+    <p>The first move is the one people mean by “scale.” <strong>Scale-up</strong> changes the capacity of one unit — VM size, Pod requests, instance class. Process identity, in-memory state, and the local disk stay put. It is rarely automated: Azure’s guidance is that a vertical change is often a redeploy and an outage. Kubernetes VPA is the exception, and by default it <em>recreates</em> Pods. Price/performance of a high-end machine is worse than two mid ones; NUMA, locks, GC, and single-thread ceilings bind before the invoice does.</p>
+
+    <p><strong>Scale-out</strong> adds identical units behind a balancer or a competing-consumer queue. That is the default cloud autoscaler target. It also buys a distributed system: session affinity, membership, and — for stateful data — the B2 chapter. Spreading work across instances you already have is load balancing (C5), not this move. Horizontally scaling a database or a queue “usually involves data partitioning, which is generally not automated.” That sentence is Azure’s, and it is the cut: this chapter resizes compute; it does not resize shards.</p>
+
+    <div class="callout">
+      <span class="tag">Verified mechanic</span>
+      <p>Little’s law, with consistent units: <code>L = λW</code>. <code>λ</code> is long-run effective arrival rate, <code>W</code> is mean sojourn (queue + service), <code>L</code> is the concurrency the pool must hold. Netflix states the operational form: <code>Limit = Average RPS × Average Latency</code>. The law does not say that raising <code>λ</code> leaves <code>W</code> unchanged. Near saturation, queueing grows, so <code>L</code> grows faster than <code>λ</code> — the performance cliff.</p>
+    </div>
+
+    <p>A design drill in the Concept, not a vendor SLO: <code>λ = 200 /s</code>, <code>W = 100 ms</code> → <code>L = 20</code> in-flight. Size pools and Cloud Run slots from that identity. One replica at utilization 0.80 is already on the steep part of an M/M/1 curve; extra servers collapse <em>queueing delay</em>, not service time. Do not run this arithmetic on a shard-local hotspot and then add replicas that cannot see the hot key — that is B2.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 250" role="img" aria-labelledby="loopt">
+        <title id="loopt">Autoscaling as a delayed closed loop: observe a metric that falls as instances rise, recommend a replica count, stabilize against flap, actuate and wait for Ready, then bound with min and max.</title>
+        <defs>
+          <marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--ink-soft)"/>
+          </marker>
+        </defs>
+        <text x="20" y="28" font-family="var(--mono)" font-size="12" letter-spacing="1.6" fill="var(--det)" font-weight="700">EVERY MANAGED SCALER</text>
+
+        <rect x="16" y="50" width="160" height="120" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="96" y="88" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">1 OBSERVE</text>
+        <text x="96" y="116" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">metric that falls</text>
+        <text x="96" y="134" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">as replicas rise</text>
+
+        <rect x="198" y="50" width="160" height="120" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="278" y="88" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">2 RECOMMEND</text>
+        <text x="278" y="116" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">desired = f(now,</text>
+        <text x="278" y="134" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">target)</text>
+
+        <rect x="380" y="50" width="160" height="120" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.4"/>
+        <text x="460" y="88" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">3 STABILIZE</text>
+        <text x="460" y="116" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">windows so noise</text>
+        <text x="460" y="134" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">does not flap</text>
+
+        <rect x="562" y="50" width="160" height="120" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.4"/>
+        <text x="642" y="88" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">4 ACTUATE</text>
+        <text x="642" y="116" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">wait for Ready /</text>
+        <text x="642" y="134" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">InService</text>
+
+        <rect x="744" y="50" width="160" height="120" rx="10" fill="color-mix(in srgb, var(--human) 14%, var(--paper))" stroke="var(--human)" stroke-width="1.4"/>
+        <text x="824" y="88" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--human)" font-weight="700">5 BOUND</text>
+        <text x="824" y="116" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">min / max — not</text>
+        <text x="824" y="134" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">unlimited</text>
+
+        <line x1="176" y1="110" x2="196" y2="110" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah2)"/>
+        <line x1="358" y1="110" x2="378" y2="110" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah2)"/>
+        <line x1="540" y1="110" x2="560" y2="110" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah2)"/>
+        <line x1="722" y1="110" x2="742" y2="110" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah2)"/>
+
+        <path d="M824 176 C824 210, 96 210, 96 176" fill="none" stroke="var(--ink-faint)" stroke-width="1.2" stroke-dasharray="4 4"/>
+        <text x="460" y="232" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink-faint)">provision is never instant · the burst outruns this loop</text>
+      </svg>
+    </div>
+    <figcaption><b>The same loop at every layer.</b> Teal steps are the verified control. Amber is the lag you cannot cancel with math. Slate is the operator bound: <code>maxReplicas</code> is a safety cap at <code>downstream_budget / per_replica_cost</code>, not “unlimited.” Raw request counts and SQS depths that do not fall as the fleet grows are the wrong sensor.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>Verified 2026 defaults that bite: HPA syncs every <strong>15 s</strong>; omitted metrics default to <strong>80%</strong> average CPU (tighter than Cloud Run’s <strong>60%</strong>); scale-up stabilization is <strong>0 s</strong>, scale-down <strong>300 s</strong>. VPA omitted <code>updateMode</code> is <code>Recreate</code>. KEDA polls every <strong>30 s</strong> at zero, then hands 1→N to HPA. Cluster Autoscaler can leave those new Pods <code>Pending</code> for minutes. Cloud Run min instances default <strong>0</strong>, max <strong>100</strong> per revision; on-demand from zero pends then <strong>429</strong>. HPA and VPA on the same CPU/memory metric fight: one wants more Pods, the other wants bigger Pods.</p>
+
+    <p>Watch <code>desiredReplicas</code> vs Ready, the metric vs target, reconstructed <code>λ × W</code> vs pool size, admission rejects, and <em>downstream</em> saturation. A scaler that can take the fleet is a bulkhead (C8) you forgot to put on compute. While the loop lags, shedding (C10) is the answer — Azure says it might be better to throttle.</p>
+
+    <div class="callout judgment">
+      <span class="tag">When not</span>
+      <p>Do not autoscale when load is flat or known-periodic and a bad scaler costs more than idle. Do not autoscale when the bottleneck is <strong>data</strong> — one hot key, one primary, one queue partition. Do not autoscale when the bottleneck is <strong>in-process</strong> (unbounded pool, missing timeout): more replicas multiply the damage. Do not expect an answer faster than provision plus warmup. DaemonSets have no scale subresource. Design for the next 10×, not an imaginary 1000×. There is no generic magic scaling sauce.</p>
+    </div>
+  </div>
+
+  <div class="measure">
+    <div class="rule-orn"><span>02</span></div>
+    <h2><span class="num">02</span>Key, then copy, then move</h2>
+    <p>The data plane is one chapter with three jobs that slides collapse into “shard it.” First a record finds a shard. Then a replica family decides what a commit means. Then the key-to-node map moves without taking the cluster. Failover, routing, and rebalance couple those jobs: a node commonly leads some shards and follows others. “The primary is down” is usually “the leaders of shards {S17, S44, S91} lived on the dead node.”</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="kcmt">
+        <title id="kcmt">Data-plane spine: a key through a partition function to one shard, a replica family that decides commit meaning, then a map move with a human commit so false death does not cascade.</title>
+        <defs>
+          <marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--ink-soft)"/>
+          </marker>
+        </defs>
+
+        <rect x="16" y="36" width="280" height="240" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="32" y="64" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--det)" font-weight="700">KEY</text>
+        <text x="32" y="94" font-family="var(--serif)" font-size="22" fill="var(--ink)" font-weight="700">Where it lives</text>
+        <text x="32" y="124" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Exactly one shard.</text>
+        <text x="32" y="144" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Range, hash, or composite.</text>
+        <text x="32" y="172" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Per-partition caps make</text>
+        <text x="32" y="192" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">heat visible. A celebrity</text>
+        <text x="32" y="212" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">still hashes to one shard.</text>
+        <text x="32" y="248" font-family="var(--mono)" font-size="12" fill="var(--det)">write-shard the hot key</text>
+
+        <rect x="320" y="36" width="280" height="240" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="336" y="64" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--llm)" font-weight="700">COPY</text>
+        <text x="336" y="94" font-family="var(--serif)" font-size="22" fill="var(--ink)" font-weight="700">What COMMIT means</text>
+        <text x="336" y="124" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">One writer: stream or majority.</text>
+        <text x="336" y="144" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Second writer: merge, or don’t.</text>
+        <text x="336" y="164" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">No leader: wait for w of n.</text>
+        <text x="336" y="192" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">“We have a standby” is not</text>
+        <text x="336" y="212" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">a durability strategy.</text>
+        <text x="336" y="248" font-family="var(--mono)" font-size="12" fill="var(--llm)">name the family in the SLO</text>
+
+        <rect x="624" y="36" width="280" height="240" rx="12" fill="color-mix(in srgb, var(--human) 14%, var(--paper))" stroke="var(--human)" stroke-width="1.5"/>
+        <text x="640" y="64" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--human)" font-weight="700">MOVE</text>
+        <text x="640" y="94" font-family="var(--serif)" font-size="22" fill="var(--ink)" font-weight="700">How the map moves</text>
+        <text x="640" y="124" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Size-balance ≠ QPS-balance.</text>
+        <text x="640" y="144" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">False death + auto-move</text>
+        <text x="640" y="164" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">is the cascade.</text>
+        <text x="640" y="192" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Consensus for the map;</text>
+        <text x="640" y="212" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">gossip admits two owners.</text>
+        <text x="640" y="248" font-family="var(--mono)" font-size="12" fill="var(--human)">human commit if detection lies</text>
+
+        <line x1="296" y1="156" x2="316" y2="156" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah3)"/>
+        <line x1="600" y1="156" x2="620" y2="156" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah3)"/>
+      </svg>
+    </div>
+    <figcaption><b>One data-plane chapter, three jobs in order.</b> Pick the key first; the replica family cannot rescue a celebrity timestamp. The balancer cannot rescue a hot key either — moving a 100&nbsp;MB celebrity chunk only relocates the heat.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <h3>Key — one record, one shard</h3>
+    <p>Shard when data <em>or write throughput</em> no longer fits on one node. Read throughput alone is replica scale. Pick the key for the query you cannot afford to scatter, then write-shard the keys that burn a partition. Key-range is cheap for scans and hot on sequential keys. Hash spreads keys (never <code>hash % N</code> in a growing cluster) and still leaves a celebrity on one shard. Composite is the usual compromise; a monotonic sort key plus a local secondary index pins heat and size.</p>
+
+    <div class="callout">
+      <span class="tag">Verified default</span>
+      <p>DynamoDB documents <strong>3,000 read units/s and 1,000 write units/s</strong> per physical partition. A 20&nbsp;KB item costs 20 WCU; that partition then accepts 50 writes/s to the key even after adaptive isolation. A design drill at 4,000 writes/s to one logical entity needs <strong>80</strong> random suffixes. Table-level capacity looking “fine” while <code>KeyRangeThroughputExceeded</code> fires is the usual lie. Kafka’s broker default <code>num.partitions = 1</code> is dev-safe and prod-wrong; more partitions are for consumer parallelism, and they do not split a key already in one log. Cassandra’s current <code>num_tokens = 16</code> — do not cargo-cult 256 onto a new cluster (neighbour explosion). MongoDB default range 128&nbsp;MB; CockroachDB splits at 512&nbsp;MiB and merges below 128&nbsp;MiB.</p>
+    </div>
+
+    <p>A secondary index does not map to one shard. A write that updates two shards is a saga or a distributed transaction (B5), not a partitioning trick. Prefer vertical scale plus read replicas while one machine still holds the data <em>and</em> the write rate. Isolating <em>callers</em> from a bad dependency is a bulkhead, a different unit. Align the key with a cell (E13) if you need a user-slice blast radius rather than a random set of hash ranges.</p>
+
+    <h3>Copy — name what COMMIT means</h3>
+    <p>Once the record has a shard, the replica family is a durability choice, not a brand name. <strong>Streaming</strong> (Postgres 17) is async until <code>synchronous_standby_names</code> is set — a client-visible write can vanish on failover. Production “sync” is usually one named standby, the rest async; sync-to-all is the stall already named. Cap the replication slot or unlimited WAL (<code>max_slot_wal_keep_size = -1</code>) fills the disk. <strong>Consensus</strong> (Raft / Multi-Paxos / Kafka ISR with <code>acks=all</code> and min-ISR 2) commits after a majority persists. Kafka broker defaults — RF 1, min-ISR 1 — acknowledge a write on one disk; the documented production pairing is RF 3 / min-ISR 2 / <code>acks=all</code>, and two brokers down then <em>stops writes</em>. Dynamo (2007, leaderless) and DynamoDB (2012+, Multi-Paxos per partition) are different systems.</p>
+    <p>A <strong>second writer</strong> buys local writes through a region or device partition and pays conflicts: uniqueness and “cannot go negative” are not enforceable. Sync multi-leader is single-leader in disguise. The interesting cases are geo, offline devices, and collaboration. DynamoDB global tables are still one leader per partition plus async cross-region — not two writers on the same item in one region. <strong>Leaderless</strong> has nothing to fail over: wait for <code>w</code> of <code>n</code>. <code>w + r &gt; n</code> makes an up-to-date value <em>likely</em>; it is not linearizability (sloppy quorum, restore-from-backup, clock-skew LWW, a “failed” write that landed somewhere). Cassandra hints last <strong>3 h</strong>; <code>gc_grace</code> is <strong>10 days</strong> — repair must beat grace or deletes resurrect. Dynamo’s <code>(3, 2, 2)</code> was a shopping-cart bet, not a ledger.</p>
+
+    <div class="callout decide">
+      <span class="tag">Operator decision</span>
+      <p>Fully asynchronous replication is a product decision, not an accident of defaults. Name it in the SLO, or name a sync/majority path for the rows that cannot take it. Enabling Kafka unclean election restores writes and drops messages that only lived on the dead ISR — record it; it is not a Tuesday default. Eventual consistency has no bound; session stickiness is the operational substitute.</p>
+    </div>
+
+    <h3>Move — the map, not more Pods</h3>
+    <p>Rebalancing is expensive. Automation plus false death cascades: one slow node looks dead, ranges move, the rest look dead, more moves. If detection can be wrong, require a <strong>commit step</strong>. Pre-split for named calendar events. MongoDB balances <em>data size</em>, not QPS (default migrate at a ≥ 384&nbsp;MB gap). A 100&nbsp;MB celebrity chunk should not migrate. Cassandra will not drop a silent node from gossip. Disable the balancer during an incident.</p>
+
+    <p>Routing must know key → shard → node: any-node forward, a routing tier, or a smart client. C5 may sit in front of coordinators; it must not spray keys at storage. The map wants consensus. Gossip is cheaper and admits two owners. At cutover, in-flight requests to the old owner are not buffered unless the product says so. A stale smart-client ring extends the window (Dynamo’s paper: 10&nbsp;s refresh — a window, not a default to copy).</p>
+  </div>
+
+  <div class="measure">
+    <div class="rule-orn"><span>03</span></div>
+    <h2><span class="num">03</span>Two caches, two keys</h2>
+    <p>Remembering work is the third capacity move, and it is two products that share a miss identity. The application cache (B3) sits <em>next to an origin</em> — database, service, or computed view. The HTTP edge (B8) sits <em>on the public path</em>. The caller, the key space, and the invalidation fleet are different. Do not treat Redis invalidation and <code>Cache-Control</code> as substitutes.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 280" role="img" aria-labelledby="cachet">
+        <title id="cachet">Two cache layers around one origin: an application cache next to the store with aside or through or behind, and an HTTP edge in front of the origin with a cache key, optional shield, and purge. Same miss identity, different keys.</title>
+        <rect x="20" y="40" width="280" height="200" rx="12" fill="color-mix(in srgb, var(--human) 14%, var(--paper))" stroke="var(--human)" stroke-width="1.5"/>
+        <text x="36" y="68" font-family="var(--mono)" font-size="12" letter-spacing="1.3" fill="var(--human)" font-weight="700">B3 · NEXT TO ORIGIN</text>
+        <text x="36" y="100" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">App cache</text>
+        <text x="36" y="128" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Aside / through / behind.</text>
+        <text x="36" y="148" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">TTL, delete, or generation.</text>
+        <text x="36" y="168" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Stampede = lock, lease,</text>
+        <text x="36" y="188" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">XFetch, or refresh-ahead.</text>
+        <text x="36" y="220" font-family="var(--mono)" font-size="12" fill="var(--human)">store first, then DEL</text>
+
+        <rect x="320" y="88" width="280" height="112" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.8"/>
+        <text x="460" y="128" text-anchor="middle" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--det)" font-weight="700">ORIGIN</text>
+        <text x="460" y="156" text-anchor="middle" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">origin_qps ≈ client × (1 − hit)</text>
+        <text x="460" y="180" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">90% hit lost → 10× origin</text>
+
+        <rect x="620" y="40" width="280" height="200" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="636" y="68" font-family="var(--mono)" font-size="12" letter-spacing="1.3" fill="var(--det)" font-weight="700">B8 · PUBLIC PATH</text>
+        <text x="636" y="100" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">HTTP edge</text>
+        <text x="636" y="128" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Cache key + TTL / s-maxage</text>
+        <text x="636" y="148" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">+ RFC 5861 stale windows.</text>
+        <text x="636" y="168" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Shield collapses misses.</text>
+        <text x="636" y="188" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Purge is a fleet problem.</text>
+        <text x="636" y="220" font-family="var(--mono)" font-size="12" fill="var(--det)">tokens out of the key</text>
+      </svg>
+    </div>
+    <figcaption><b>Keep the cut the Concepts already make.</b> B3 owns who loads the origin and how a popular key stampedes it. B8 owns HTTP cache-key variance, origin shield, purge, signed URLs, and dynamic acceleration (a kept-alive TCP/TLS hop — not a cache hit). Serving stale on purpose is a product decision (C11); this group owns the mechanism.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>Aside (lazy loading) is the default application pattern because a cache outage degrades to a slower origin — <em>if</em> the origin can take the miss load. That is SRE’s <strong>latency cache</strong>. A <strong>capacity cache</strong> cannot: lose a 90% hit rate and you multiply origin load by 10×. Write-through buys read-after-write at write RTT and RAM. Write-behind buys write throughput at the price of a durable-queue problem; a crash loses acknowledged writes. Azure’s order: write the store, <em>then</em> delete the key. Delete-first lets a concurrent reader re-cache the old row.</p>
+
+    <p>Stampede after expiry, eviction, flush, or deploy is the same shape. Controls: per-key lock, leases (Facebook’s published 10&nbsp;s/key token rate on that fleet), XFetch (<code>β = 1</code>), refresh-ahead. OSS Redis defaults to <code>noeviction</code>; Azure and ElastiCache default <code>volatile-lru</code>, which will not evict if you never set TTLs. “Query the origin if the cache is down” is how a partial outage becomes site-wide — pair with a breaker (C1).</p>
+
+    <p>At the edge the key is every dimension you vary on. Extra dimensions cut hit rate; an omitted one the origin uses is a correctness bug. Drop tracker query params and <strong>signed-URL tokens</strong>; validate before lookup. <code>s-maxage</code> is not “CDN <code>max-age</code>” — on Cloudflare it silently disables <code>stale-while-revalidate</code>. A shield is fan-in of misses, not a second CDN. Flush the shield and every POP refills at once; request collapsing and the shield are the stampede controls here.</p>
+
+    <div class="callout judgment">
+      <span class="tag">When not</span>
+      <p>Do not cache sensitive data in a shared application cache, write-heavy churn whose sync cost exceeds the win, or session state that implies sticky affinity. Do not put write-behind on data you cannot afford to lose. Do not CDN-cache per-user HTML, <code>Set-Cookie</code> / <code>Authorization</code> bodies, or mutating POST. If the origin is already a latency cache — it can take full client QPS — a capacity cache is optional complexity. Small internal services in one region often want B3 next to the origin, not an edge fleet.</p>
+    </div>
+  </div>
+
+  <div class="measure">
+    <div class="rule-orn"><span>04</span></div>
+    <h2><span class="num">04</span>Replace while live — write once</h2>
+    <p>The fourth move is not more capacity of the old system. It is leaving a live system without a big-bang date, and emitting facts without writing the database and the broker as two independent commits. Strangler (B4), saga (B5), and outbox/CDC (B7) sit next to the gateway (C6), the inbox (C9), the channel (A2), and the event-driven <em>style</em> (E4). Those siblings own façade placement, exactly-once effects, how a message travels, and whether the architecture is event-driven. This chapter owns the shared villain: <strong>dual-write</strong>.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 270" role="img" aria-labelledby="writet">
+        <title id="writet">Dual-write crossed out on the left; on the right one local transaction writes business state and an outbox row, a relay publishes after commit, and a strangler seam picks legacy or new until the system of record flips via CDC.</title>
+        <rect x="16" y="36" width="300" height="210" rx="12" fill="color-mix(in srgb, var(--fail) 10%, var(--paper))" stroke="var(--fail)" stroke-width="1.5" stroke-dasharray="5 4"/>
+        <text x="32" y="64" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--fail)" font-weight="700">NOT A SYNC</text>
+        <text x="32" y="96" font-family="var(--serif)" font-size="22" fill="var(--ink)" font-weight="700">Dual-write</text>
+        <text x="32" y="128" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">App writes store A and</text>
+        <text x="32" y="148" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">store B. Partial failure, or</text>
+        <text x="32" y="168" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">two writers on one key:</text>
+        <text x="32" y="188" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">permanent split, no error.</text>
+        <text x="32" y="224" font-family="var(--mono)" font-size="12" fill="var(--fail)">Kleppmann 2015</text>
+
+        <rect x="336" y="36" width="568" height="210" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="352" y="64" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--det)" font-weight="700">WRITE ONCE</text>
+        <text x="352" y="96" font-family="var(--serif)" font-size="22" fill="var(--ink)" font-weight="700">One local txn · seam · SoR flip</text>
+        <rect x="352" y="116" width="130" height="52" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="417" y="138" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">business</text>
+        <text x="417" y="154" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">+ outbox</text>
+        <rect x="502" y="116" width="110" height="52" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="557" y="146" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">relay</text>
+        <rect x="632" y="116" width="110" height="52" rx="6" fill="var(--paper)" stroke="var(--human)"/>
+        <text x="687" y="138" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--human)">broker A2</text>
+        <text x="687" y="154" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--human)">inbox C9</text>
+        <rect x="762" y="116" width="118" height="52" rx="6" fill="var(--paper)" stroke="var(--llm)"/>
+        <text x="821" y="138" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--llm)">saga B5</text>
+        <text x="821" y="154" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--llm)">if many stores</text>
+        <text x="352" y="196" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Strangler: 0% new, shadow reads, path cutover, CDC, then flip SoR.</text>
+        <text x="352" y="220" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">E4 decides whether the system is event-driven. This card ends at “relay published.”</text>
+      </svg>
+    </div>
+    <figcaption><b>The shared failure is writing twice.</b> A strangler that dual-writes legacy and new stores, or an API that talks to Kafka on the request path, is the same bug. The outbox (or CDC of a designed event) is how the first local write starts the next hop. A saga sequences local commits and semantic undos when several stores must hold as one business operation — ACD, not ACID.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>A strangler inserts a seam — usually an HTTP façade (C6 owns that physical place). Clients keep one URL. Official sequences start at <strong>0% new / 100% legacy</strong>, dark-launch to parity, intercept reads, then writes, then flip SoR after consistency checks. A 50/50 of all URLs is a misconfiguration unless both sides implement every URL. Shadow replays writes. Rollback is a route flip until you drop legacy objects. An ACL translates leftover callers; it is not the façade. Azure’s last phase deletes the seam.</p>
+
+    <p>The outbox writes the business row and an outbox row in <strong>one local transaction</strong>. A relay that is not on the request path publishes after commit. Delivery is at-least-once; every consumer needs an inbox (C9). Two relays: polling, or log-tail CDC. CDC of the <em>business table</em> avoids a forgotten outbox insert and couples consumers to storage. A designed external event (Morling) is the other bet. Cross-service atomicity of several stores is a saga, each step using an outbox — do not restack saga recovery here, and do not retell A2’s channel kinds or E4’s style fight.</p>
+
+    <p>A saga is local commits plus semantic undos: either <code>T1…Tn</code> or compensate backward. Locks drop at each commit — that is the isolation hole. The execution log <em>is</em> atomicity. Compensatable steps, then a pivot (card capture), then retryable steps. Transient failure retries; business failure compensates; timeout-unknown on a capture is neither — reuse a C9 key, then a human. Retry and timeout knobs stay on C2 and C7.</p>
+
+    <div class="callout judgment">
+      <span class="tag">When not</span>
+      <p>Strangler is brownfield. Greenfield designs the destination style and still makes today’s system strangleable. A tiny system is cheaper to rewrite. Saga is the wrong tool when one database already owns the rows, when intermediate reads are intolerable, or when retries alone suffice. Outbox is the wrong tool when there is no other consumer, when you wanted the broker to be the system of record (that is event sourcing, E12), or when you need a warehouse mirror of tables rather than a domain event.</p>
+    </div>
+  </div>
+
+  <div class="measure">
+    <div class="rule-orn"><span>05</span></div>
+    <h2><span class="num">05</span>A helper next to the replica</h2>
+    <p>Sidecar (B6) is not a fifth way to add capacity and not a runtime style. A sidecar is a <strong>second process scheduled with the application instance and dying with it</strong> — on Kubernetes, a second container in the same Pod: shared network namespace, optional shared volumes, independent image, <em>not</em> independently scaled. That is placement. It does not turn a monolith into microservices. It does not create a cell. The breaker, retry, timeout, and concurrency limit that often run <em>inside</em> a mesh proxy stay on those cards.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 240" role="img" aria-labelledby="sidet">
+        <title id="sidet">Sidecar placement versus in-process library, node proxy, and north-south gateway. Control plane sits outside the Pod and pushes config; the data-plane helper shares fate with the app.</title>
+        <rect x="200" y="16" width="520" height="36" rx="8" fill="var(--llm-wash)" stroke="var(--llm)"/>
+        <text x="460" y="40" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--llm)" font-weight="700">CONTROL PLANE · not in the Pod · xDS / identity / inject</text>
+
+        <rect x="16" y="72" width="200" height="148" rx="10" fill="var(--paper)" stroke="var(--ink-faint)"/>
+        <text x="116" y="104" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)" font-weight="700">LIBRARY</text>
+        <text x="116" y="132" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">in-process</text>
+        <text x="116" y="152" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">E7 / E8 live here</text>
+        <text x="116" y="188" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">lowest hop</text>
+
+        <rect x="232" y="72" width="456" height="148" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.6"/>
+        <text x="460" y="100" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">POD / TASK · SHARED FATE</text>
+        <rect x="256" y="116" width="180" height="80" rx="8" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="346" y="162" text-anchor="middle" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">app</text>
+        <rect x="484" y="116" width="180" height="80" rx="8" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="574" y="154" text-anchor="middle" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">helper</text>
+        <text x="574" y="176" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">sidecar · B6</text>
+
+        <rect x="704" y="72" width="200" height="148" rx="10" fill="var(--paper)" stroke="var(--ink-faint)"/>
+        <text x="804" y="104" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)" font-weight="700">NOT THIS CARD</text>
+        <text x="804" y="132" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">node proxy / waypoint</text>
+        <text x="804" y="152" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">or gateway C6</text>
+        <text x="804" y="188" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">north–south façade</text>
+      </svg>
+    </div>
+    <figcaption><b>Placement, not a style.</b> Hexagonal adapters (E8) are in-process modules. Microkernel plugins (E7) load into a host that already has a plugin API. Azure sidecars exist precisely when the app has no plugin API. Ambient mesh (per-node L4, shared L7 waypoint) is a different placement of the same concern — Istio documents it as single-cluster; sidecar clients bypass waypoints until the source is also ambient.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>Verified injector numbers are scheduling hints, not a workload profile. Istio chart defaults: <strong>100m / 128Mi</strong> request, <strong>2000m / 1024Mi</strong> limit. Set all four resource annotations or a partial apply wipes the rest and can leave CPU unlimited. Native sidecars (<code>restartPolicy: Always</code> on init) are GA in Kubernetes 1.33 and fix Job completion and startup order. A down injector is not a no-op: new Pods come up unmeshed. Shared fate is the opposite of a bulkhead — proxy OOM isolates the app, or a live app behind a dead proxy black-holes stolen traffic.</p>
+
+    <div class="callout judgment">
+      <span class="tag">When not</span>
+      <p>Prefer a library when you own one language and latency is critical. Prefer a node proxy or ambient ztunnel when per-replica Envoy cost dominates and L4 is enough. Prefer a separate Deployment when the helper must scale independently. Prefer the gateway for north-south composition. Prefer hexagonal or microkernel when the “adapter” you want is a domain port or a plugin the app already loads.</p>
+    </div>
+  </div>
+
+  <div class="measure">
+    <div class="rule-orn"><span>06</span></div>
+    <h2><span class="num">06</span>Scorecard — which move, which outage</h2>
+    <p>Read the pills. Teal is a mechanic the Concepts verify. Amber is a trade-off they name. Slate is an operator or product decision they refuse to pretend is a default.</p>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <caption>Group B scorecard — move, buy, fail, decide</caption>
+      <thead>
+        <tr>
+          <th>Move</th>
+          <th>What you buy</th>
+          <th>How it fails</th>
+          <th>Read as</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="who det">Scale-out + autoscaler</span></td>
+          <td>Tracks unforecast load; extra servers collapse queueing delay</td>
+          <td>Delayed loop; cold start then 429; replica count floods the database; wrong metric (CPU on a blocked pool, SQS depth not per replica)</td>
+          <td><span class="owner-pill det">B1 mechanic</span></td>
+        </tr>
+        <tr>
+          <td><span class="who llm">Scale-up</span></td>
+          <td>Single-node programming model</td>
+          <td>One box, one failure domain; often a redeploy; rarely automated</td>
+          <td><span class="owner-pill llm">when-not vs out</span></td>
+        </tr>
+        <tr>
+          <td><span class="who det">Partition key</span></td>
+          <td>Write spread, read locality, isolation of heat</td>
+          <td>Celebrity key; <code>hash % N</code> reshuffle; monotonic sort + LSI pins the collection</td>
+          <td><span class="owner-pill det">B2 key</span></td>
+        </tr>
+        <tr>
+          <td><span class="who llm">Replica family</span></td>
+          <td>A named COMMIT: stream, majority, second writer, or quorum wait</td>
+          <td>Async treated as durable; uniqueness on two writers; <code>w+r&gt;n</code> treated as linearizable; tombstone zombies</td>
+          <td><span class="owner-pill llm">copy trade-off</span></td>
+        </tr>
+        <tr>
+          <td><span class="who human">Rebalance + routing</span></td>
+          <td>Shards that can move; a key that finds its owner</td>
+          <td>False-death cascade; size-balance misses QPS; cutover drop; C5 sprayed at storage</td>
+          <td><span class="owner-pill human">commit the map</span></td>
+        </tr>
+        <tr>
+          <td><span class="who det">App cache</span></td>
+          <td>Origin offload; hit skips origin RTT</td>
+          <td>Stampede; capacity-cache flush (90% → 10×); “query origin if cache down”</td>
+          <td><span class="owner-pill det">B3 mechanic</span></td>
+        </tr>
+        <tr>
+          <td><span class="who det">HTTP edge</span></td>
+          <td>Bytes at the POP; shield collapses N-POP misses</td>
+          <td>Key explosion; token-in-key; <code>s-maxage</code> kills SWR; shield flush herd</td>
+          <td><span class="owner-pill det">B8 mechanic</span></td>
+        </tr>
+        <tr>
+          <td><span class="who human">Stale on purpose</span></td>
+          <td>Hide refresh or a 5xx</td>
+          <td>Stale past the product contract</td>
+          <td><span class="owner-pill human">C11 decides</span></td>
+        </tr>
+        <tr>
+          <td><span class="who llm">Strangler seam</span></td>
+          <td>Incremental value; rollback is a route flip</td>
+          <td>Dual-write split-brain; façade SPOF; shadow side effects; sticky canary hides rollback</td>
+          <td><span class="owner-pill llm">B4 · cite C6</span></td>
+        </tr>
+        <tr>
+          <td><span class="who det">Outbox / CDC</span></td>
+          <td>Event leaves iff the local txn commits</td>
+          <td>Forgotten insert; duplicate publish; WAL/slot stall; 24&nbsp;h stream trim</td>
+          <td><span class="owner-pill det">B7 · cite C9 A2</span></td>
+        </tr>
+        <tr>
+          <td><span class="who llm">Saga</span></td>
+          <td>Business atomicity across services without XA</td>
+          <td>Orphan <code>Ti</code> / <code>Ci</code>; isolation hole; compensate never drilled</td>
+          <td><span class="owner-pill llm">B5 · cite C9 E4</span></td>
+        </tr>
+        <tr>
+          <td><span class="who det">Sidecar</span></td>
+          <td>Language-decoupled helper; no plugin API required</td>
+          <td>Shared fate; version skew; new Pods unmeshed; per-replica tax</td>
+          <td><span class="owner-pill det">B6 placement</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="measure">
+    <p>Coordinate the siblings instead of turning one knob. C5 spreads instances you already have; C8 caps in-flight; C10 answers while the scaler lags; C3 decides who writes next; C6 is usually the strangler façade; C9 is the inbox; C11 decides whether stale is acceptable. A2 is the channel; E4 is whether the architecture is event-driven; E7 / E8 are how code is composed, not where a helper sits.</p>
+  </div>
+
+  <div class="proposed-zone">
+    <div class="proposed-banner">◆ Uncertain in the source — do not treat as decided</div>
+    <h2><span class="num">07</span>What the Concepts refused to invent</h2>
+    <p>These items are explicitly unfetched, unreconciled, or labelled not-an-SLA in the Group B Concepts. They stay fenced so nobody fills them in from a blog.</p>
+
+    <div class="callout proposed">
+      <span class="tag">◆ Uncertain · replica / client defaults</span>
+      <p>Kafka 4.x <em>producer</em> <code>acks</code> default was not re-verified per language — the broker <code>min.insync.replicas = 1</code> is verified. MongoDB replica-set election timeout and Cockroach follower-read staleness were not fetched. Cassandra 5 driver/session consistency-level defaults were not re-verified; treat historical “default ONE” as cqlsh, not universal. Set the level in the session.</p>
+    </div>
+
+    <div class="callout proposed">
+      <span class="tag">◆ Uncertain · clocks and thresholds</span>
+      <p>DynamoDB global-table conflict clock (HLC vs wall vs per-item version) was not pinned this pass. MySQL Group Replication / EDB multi-primary knobs were not fetched. Citus / Vitess / Yugabyte tablet and default-shard thresholds were not fetched — empty cells are not defaults. No controlled measurement of a rebalance-induced cascade beyond the qualitative warning; do not invent a numeric cascade threshold.</p>
+    </div>
+
+    <div class="callout proposed">
+      <span class="tag">◆ Uncertain · placement resources</span>
+      <p>Envoy <em>the product</em> has no sidecar CPU/memory default; blogs that say “100m” are repeating Istio. Dapr resource defaults were not fetched. The Istio native-sidecar opt-out annotation <em>string</em> was not reconciled — look up the live reference. Istio’s ambient vs sidecar latency figures are Istio-stated with no benchmark method on the page — not a universal SLA. Envoy <code>RequestMirrorPolicy</code> omitted-fraction default is not stated; set the fraction explicitly.</p>
+    </div>
+
+    <div class="callout proposed">
+      <span class="tag">◆ Uncertain · telemetry</span>
+      <p>No stable OpenTelemetry application-cache semantic convention as of the Concept’s fetch date. Redis spans today are database spans, not cache spans. No CDN-specific OTel convention was found. No official saga convention — join keys in that card are a design rule, not a vendor schema.</p>
+    </div>
+  </div>
+
+  <div class="measure">
+    <p class="pull">Add machines, or split and copy, or remember, or replace while live. <b>Name the move.</b> Then name the outage that move actually produces — before the dashboard goes green.</p>
+  </div>
+
+</main>
+
+<footer>
+  <p><b>Grounded in.</b> <code>ScalingStrategies.md</code>, <code>Partitioning.md</code>, <code>SingleLeaderReplication.md</code>, <code>MultiLeaderReplication.md</code>, <code>LeaderlessReplication.md</code>, <code>RebalanceRouting.md</code>, <code>CachingStrategies.md</code>, <code>StranglerFig.md</code>, <code>Saga.md</code>, <code>Sidecar.md</code>, <code>OutboxCdc.md</code>, <code>CdnEdge.md</code> — the Group B Concepts. Sibling cards are cited, not retold: C5 load balancing, C6 gateway, C8 bulkhead, C10 shedding, C1 breaker, C3 failover, C9 inbox, C11 degradation, A2 channels, E4 event-driven style, E7 microkernel, E8 hexagonal, E12 event sourcing, E13 cells.</p>
+  <p><b>Honesty note.</b> Teal statements are verified mechanics or documented defaults in those Concepts (fetched 2026-09-13 where the cards say so). Amber is judgment, trade-off, or when-not those cards already name. Slate is an operator or product decision. Dashed violet is Uncertain in the source — unfetched, unreconciled, or explicitly not an SLA. This explainer does not invent vendors, regions, replica counts, latencies, or coverage percentages beyond what those files state. Worked <code>λW</code>, write-shard, hit-rate, and storefront numbers are the Concepts’ own design drills, not service objectives.</p>
+  <p><b>Siblings in this set.</b>
+    <a href="a-communication.html">a-communication.html</a> ·
+    <a href="b-scaling.html">b-scaling.html</a> ·
+    <a href="c-availability.html">c-availability.html</a> ·
+    <a href="d-reliability-monitoring.html">d-reliability-monitoring.html</a> ·
+    <a href="e-architectural-styles.html">e-architectural-styles.html</a>
+  </p>
+</footer>

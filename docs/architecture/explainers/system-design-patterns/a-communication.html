@@ -1,0 +1,882 @@
+<title>Who Holds the Line — Communication as a Design Choice</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    /* ---- chosen neutrals, biased warm toward the teal ink ---- */
+    --paper:      #F5F1E7;
+    --paper-2:    #EEE8DA;   /* raised panels */
+    --paper-edge: #E2DAC6;   /* hairlines on paper */
+    --ink:        #1B2A2B;   /* deep ink-teal, body text */
+    --ink-soft:   #4A5A59;   /* secondary text */
+    --ink-faint:  #7A8683;   /* captions */
+
+    /* ---- meaning colors (the honesty key) ---- */
+    --det:        #1F6F6B;   /* deterministic / machine / trustworthy */
+    --det-wash:   #DCECE9;
+    --llm:        #B0742A;   /* LLM / authoring / "fuzzy" reasoning */
+    --llm-wash:   #F1E3CE;
+    --proposed:   #6A5A9C;   /* proposed enhancement — never confused with real */
+    --proposed-wash:#E7E1F1;
+    --human:      #495C77;   /* human decision */
+
+    --pass:       #2E7D5B;
+    --fail:       #A6402F;
+
+    --accent:     var(--det);
+    --rule:       #D8CFBB;
+
+    --measure: 66ch;
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "Menlo", Consolas, "Liberation Mono", monospace;
+
+    --shadow: 0 1px 2px rgba(27,42,43,.06), 0 8px 24px rgba(27,42,43,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #14201F;
+      --paper-2:    #1B2B29;
+      --paper-edge: #263A37;
+      --ink:        #E7EBE7;
+      --ink-soft:   #AEBCB8;
+      --ink-faint:  #7E908B;
+      --det:        #6FC9C0;
+      --det-wash:   #17332F;
+      --llm:        #E0A65A;
+      --llm-wash:   #33280F;
+      --proposed:   #A99AD6;
+      --proposed-wash:#241E38;
+      --human:      #8BA3C4;
+      --pass:       #6BC79A;
+      --fail:       #E48374;
+      --rule:       #2A3D39;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  /* explicit toggle overrides — must win both directions */
+  :root[data-theme="light"] {
+    --paper:#F5F1E7;--paper-2:#EEE8DA;--paper-edge:#E2DAC6;--ink:#1B2A2B;--ink-soft:#4A5A59;--ink-faint:#7A8683;
+    --det:#1F6F6B;--det-wash:#DCECE9;--llm:#B0742A;--llm-wash:#F1E3CE;--proposed:#6A5A9C;--proposed-wash:#E7E1F1;
+    --human:#495C77;--pass:#2E7D5B;--fail:#A6402F;--rule:#D8CFBB;
+    --shadow:0 1px 2px rgba(27,42,43,.06),0 8px 24px rgba(27,42,43,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper:#14201F;--paper-2:#1B2B29;--paper-edge:#263A37;--ink:#E7EBE7;--ink-soft:#AEBCB8;--ink-faint:#7E908B;
+    --det:#6FC9C0;--det-wash:#17332F;--llm:#E0A65A;--llm-wash:#33280F;--proposed:#A99AD6;--proposed-wash:#241E38;
+    --human:#8BA3C4;--pass:#6BC79A;--fail:#E48374;--rule:#2A3D39;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* faint survey-grid texture on the ground */
+  body::before {
+    content:""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(var(--paper-edge) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-edge) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: .28;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 80%);
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+  .measure { max-width: var(--measure); margin-left: auto; margin-right: auto; }
+
+  /* ---------- masthead ---------- */
+  header.mast {
+    max-width: 1000px; margin: 0 auto; padding: 64px 24px 28px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--det); margin: 0 0 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow::before {
+    content:""; width: 34px; height: 2px; background: var(--det); display:inline-block;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 700; line-height: 1.05;
+    font-size: clamp(2.4rem, 6vw, 4.1rem); margin: 0 0 .35em; letter-spacing: -.01em;
+    text-wrap: balance; color: var(--ink);
+  }
+  .dek {
+    font-family: var(--serif); font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    line-height: 1.4; color: var(--ink-soft); max-width: 40ch; text-wrap: balance;
+    font-style: italic; margin: 0 0 26px;
+  }
+  .byline {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    letter-spacing: .04em; border-top: 1px solid var(--rule);
+    padding-top: 14px; display:flex; gap: 18px 26px; flex-wrap: wrap;
+  }
+  .byline b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- body typography ---------- */
+  main { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  p { margin: 0 0 1.15em; }
+  main > .measure > p,
+  main > .measure > h2,
+  main > .measure > h3,
+  main > .measure > ul,
+  main > .measure > ol,
+  main > .measure > .callout { }
+
+  h2 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.01em;
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem); line-height: 1.12;
+    margin: 2.2em 0 .1em; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .5em; color: var(--det); font-weight: 500;
+    letter-spacing: .1em; vertical-align: middle; margin-right: .8em;
+    border: 1px solid var(--det); border-radius: 3px; padding: .18em .5em;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.16rem;
+    margin: 1.9em 0 .3em; color: var(--ink); letter-spacing: -.005em;
+  }
+  .lede { font-size: 1.28rem; line-height: 1.5; color: var(--ink);
+    font-family: var(--serif); }
+  .lede b { color: var(--det); }
+  a { color: var(--det); text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { }
+  code {
+    font-family: var(--mono); font-size: .84em;
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 4px; padding: .08em .38em; color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .drop::first-letter {
+    font-family: var(--serif); float: left; font-size: 3.7em; line-height: .78;
+    padding: .06em .12em 0 0; color: var(--det); font-weight: 700;
+  }
+
+  ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--det); }
+
+  /* ---------- the honesty key (persistent legend) ---------- */
+  .key {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    margin: 0 -24px 0; padding: 10px 24px;
+  }
+  .key-inner {
+    max-width: 1000px; margin: 0 auto; display: flex; gap: 8px 22px;
+    flex-wrap: wrap; align-items: center;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .02em;
+  }
+  .key-inner .klabel { color: var(--ink-faint); text-transform: uppercase; letter-spacing:.12em; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+  .sw { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .sw.det { background: var(--det); }
+  .sw.llm { background: var(--llm); }
+  .sw.human { background: var(--human); }
+  .sw.prop { background: var(--proposed-wash); border: 1.5px dashed var(--proposed); }
+
+  /* ---------- figure bands (break the measure) ---------- */
+  figure {
+    margin: 2.4em 0; padding: 0;
+  }
+  figure svg { display: block; width: 100%; height: auto; }
+  .fig-card {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 12px; padding: 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    margin-top: 12px; line-height: 1.5; letter-spacing: .01em;
+    max-width: 74ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--det); background: var(--det-wash);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 1.6em 0;
+    font-size: .98rem;
+  }
+  .callout .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--det); display:block; margin-bottom: 6px; font-weight: 600;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout.proposed { border-left-color: var(--proposed); background: var(--proposed-wash); border-left-style: dashed; }
+  .callout.proposed .tag { color: var(--proposed); }
+
+  /* ---------- proposed section wrapper ---------- */
+  .proposed-zone {
+    border: 1.5px dashed var(--proposed); border-radius: 14px;
+    background: color-mix(in srgb, var(--proposed-wash) 55%, transparent);
+    padding: 8px 26px 26px; margin: 2.4em 0;
+  }
+  .proposed-banner {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--proposed); font-weight: 700;
+    background: var(--paper); border: 1.5px dashed var(--proposed); border-radius: 999px;
+    padding: 7px 16px; transform: translateY(-20px); box-shadow: var(--shadow);
+  }
+  .proposed-zone h2, .proposed-zone h3 { }
+  .proposed-zone h2 .num { color: var(--proposed); border-color: var(--proposed); }
+
+  /* ---------- scorecard table ---------- */
+  .table-wrap { overflow-x: auto; margin: 1.8em 0; border-radius: 10px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--paper-2); font-size: .95rem; }
+  caption { text-align: left; font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint); padding: 0 0 10px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--paper-edge); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600; background: color-mix(in srgb, var(--paper-2) 60%, var(--paper)); }
+  tbody tr:last-child td { border-bottom: none; }
+  td .who { font-weight: 700; }
+  td .who.det { color: var(--det); }
+  td .who.llm { color: var(--llm); }
+  td .who.human { color: var(--human); }
+  td .who.excl { color: var(--fail); }
+
+  .owner-pill {
+    display:inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .owner-pill.det { background: var(--det-wash); color: var(--det); border:1px solid var(--det); }
+  .owner-pill.llm { background: var(--llm-wash); color: var(--llm); border:1px solid var(--llm); }
+  .owner-pill.human { background: color-mix(in srgb,var(--human) 16%, transparent); color: var(--human); border:1px solid var(--human); }
+  .owner-pill.excl { background: color-mix(in srgb,var(--fail) 12%, transparent); color: var(--fail); border:1px dashed var(--fail); }
+
+  /* ---------- section rule ---------- */
+  .rule-orn { display: flex; align-items: center; gap: 16px; margin: 3em 0 0; color: var(--rule); }
+  .rule-orn::before, .rule-orn::after { content:""; height: 1px; background: var(--rule); flex: 1; }
+  .rule-orn span { font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: var(--ink-faint); }
+
+  /* ---------- pull quote ---------- */
+  .pull {
+    font-family: var(--serif); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.28;
+    color: var(--ink); font-style: italic; text-wrap: balance;
+    border-top: 2px solid var(--det); border-bottom: 2px solid var(--det);
+    padding: .7em 0; margin: 1.8em 0;
+  }
+  .pull b { font-style: normal; color: var(--det); }
+
+  /* footer */
+  footer {
+    max-width: 1000px; margin: 60px auto 0; padding: 26px 24px 0;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+  footer b { color: var(--ink-soft); }
+
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    header.mast { padding-top: 40px; }
+    .key-inner { font-size: 11px; gap: 6px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<header class="mast">
+  <p class="eyebrow">System design patterns · Group A · Communication</p>
+  <h1>Who Holds the Line</h1>
+  <p class="dek">Request/reply, push, callback, or a published contract — the shape you pick decides who waits, who reconnects, and what you can change without a lockstep deploy.</p>
+  <div class="byline">
+    <span><b>Audience</b> Engineering &amp; architecture</span>
+    <span><b>Reading time</b> ~14 min</span>
+    <span><b>Status</b> Explainer — catalog group A</span>
+  </div>
+</header>
+
+<div class="key">
+  <div class="key-inner">
+    <span class="klabel">How to read the colours:</span>
+    <span class="chip"><span class="sw det"></span> Verified mechanic / default</span>
+    <span class="chip"><span class="sw llm"></span> Judgment / trade-off / when-not</span>
+    <span class="chip"><span class="sw human"></span> Operator or product decision</span>
+    <span class="chip"><span class="sw prop"></span> Uncertain in the source</span>
+  </div>
+</div>
+
+<main>
+
+  <div class="measure">
+    <p class="lede drop">Every service conversation has a <b>shape</b> before it has a product name. Someone asks and waits. Someone pushes on a socket that stays open. Someone knocks later, from the other side of a trust boundary. Someone writes a promise that old and new code must keep at once. That shape — not the logo on the broker, not the version of HTTP — decides who is still on the line when work is slow, what happens when the line drops, and whether tomorrow’s clients can talk to today’s servers without a flag day.</p>
+
+    <p>Group A is six patterns that look like a catalog if you walk them in order. They are not six alternatives for the same job. They are four conversation shapes, plus the contract that lets those shapes evolve. Request–response is the default: one caller, one callee, one reply — or a classified failure — that the caller waits for. Everything else in the group is a deviation: a broker that holds work in time, a long-lived push socket, a callback across organisations, or a published surface you can change without redeploying every client.</p>
+
+    <p class="pull">The shape of the conversation — <b>request/reply, push, callback, or published contract</b> — decides who waits, who reconnects, and what you can change without a flag day.</p>
+
+    <p>If you remember only that, the rest of this page is the wiring underneath it: how the bytes actually move, how connections live and die, what a proxy’s idle clock does to a “healthy” stream, and when holding the caller is the wrong shape.</p>
+  </div>
+
+  <div class="rule-orn"><span>THE CAST</span></div>
+
+  <div class="measure">
+    <h2><span class="num">01</span>Four shapes, six characters</h2>
+    <p>Meet them as characters, not a numbered list. <strong>The waiter</strong> (REST over any HTTP version, and gRPC unary) couples caller and callee in time: one reply, or a classified failure, that the caller waits for. You buy simplicity and consistency; you pay every idle, route, and deadline timer on the path — and a timeout that leaves the outcome unknown. <strong>The time-shifter</strong> is a channel, not an architecture: a queue, topic, or log holds work while consumers are away and fans one event to many readers. Competing consumers, ordering units, leases, and dead-letter mechanics live here. The event-driven <em>style</em> — topologies, quanta, when the whole system should be event-driven — is Group E.</p>
+    <p><strong>The open line</strong> is two characters on one long-lived hold. A WebSocket is an independent TCP protocol whose only debt to HTTP is the opening handshake; both peers send whenever they like. Server-sent events are server push as an ordinary HTTP response that does not end, with reconnect and a resume cursor built into the browser. One-way text versus true duplex is the fork. <strong>The callback</strong> inverts request–response across a trust boundary: the producer owns delivery and retries; the receiver owns an internet-facing POST; ack is a status code; authentication is cryptography. <strong>The promise</strong> is the published contract those conversations carry. Request–response owns the <em>call</em>. The contract owns the <em>shape of that call as it changes</em>.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 430" role="img" aria-labelledby="landt landd">
+        <title id="landt">Four conversation shapes across Group A: request/reply, time-shifted channels, an open push session, and a cross-org callback, with the published contract as the band underneath.</title>
+        <desc id="landd">A landscape of Group A. Four teal panels show who holds the line. An amber band along the bottom is the published contract that lets those shapes evolve without a flag day.</desc>
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="var(--ink-soft)"/>
+          </marker>
+        </defs>
+
+        <!-- four conversation panels -->
+        <rect x="16" y="18" width="214" height="268" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="32" y="44" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--det)" font-weight="700">REQUEST / REPLY</text>
+        <text x="32" y="72" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">The waiter</text>
+        <text x="32" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Caller holds until a</text>
+        <text x="32" y="116" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">reply or a classified</text>
+        <text x="32" y="134" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">failure. REST or</text>
+        <text x="32" y="152" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">gRPC unary.</text>
+        <rect x="32" y="172" width="70" height="28" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="67" y="191" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">caller</text>
+        <line x1="106" y1="186" x2="132" y2="186" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah)"/>
+        <rect x="136" y="172" width="70" height="28" rx="6" fill="var(--paper)" stroke="var(--ink-soft)"/>
+        <text x="171" y="191" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">callee</text>
+        <text x="32" y="228" font-family="var(--mono)" font-size="11" fill="var(--det)">who waits: the caller</text>
+        <text x="32" y="248" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">no session to resume</text>
+        <text x="32" y="268" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">A1 · RequestResponse</text>
+
+        <rect x="242" y="18" width="214" height="268" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="258" y="44" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--det)" font-weight="700">TIME SHIFT</text>
+        <text x="258" y="72" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">The broker</text>
+        <text x="258" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Queue, topic, or log</text>
+        <text x="258" y="116" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">holds the work. Style</text>
+        <text x="258" y="134" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">questions live in E4.</text>
+        <text x="258" y="152" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">This is mechanism.</text>
+        <rect x="258" y="172" width="58" height="28" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="287" y="191" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">pub</text>
+        <line x1="320" y1="186" x2="340" y2="186" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah)"/>
+        <rect x="344" y="172" width="48" height="28" rx="6" fill="var(--paper)" stroke="var(--llm)"/>
+        <text x="368" y="191" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--llm)">hold</text>
+        <line x1="396" y1="186" x2="414" y2="186" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah)"/>
+        <rect x="418" y="172" width="22" height="28" rx="6" fill="var(--paper)" stroke="var(--ink-soft)"/>
+        <text x="258" y="228" font-family="var(--mono)" font-size="11" fill="var(--det)">who waits: the channel</text>
+        <text x="258" y="248" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">at-least-once floor</text>
+        <text x="258" y="268" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">A2 · PubSubQueues</text>
+
+        <rect x="468" y="18" width="214" height="268" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="484" y="44" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--det)" font-weight="700">OPEN SESSION</text>
+        <text x="484" y="72" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">The open line</text>
+        <text x="484" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">WebSocket: both sides</text>
+        <text x="484" y="116" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">speak. SSE: server</text>
+        <text x="484" y="134" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">pushes text; resume</text>
+        <text x="484" y="152" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">is built in.</text>
+        <rect x="484" y="172" width="78" height="28" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="523" y="191" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">client</text>
+        <text x="572" y="182" font-family="var(--mono)" font-size="9" fill="var(--ink-faint)">↔ WS</text>
+        <text x="572" y="196" font-family="var(--mono)" font-size="9" fill="var(--ink-faint)">← SSE</text>
+        <rect x="600" y="172" width="64" height="28" rx="6" fill="var(--paper)" stroke="var(--ink-soft)"/>
+        <text x="632" y="191" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">server</text>
+        <text x="484" y="228" font-family="var(--mono)" font-size="11" fill="var(--det)">who waits: the socket</text>
+        <text x="484" y="248" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">heartbeat under hops</text>
+        <text x="484" y="268" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">A3 WebSocket · A4 SSE</text>
+
+        <rect x="694" y="18" width="210" height="268" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="710" y="44" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--det)" font-weight="700">CALLBACK</text>
+        <text x="710" y="72" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">The knock</text>
+        <text x="710" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Producer POSTs to</text>
+        <text x="710" y="116" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">your HTTPS. 2xx after</text>
+        <text x="710" y="134" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">durable enqueue. No</text>
+        <text x="710" y="152" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">reconnect protocol.</text>
+        <rect x="710" y="172" width="72" height="28" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="746" y="191" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">producer</text>
+        <line x1="786" y1="186" x2="810" y2="186" stroke="var(--ink-soft)" stroke-width="1.4" marker-end="url(#ah)"/>
+        <rect x="814" y="172" width="70" height="28" rx="6" fill="var(--paper)" stroke="var(--ink-soft)"/>
+        <text x="849" y="191" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">receiver</text>
+        <text x="710" y="228" font-family="var(--mono)" font-size="11" fill="var(--det)">who waits: 2xx then</text>
+        <text x="710" y="248" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">the producer’s retries</text>
+        <text x="710" y="268" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">A5 · Webhooks</text>
+
+        <!-- contract band -->
+        <rect x="16" y="304" width="888" height="108" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="36" y="332" font-family="var(--mono)" font-size="11" letter-spacing="1.4" fill="var(--llm)" font-weight="700">PUBLISHED CONTRACT · WHAT YOU CAN CHANGE WITHOUT A FLAG DAY</text>
+        <text x="36" y="360" font-family="var(--serif)" font-size="20" fill="var(--ink)" font-weight="700">The promise outlives every call</text>
+        <text x="36" y="384" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">OpenAPI / proto / GraphQL SDL. Additive in place; a selector names the surface; deprecate, then sunset, then remove.</text>
+        <text x="36" y="404" font-family="var(--mono)" font-size="11" fill="var(--llm)">A6 · ApiContracts · servers upgrade first inside one org; cross-org runs versions side by side</text>
+      </svg>
+    </div>
+    <figcaption><b>The group in one landscape.</b> Four conversation shapes decide who is still on the line. The amber band is not a fifth transport — it is the published contract those transports carry, and the only way the group answers “what can we change without a flag day.” Teal panels are verified mechanics from the Concepts.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <div class="callout">
+      <span class="tag">Verified · A2 is mechanism</span>
+      <p>Pub/sub and queues on this page are the <strong>channel</strong>: competing consumers versus fan-out, ordering units, leases, dead-letter mechanics, and what a naive load balancer does to advertised listeners. Whether the <em>system</em> should be event-driven — broker versus mediator, how many quanta — is Group E. Cite it; do not steal its story.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>THE HOLD</span></div>
+
+  <div class="measure">
+    <h2><span class="num">02</span>Who waits</h2>
+    <p>Start with the waiter: every other shape is a way of refusing to hold the line. HTTP is stateless at the <em>message</em> layer — connection reuse must not change interpretation. Safe methods (GET, HEAD, OPTIONS, TRACE) do not request a state change. Idempotent methods add PUT and DELETE. POST and PATCH are neither. A client should not automatically retry a non-idempotent method unless it has another way to know the work is idempotent; a proxy must not. Treating POST as retryable buys availability and loses exactly-once. RFC 9110 calls the “idle persistent connection closed before any response” guess the riskier path.</p>
+    <p>How the exchange travels changes what you pay. HTTP/1.1 is practically stop-and-wait per connection. HTTP/2 multiplexes streams and keeps TCP head-of-line: one lost packet stalls every stream. HTTP/3 recovers per stream and negotiates idle timeout in the handshake — clients should open a new connection as that timeout approaches. gRPC unary always travels as HTTP POST with trailers: a well-formed RPC answers HTTP 200 even when <code>grpc-status</code> is not OK. If <code>content-type</code> does not begin <code>application/grpc</code>, servers should answer 415. The default gRPC deadline is <strong>none</strong> — omit <code>grpc-timeout</code> and the server assumes infinite. DEADLINE_EXCEEDED may follow a successful write. A timeout leaves the outcome unknown; retry without an idempotency key duplicates work; “fail fast” frees the caller and creates orphans.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 320" role="img" aria-labelledby="holdt holdd">
+        <title id="holdt">A request–response hold and the timeout sandwich: several hop clocks sit on one exchange, and the first timer that fires is the truth.</title>
+        <desc id="holdd">Caller and callee coupled on one exchange. Five hop clocks from the Concepts — client 30 seconds, Envoy route 15 seconds, nginx between-read 60 seconds, ALB idle 60 seconds, gRPC deadline unset — stacked on the same hold. The shortest clock wins.</desc>
+        <rect x="16" y="16" width="888" height="56" rx="10" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="36" y="40" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--det)" font-weight="700">ONE EXCHANGE</text>
+        <text x="36" y="58" font-family="var(--sans)" font-size="14" fill="var(--ink)">Caller holds the inbound stream, thread, and deadline until a reply — or a classified failure.</text>
+
+        <rect x="16" y="90" width="160" height="88" rx="10" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.6"/>
+        <text x="96" y="122" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">CLIENT</text>
+        <text x="96" y="146" text-anchor="middle" font-family="var(--sans)" font-size="14" fill="var(--ink)">timeout 30 s</text>
+        <text x="96" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">example sandwich</text>
+
+        <rect x="192" y="90" width="160" height="88" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="272" y="122" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">ENVOY ROUTE</text>
+        <text x="272" y="146" text-anchor="middle" font-family="var(--sans)" font-size="14" fill="var(--ink)">default 15 s</text>
+        <text x="272" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">after request complete</text>
+
+        <rect x="368" y="90" width="168" height="88" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="452" y="122" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">NGINX READ</text>
+        <text x="452" y="146" text-anchor="middle" font-family="var(--sans)" font-size="14" fill="var(--ink)">60 s between I/O</text>
+        <text x="452" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">not total time</text>
+
+        <rect x="552" y="90" width="160" height="88" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+        <text x="632" y="122" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">ALB IDLE</text>
+        <text x="632" y="146" text-anchor="middle" font-family="var(--sans)" font-size="14" fill="var(--ink)">default 60 s</text>
+        <text x="632" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">H2 PING does not reset</text>
+
+        <rect x="728" y="90" width="176" height="88" rx="10" fill="var(--paper)" stroke="var(--fail)" stroke-width="1.5"/>
+        <text x="816" y="122" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--fail)" font-weight="700">gRPC DEADLINE</text>
+        <text x="816" y="146" text-anchor="middle" font-family="var(--sans)" font-size="14" fill="var(--ink)">unset = infinite</text>
+        <text x="816" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">server assumes forever</text>
+
+        <rect x="16" y="198" width="888" height="104" rx="10" fill="var(--llm-wash)" stroke="var(--llm)"/>
+        <text x="36" y="230" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--llm)" font-weight="700">THE SANDWICH</text>
+        <text x="36" y="256" font-family="var(--sans)" font-size="15" fill="var(--ink)">The first timer that fires is the truth. The others add 502 / 504 / UNAVAILABLE noise.</text>
+        <text x="36" y="280" font-family="var(--sans)" font-size="14" fill="var(--ink-soft)">Invert it (proxy longer than the client) and the proxy holds a connection the client has already abandoned. HTTP/2 PING does not keep ALB or Envoy HTTP idle alive.</text>
+      </svg>
+    </div>
+    <figcaption><b>The hold, and the clocks that cut it.</b> Request–response decides whether the caller holds the line. Timeouts decide how long. The 30 s / 15 s / 60 s / 60 s / infinite stack is the failure-mode example the request–response Concept names — not a recommended policy. Teal boxes are verified defaults; amber is the judgment that the shortest clock wins.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>When the caller should not wait — minutes of work, many consumers of the same fact, a server that speaks after hangup — holding the line is the wrong shape. A queue absorbs a burst (within “queues don’t fix overload”). A socket or SSE keeps a session. A webhook knocks later. The waiter stays the default when the ask/answer fits in a budget tighter than every proxy on the path, and the caller needs the result to continue.</p>
+
+    <div class="callout">
+      <span class="tag">Verified default · hop clocks (2026-09-13)</span>
+      <p>Envoy route <strong>15 s</strong>, HTTP idle <strong>1 h</strong>, H2 streams <strong>1024</strong>. nginx keepalive <strong>75 s</strong>, proxy I/O <strong>60 s</strong>, H2 streams <strong>128</strong>. ALB idle <strong>60 s</strong>, client keepalive <strong>3600 s</strong>, target protocol default <strong>HTTP/1.1</strong>. HAProxy unset timeouts are <strong>infinite</strong>. Chromium HTTP/1.1 sockets per host: <strong>6</strong>. HTTP/2 PING does not reset ALB or Envoy HTTP idle.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>THE DROP</span></div>
+
+  <div class="measure">
+    <h2><span class="num">03</span>Who reconnects</h2>
+    <p>Reconnect is not one idea. Request–response has <strong>no session to resume</strong>. After GOAWAY or idle close the client opens a new connection and retries only unstarted or marked-idempotent calls. Already-accepted streams run to completion; cancellation is not a rollback. Coalescing fails as <strong>421 Misdirected Request</strong> — retryable even for POST, another duplicate risk if the first hop already applied the write. A proxy must not generate 421.</p>
+    <p>A WebSocket has no protocol resume either. RFC 6455 has no <code>Last-Event-ID</code>. WHATWG says implement reconnect in <code>onclose</code>; the new object is a new handshake and a new <code>connectionId</code>. Close 1006 — “TCP died with no Close” — is the idle-timeout signature and the one you reconnect; 1000 usually is not. The protocol has no jitter. Missed frames are gone unless the app persisted them. SSE already did that homework: EventSource sends <code>Last-Event-ID</code> when the cursor is non-empty. Blink waits <strong>3 s</strong> with no extra jitter; Gecko <strong>5 s</strong> (floor 500 ms). A fleet that drops together re-issues in lockstep. Resume is two-sided — if the server never assigned <code>id</code>s, or ignores the header, the cursor is theatre. Empty <code>id:</code> clears it on purpose. A 200 whose MIME is not <code>text/event-stream</code>, or any non-200 (the intro calls out 204), <strong>fails</strong> the EventSource forever. A gateway 200 + HTML error page kills the widget.</p>
+    <p>A webhook has <strong>no reconnect protocol</strong> — each attempt is a new POST, tied by an id header. Schedules are not interchangeable: Stripe live, three days; Slack, three tries (immediate / 1 min / 5 min); Shopify, eight over four hours then subscription delete; GitHub, <strong>none</strong> (10 s timeout, three-day manual redelivery). On the contract, “reconnect” is client migration. RFC 8594 treats <code>Sunset</code> as a hint; clients that ignore it may simply find the resource gone.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 340" role="img" aria-labelledby="rect holdd2">
+        <title id="rect">Four reconnect stories: request–response opens a new connection; WebSocket has no resume token; SSE replays Last-Event-ID; a webhook has only a published retry schedule.</title>
+        <desc id="holdd2">Four panels. A1: new TCP after GOAWAY, retry only if idempotent. A3: new handshake, application replay. A4: automatic Last-Event-ID after a 3 or 5 second delay. A5: no socket resume, producer retry clocks that differ by vendor.</desc>
+        <rect x="16" y="16" width="214" height="308" rx="12" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="32" y="42" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">A1 · NEW CONNECTION</text>
+        <text x="32" y="72" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">No session</text>
+        <text x="32" y="100" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">GOAWAY or idle close.</text>
+        <text x="32" y="118" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Open a fresh socket.</text>
+        <text x="32" y="136" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Retry only what the</text>
+        <text x="32" y="154" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">method / gRPC rules</text>
+        <text x="32" y="172" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">allow.</text>
+        <text x="32" y="204" font-family="var(--mono)" font-size="11" fill="var(--det)">421 even for POST</text>
+        <text x="32" y="222" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">coalesced wrong origin</text>
+        <text x="32" y="252" font-family="var(--mono)" font-size="11" fill="var(--llm)">timeout = unknown</text>
+        <text x="32" y="270" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">DEADLINE_EXCEEDED</text>
+        <text x="32" y="288" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">can follow success.</text>
+        <text x="32" y="308" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">idempotency is C9</text>
+
+        <rect x="242" y="16" width="214" height="308" rx="12" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="258" y="42" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">A3 · NEW HANDSHAKE</text>
+        <text x="258" y="72" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">No resume</text>
+        <text x="258" y="100" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">RFC 6455 has no</text>
+        <text x="258" y="118" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Last-Event-ID. New</text>
+        <text x="258" y="136" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">key, new connectionId.</text>
+        <text x="258" y="154" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Ping/Pong are not in</text>
+        <text x="258" y="172" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">the browser API.</text>
+        <text x="258" y="204" font-family="var(--mono)" font-size="11" fill="var(--det)">1006 = idle kill</text>
+        <text x="258" y="222" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">reconnect, jittered</text>
+        <text x="258" y="252" font-family="var(--mono)" font-size="11" fill="var(--llm)">you write replay</text>
+        <text x="258" y="270" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">afterEventId, or a</text>
+        <text x="258" y="288" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">library recovery (off</text>
+        <text x="258" y="306" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">by default in Socket.IO).</text>
+
+        <rect x="468" y="16" width="214" height="308" rx="12" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="484" y="42" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">A4 · BUILT-IN CURSOR</text>
+        <text x="484" y="72" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">Last-Event-ID</text>
+        <text x="484" y="100" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">EventSource retries.</text>
+        <text x="484" y="118" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Blink 3 s, Gecko 5 s.</text>
+        <text x="484" y="136" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">No extra jitter. Non-</text>
+        <text x="484" y="154" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">200 or wrong MIME</text>
+        <text x="484" y="172" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">fails forever.</text>
+        <text x="484" y="204" font-family="var(--mono)" font-size="11" fill="var(--det)">id: sets the cursor</text>
+        <text x="484" y="222" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">empty id: clears it</text>
+        <text x="484" y="252" font-family="var(--mono)" font-size="11" fill="var(--llm)">server must replay</text>
+        <text x="484" y="270" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">Across replicas that</text>
+        <text x="484" y="288" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">means a log, not</text>
+        <text x="484" y="306" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">process-local pub/sub.</text>
+
+        <rect x="694" y="16" width="210" height="308" rx="12" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="710" y="42" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">A5 · RETRY CLOCK</text>
+        <text x="710" y="72" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">No socket</text>
+        <text x="710" y="100" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">New POST each try.</text>
+        <text x="710" y="118" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Id header ties them.</text>
+        <text x="710" y="136" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Schedules differ:</text>
+        <text x="710" y="154" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">days, hours, or none.</text>
+        <text x="710" y="188" font-family="var(--mono)" font-size="11" fill="var(--det)">Stripe live: 3 days</text>
+        <text x="710" y="206" font-family="var(--mono)" font-size="11" fill="var(--det)">Slack: 3 tries / 5 min</text>
+        <text x="710" y="224" font-family="var(--mono)" font-size="11" fill="var(--det)">Shopify: 8 / 4 h</text>
+        <text x="710" y="242" font-family="var(--mono)" font-size="11" fill="var(--fail)">GitHub: none</text>
+        <text x="710" y="270" font-family="var(--mono)" font-size="11" fill="var(--human)">reconcile yourselves</text>
+        <text x="710" y="288" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">List APIs when the</text>
+        <text x="710" y="306" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">window closes.</text>
+      </svg>
+    </div>
+    <figcaption><b>Four meanings of “try again.”</b> Request–response opens a new connection. WebSocket opens a new handshake and you write resume. SSE already sends the cursor — if the server honours it. A webhook has only the producer’s published schedule. GitHub’s lack of automatic retry is the architectural outlier the webhook Concept names.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>The broker’s reconnect is a fourth dialect. Kafka talks request/response to advertised listeners — a late <code>poll()</code> fails the member (classic: heartbeat 3 s, session 45 s, max poll 5 min). AMQP 0-9-1 multiplexes channels; two missed heartbeats (suggested 60 s) close the TCP connection. Service Bus peek-lock settlement is tied to <em>that</em> receiver — close before settle and you increment toward DLQ at 10. HTTPS pull has no session: a new receive is a new lease. These are not interchangeable “messaging.”</p>
+  </div>
+
+  <div class="rule-orn"><span>CARDINALITY</span></div>
+
+  <div class="measure">
+    <h2><span class="num">04</span>Who fans out</h2>
+    <p>Fan-out is the cardinality hiding inside the shape. Sync request–response has no broker and no competing-consumer partition. A unary handler that issues <em>N</em> downstream calls holds the inbound stream for <code>max(downstream)</code> plus local work — <em>N·M</em> held connections. Many-consumer fan-out belongs on a channel. HTTP/2 collapses Chromium’s six-socket pool, so the cap becomes <code>SETTINGS_MAX_CONCURRENT_STREAMS</code> (nginx/ALB 128; Envoy 1024 since 1.36.0). HTTP/2 at the proxy is not HTTP/2 to the backend: ALB’s target default is still HTTP/1.1. gRPC needs an HTTPS listener and <code>GRPC</code> or <code>HTTP2</code>. ALB has no HTTP/3 listener.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="fant fand">
+        <title id="fant">Three channel kinds: a queue has competing consumers and no fan-out; a topic copies to every subscription; a log is replayed independently by consumer groups.</title>
+        <desc id="fand">Publisher into a channel. A queue delivers each message to one of several workers. A topic gives every subscription a copy, and each subscription may itself have competing consumers. A log keeps records until retention; groups replay independently; members inside a group cannot usefully exceed partition count.</desc>
+        <rect x="16" y="16" width="888" height="40" rx="8" fill="var(--paper)" stroke="var(--paper-edge)"/>
+        <text x="460" y="42" text-anchor="middle" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--det)" font-weight="700">PUBLISHER · ONE EVENT</text>
+
+        <rect x="16" y="72" width="288" height="210" rx="12" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="32" y="98" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">QUEUE</text>
+        <text x="32" y="124" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">One worker per message</text>
+        <text x="32" y="148" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Competing consumers share</text>
+        <text x="32" y="166" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">work. Typically deleted on ack.</text>
+        <text x="32" y="184" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">No fan-out — put a topic in front.</text>
+        <rect x="32" y="204" width="72" height="26" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="68" y="222" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">W1</text>
+        <rect x="114" y="204" width="72" height="26" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="150" y="222" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">W2</text>
+        <rect x="196" y="204" width="72" height="26" rx="6" fill="var(--paper)" stroke="var(--ink-soft)"/>
+        <text x="232" y="222" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">W3</text>
+        <text x="32" y="256" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">scale-out = more consumers</text>
+        <text x="32" y="272" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">(FIFO: more group IDs)</text>
+
+        <rect x="316" y="72" width="288" height="210" rx="12" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="332" y="98" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">TOPIC / PUB-SUB</text>
+        <text x="332" y="124" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">Every subscription a copy</text>
+        <text x="332" y="148" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">A subscription is itself a queue</text>
+        <text x="332" y="166" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">and can have competing consumers.</text>
+        <text x="332" y="184" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Two pullers on one sub ≠ fan-out.</text>
+        <rect x="332" y="204" width="118" height="26" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="391" y="222" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">sub A · workers</text>
+        <rect x="460" y="204" width="118" height="26" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="519" y="222" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">sub B · a copy</text>
+        <text x="332" y="256" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">Hohpe: extra consumers on</text>
+        <text x="332" y="272" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">pub-sub just make more copies</text>
+
+        <rect x="616" y="72" width="288" height="210" rx="12" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="632" y="98" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">LOG / STREAM</text>
+        <text x="632" y="124" font-family="var(--serif)" font-size="18" fill="var(--ink)" font-weight="700">Replay, not a copy</text>
+        <text x="632" y="148" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Groups independently replay.</text>
+        <text x="632" y="166" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Inside a group, partitions are</text>
+        <text x="632" y="184" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">exclusive. Offset advances; records stay.</text>
+        <rect x="632" y="204" width="118" height="26" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="691" y="222" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">group A</text>
+        <rect x="760" y="204" width="118" height="26" rx="6" fill="var(--paper)" stroke="var(--det)"/>
+        <text x="819" y="222" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">group B</text>
+        <text x="632" y="256" font-family="var(--mono)" font-size="11" fill="var(--llm)">hard cap: members ≤ partitions</text>
+        <text x="632" y="272" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">a slow partition cannot be helped</text>
+      </svg>
+    </div>
+    <figcaption><b>Three channel kinds, not one “queue.”</b> Pick the ordering unit first; parallelism is however many units you have. Kafka total-order is per partition only. SQS FIFO orders per <code>MessageGroupId</code>. A log with <code>auto.offset.reset=latest</code> looks like a queue and drops history for a new group. Event-driven <em>style</em> is E4.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>Vendor “exactly-once” words do not mean the same thing. An external side effect is idempotency plus an outbox, not a broker switch. Kafka’s idempotent producer (default on) writes one copy <em>per partition, per producer session</em>; default consume isolation is still <code>read_uncommitted</code>. SQS FIFO collapses producer retries for five minutes and still redelivers on visibility expiry. Pub/Sub’s named exactly-once defaults <strong>false</strong>; publisher retries mint new ids. RabbitMQ auto-ack is at-most-once; classic DLX republish is too, unless quorum opts in.</p>
+    <p>On a socket, fan-out means finding the process that owns B’s connection. An in-process map dies with the instance. A registry goes stale when <code>$disconnect</code> is missed (API Gateway’s is best-effort after close). Redis <code>PUBLISH</code> is at-most-once — a down subscriber misses forever. Durable fan-out is a log, not that channel. Autoscaling does not move live sockets; ALB closes the client after deregistration (default 300 s). The live socket is already pinned (L4 tunnel, not a cookie). Cookie stickiness still matters for reconnects and for Engine.IO polling. SSE is one file-descriptor per subscriber; Chromium’s six <code>kNormal</code> sockets are shared across tabs. HTTP/2 removes the <em>client</em> H1 cap, not the server cost. A webhook is <em>N</em> independent POSTs (Stripe caps 16 endpoints; Slack 30,000 events / 60 min). A contract fans out as N majors × M pins — support windows (GitHub ≥ 24 months; Azure preview ≥ 90 days / ≤ 1 year), not a protocol max. Path versioning is the cheap proxy route; header and media-type need <code>Vary</code> or a cache serves the wrong version, or the wrong tenant.</p>
+  </div>
+
+  <div class="rule-orn"><span>THE PATH</span></div>
+
+  <div class="measure">
+    <h2><span class="num">05</span>The clocks and the proxies</h2>
+    <p>The production bug that repeats across this group is a <strong>timeout sandwich</strong> plus a hop that mutates the conversation it thought it was forwarding. REST-over-HTTP has no remaining-budget header. gRPC converts a deadline to remaining <code>grpc-timeout</code> (Java and Go by default; C++ must enable it). nginx <code>proxy_read_timeout</code> is between I/O ops, not total time — a backend that dribbles a byte every 59 s never hits 60 s. ALB has two clocks: idle 60 s (PING does not reset it) and client keepalive 3600 s from connect. If the app’s idle is shorter, the target closes first and ALB returns 502. The shorter closer always wins. REST clients key off HTTP status; gRPC clients key off trailers — a proxy that only sees <code>:status 200</code> will not trip on <code>grpc-status: 14</code>. <code>te: trailers</code> is how gRPC detects incompatible proxies.</p>
+    <p>WebSocket heartbeats live under the <em>shortest</em> hop that sees no bytes. RFC 6455 gives Ping/Pong and no interval; JavaScript cannot send a protocol Ping. Socket.IO v4: ping 25 s, timeout 20 s, client-dead at 45 s — nginx’s 60 s read timeout must be greater than that sum. A 25 s ping clears ALB 60 s; it does not extend API Gateway’s 10 min idle / 2 h cap (close 1001). CloudFront WebSocket is HTTP/1.1 only, idle 10 min. NLB TLS idle is 350 s and not configurable; raise TCP idle above that without matching the ENI and the ENI silently drops state. HTTP/2 WebSocket needs RFC 8441 on every hop; CloudFront does not. Hop-by-hop <code>Upgrade</code> must be re-injected.</p>
+    <p>SSE has two failures. <strong>Buffering</strong> (“works on localhost, bursts in prod”) is not fixed by heartbeats — nginx <code>proxy_buffering</code> defaults on; send <code>X-Accel-Buffering: no</code>. <strong>Idle teardown</strong> closes a quiet stream: ALB/nginx 60 s, Cloudflare origin 125 s → 524, Azure App Gateway 20 s, GCP 30 s as a <em>total</em> deadline. WHATWG comments about every 15 s must be payload bytes. Kafka clients must dial advertised listeners, not a random L4 VIP (broker idle 10 min, client 9 min). RabbitMQ wants activity in the 5–15 s range to satisfy most proxies. Webhook MACs are over the <em>raw</em> body — a pretty-printing proxy or <code>express.json()</code> before the route breaks HMAC. Shopify treats 3xx as failure (an HTTP→HTTPS 301 is an outage). Slack 3 s, GitHub 10 s, Shopify 5 s: an LB shorter than that turns a 2xx into the producer’s timeout.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="ackt ackd">
+        <title id="ackt">Webhook persist-then-2xx: verify the raw body, enqueue durably, then acknowledge; anything else is a failed delivery and starts the producer’s retry clock.</title>
+        <desc id="ackd">Five steps on one POST: raw-body HMAC, timestamp window, persist or enqueue, 2xx, then process off the queue. A 2xx before durable write is silent loss. A 4xx from a buggy verifier is retried and may disable the subscription.</desc>
+        <rect x="16" y="16" width="168" height="160" rx="12" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="100" y="48" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">01</text>
+        <text x="100" y="80" text-anchor="middle" font-family="var(--serif)" font-size="17" fill="var(--ink)" font-weight="700">Raw body</text>
+        <text x="100" y="108" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">HMAC the exact</text>
+        <text x="100" y="126" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">bytes. Re-serialize</text>
+        <text x="100" y="144" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">invalidates the MAC.</text>
+        <text x="100" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">constant-time compare</text>
+
+        <rect x="198" y="16" width="168" height="160" rx="12" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="282" y="48" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">02</text>
+        <text x="282" y="80" text-anchor="middle" font-family="var(--serif)" font-size="17" fill="var(--ink)" font-weight="700">Window + id</text>
+        <text x="282" y="108" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Timestamp window</text>
+        <text x="282" y="126" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">and dedupe id defend</text>
+        <text x="282" y="144" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">different replays.</text>
+        <text x="282" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">GitHub MAC has no t=</text>
+
+        <rect x="380" y="16" width="168" height="160" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="2"/>
+        <text x="464" y="48" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">03 · THE SEAM</text>
+        <text x="464" y="80" text-anchor="middle" font-family="var(--serif)" font-size="17" fill="var(--ink)" font-weight="700">Persist first</text>
+        <text x="464" y="108" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Enqueue durably.</text>
+        <text x="464" y="126" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Then 2xx. Reverse</text>
+        <text x="464" y="144" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">that and you lose.</text>
+        <text x="464" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--fail)">2xx-before-write = silent</text>
+
+        <rect x="562" y="16" width="168" height="160" rx="12" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="646" y="48" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">04</text>
+        <text x="646" y="80" text-anchor="middle" font-family="var(--serif)" font-size="17" fill="var(--ink)" font-weight="700">Ack 2xx</text>
+        <text x="646" y="108" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">200–299. 3xx is</text>
+        <text x="646" y="126" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">failure at Shopify.</text>
+        <text x="646" y="144" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">4xx is still retried.</text>
+        <text x="646" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">3–10 s typical budget</text>
+
+        <rect x="744" y="16" width="160" height="160" rx="12" fill="var(--llm-wash)" stroke="var(--llm)"/>
+        <text x="824" y="48" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">05 · OFF THE LINE</text>
+        <text x="824" y="80" text-anchor="middle" font-family="var(--serif)" font-size="17" fill="var(--ink)" font-weight="700">Then process</text>
+        <text x="824" y="108" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Business work is</text>
+        <text x="824" y="126" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">not the HTTP handler.</text>
+        <text x="824" y="144" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Dedupe on event id.</text>
+        <text x="824" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--llm)">inbox is C9, not here</text>
+
+        <rect x="16" y="196" width="888" height="86" rx="10" fill="var(--paper)" stroke="var(--human)"/>
+        <text x="36" y="226" font-family="var(--mono)" font-size="11" letter-spacing="1.2" fill="var(--human)" font-weight="700">OPERATOR DECISION</text>
+        <text x="36" y="250" font-family="var(--sans)" font-size="14.5" fill="var(--ink)">Thin event (id + a later GET) versus snapshot is a product choice per destination — Fowler 2017; Stripe now ships both. Fetch current state for anything order-sensitive: snapshots can arrive out of order; Shopify retries the original payload.</text>
+      </svg>
+    </div>
+    <figcaption><b>The callback’s unit of work is verify + persist + ack.</b> Every vendor fetched in the webhook Concept says return 2xx before slow work. Slack 3 s, GitHub 10 s, Shopify 5 s. A polite catch-all that returns 2xx on internal errors silently discards events. Stripe timestamp tolerance is 300 s in official libraries; <code>0</code> disables the check.</figcaption>
+  </figure>
+
+  <div class="rule-orn"><span>THE PROMISE</span></div>
+
+  <div class="measure">
+    <h2><span class="num">06</span>What you can change without a flag day</h2>
+    <p>An API is a promise to code you cannot redeploy. Byte compatibility is the encoding layer. This group owns the <em>published contract over time</em>. Inside one organisation, <strong>servers upgrade first, clients second</strong>. Cross-org APIs cannot force that, so versions run side by side.</p>
+    <p>REST/JSON is compatible by convention: new optional fields in, new response fields out; clients ignore unknowns. Rename, type change, newly required input, enum removal — those are breaks. A read-modify-PUT that drops fields it never understood is silent loss. proto3 is wire-safe when you add a field or reserve a removed number; changing a number, or moving fields into an existing <code>oneof</code>, is not. A field rename is not a protobuf break (identity is the number) and <strong>is</strong> a break under JSON transcoding — unknowns survive binary and die on JSON. Do not bump <code>package …v2</code> for a new optional field. GraphQL prefers one evolving schema: add fields, <code>@deprecated</code> them, remove when usage is gone. Making a field non-null or nullable the other way is breaking. That is evolution by <em>selection</em>, not by URL.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 220" role="img" aria-labelledby="cont cond">
+        <title id="cont">Contract lifecycle: publish a machine-readable artifact, select a version on each request or pin it, evolve additively, deprecate, sunset, then remove.</title>
+        <desc id="cond">Six stages in a row. Publish OpenAPI, proto, or SDL. Select URI, query, header, media type, GraphQL field, or gRPC package major. Additive evolve. Deprecation header does not change behaviour. Sunset is a hint the resource will become unresponsive. Remove turns a miss into a hard error.</desc>
+        <rect x="16" y="20" width="136" height="140" rx="10" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="84" y="52" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">01</text>
+        <text x="84" y="84" text-anchor="middle" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">Publish</text>
+        <text x="84" y="110" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">OpenAPI 3.1.2</text>
+        <text x="84" y="128" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">proto / SDL</text>
+        <text x="84" y="146" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">info.version ≠ API</text>
+
+        <rect x="164" y="20" width="136" height="140" rx="10" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="232" y="52" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">02</text>
+        <text x="232" y="84" text-anchor="middle" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">Select</text>
+        <text x="232" y="110" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">path / query /</text>
+        <text x="232" y="128" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">header / Accept</text>
+        <text x="232" y="146" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--human)">client or account pin</text>
+
+        <rect x="312" y="20" width="136" height="140" rx="10" fill="var(--det-wash)" stroke="var(--det)"/>
+        <text x="380" y="52" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">03</text>
+        <text x="380" y="84" text-anchor="middle" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">Evolve</text>
+        <text x="380" y="110" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">additive in place</text>
+        <text x="380" y="128" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">on that major</text>
+        <text x="380" y="146" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">tolerant reader</text>
+
+        <rect x="460" y="20" width="136" height="140" rx="10" fill="var(--llm-wash)" stroke="var(--llm)"/>
+        <text x="528" y="52" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">04</text>
+        <text x="528" y="84" text-anchor="middle" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">Deprecate</text>
+        <text x="528" y="110" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">RFC 9745 Date</text>
+        <text x="528" y="128" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">still works</text>
+        <text x="528" y="146" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">does not change behaviour</text>
+
+        <rect x="608" y="20" width="136" height="140" rx="10" fill="var(--llm-wash)" stroke="var(--llm)"/>
+        <text x="676" y="52" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">05</text>
+        <text x="676" y="84" text-anchor="middle" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">Sunset</text>
+        <text x="676" y="110" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">RFC 8594 hint</text>
+        <text x="676" y="128" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">will go unresponsive</text>
+        <text x="676" y="146" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">MUST NOT precede 04</text>
+
+        <rect x="756" y="20" width="148" height="140" rx="10" fill="var(--paper)" stroke="var(--fail)"/>
+        <text x="830" y="52" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--fail)" font-weight="700">06</text>
+        <text x="830" y="84" text-anchor="middle" font-family="var(--serif)" font-size="16" fill="var(--ink)" font-weight="700">Remove</text>
+        <text x="830" y="110" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">hard error</text>
+        <text x="830" y="128" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">410 / 400 / UNIMPL</text>
+        <text x="830" y="146" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">measure usage first</text>
+      </svg>
+    </div>
+    <figcaption><b>Publish is the handshake.</b> OpenAPI <code>info.version</code> is the document version, not the API version. Deprecate ≠ sunset: RFC 9745 does not change resource behaviour; RFC 8594 is the second stage. GitHub documents <code>Deprecation</code> as an HTTP-date, not RFC 9745’s <code>@seconds</code> — do not assume they implement the same field. Azure requires <code>api-version</code> on every operation; omit is 400. GitHub’s omitted header defaults to <code>2022-11-28</code>, and after a version closes the default jumps to the next oldest supported.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>Selector misses are the contract’s reconnect errors: Azure omit/unknown <code>api-version</code> → 400; unknown GitHub version → 410; bad Accept → 406; gRPC rename → <code>UNIMPLEMENTED</code>; a removed GraphQL field still queried → validation error. After sunset, RFC 8594 does not specify which status. Pact verifies the <em>current</em> provider against what consumers actually call — <code>{ latest: true }</code> is not recommended; mobile uses <code>--all prod</code>. Removing a field nobody consumes verifies green: usage, not schema. Do not version lockstep internals, GraphQL fields, or proto3 additive changes. Stripe 2017: <code>/v2</code> is almost as painful as re-integrating; users stick; you keep the old surface or cut them off.</p>
+  </div>
+
+  <div class="rule-orn"><span>THE CHOICE</span></div>
+
+  <div class="measure">
+    <h2><span class="num">07</span>When not to use — a scorecard</h2>
+    <p>Read this as a decision table, not a ranking. Teal is a verified default or mechanic. Amber is the trade-off the Concepts already name. Slate is an operator or product choice the source leaves with you.</p>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <caption>Group A scorecard — who waits, who reconnects, what you can change</caption>
+      <thead>
+        <tr>
+          <th>Shape</th>
+          <th>Who waits</th>
+          <th>Who reconnects</th>
+          <th>Fan-out</th>
+          <th>When it is wrong</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="who det">Request–response</span><br>REST / gRPC unary</td>
+          <td>Caller holds the stream, thread, and deadline. Default gRPC deadline is infinite.</td>
+          <td>No session. New connection; retry only if idempotent. 421 even for POST.</td>
+          <td>H2 stream cap (128 / 1024 typical). Sync <em>N×M</em> holds. No broker.</td>
+          <td><span class="owner-pill llm">When-not</span> Minutes of work; many consumers; server push after hangup; cross-org fire-and-forget; in-process call dressed as RPC.</td>
+        </tr>
+        <tr>
+          <td><span class="who det">Queue / topic / log</span><br>mechanism, not E4</td>
+          <td>The channel holds work. Consumer holds a lease (visibility, peek-lock, ack deadline, poll interval).</td>
+          <td>Protocol-specific: poll/session, AMQP channels, new receive. No one “resume.”</td>
+          <td>Queue: workers. Topic: subscriptions. Log: groups; members ≤ partitions.</td>
+          <td><span class="owner-pill llm">When-not</span> Synchronous result; global total order; one atomic txn across parties; replay on a delete-on-consume queue; FIFO+DLQ when order is the product.</td>
+        </tr>
+        <tr>
+          <td><span class="who det">WebSocket</span><br>full-duplex frames</td>
+          <td>Both peers; process state in a stateless fleet. Heartbeat under the shortest hop.</td>
+          <td>No Last-Event-ID. New handshake. You write replay. No protocol jitter.</td>
+          <td>Registry or backplane. Redis PUBLISH is at-most-once. Live sockets do not rebalance.</td>
+          <td><span class="owner-pill llm">When-not</span> One-way feed (use SSE); cannot beat hop idle; CloudFront + H2 on the same socket; binary through API Gateway WS; auth re-check per message without app work.</td>
+        </tr>
+        <tr>
+          <td><span class="who det">SSE</span><br>text/event-stream</td>
+          <td>Server holds one HTTP response per subscriber. Comment keepalive ~15 s.</td>
+          <td>Built in: Blink 3 s / Gecko 5 s + Last-Event-ID. Non-200 fails forever.</td>
+          <td>One FD each. H1: 6 sockets/group. H2 multiplexes the client side only.</td>
+          <td><span class="owner-pill llm">When-not</span> Client must talk back on the same connection; native binary; EventSource + Authorization header; missed events must survive an absent consumer; intermediaries that will not unbuffer.</td>
+        </tr>
+        <tr>
+          <td><span class="who det">Webhook</span><br>cross-org POST</td>
+          <td>Producer waits for 2xx after durable enqueue (3–10 s typical). Then its schedule.</td>
+          <td>No reconnect. Published retries: 3 days / 3 tries / 8 tries / none (GitHub).</td>
+          <td>N independent POSTs. Stripe 16 endpoints. Slack 30k / 60 min.</td>
+          <td><span class="owner-pill llm">When-not</span> Browser duplex or one-way stream; high-volume internal fan-out with ordering and a DLQ; no public HTTPS; exactly-once / total order.</td>
+        </tr>
+        <tr>
+          <td><span class="who det">Published contract</span><br>REST / gRPC / GraphQL</td>
+          <td>Nobody waits on a socket. Old and new surfaces coexist until sunset.</td>
+          <td>Client migration. Sunset is a hint. Selector miss is 400 / 410 / 406 / UNIMPLEMENTED.</td>
+          <td>N majors × M pins. Support windows, not a protocol max.</td>
+          <td><span class="owner-pill llm">When-not</span> Lockstep internals; GraphQL field deprecation; proto3 additive; already-pinned accounts; a team that cannot operate two surfaces.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="measure">
+    <p>A few operator choices the Concepts leave with you, not with a default:</p>
+    <ul>
+      <li><span class="owner-pill human">Product</span> Thin webhook versus snapshot payload — leak surface versus self-contained delivery; Stripe ships both, chosen per destination.</li>
+      <li><span class="owner-pill human">Product</span> API Gateway WebSocket (10 min / 2 h / 128 KB / no binary, managed <code>@connections</code>) versus ALB (you run the process, idle up to 4000 s, native 101) versus NLB (L4, TLS idle stuck at 350 s). Chat product placement stays off this page.</li>
+      <li><span class="owner-pill human">Operator</span> Ordering unit on a channel: partition key, <code>MessageGroupId</code>, session, or “unordered is fine.” Extra members past that unit sit idle.</li>
+      <li><span class="owner-pill human">Operator</span> Version selector: path (cheap proxy, split identity), required query (Azure — no silent omit), header or account pin (stable URIs, defaults surprise), media type (HATEOAS, <code>Vary</code>), or don’t version (GraphQL / additive proto3).</li>
+    </ul>
+  </div>
+
+  <div class="proposed-zone">
+    <div class="proposed-banner">◆ Uncertain in the source</div>
+    <div class="measure" style="margin-top:-6px">
+      <h2><span class="num">08</span>What the Concepts refused to invent</h2>
+      <p>Everything above this line is a claim the six Concepts actually make. The items below are marked uncertain, unpublished, or deliberately unfetched in those pages. They are fenced so nobody treats a gap as a default.</p>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · A1</span>
+        <p><strong>gRPC language keepalive and channel reconnect backoff</strong> (<code>keepalive_time</code>, <code>permit_without_calls</code>) were not fetched. Do not invent them. Browser-advertised HTTP/2 SETTINGS were not fetched either — Chromium’s 6 is the HTTP/1.1 <em>socket</em> pool, not the H2 stream cap.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · A3</span>
+        <p><strong>Cloudflare proxied WebSocket idle is unpublished.</strong> Whether API Gateway counts RFC 6455 Ping as activity, and whether ALB HTTP keepalive caps an upgraded socket, were left out of the card on purpose. Per-host connection counts are not asserted.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · A4 / A5</span>
+        <p><strong>Last-Event-ID is still not CORS-safelisted</strong> (whatwg/fetch#1788 had not landed as of the fetch date) — treat the header as an untrusted cursor, never as a capability token. Safari’s Network.framework H1 cap is unverified. <strong>Stripe’s per-attempt webhook timeout is unpublished</strong> on the primary page; unofficial backoff-step tables and claimed auto-disable triggers were refused.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · A2 / A6</span>
+        <p><strong>KIP-1274</strong> (flip Kafka <code>group.protocol</code> default to <code>consumer</code>) was not shipped on the 4.3 pages. After advertised sunset, RFC 8594 does not specify which status you get. GitHub’s <code>Deprecation</code> is documented as an HTTP-date, not RFC 9745. Google IBV omit behaviour is configuration-dependent — no single Google-wide default. Stripe’s 2026 named majors belong to the changelog, not a frozen default here.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="measure">
+    <p class="pull">Pick the shape first. <b>The waiter</b> holds the line. <b>The broker</b> holds the work. <b>The open line</b> holds a session. <b>The callback</b> holds only until 2xx, then a schedule. <b>The promise</b> is how those conversations change without a flag day.</p>
+    <p>Timeouts decide how long to wait. Retries decide whether to try again. Idempotency decides whether a retry is safe. Group A decides whether the caller holds the line — and what “the line” even is.</p>
+  </div>
+
+</main>
+
+<footer>
+  <p><b>Grounded in.</b> <code>RequestResponse.md</code> (A1) · <code>PubSubQueues.md</code> (A2) · <code>WebSocket.md</code> (A3 canonical) · <code>ServerSentEvents.md</code> (A4) · <code>Webhooks.md</code> (A5) · <code>ApiContracts.md</code> (A6 canonical). First-pass trail cards <code>WebSockets.md</code> and <code>ApiVersioning.md</code> are superseded and were not used as sources.</p>
+  <p><b>Honesty note.</b> Teal is a verified mechanic or default from those Concepts (fetched 2026-09-13 where dated). Amber is a judgment, trade-off, or when-not the Concepts already name. Slate is an operator or product decision they leave with you. Dashed violet is uncertain, unpublished, or deliberately unfetched in the source — not a recommendation. No vendors, SLAs, regions, replica counts, latencies, or coverage percentages were invented. A2 is channel mechanism; event-driven style is Group E.</p>
+  <p><b>Siblings.</b> <a href="a-communication.html">a-communication.html</a> · <a href="b-scaling.html">b-scaling.html</a> · <a href="c-availability.html">c-availability.html</a> · <a href="d-reliability-monitoring.html">d-reliability-monitoring.html</a> · <a href="e-architectural-styles.html">e-architectural-styles.html</a></p>
+</footer>

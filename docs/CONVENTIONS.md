@@ -69,9 +69,16 @@ before inventing new ones):
 | Claude Architect — responsible AI (nested topic bundle) | `cases/claude-certification/responsible-ai/` |
 | Claude Architect — team enablement (nested topic bundle) | `cases/claude-certification/team-enablement/` |
 | Claude Architect — stakeholder engagement (nested topic bundle) | `cases/claude-certification/stakeholder-engagement/` |
+| Claude Architect foundation — AWS Claude / Bedrock (nested topic bundle) | `cases/claude-architect-foundation/aws-claude/` |
+| Data-intensive design case notes (OKF bundle) | `cases/data-intensive-design/` |
+| Financial data architecture case notes (OKF bundle) | `cases/fincancial-data-architecture/` |
+| ML solutions architecture case notes (OKF bundle) | `cases/ml-solutions-arch/` |
+| FDE handbook / runbook (OKF bundle) | `cases/fde/` |
+| System design patterns (OKF bundle) | `cases/SystemDesignPatterns/` |
 | `arch-*` delivery-project artifacts (MTA) | `docs/architecture/<artifact-home>/mobile-test-automation/` — declared bundle |
 | SDD specs / plans | `docs/sdd/{specs,plans}/` (in `knowledge_globs`, not a declared bundle) |
-| Research / option studies | `docs/research/` (in `knowledge_globs`) |
+| Research / option studies | `docs/research/` (in `knowledge_globs`, not a declared bundle) |
+| System design pattern research | `docs/research/sysdesign/` (same glob; not a declared bundle — grouping, not promotion) |
 | Skill manuals | `docs/skills/` (in `knowledge_globs`) |
 | Feature recipes | unused (`recipes_home = <none>`) |
 | Authored research split | unused (`authored_research_home` / `evidence_home = <none>`) |

@@ -15,6 +15,12 @@ knowledge_globs        = [
   "cases/aws/**/*.md",
   "cases/aws-ai/**/*.md",
   "cases/claude-certification/**/*.md",
+  "cases/claude-architect-foundation/**/*.md",
+  "cases/data-intensive-design/**/*.md",
+  "cases/fincancial-data-architecture/**/*.md",
+  "cases/ml-solutions-arch/**/*.md",
+  "cases/fde/**/*.md",
+  "cases/SystemDesignPatterns/**/*.md",
   "docs/architecture/**/*.md",
   "docs/sdd/**/*.md",
   "docs/research/**/*.md",
@@ -22,7 +28,7 @@ knowledge_globs        = [
 ]
 
 [lint]
-declared_bundles  = ["cases/coding-rules", "cases/aws", "cases/aws-ai", "cases/claude-certification", "cases/claude-certification/platform-design", "cases/claude-certification/enterprise-integration-production", "cases/claude-certification/responsible-ai", "cases/claude-certification/stakeholder-engagement", "cases/claude-certification/team-enablement", "docs/architecture"]
+declared_bundles  = ["cases/coding-rules", "cases/aws", "cases/aws-ai", "cases/claude-certification", "cases/claude-certification/platform-design", "cases/claude-certification/enterprise-integration-production", "cases/claude-certification/responsible-ai", "cases/claude-certification/stakeholder-engagement", "cases/claude-certification/team-enablement", "cases/claude-architect-foundation/aws-claude", "cases/data-intensive-design", "cases/fincancial-data-architecture", "cases/ml-solutions-arch", "cases/fde", "cases/SystemDesignPatterns", "docs/architecture"]
 # `evals` = local live-evidence trees (probe reports, evidence bundles) that the
 # sdd-roles plans reference by relative path but that stay uncommitted per
 # evidence_home = <none>; classify as evidence so any such file is skipped as a

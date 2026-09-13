@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Loop, Left Running</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* ---- three-block theme wiring (FR-10) ----
+     block 1: full light palette on bare :root
+     block 2: dark palette under prefers-color-scheme, guarded :root:not([data-theme="light"])
+     block 3: dark palette again under :root[data-theme="dark"] so an explicit toggle wins both ways */
+  :root {
+    --paper:      #F5F1E7;
+    --paper-2:    #EEE8DA;
+    --paper-edge: #E2DAC6;
+    --ink:        #1B2A2B;
+    --ink-soft:   #4A5A59;
+    --ink-faint:  #7A8683;
+
+    --det:        #1F6F6B;   /* deterministic envelope lane */
+    --det-wash:   #DCECE9;
+    --llm:        #B0742A;   /* model lane */
+    --llm-wash:   #F1E3CE;
+    --human:      #495C77;   /* human decision */
+
+    --pass:       #2E7D5B;
+    --fail:       #A6402F;
+    --rule:       #D8CFBB;
+    --shadow: 0 1px 2px rgba(27,42,43,.06), 0 8px 24px rgba(27,42,43,.06);
+
+    --measure: 66ch;
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "Menlo", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #14201F;
+      --paper-2:    #1B2B29;
+      --paper-edge: #263A37;
+      --ink:        #E7EBE7;
+      --ink-soft:   #AEBCB8;
+      --ink-faint:  #7E908B;
+      --det:        #6FC9C0;
+      --det-wash:   #17332F;
+      --llm:        #E0A65A;
+      --llm-wash:   #33280F;
+      --human:      #8BA3C4;
+      --pass:       #6BC79A;
+      --fail:       #E48374;
+      --rule:       #2A3D39;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #14201F;
+    --paper-2:    #1B2B29;
+    --paper-edge: #263A37;
+    --ink:        #E7EBE7;
+    --ink-soft:   #AEBCB8;
+    --ink-faint:  #7E908B;
+    --det:        #6FC9C0;
+    --det-wash:   #17332F;
+    --llm:        #E0A65A;
+    --llm-wash:   #33280F;
+    --human:      #8BA3C4;
+    --pass:       #6BC79A;
+    --fail:       #E48374;
+    --rule:       #2A3D39;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  @media (max-width: 640px) { body { font-size: 17px; } }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+  .measure { max-width: var(--measure); margin-left: auto; margin-right: auto; }
+
+  /* ---------- masthead ---------- */
+  header.mast { max-width: 1000px; margin: 0 auto; padding: 64px 24px 28px; }
+  @media (max-width: 640px) { header.mast { padding-top: 40px; } }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--det); margin: 0 0 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow::before { content:""; width: 34px; height: 2px; background: var(--det); display:inline-block; }
+  h1 {
+    font-family: var(--serif); font-weight: 700; line-height: 1.05;
+    font-size: clamp(2.4rem, 6vw, 4.1rem); margin: 0 0 .35em; letter-spacing: -.01em;
+    text-wrap: balance; color: var(--ink);
+  }
+  .dek {
+    font-family: var(--serif); font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    line-height: 1.4; color: var(--ink-soft); max-width: 44ch; text-wrap: balance;
+    font-style: italic; margin: 0 0 22px;
+  }
+  .seam {
+    max-width: 72ch; font-size: .98rem; color: var(--ink-soft);
+    border-left: 3px solid var(--human); background: color-mix(in srgb, var(--paper-2) 70%, transparent);
+    border-radius: 0 8px 8px 0; padding: 12px 18px; margin: 0 0 24px;
+  }
+  .seam b { color: var(--ink); }
+  .byline {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    letter-spacing: .04em; border-top: 1px solid var(--rule);
+    padding-top: 14px; display:flex; gap: 12px 26px; flex-wrap: wrap;
+  }
+  .byline b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- sticky legend: the only sticky element (AC-7) ---------- */
+  .key {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    padding: 8px 24px;
+  }
+  .key-inner {
+    max-width: 1000px; margin: 0 auto; display: flex; gap: 6px 20px;
+    flex-wrap: wrap; align-items: center;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .02em;
+  }
+  .key-inner .klabel { color: var(--ink-faint); text-transform: uppercase; letter-spacing:.12em; }
+  @media (max-width: 640px) {
+    .key { padding: 6px 16px; }
+    .key-inner { font-size: 10px; gap: 3px 10px; }
+  }
+  .chip { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); white-space: nowrap; }
+  .sw { width: 13px; height: 13px; border-radius: 3px; flex: none; }
+  .sw.lane-llm { background: var(--llm-wash); border: 1px solid var(--llm); }
+  .sw.lane-det { background: var(--det-wash); border: 1px solid var(--det); }
+
+  /* ---------- body typography ---------- */
+  main { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  p { margin: 0 0 1.15em; }
+  h2 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.01em;
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem); line-height: 1.12;
+    margin: 2.4em 0 .15em; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .5em; color: var(--det); font-weight: 500;
+    letter-spacing: .1em; vertical-align: middle; margin-right: .8em;
+    border: 1px solid var(--det); border-radius: 3px; padding: .18em .5em;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.16rem;
+    margin: 1.9em 0 .3em; color: var(--ink); letter-spacing: -.005em;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 1.2em;
+  }
+  .lede { font-size: 1.28rem; line-height: 1.5; color: var(--ink); font-family: var(--serif); }
+  .lede b { color: var(--det); }
+  .drop::first-letter {
+    font-family: var(--serif); float: left; font-size: 3.7em; line-height: .78;
+    padding: .06em .12em 0 0; color: var(--det); font-weight: 700;
+  }
+  a { color: var(--det); text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 700; }
+  code {
+    font-family: var(--mono); font-size: .84em;
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 4px; padding: .08em .38em; color: var(--ink);
+    overflow-wrap: break-word;
+  }
+  ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--det); }
+  .pull {
+    font-family: var(--serif); font-style: italic; font-size: clamp(1.4rem, 3vw, 1.9rem);
+    line-height: 1.35; border-top: 2px solid var(--det); border-bottom: 2px solid var(--det);
+    padding: .8em 0; margin: 1.8em 0;
+  }
+  .pull b { color: var(--det); font-style: normal; }
+
+  .cite {
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);
+    display: block; margin-top: 6px; line-height: 1.5;
+  }
+
+  /* ---------- envelope beat: each Part's closing teal-ruled aside ---------- */
+  .envelope-beat {
+    border-left: 3px solid var(--det); background: var(--det-wash);
+    border-radius: 0 10px 10px 0; padding: 16px 22px 14px; margin: 2.2em 0 .5em;
+  }
+  .envelope-beat .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--det); display: block;
+    margin-bottom: 6px; font-weight: 700;
+  }
+  .envelope-beat p { margin: 0; font-size: .98rem; }
+
+  /* ---------- figures ---------- */
+  figure { margin: 2.4em 0; padding: 0; }
+  figure svg { display: block; width: 100%; height: auto; min-width: 620px; }
+  .fig-card {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 12px; padding: 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    margin-top: 12px; line-height: 1.5; letter-spacing: .01em; max-width: 74ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- decision cards (Part VIII) ---------- */
+  .decision-card {
+    border: 1px solid var(--paper-edge); background: var(--paper-2);
+    border-radius: 12px; padding: 20px 24px 16px; margin: 1.8em 0;
+    box-shadow: var(--shadow);
+  }
+  .decision-card h3 { margin-top: 0; }
+  .decision-card h3 .dnum {
+    font-family: var(--mono); font-size: .72em; color: var(--human);
+    border: 1px solid var(--human); border-radius: 3px; padding: .1em .4em;
+    margin-right: .6em; vertical-align: .08em; font-weight: 500;
+  }
+  .decision-card .dq { font-size: .98rem; color: var(--ink-soft); margin-bottom: 1em; }
+  .default-line {
+    border-top: 1px solid var(--rule); margin-top: 14px; padding-top: 12px;
+    font-size: .95rem;
+  }
+  .default-line b { color: var(--det); }
+  .backref { font-family: var(--mono); font-size: 11.5px; }
+
+  /* ---------- tables ---------- */
+  .table-wrap {
+    overflow-x: auto; border-radius: 10px; box-shadow: var(--shadow);
+    margin: 1.4em 0; border: 1px solid var(--paper-edge);
+  }
+  table {
+    border-collapse: collapse; width: 100%; min-width: 560px;
+    background: var(--paper-2); font-size: .92rem;
+  }
+  caption {
+    font-family: var(--mono); font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: .1em; text-align: left; color: var(--ink-faint);
+    padding: 10px 14px 6px; background: var(--paper-2);
+  }
+  th {
+    font-family: var(--mono); font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: .06em; text-align: left; color: var(--ink-soft);
+    padding: 9px 14px; background: color-mix(in srgb, var(--det-wash) 45%, var(--paper-2));
+    border-bottom: 1px solid var(--paper-edge);
+  }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--paper-edge); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .lane-pill {
+    font-family: var(--mono); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: .06em; border-radius: 999px; padding: .18em .6em;
+    white-space: nowrap; font-weight: 600;
+  }
+  .lane-pill.det { background: var(--det-wash); color: var(--det); border: 1px solid var(--det); }
+  .lane-pill.llm { background: var(--llm-wash); color: var(--llm); border: 1px solid var(--llm); }
+  .lane-pill.human { background: color-mix(in srgb, var(--human) 14%, transparent); color: var(--human); border: 1px solid var(--human); }
+
+  /* ---------- unverified figure marker (FR-8 / AC-5) ---------- */
+  .unverified {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .04em;
+    color: var(--ink-faint); border-bottom: 1px dashed var(--ink-faint);
+    text-transform: uppercase; margin: 0 .2em;
+  }
+
+  /* ---------- part dividers ---------- */
+  .rule-orn {
+    display: flex; align-items: center; gap: 16px; margin: 3.2em 0 0;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .rule-orn::before, .rule-orn::after {
+    content: ""; height: 1px; background: var(--rule); flex: 1;
+  }
+
+  /* ---------- footer ---------- */
+  footer {
+    max-width: 1000px; margin: 60px auto 0; padding: 24px 24px 80px;
+    border-top: 1px solid var(--rule); font-family: var(--mono);
+    font-size: 12.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+  footer b { color: var(--ink-soft); }
+  footer p { margin: 0 0 1em; max-width: 90ch; }
+  footer ul { padding-left: 1.2em; }
+
+  /* ---------- hash-target clearance + keyboard focus (FR-12) ---------- */
+  h2, .decision-card, .part, #scorecard { scroll-margin-top: 110px; }
+  a:focus-visible {
+    outline: 2px solid var(--det); outline-offset: 2px; border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <p class="eyebrow">Engineering &amp; Product · Claude on AWS · mid-2026</p>
+  <h1>The Loop, Left Running</h1>
+  <p class="dek">An architect's story of Claude on AWS — one tool loop, told once, from a single call to managed infrastructure.</p>
+  <div class="seam">
+    <b>How this differs from the M1 atlas.</b> The Claude Architect Atlas is the certification study aid — modules, sections, self-tests. This page instead distills the two case bundles (the <i>aws-claude</i> course Concepts and the <i>aws-ai</i> agents chapters) into one narrative of Claude on AWS as it stands in mid-2026, with a decision map at the end. Where the atlas catalogs, this page tells the story.
+  </div>
+  <p class="byline">
+    <span><b>Audience</b> architects &amp; senior engineers</span>
+    <span><b>Reading time</b> ~35 min</span>
+    <span><b>Research as of</b> 2026-08-27</span>
+    <span><b>Status</b> independent synthesis of the author's notes</span>
+  </p>
+</header>
+
+<div class="key" aria-label="How to read this page">
+  <div class="key-inner">
+    <span class="klabel">Lanes in figures:</span>
+    <span class="chip"><span class="sw lane-llm"></span>model — probabilistic</span>
+    <span class="chip"><span class="sw lane-det"></span>envelope — deterministic</span>
+    <span class="klabel">Marker:</span>
+    <span class="chip"><span class="unverified">unverified</span>&nbsp;— check the live page</span>
+  </div>
+</div>
+
+<main>
+  <section class="part" id="part-1">
+    <div class="measure">
+      <div class="rule-orn">Part I · One call</div>
+      <h2><span class="num">I</span>One call</h2>
+      <p class="lede drop">Every architecture in this story reduces to one move: a stateless request crosses a deterministic boundary, a model reasons about it, and a response comes back through the same boundary. Get this single call right and the rest of the page is repetition. Get it wrong and no framework will save you.</p>
+      <p>Start with what the call is. The API stores nothing between requests: your application keeps the full message list and resends the entire history every turn, roles strictly alternating. And a Claude model will refuse a bare model id on demand throughput — you route through an <strong>inference profile</strong>, a routing name with a region prefix: <code>us.</code>, <code>eu.</code>, <code>jp.</code>, <code>apac.</code>, <code>au.</code>, or <code>global.</code>, with 4.6+/5-generation ids dateless (<code>global.anthropic.claude-opus-5</code>).
+      <span class="cite">aws-claude bundle, "Bedrock Converse API" Concept · AWS Bedrock cross-region inference guide, as of 2026-08-27</span></p>
+      <p>Around that one call sit three choices worth slowing down for: which door the call goes through, which model answers it, and how hard the model is allowed to think.</p>
+
+      <p data-delta="5"><strong>The door.</strong> Bedrock serves Claude through two endpoints, and platform services hang on only one of them. <code>bedrock-runtime</code> carries Converse/ConverseStream, InvokeModel, an Anthropic-native Messages path, and two OpenAI-compatible APIs — and it is where Guardrails, Knowledge Bases, Agents, and Flows attach. The <code>bedrock-mantle</code> endpoint serves Claude through the first-party Messages API with standard SSE and its own separate, burndown-free quota pools — and nothing platform-side attaches to it. Anthropic labels the Converse integration "legacy (Opus 4.6 and earlier)"; Converse still works with every current Claude model as the AWS-native multi-model abstraction, but the attach-point asymmetry is what makes the endpoint a real architecture decision rather than a config value.
+      <span class="cite">AWS Bedrock userguide, "APIs" · Anthropic "Claude in Amazon Bedrock" docs, as of 2026-08-27</span></p>
+
+      <figure>
+        <div class="fig-card">
+          <svg viewBox="0 0 920 380" role="img" aria-label="Anatomy of one call: the request passes through the deterministic envelope — identity, endpoint choice, routing, quota — before the model reasons, and the response returns through the same envelope for usage accounting and refusal handling.">
+            <defs>
+              <marker id="f1-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="30" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F1 · ANATOMY OF ONE CALL</text>
+            <!-- model lane -->
+            <rect x="20" y="50" width="880" height="120" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="74" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE · PROBABILISTIC</text>
+            <rect x="330" y="86" width="260" height="66" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="460" y="112" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">model reasons</text>
+            <text x="460" y="130" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">adaptive thinking · chosen effort</text>
+            <!-- envelope lane -->
+            <rect x="20" y="190" width="880" height="140" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="318" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · DETERMINISTIC</text>
+            <rect x="40" y="212" width="130" height="62" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="105" y="238" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">your app</text>
+            <text x="105" y="256" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">full history</text>
+            <rect x="210" y="212" width="200" height="62" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="310" y="234" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">IAM identity · endpoint</text>
+            <text x="310" y="252" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">inference profile route</text>
+            <text x="310" y="268" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">quota + burndown check</text>
+            <rect x="470" y="212" width="190" height="62" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="565" y="234" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">usage accounting</text>
+            <text x="565" y="252" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">cache read/write split</text>
+            <text x="565" y="268" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">tokens billed vs quota</text>
+            <rect x="710" y="212" width="170" height="62" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="795" y="234" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">response paths</text>
+            <text x="795" y="252" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">text · tool_use ·</text>
+            <text x="795" y="268" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">refusal (Fable 5)</text>
+            <!-- arrows -->
+            <line x1="170" y1="243" x2="205" y2="243" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+            <line x1="360" y1="207" x2="395" y2="157" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+            <text x="290" y="185" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">request</text>
+            <line x1="530" y1="157" x2="558" y2="207" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+            <text x="558" y="185" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">response</text>
+            <line x1="660" y1="243" x2="705" y2="243" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+          </svg>
+        </div>
+        <figcaption><b>One call already has two lanes.</b> Identity, endpoint, routing, quota math, usage accounting, and the refusal path are all envelope property — decided before and after the model reasons, never by it.</figcaption>
+      </figure>
+
+      <p data-delta="4"><strong>The model.</strong> Claude on Bedrock is a four-rung ladder with published list prices per million tokens in and out: Haiku 4.5 at $1/$5, Sonnet 5 at $2/$10, Opus 5 at $5/$25, Fable 5 at $10/$50 <span class="unverified">unverified — check the current pricing page</span>. Ids are dateless and pinned, context is one million tokens at standard pricing on 4.6+/5-generation models, and max output is 128K. Two traps for cost models: the 4.7+ tokenizer emits roughly 30% more tokens for the same text, and geographic routing adds 10% over global on Sonnet 4.5 and later.
+      <span class="cite">AWS Bedrock model cards · Anthropic pricing page, as of 2026-08-27 — per-MTok figures are Anthropic list prices; the Bedrock pricing page is JS-rendered and was not directly confirmable</span></p>
+
+      <figure>
+        <div class="fig-card">
+          <svg viewBox="0 0 920 300" role="img" aria-label="The model ladder crossed with the two endpoints: Haiku 4.5, Sonnet 5, Opus 5, and Fable 5, each with its context window and coupling notes; bedrock-runtime attaches platform services, bedrock-mantle serves the first-party Messages API.">
+            <text x="20" y="30" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F2 · THE LADDER × THE ENDPOINTS (comparative — not an architecture)</text>
+            <rect x="30" y="56" width="200" height="106" rx="8" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+            <text x="130" y="80" text-anchor="middle" font-family="var(--mono)" font-size="12.5" fill="var(--ink)">Haiku 4.5</text>
+            <text x="130" y="100" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">200K ctx · 64K out</text>
+            <text x="130" y="118" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">subagents · classify</text>
+            <text x="130" y="136" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">no effort param</text>
+            <rect x="250" y="56" width="200" height="106" rx="8" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+            <text x="350" y="80" text-anchor="middle" font-family="var(--mono)" font-size="12.5" fill="var(--ink)">Sonnet 5</text>
+            <text x="350" y="100" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">1M ctx · 128K out</text>
+            <text x="350" y="118" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">production default</text>
+            <text x="350" y="136" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">adaptive thinking</text>
+            <rect x="470" y="56" width="200" height="106" rx="8" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+            <text x="570" y="80" text-anchor="middle" font-family="var(--mono)" font-size="12.5" fill="var(--ink)">Opus 5</text>
+            <text x="570" y="100" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">1M ctx · 128K out</text>
+            <text x="570" y="118" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">hard agentic work</text>
+            <text x="570" y="136" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">ZDR by default</text>
+            <rect x="690" y="56" width="200" height="106" rx="8" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+            <text x="790" y="80" text-anchor="middle" font-family="var(--mono)" font-size="12.5" fill="var(--ink)">Fable 5</text>
+            <text x="790" y="100" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">1M ctx · 128K out</text>
+            <text x="790" y="118" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">refusal stop_reason</text>
+            <text x="790" y="136" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">requires data share</text>
+            <line x1="30" y1="186" x2="890" y2="186" stroke="var(--rule)" stroke-width="1"/>
+            <rect x="30" y="204" width="420" height="70" rx="8" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+            <text x="46" y="228" font-family="var(--mono)" font-size="12" fill="var(--ink)">bedrock-runtime</text>
+            <text x="46" y="248" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">Converse + Invoke + Messages path + OpenAI-compat</text>
+            <text x="46" y="264" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">Guardrails · KB · Agents · Flows attach here</text>
+            <rect x="470" y="204" width="420" height="70" rx="8" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+            <text x="486" y="228" font-family="var(--mono)" font-size="12" fill="var(--ink)">bedrock-mantle</text>
+            <text x="486" y="248" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">first-party Messages API · SSE · count-tokens (5-gen)</text>
+            <text x="486" y="264" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">separate quota pools · no platform attach points</text>
+          </svg>
+        </div>
+        <figcaption><b>F2 is the page's one single-lane figure</b> — a comparative visual, not an architecture, so it carries no model/envelope bands. Prices appear in the prose above and in the <a href="#d-model">model card</a>, always with their unverified markers.</figcaption>
+      </figure>
+
+      <p data-delta="2"><strong>The thinking.</strong> Current Claude models think <strong>adaptively</strong> — the model decides whether to reason before answering and how much — and you steer that with one knob, <code>output_config.effort</code>, from <code>low</code> to <code>max</code>. There is no budget to tune and no switch to flip: hand-set thinking budgets are a retired control (they are rejected with an HTTP 400 on 4.7+ models), and on Fable 5 thinking cannot be disabled at all. Which effort level to pin is an evaluation question, and Part VII returns to it.
+      <span class="cite">Anthropic adaptive-thinking and effort docs, as of 2026-08-27</span></p>
+
+      <p data-delta="1">Two more facts complete the one-call picture. Quota math has a shape worth memorizing: on <code>bedrock-runtime</code>, one output token burns <em>ten</em> quota tokens for Opus 5/Sonnet 5, <code>max_tokens</code> is deducted from your tokens-per-minute allowance at request start, and cache reads burn nothing — so an oversized <code>max_tokens</code> throttles concurrency even though billing stays honest. And one habit to unlearn if you knew Claude a generation ago: seeding the assistant turn ("prefill") is rejected outright today — Part II shows the pattern that took its place.
+      <span class="cite">AWS Bedrock quotas and token-burndown guide, as of 2026-08-27</span></p>
+      <p>Finally, Fable 5 changes the response contract itself: safety classifiers can end a generation with <code>stop_reason: "refusal"</code> on a perfectly healthy HTTP 200, sampling is pinned (temperature fixed at 1.0), and the account must opt into provider data sharing before the model is available at all. Refusal handling is a designed response path, not an error branch — and the data-sharing requirement couples model choice to retention policy, a coupling the decision map prices out.
+      <span class="cite">AWS Bedrock model card for Claude Fable 5, as of 2026-08-27</span></p>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>Before any loop exists, the envelope owns: the IAM identity making the call, the endpoint and routing profile it rides, quota and burndown headroom, refusal as a designed response path, and holding model + effort constant inside any cached conversation. None of these are model decisions. All of them are architecture.</p>
+        <p class="backref">Decisions this Part motivates → <a href="#d-endpoint">D1 endpoint</a> · <a href="#d-routing">D2 routing</a> · <a href="#d-model">D3 model</a> · <a href="#d-retention">D9 retention</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-2">
+    <div class="measure">
+      <div class="rule-orn">Part II · The loop</div>
+      <h2><span class="num">II</span>The loop</h2>
+      <p class="lede">Give the single call a set of tool schemas and something remarkable happens: the model stops answering and starts <b>asking</b>. Everything else in this story — servers, agents, platforms — is this one loop at increasing altitude.</p>
+      <p>The contract is small enough to hold in your head. You send messages plus tool definitions; the model replies with <code>stop_reason</code> set to <code>tool_use</code> and one or more <code>tool_use</code> blocks naming a tool and its arguments; your application executes the real call and returns a <code>tool_result</code> block; the model reads the result and either asks again or finishes with <code>end_turn</code>. That <code>stop_reason</code> field is the hinge of the whole architecture — it is the loop condition inside every framework this page will name.
+      <span class="cite">aws-claude bundle, "Tool use on Bedrock" Concept · Anthropic tool-use overview, as of 2026-08-27</span></p>
+      <p>Two details of the contract carry more weight than they look. First, a failed tool goes back to the model as a result with <code>status: error</code>, not as a raised exception — the model reads the error text and retries with corrected arguments. Second, the division of labor is absolute: the model only ever <em>proposes</em> a call; your code decides whether and how it runs. That split is where every governance mechanism in Parts VI and VIII will attach.</p>
+      <p>One thing you no longer have to engineer: when the calls are independent, current models issue them in parallel by default — no wrapper tool required.</p>
+
+      <figure>
+        <div class="fig-card">
+          <svg viewBox="0 0 920 400" role="img" aria-label="The tool loop: the model proposes tool calls in the amber lane; the deterministic envelope validates, executes, and returns results in the teal lane, looping until end_turn.">
+            <defs>
+              <marker id="f3-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="30" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F3 · THE TOOL LOOP — WHO PROPOSES, WHO EXECUTES</text>
+            <!-- model lane -->
+            <rect x="20" y="50" width="880" height="130" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="74" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE · PROBABILISTIC — PROPOSES</text>
+            <!-- envelope lane -->
+            <rect x="20" y="200" width="880" height="130" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="322" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · DETERMINISTIC — EXECUTES &amp; VALIDATES</text>
+
+            <!-- envelope: request assembly -->
+            <rect x="40" y="226" width="170" height="70" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="125" y="252" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">messages +</text>
+            <text x="125" y="270" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">tool schemas</text>
+
+            <!-- model turn -->
+            <rect x="290" y="90" width="180" height="72" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="380" y="117" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">model turn</text>
+            <text x="380" y="136" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">text · tool_use blocks</text>
+
+            <!-- stop_reason chip -->
+            <rect x="520" y="100" width="150" height="52" rx="26" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.5"/>
+            <text x="595" y="122" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">stop_reason</text>
+            <text x="595" y="139" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">tool_use? end_turn?</text>
+
+            <!-- envelope: validate + execute -->
+            <rect x="450" y="240" width="180" height="70" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="540" y="266" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">validate args</text>
+            <text x="540" y="284" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">run the real call</text>
+
+            <!-- envelope: tool_result -->
+            <rect x="680" y="240" width="180" height="70" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="770" y="266" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">tool_result</text>
+            <text x="770" y="284" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">status: success | error</text>
+
+            <!-- final answer -->
+            <rect x="700" y="90" width="160" height="62" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="780" y="115" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">final answer</text>
+            <text x="780" y="133" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">end_turn</text>
+
+            <!-- arrows -->
+            <line x1="210" y1="248" x2="285" y2="140" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+            <text x="202" y="192" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">request</text>
+            <line x1="470" y1="126" x2="515" y2="126" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+            <line x1="595" y1="152" x2="560" y2="235" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+            <text x="600" y="200" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">tool_use</text>
+            <line x1="630" y1="275" x2="675" y2="275" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+            <path d="M 680 300 C 360 380 230 330 300 168" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+            <text x="330" y="362" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">append to history · resend schemas · loop</text>
+            <line x1="648" y1="112" x2="695" y2="112" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+          </svg>
+        </div>
+        <figcaption><b>The loop is a contract between two lanes.</b> The amber lane only proposes: text, tool_use blocks, a stop_reason. The teal lane owns everything that actually happens: validation, execution, the success-or-error result, and the decision to go around again.</figcaption>
+      </figure>
+
+      <h3>Structured output rides the loop</h3>
+      <p data-delta="1">Sooner or later every integration needs the model to return data, not prose. The reliable way to get it is already in front of you: define a tool whose input schema <em>is</em> the output contract, force it with <code>toolChoice</code>, and read the arguments the model fills in. The schema does the formatting; the loop's own contract does the delivery. Two companions round it out — a schema stated in the system prompt with a validate-and-retry step, and, where available, the platform's structured-output mode. Check availability before assuming that last one: structured outputs are not yet on Bedrock for Opus 5/Sonnet 5, a feature-parity gap against the first-party API worth an explicit note in any design that assumes it.
+      <span class="cite">Anthropic Opus 5 / Sonnet 5 migration guides · AWS Bedrock model cards, as of 2026-08-27</span></p>
+      <p>If you learned a different trick — seeding the assistant turn with an opening delimiter and stopping on the closing one — retire it: prefilling the assistant message returns <strong>HTTP 400</strong> on Sonnet 4.6+, Opus 4.7+, and the whole Claude 5 generation. The tool-schema extractor wins for a structural reason, not a fashionable one: a pattern that lives inside the loop's contract outlives any pattern that lives beside it. That asymmetry is this page's thesis in miniature.</p>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>The loop's envelope owns tool execution end to end: schema validation before anything runs, <code>try/except</code> folded into <code>status: error</code> results, retry ceilings, and the allowlist of what the model may call at all. The model proposes; the envelope executes and validates. Hold that line — every later Part raises the stakes on it.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-3">
+    <div class="measure">
+      <div class="rule-orn">Part III · The loop with servers</div>
+      <h2><span class="num">III</span>The loop with servers</h2>
+      <p class="lede">The loop never asked who <b>wrote</b> the tools. MCP answers that question: authoring and execution move onto a server that wraps the outside service, and your client rents the capability. The loop itself does not change — only the ownership does.</p>
+      <p>One sentence does most of the design work here. <strong>Tools are model-controlled</strong> — capabilities the model chooses to invoke. <strong>Resources are application-controlled</strong> — data your app injects into context. <strong>Prompts are user-controlled</strong> — canned workflows a person starts. Whatever you are about to build for an agent, this three-way split tells you which of the three it is, and that decides who gets to trigger it.
+      <span class="cite">aws-claude bundle, "Model Context Protocol" Concept · modelcontextprotocol.io server concepts, as of 2026-08-27</span></p>
+      <p>A rule that is often misstated: per-tool-call user approval is <em>host policy</em>, not an MCP protocol mandate. The spec puts approval exactly where the control split implies — the host decides how much friction model-controlled tools get.</p>
+
+      <p data-delta="8">The protocol itself is worth dating precisely, because its current revision (2026-07-28) settled the wire contract an enterprise server should target. MCP is <strong>stateless</strong>: no handshake, no session header — anything a server must remember across calls rides in server-minted handles passed back as tool arguments. Streamable HTTP is the transport. When a server needs something from the client mid-request, it uses Multi Round-Trip Requests rather than opening its own channel. Auth is OAuth 2.1 with Client ID Metadata Documents. Three older client features — Roots, Sampling, and Logging — are formally deprecated on a twelve-month clock; a server built today does not build on them, and if yours still relies on the old stateful handshake, session ids are gone.
+      <span class="cite">MCP specification 2026-07-28 changelog and release post, as of 2026-08-27</span></p>
+
+      <p>Governance matches the spec's ambition: MCP lives under LF Projects, LLC — vendor-neutral, changes through a formal SEP process, deprecations on a published lifecycle. For an architect this is the difference between betting on a vendor's SDK and betting on an infrastructure standard.
+      <span class="cite">modelcontextprotocol.io community governance pages, as of 2026-08-27</span></p>
+
+      <figure>
+        <div class="fig-card">
+          <svg viewBox="0 0 920 360" role="img" aria-label="MCP host, client, and server with the three-way control split: tools are model-controlled, resources application-controlled, prompts user-controlled.">
+            <defs>
+              <marker id="f4-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="30" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F4 · MCP — WHO CONTROLS WHAT</text>
+            <!-- model lane -->
+            <rect x="20" y="50" width="880" height="96" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="74" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE · CHOOSES WHICH TOOL</text>
+            <rect x="340" y="84" width="240" height="48" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="460" y="113" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">model picks a tool_use</text>
+            <!-- envelope lane -->
+            <rect x="20" y="166" width="880" height="180" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="334" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · HOST, CLIENT, SERVER — EXECUTION &amp; AUTH</text>
+            <!-- host/client -->
+            <rect x="50" y="192" width="250" height="120" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="175" y="216" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">host application</text>
+            <rect x="70" y="230" width="210" height="62" rx="6" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1"/>
+            <text x="175" y="254" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">MCP client</text>
+            <text x="175" y="272" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">executes calls · OAuth 2.1</text>
+            <!-- server -->
+            <rect x="620" y="192" width="250" height="120" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="745" y="216" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">MCP server</text>
+            <text x="745" y="236" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">wraps the outside service</text>
+            <rect x="640" y="248" width="210" height="48" rx="6" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1"/>
+            <text x="745" y="268" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">stateless · state in</text>
+            <text x="745" y="284" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">server-minted handles</text>
+            <!-- three channels -->
+            <line x1="300" y1="222" x2="615" y2="222" stroke="var(--llm)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <text x="392" y="214" font-family="var(--mono)" font-size="11" fill="var(--llm)">tools — model-controlled</text>
+            <line x1="300" y1="258" x2="615" y2="258" stroke="var(--det)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <text x="380" y="250" font-family="var(--mono)" font-size="11" fill="var(--det)">resources — app-controlled</text>
+            <line x1="300" y1="294" x2="615" y2="294" stroke="var(--human)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <text x="384" y="286" font-family="var(--mono)" font-size="11" fill="var(--human)">prompts — user-controlled</text>
+            <!-- model to client -->
+            <line x1="400" y1="132" x2="290" y2="188" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <text x="240" y="166" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">tool_use</text>
+          </svg>
+        </div>
+        <figcaption><b>The control split is the architecture.</b> Three channels with three different controllers cross the client–server seam; the model only ever holds the amber one. The server stays stateless — cross-call state rides in handles, not sessions.</figcaption>
+      </figure>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>Once tools live on servers, the envelope owns the seam: server identity and OAuth 2.1 auth, allowlisting at whatever gateway fronts the servers, and the discipline of treating every tool result as untrusted input to the next model turn. A server is a supply chain now — vet it like one.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-4">
+    <div class="measure">
+      <div class="rule-orn">Part IV · The loop left running</div>
+      <h2><span class="num">IV</span>The loop left running</h2>
+      <p class="lede">An agent is not a new architecture. It is the tool loop from Part II with the exit condition moved: instead of stopping after one answer, it runs until the goal is met or the budget is gone. <b>Agent = loop + state.</b> Everything agents add — memory, frameworks, platforms — is machinery for the state half.</p>
+      <p>That definition is not this page's coinage — it is how Strands documents its agent loop: reason, select a tool, execute, accumulate context, recurse until a terminal stop reason.
+      <span class="cite">aws-claude bundle, "Agents and computer use" Concept · Strands agent-loop docs, as of 2026-08-27</span></p>
+      <p data-delta="7">Strands is the code-first frame for that loop on AWS: an agent is a model, a list of tools, and a prompt; <code>@tool</code> turns a typed, documented Python function into a schema; the loop is the SDK's job. It hit 1.0 in mid-2025, is production/stable in the 1.5x series, and — the detail that matters for the next two Parts — it powers AWS's own managed Harness under the hood. Learning Strands is learning the substrate.
+      <span class="cite">Strands Agents SDK docs and PyPI, as of 2026-08-27</span></p>
+      <p data-delta="11">State splits on one line: <strong>short-term memory</strong> is the session — events in order, the context window, the rolling buffer; <strong>long-term memory</strong> is what survives the session — extracted preferences, facts, and summaries. AgentCore Memory ships that split as a service, with actor- and session-scoped namespaces and asynchronous extraction strategies. And context management inside the window is productized too — server-side compaction, context editing, a client-side memory tool, or a fresh-context restart that rediscovers state from the filesystem. Choose among them deliberately; hand-rolled summarization is the one option with nothing left to recommend it.
+      <span class="cite">aws-ai bundle, "Agent Memory" chapter · AgentCore Memory docs · Anthropic context-engineering post, as of 2026-08-27</span></p>
+
+      <figure>
+        <div class="fig-card">
+          <svg viewBox="0 0 920 400" role="img" aria-label="The loop left running: the model's reasoning cycle in the amber lane; session state, memory tiers, and the Strands frame in the deterministic envelope lane.">
+            <defs>
+              <marker id="f5-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="30" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F5 · AGENT = LOOP + STATE</text>
+            <!-- model lane -->
+            <rect x="20" y="50" width="880" height="110" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="74" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE · THE LOOP, RUNNING</text>
+            <rect x="120" y="88" width="160" height="52" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="200" y="119" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">reason</text>
+            <rect x="390" y="88" width="160" height="52" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="470" y="119" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">pick a tool</text>
+            <rect x="660" y="88" width="160" height="52" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="740" y="119" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">read the result</text>
+            <line x1="280" y1="114" x2="385" y2="114" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f5-arrow)"/>
+            <line x1="550" y1="114" x2="655" y2="114" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f5-arrow)"/>
+            <path d="M 740 145 C 700 190 260 190 210 148" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f5-arrow)"/>
+            <text x="400" y="185" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">until goal met or budget gone</text>
+            <!-- envelope lane -->
+            <rect x="20" y="205" width="880" height="150" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="343" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · THE STATE THE LOOP RIDES ON</text>
+            <rect x="50" y="228" width="240" height="88" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="170" y="252" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">Strands frame</text>
+            <text x="170" y="272" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">model + tools + prompt</text>
+            <text x="170" y="290" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">@tool · session managers</text>
+            <rect x="340" y="228" width="240" height="88" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="460" y="252" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">short-term memory</text>
+            <text x="460" y="272" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">session events · window</text>
+            <text x="460" y="290" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">compaction · editing</text>
+            <rect x="630" y="228" width="240" height="88" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="750" y="252" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">long-term memory</text>
+            <text x="750" y="272" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">preferences · facts · summaries</text>
+            <text x="750" y="290" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">actor/session namespaces</text>
+            <line x1="580" y1="272" x2="625" y2="272" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f5-arrow)"/>
+            <text x="586" y="262" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">extract</text>
+            <line x1="460" y1="223" x2="460" y2="165" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f5-arrow)"/>
+            <text x="470" y="196" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">context in</text>
+          </svg>
+        </div>
+        <figcaption><b>The loop is the model's; the state is yours.</b> The amber cycle runs unchanged from Part II. What makes it an agent is the teal shelf underneath — frame, session, and the memory that outlives the session.</figcaption>
+      </figure>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>A running loop needs the envelope to own its state: session and actor isolation, memory scoped per user, iteration and budget ceilings, and durable state a fresh session can rediscover. The loop reasons; the envelope remembers — and decides who is allowed to remember what.</p>
+        <p class="backref">Decision this Part motivates → <a href="#d-context">D4 context strategy</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-5">
+    <div class="measure">
+      <div class="rule-orn">Part V · Many loops</div>
+      <h2><span class="num">V</span>Many loops</h2>
+      <p class="lede">The moment one agent works, someone proposes five. The right answer is restraint: multi-agent is an escalation you earn with evidence — <b>context exhaustion, true parallelism, or genuinely disjoint expertise</b> — not a maturity milestone.</p>
+      <p>Start simple, escalate on evidence. A single agent with well-designed tools beats a poorly designed multi-agent system, and a rebuild exercise in the source notes made the cost concrete: the same task, five agents instead of one, four times the latency. There is a twist: the restraint has to be <em>prompted in</em> — current frontier models over-delegate to subagents by default and need damping, not encouragement.
+      <span class="cite">aws-ai bundle, "Advanced Agent Architecture Patterns" chapter · Anthropic prompting best practices, as of 2026-08-27</span></p>
+      <p>When the evidence does arrive, the shipped vocabulary is five Strands primitives — <strong>agents-as-tools</strong>, <strong>handoffs</strong>, <strong>swarm</strong>, <strong>graph</strong>, and <strong>workflow</strong> — plus A2A for agents that cross framework or organization boundaries. One naming note: a "supervisor" is not a separate primitive; it is what agents-as-tools builds. The real design axis is <em>who decides the path</em>: a supervisor agent decides (agents-as-tools), the agents themselves decide (swarm), or you decide, in code (graph). Auditable workflows belong on the graph — the model reasons inside nodes but never chooses the route.
+      <span class="cite">Strands multi-agent pattern docs · aws-ai bundle, "Advanced Agent Architecture Patterns" chapter, as of 2026-08-27</span></p>
+
+      <p data-delta="14">Once loops talk to each other, the protocol question stops being singular — four layers cover the seams. <strong>MCP</strong> connects an agent to its tools. <strong>A2A v1.0</strong> — Linux Foundation governed, with signed agent cards — connects agents to each other across vendors and organizations. <strong>AG-UI</strong> connects an agent to its frontend. <strong>x402/MPP</strong> (still in preview) handle agent payments. And AgentCore Gateway fronts the stack as a managed choke point: ingress and egress auth, semantic tool search, even model routing — one place where policy can see every call.
+      <span class="cite">AgentCore developer guide · Linux Foundation A2A announcements, as of 2026-08-27</span></p>
+
+      <figure>
+        <div class="fig-card">
+          <svg viewBox="0 0 920 430" role="img" aria-label="Many loops: three topologies — agents-as-tools, swarm, and graph — in the model lane, with the four-layer protocol stack and the Gateway choke point in the envelope lane.">
+            <defs>
+              <marker id="f6-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="30" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F6 · TOPOLOGIES × THE PROTOCOL STACK</text>
+            <!-- model lane: topologies -->
+            <rect x="20" y="50" width="880" height="170" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="74" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE · WHO DECIDES THE PATH</text>
+            <!-- agents-as-tools -->
+            <text x="105" y="102" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">agents-as-tools</text>
+            <circle cx="150" cy="130" r="16" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <circle cx="100" cy="185" r="13" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <circle cx="150" cy="192" r="13" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <circle cx="200" cy="185" r="13" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <line x1="140" y1="144" x2="106" y2="172" stroke="var(--ink-soft)" stroke-width="1.2" marker-end="url(#f6-arrow)"/>
+            <line x1="150" y1="146" x2="150" y2="177" stroke="var(--ink-soft)" stroke-width="1.2" marker-end="url(#f6-arrow)"/>
+            <line x1="160" y1="144" x2="194" y2="172" stroke="var(--ink-soft)" stroke-width="1.2" marker-end="url(#f6-arrow)"/>
+            <text x="88" y="215" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">supervisor decides</text>
+            <!-- swarm -->
+            <text x="435" y="102" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">swarm</text>
+            <circle cx="410" cy="140" r="14" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <circle cx="470" cy="130" r="14" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <circle cx="445" cy="185" r="14" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <line x1="424" y1="136" x2="455" y2="132" stroke="var(--ink-soft)" stroke-width="1.2" marker-end="url(#f6-arrow)"/>
+            <line x1="464" y1="143" x2="452" y2="172" stroke="var(--ink-soft)" stroke-width="1.2" marker-end="url(#f6-arrow)"/>
+            <line x1="432" y1="180" x2="414" y2="154" stroke="var(--ink-soft)" stroke-width="1.2" marker-end="url(#f6-arrow)"/>
+            <text x="392" y="215" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">agents decide · handoffs</text>
+            <!-- graph -->
+            <text x="720" y="102" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">graph / DAG</text>
+            <rect x="675" y="120" width="34" height="26" rx="5" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <rect x="745" y="120" width="34" height="26" rx="5" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <rect x="710" y="172" width="34" height="26" rx="5" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <rect x="790" y="172" width="34" height="26" rx="5" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <line x1="694" y1="146" x2="722" y2="168" stroke="var(--det)" stroke-width="1.5" marker-end="url(#f6-arrow)"/>
+            <line x1="760" y1="146" x2="736" y2="168" stroke="var(--det)" stroke-width="1.5" marker-end="url(#f6-arrow)"/>
+            <line x1="770" y1="146" x2="800" y2="168" stroke="var(--det)" stroke-width="1.5" marker-end="url(#f6-arrow)"/>
+            <text x="680" y="215" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">you decide, in code (teal edges)</text>
+            <!-- envelope lane: protocol stack -->
+            <rect x="20" y="240" width="880" height="150" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="378" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · PROTOCOLS + THE GATEWAY CHOKE POINT</text>
+            <rect x="46" y="262" width="190" height="54" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="141" y="284" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">MCP</text>
+            <text x="141" y="302" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">agent → tools</text>
+            <rect x="256" y="262" width="190" height="54" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="351" y="284" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">A2A v1.0</text>
+            <text x="351" y="302" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">agent ↔ agent · signed cards</text>
+            <rect x="466" y="262" width="190" height="54" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="561" y="284" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">AG-UI</text>
+            <text x="561" y="302" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">agent → frontend</text>
+            <rect x="676" y="262" width="190" height="54" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <text x="771" y="284" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">x402 / MPP</text>
+            <text x="771" y="302" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">agent → payments · preview</text>
+            <rect x="256" y="330" width="400" height="34" rx="17" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="456" y="352" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">AgentCore Gateway — one choke point, every call visible</text>
+          </svg>
+        </div>
+        <figcaption><b>Topology and protocol are separate decisions.</b> The amber lane asks who routes the work; the teal lane asks which standard each seam speaks — and puts one gateway where all four can be seen and governed.</figcaption>
+      </figure>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>With many loops, the envelope owns the topology: the DAG whenever compliance needs an auditable route, handoff and iteration ceilings when it does not, and cross-agent trust — signed agent cards, per-agent identity, one gateway where policy sees every call before it happens.</p>
+        <p class="backref">Decision this Part motivates → <a href="#d-orchestration">D5 orchestration</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-6">
+    <div class="measure">
+      <div class="rule-orn">Part VI · The loop as infrastructure</div>
+      <h2><span class="num">VI</span>The loop as infrastructure</h2>
+      <p class="lede">Follow the loop far enough and it stops being your code. AgentCore is the tool loop as a managed platform — the envelope of every previous Part, sold as services. Part IV's definition of an agent is now, literally, an AWS product.</p>
+      <p data-delta="7">The platform decomposes the way this page has been decomposing all along. The loop runs on <strong>Runtime</strong> — per-session microVMs, sessions to 8 hours, billed on active CPU only — or on <strong>Runtime Instances</strong> (managed EC2, 14-day sessions, GPU families) when it outgrows that. <strong>Harness</strong> is the loop itself as configuration: model + tools + instructions, no deployment, powered by Strands underneath and able to export back to Strands code when you outgrow config. Around them: <strong>Gateway</strong> (tools), <strong>Identity</strong> (a KMS-encrypted token vault instead of secrets in context), <strong>Memory</strong>, <strong>Policy</strong>, <strong>Evaluations</strong>, <strong>Observability</strong> — each adoptable independently, framework- and model-agnostic by design.
+      <span class="cite">AgentCore developer guide and GA announcements, as of 2026-08-27</span></p>
+
+      <p>One naming trap waits in older material. AWS's earlier managed-agents product — console-configured "Bedrock Agents", with action groups and prompt overrides — is now <strong>Amazon Bedrock Agents Classic</strong>: closed to new customers since 2026-07-30, model catalog frozen, existing agents still running with no end-of-life date. New designs start on AgentCore, and AWS's own migration path lands on Harness (action groups become Gateway-wrapped MCP tools) or code-defined agents on Runtime. If a system you inherit still sits on Classic, migrating is a scheduled architecture decision, not hygiene — the frozen model catalog is the clock.
+      <span class="cite">AWS Bedrock Agents Classic maintenance-mode documentation, as of 2026-08-27</span></p>
+
+      <p data-delta="10">Governance on the platform splits along the line Part II drew. <strong>Guardrails govern what the agent says</strong> — content filters, denied topics, PII, grounding checks, org-enforced and non-bypassable since the Organizations policy type landed, with Automated Reasoning checks for formally verifiable claims. <strong>Cedar-based Policy governs what the agent does</strong> — default-deny authorization evaluated on every tool call at the Gateway, outside the reasoning loop, immune to prompt persuasion. The distinction is not advice; the platform enforces it as two separate services.
+      <span class="cite">aws-ai bundle, "Evaluation, Observability, and AI Governance" chapter · AWS Security Blog on Cedar in AgentCore, as of 2026-08-27</span></p>
+      <p data-delta="12">Observability is OTel-shaped and CloudWatch-landed: <code>gen_ai</code> semantic-convention spans, GenAI observability dashboards, session → trace → span as one substrate for debugging, evaluation, and audit alike. One governance gap ships in the default configuration: <strong>model invocation logging is off</strong>, per account, per Region — the prompt/completion audit trail exists only if you turn it on.
+      <span class="cite">CloudWatch GenAI observability GA notes · AWS Bedrock invocation-logging guide, as of 2026-08-27</span></p>
+
+      <figure>
+        <div class="fig-card">
+          <svg viewBox="0 0 920 350" role="img" aria-label="The AgentCore platform map: the agent loop in the amber lane and the platform services as the deterministic envelope.">
+            <defs>
+              <marker id="f7-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="30" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F7 · AGENTCORE — THE MANAGED ENVELOPE</text>
+            <!-- model lane -->
+            <rect x="20" y="50" width="880" height="80" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="74" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE</text>
+            <rect x="330" y="82" width="260" height="38" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="460" y="106" text-anchor="middle" font-family="var(--mono)" font-size="12" fill="var(--ink)">your agent's loop, unchanged</text>
+            <!-- envelope lane -->
+            <rect x="20" y="146" width="880" height="190" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="324" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · PLATFORM SERVICES, ADOPTABLE INDEPENDENTLY</text>
+            <rect x="46" y="168" width="200" height="60" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="146" y="192" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">Runtime + Instances</text>
+            <text x="146" y="210" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">microVMs 8h · EC2 14d</text>
+            <rect x="256" y="168" width="200" height="60" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="356" y="192" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">Harness</text>
+            <text x="356" y="210" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">the loop as config</text>
+            <rect x="466" y="168" width="200" height="60" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="566" y="192" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">Gateway</text>
+            <text x="566" y="210" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">tools · auth · search</text>
+            <rect x="676" y="168" width="200" height="60" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="776" y="192" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">Identity</text>
+            <text x="776" y="210" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">token vault · OAuth</text>
+            <rect x="46" y="242" width="200" height="60" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="146" y="266" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">Memory</text>
+            <text x="146" y="284" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">events · strategies</text>
+            <rect x="256" y="242" width="200" height="60" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="356" y="266" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">Policy (Cedar)</text>
+            <text x="356" y="284" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">default-deny per tool call</text>
+            <rect x="466" y="242" width="200" height="60" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="566" y="266" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">Evaluations</text>
+            <text x="566" y="284" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">online · on-demand · batch</text>
+            <rect x="676" y="242" width="200" height="60" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="776" y="266" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">Observability</text>
+            <text x="776" y="284" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">OTel gen_ai → CloudWatch</text>
+            <line x1="460" y1="120" x2="460" y2="162" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f7-arrow)"/>
+          </svg>
+        </div>
+        <figcaption><b>The platform is the envelope, productized.</b> The amber loop is the same one from Part II; every teal box is a Part of this page as a service — and each is adoptable on its own, the platform never demands all of itself at once.</figcaption>
+      </figure>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>Here the envelope stops being your code and becomes the platform: microVM isolation per session, a token vault instead of credentials in context, default-deny Cedar at the gateway. One duty the platform will not take from you: invocation logging is off by default — turn it on, in every account, and make the audit trail exist.</p>
+        <p class="backref">Decisions this Part motivates → <a href="#d-orchestration">D5 orchestration</a> · <a href="#d-governance">D6 governance</a> · <a href="#d-deploy">D8 deployment</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-7">
+    <div class="measure">
+      <div class="rule-orn">Part VII · The eval decides</div>
+      <h2><span class="num">VII</span>The eval decides</h2>
+      <p class="lede">Every Part so far ended with the envelope owning something. This Part is about how the envelope <b>knows</b>. The rule is short enough to memorize: no capability knob gets turned on taste — the eval decides.</p>
+      <p>An eval is a pipeline: dataset → run → grade → average, with three grader families — code, model, human. The working vocabulary: a <strong>task</strong> is an input plus an environment plus success criteria; a <strong>trial</strong> is one run — you run several, because outputs vary; a <strong>grader</strong> is code (fast, brittle), an LLM judge (flexible, calibrated against humans, given an "unknown" escape hatch), or a human (the gold standard the judges are calibrated to).
+      <span class="cite">aws-claude bundle, "Prompt evaluation pipeline" Concept · Anthropic "Demystifying evals for AI agents", as of 2026-08-27</span></p>
+      <p data-delta="11">The metric that separates demos from production is one exponent. <strong>pass@k</strong> asks whether at least one of k trials succeeds — right when one success is enough. <strong>pass^k</strong> asks whether <em>all</em> k succeed — right for agents that must behave every time. The arithmetic is brutal: 75% per-trial reliability is roughly 42% pass^3. Consistency, not capability, is the production bar.</p>
+      <p data-delta="12">On AWS this doctrine now runs as a two-tier harness. <strong>Build-time:</strong> Strands Evals in CI — cases with expected outputs and expected tool trajectories; deterministic graders (tool selection, parameters, trajectory order) hard-fail the build at zero tolerance; LLM-judge layers gate on thresholds, measured with pass^k. <strong>Production:</strong> AgentCore Evaluations continuously samples 1–5% of live sessions against the same evaluator set, and its scores land in the same CloudWatch GenAI observability dashboards as latency and cost — quality alarms next to operational alarms, one pane. Bedrock Evaluations completes the roster with managed LLM-judge jobs that can grade even non-Bedrock outputs.
+      <span class="cite">AWS ML Blog, "Evaluating AI agents: a production blueprint with Strands and AgentCore" · AgentCore Evaluations GA notes, as of 2026-08-27</span></p>
+
+      <p data-delta="2">The cleanest example of the doctrine is the thinking knob from Part I. Thinking on current models is adaptive — always available, never toggled — so what the eval selects is an <strong>effort level</strong>: sweep <code>low</code> through <code>max</code> against the suite, pick the cheapest level that clears the bar, and pin it. Then leave it pinned — changing effort mid-conversation invalidates the prompt cache.
+      <span class="cite">Anthropic effort and adaptive-thinking docs, as of 2026-08-27</span></p>
+
+      <figure>
+        <div class="fig-card">
+          <svg viewBox="0 0 920 400" role="img" aria-label="The two-tier eval funnel: build-time gates — deterministic graders and judge thresholds measured with pass-to-the-k — feed a deployment, which production sampling continuously scores, with failures feeding back into the golden dataset.">
+            <defs>
+              <marker id="f8-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="30" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F8 · THE TWO-TIER EVAL FUNNEL</text>
+            <!-- model lane -->
+            <rect x="20" y="50" width="880" height="90" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="74" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE · WHAT GETS JUDGED, AND THE JUDGES</text>
+            <rect x="120" y="86" width="220" height="42" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="230" y="112" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">agent trials (k runs)</text>
+            <rect x="580" y="86" width="220" height="42" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="690" y="112" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">LLM judges (calibrated)</text>
+            <!-- envelope lane -->
+            <rect x="20" y="156" width="880" height="200" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="344" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · THE GATES</text>
+            <rect x="46" y="178" width="250" height="120" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="171" y="202" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">TIER 1 · build-time (CI)</text>
+            <text x="171" y="224" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">deterministic graders: hard fail</text>
+            <text x="171" y="242" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">judge suites: threshold gates</text>
+            <text x="171" y="260" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">measured with pass^k</text>
+            <text x="171" y="284" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">Strands Evals</text>
+            <rect x="356" y="178" width="200" height="120" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="456" y="202" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">deploy</text>
+            <text x="456" y="224" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">staging → shadow →</text>
+            <text x="456" y="242" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">small-traffic A/B →</text>
+            <text x="456" y="260" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">full rollout</text>
+            <rect x="616" y="178" width="260" height="120" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="746" y="202" text-anchor="middle" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">TIER 2 · production</text>
+            <text x="746" y="224" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">online sampling 1–5% of sessions</text>
+            <text x="746" y="242" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">scores → CloudWatch dashboards</text>
+            <text x="746" y="260" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">quality alarms beside latency</text>
+            <text x="746" y="284" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">AgentCore Evaluations</text>
+            <line x1="296" y1="238" x2="351" y2="238" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f8-arrow)"/>
+            <line x1="556" y1="238" x2="611" y2="238" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f8-arrow)"/>
+            <path d="M 700 302 C 620 385 240 385 165 302" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#f8-arrow)"/>
+            <text x="330" y="376" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">production failures → new golden cases</text>
+            <line x1="230" y1="128" x2="200" y2="172" stroke="var(--ink-soft)" stroke-width="1.2" marker-end="url(#f8-arrow)"/>
+            <line x1="690" y1="128" x2="720" y2="172" stroke="var(--ink-soft)" stroke-width="1.2" marker-end="url(#f8-arrow)"/>
+          </svg>
+        </div>
+        <figcaption><b>Two tiers, one golden set.</b> Deterministic gates and pass^k thresholds decide what ships; sampled production scoring decides whether it stays shipped; failures flow back as new cases. The judges are amber — probabilistic — which is exactly why they are calibrated and thresholded by the teal gates.</figcaption>
+      </figure>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · the last one</span>
+        <p>Evals are the envelope's gates: deterministic graders that hard-fail a build, judge thresholds that hold an average, a sampled production tier that never sleeps, and every production failure fed back into the golden set. The model proposes a behavior; the eval decides whether it ships. It is the one claim on this page most worth keeping true.</p>
+        <p class="backref">Decision this Part motivates → <a href="#d-evals">D7 eval tiers</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section id="part-8">
+    <div class="measure">
+      <div class="rule-orn">Part VIII · The decision map</div>
+      <h2><span class="num">VIII</span>The decision map</h2>
+      <p class="lede">Seven Parts of story compress into nine decisions. Each card below is an ADR candidate: the decision in one sentence, the trade-off table, and a default with its deviation trigger. <b>The default is where you start, not where you hide</b> — every deviation is evidence, recorded.</p>
+    </div>
+
+    <figure>
+      <div class="fig-card">
+        <svg viewBox="0 0 920 350" role="img" aria-label="The nine decisions plotted on the two-lane map: most configure the deterministic envelope; the model and context decisions set model-lane parameters; each dot anchors to its card below.">
+          <text x="20" y="30" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F9 · NINE DECISIONS ON THE TWO-LANE MAP (each dot links to its card)</text>
+          <!-- model lane -->
+          <rect x="20" y="50" width="880" height="110" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+          <text x="36" y="74" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE · DECISIONS THAT SET WHAT THE MODEL DOES</text>
+          <!-- envelope lane -->
+          <rect x="20" y="180" width="880" height="130" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+          <text x="36" y="298" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · DECISIONS THAT SET WHAT MAY HAPPEN</text>
+          <text x="700" y="340" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">story order — Part I → VII →</text>
+          <a href="#d-model"><circle cx="150" cy="110" r="9" fill="var(--llm)"/><text x="150" y="138" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">model</text></a>
+          <a href="#d-context"><circle cx="420" cy="110" r="9" fill="var(--llm)"/><text x="420" y="138" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">context</text></a>
+          <a href="#d-endpoint"><circle cx="100" cy="222" r="9" fill="var(--det)"/><text x="100" y="250" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">endpoint</text></a>
+          <a href="#d-routing"><circle cx="215" cy="222" r="9" fill="var(--det)"/><text x="215" y="250" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">routing</text></a>
+          <a href="#d-retention"><circle cx="330" cy="222" r="9" fill="var(--human)"/><text x="330" y="250" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">retention</text></a>
+          <a href="#d-orchestration"><circle cx="490" cy="222" r="9" fill="var(--det)"/><text x="490" y="250" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">orchestration</text></a>
+          <a href="#d-governance"><circle cx="620" cy="222" r="9" fill="var(--det)"/><text x="620" y="250" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">governance</text></a>
+          <a href="#d-deploy"><circle cx="740" cy="222" r="9" fill="var(--det)"/><text x="740" y="250" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">deploy</text></a>
+          <a href="#d-evals"><circle cx="850" cy="222" r="9" fill="var(--det)"/><text x="850" y="250" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">evals</text></a>
+        </svg>
+      </div>
+      <figcaption><b>Where each decision lives.</b> Model and context strategy configure the amber lane; the other seven build the teal one. Retention is slate — a human policy call that then constrains both lanes.</figcaption>
+    </figure>
+
+    <div class="measure">
+      <article class="decision-card" id="d-endpoint" data-delta="5">
+        <h3><span class="dnum">D1</span>Endpoint</h3>
+        <p class="dq">Serve Claude through <code>bedrock-runtime</code> or the <code>bedrock-mantle</code> Messages endpoint.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Dimension</th><th>bedrock-runtime</th><th>bedrock-mantle</th></tr></thead>
+          <tr><td>Platform attach points</td><td>Guardrails, Knowledge Bases, Agents, Flows, evaluation</td><td>none attach</td></tr>
+          <tr><td>API shape</td><td>Converse multi-model + Invoke + native Messages path</td><td>first-party Messages API, standard SSE</td></tr>
+          <tr><td>Quotas</td><td>burndown pools (output ×10 on Opus 5/Sonnet 5)</td><td>separate input/output pools, no burndown</td></tr>
+          <tr><td>count-tokens for 5-gen</td><td>Fable 5 only</td><td>supported</td></tr>
+        </table></div>
+        <p class="default-line"><b>Default:</b> bedrock-runtime whenever any Bedrock platform service attaches. <b>Deviate</b> to bedrock-mantle for first-party Messages semantics and an isolated, burndown-free quota pool — accepting the loss of every managed attach point. <span class="backref">← motivated in <a href="#part-1">Part I</a></span></p>
+      </article>
+
+      <article class="decision-card" id="d-routing" data-delta="6">
+        <h3><span class="dnum">D2</span>Routing</h3>
+        <p class="dq">Global inference profiles, geographic profiles, or a service tier.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Cost</th><th>When</th></tr></thead>
+          <tr><td><code>global.</code> profile</td><td>base price, most capacity headroom</td><td>no residency constraint — the recommended default</td></tr>
+          <tr><td>geo profile (<code>us.</code>/<code>eu.</code>/<code>au.</code>…)</td><td>+10% on Sonnet 4.5 and later</td><td>data residency pins the geography</td></tr>
+          <tr><td>service tiers (Priority/Flex/Reserved)</td><td>premium / discount / commitment</td><td>Claude 5-gen is mostly Standard-only today — watch enrollment</td></tr>
+          <tr><td>batch</td><td>about 50% off</td><td>latency-tolerant bulk work; no tools, no caching</td></tr>
+        </table></div>
+        <p class="default-line"><b>Default:</b> global profiles. <b>Deviate</b> when residency forces a geography — and record the +10% and the capacity trade as an ADR, with the SCP allowing unspecified-region routing. <span class="backref">← motivated in <a href="#part-1">Part I</a></span></p>
+      </article>
+
+      <article class="decision-card" id="d-model" data-delta="4">
+        <h3><span class="dnum">D3</span>Model selection</h3>
+        <p class="dq">Pick a rung on the ladder — the choice couples capability, price, and data retention. <span class="unverified">prices unverified — check the current pricing page</span></p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Model</th><th>List $/MTok in/out</th><th>Context</th><th>Coupling</th></tr></thead>
+          <tr><td>Haiku 4.5</td><td>$1 / $5</td><td>200K</td><td>cheap subagents, classification; no effort param</td></tr>
+          <tr><td>Sonnet 5</td><td>$2 / $10</td><td>1M</td><td>the production default</td></tr>
+          <tr><td>Opus 5</td><td>$5 / $25</td><td>1M</td><td>hard agentic work; ZDR by default</td></tr>
+          <tr><td>Fable 5</td><td>$10 / $50</td><td>1M</td><td>requires provider_data_share; refusal stop_reason; sampling pinned</td></tr>
+        </table></div>
+        <p class="default-line"><b>Default:</b> Sonnet 5. <b>Deviate</b> up only on eval evidence, down for classification and subagent fan-out — and choose Fable 5 only when the integration owns refusal handling and the retention posture allows a 30-day provider share (see <a href="#d-retention">D9</a>). <span class="backref">← motivated in <a href="#part-1">Part I</a></span></p>
+      </article>
+
+      <article class="decision-card" id="d-context" data-delta="3">
+        <h3><span class="dnum">D4</span>Context strategy</h3>
+        <p class="dq" data-delta="9">RAG, cached long-context, or agentic retrieval — one spectrum, not a default.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Strategy</th><th>Fits</th><th>Economics</th></tr></thead>
+          <tr><td>cache the corpus in-prompt</td><td>corpus under ~200k tokens</td><td>writes 1.25× (5m) / 2× (1h) <span class="unverified">1h multiplier unverified on the Bedrock bill</span>, reads 0.1× and quota-free; per-model minimums 512/1024/4096</td></tr>
+          <tr><td>classic KB vector RAG</td><td>large corpora, tight latency, citations/audit</td><td>S3 Vectors for bulk/cold (~90% cheaper tier), OpenSearch for hot/hybrid; Rerank API $1–2 per 1k queries</td></tr>
+          <tr><td>Managed KB agentic retrieval</td><td>multi-hop questions, fast setup</td><td>AWS-managed everything; per-GB-indexed + per-retrieval pricing <span class="unverified">rates unverified — not yet published</span></td></tr>
+          <tr><td>just-in-time agentic search</td><td>file/code-shaped corpora</td><td>multiple model calls per question — pay in latency</td></tr>
+        </table></div>
+        <p class="default-line"><b>Default:</b> under ~200k tokens, skip RAG and cache the corpus. <b>Deviate</b> to KB RAG when scale, latency, or citation requirements demand it; to agentic retrieval when the corpus is file-shaped and exploratory. <span class="backref">← motivated in <a href="#part-4">Part IV</a></span></p>
+      </article>
+
+      <article class="decision-card" id="d-orchestration">
+        <h3><span class="dnum">D5</span>Orchestration</h3>
+        <p class="dq">Config or code: Harness, Strands, or a raw loop you own.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>You write</th><th>You get</th></tr></thead>
+          <tr><td>AgentCore Harness</td><td>config — model + tools + instructions</td><td>no deployment at all; exports to Strands code when outgrown</td></tr>
+          <tr><td>Strands (or any framework) on Runtime</td><td>code</td><td>full multi-agent patterns, custom orchestration, same substrate</td></tr>
+          <tr><td>raw Messages/Converse loop</td><td>everything</td><td>maximum control; every envelope duty is yours</td></tr>
+        </table></div>
+        <p class="default-line"><b>Default:</b> Harness — config-first with a documented eject path to Strands on identical primitives. <b>Deviate</b> straight to code when the topology needs Graph or Swarm; a raw loop only when no framework can express the constraint. <span class="backref">← motivated in <a href="#part-6">Part VI</a></span></p>
+      </article>
+
+      <article class="decision-card" id="d-governance" data-delta="10">
+        <h3><span class="dnum">D6</span>Governance split</h3>
+        <p class="dq">Content controls and action controls are different planes — deploy both, never one as the other.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Plane</th><th>Mechanism</th><th>Property</th></tr></thead>
+          <tr><td>content — what it says</td><td>Guardrails: filters, denied topics, PII, grounding; org-enforced baseline; Automated Reasoning for formal claims</td><td>non-bypassable since the Organizations policy type</td></tr>
+          <tr><td>action — what it does</td><td>AgentCore Policy: Cedar, default-deny, evaluated per tool call at the Gateway</td><td>deterministic, outside the reasoning loop — prompt-proof</td></tr>
+          <tr><td>per-step agent checks</td><td><code>InvokeGuardrailChecks</code> on tool inputs/outputs mid-loop</td><td>detect-only scores; the app decides block/pass/retry</td></tr>
+        </table></div>
+        <p class="default-line"><b>Default:</b> both planes from day one — guardrails on content, Cedar on actions, strictness scoped to the agent's level of agency. <b>Deviate</b> never on the split itself; scale only the strictness. <span class="backref">← motivated in <a href="#part-6">Part VI</a></span></p>
+      </article>
+
+      <article class="decision-card" id="d-evals" data-delta="12">
+        <h3><span class="dnum">D7</span>Eval tiers</h3>
+        <p class="dq" data-delta="11">Build-time gates and production sampling are two tiers of one harness.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tier</th><th>Tooling</th><th>Gate</th></tr></thead>
+          <tr><td>build-time (CI)</td><td>Strands Evals: cases, trajectory matchers, code + judge graders</td><td>deterministic graders hard-fail; judge suites gate on thresholds, measured pass^k</td></tr>
+          <tr><td>production (online)</td><td>AgentCore Evaluations sampling live traffic</td><td>1–5% sampling; scores and alarms in CloudWatch GenAI observability</td></tr>
+          <tr><td>managed judging</td><td>Bedrock Evaluations: LLM-judge, RAG metrics, bring-your-own-inference</td><td>grades even non-Bedrock outputs — one harness, many providers</td></tr>
+        </table></div>
+        <p class="default-line"><b>Default:</b> both tiers from day one, golden dataset versioned next to the agent code, production failures fed back in. <b>Deviate</b> only on the sampling rate — it is the judge-cost knob, not the discipline knob. <span class="backref">← motivated in <a href="#part-7">Part VII</a></span></p>
+      </article>
+
+      <article class="decision-card" id="d-deploy">
+        <h3><span class="dnum">D8</span>Deployment quantum</h3>
+        <p class="dq">Where the running loop lives: AgentCore Runtime, Lambda, or containers.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Session shape</th><th>Billing</th></tr></thead>
+          <tr><td>AgentCore Runtime (microVMs)</td><td>up to 8h, per-session isolation</td><td>active vCPU-seconds only — idle-during-LLM-call is free</td></tr>
+          <tr><td>Runtime Instances (managed EC2)</td><td>up to 14 days, GPU families</td><td>EC2 cost + management fee</td></tr>
+          <tr><td>Lambda</td><td>15-minute ceiling, event-driven</td><td>classic Lambda; best as tool backends behind Gateway</td></tr>
+          <tr><td>ECS/Fargate or EKS</td><td>always-on, you own infra</td><td>for streaming/high-concurrency or K8s portability</td></tr>
+        </table></div>
+        <p class="default-line"><b>Default:</b> AgentCore Runtime. <b>Deviate</b> to Instances past 8 hours or onto GPUs, to Lambda for short event-driven work and tool backends, to containers when the team deliberately owns the infrastructure. <span class="backref">← motivated in <a href="#part-6">Part VI</a></span></p>
+      </article>
+
+      <article class="decision-card" id="d-retention" data-delta="13">
+        <h3><span class="dnum">D9</span>Data-retention mode</h3>
+        <p class="dq">Retention is a configurable policy surface, and choosing a mode is a human policy call — make it explicitly and enforce it with SCPs.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Mode</th><th>Meaning</th><th>Coupling</th></tr></thead>
+          <tr><td><code>none</code></td><td>guaranteed zero data retention</td><td>SCP-enforceable via the <code>bedrock:DataRetentionMode</code> condition key; makes Fable 5 unavailable</td></tr>
+          <tr><td><code>default</code></td><td>provider isolation as documented; no training on customer data</td><td>the historical posture, now explicit</td></tr>
+          <tr><td><code>provider_data_share</code></td><td>prompts/completions shared with the provider, retained up to 30 days</td><td>required for Fable 5 / Mythos 5; Opus 5 ships ZDR by default</td></tr>
+        </table></div>
+        <p class="default-line"><b>Default:</b> decide explicitly and pin it org-wide with the SCP condition key — the silently inherited default is the anti-pattern. <b>Deviate</b> to <code>none</code> for regulated data, accepting model unavailability; adopt <code>provider_data_share</code> only as a recorded ADR naming what it buys (see <a href="#d-model">D3</a>). <span class="backref">← motivated in <a href="#part-1">Part I</a></span></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="scorecard">
+    <div class="measure">
+      <div class="rule-orn">The scorecard</div>
+      <h2><span class="num">§</span>The compressed topics</h2>
+      <p>Five topics ride this page as envelope beats and decision cards rather than full Parts of their own. This table is their whole treatment: what each is, which lane owns it, and where its decision lives.</p>
+    </div>
+    <div class="table-wrap"><table>
+      <caption>Compressed topics — one line, one owner, one card</caption>
+      <thead><tr><th>Topic</th><th>In one line</th><th>Lane owner</th><th>Decision card</th></tr></thead>
+      <tr data-delta="9"><td>RAG / Knowledge Bases</td><td>Retrieval is a spectrum: cached full-context under ~200k tokens, classic KB vectors at scale, Managed KB's agentic retriever for multi-hop</td><td><span class="lane-pill det">envelope</span></td><td><a href="#d-context">D4 context</a></td></tr>
+      <tr data-delta="3"><td>Prompt caching</td><td>Per-model minimums (512/1024/4096), 5m and 1h TTLs, writes 1.25×/2× <span class="unverified">1h write multiplier unverified</span>, reads 0.1× and quota-free — cache-hit rate is a FinOps KPI</td><td><span class="lane-pill det">envelope</span></td><td><a href="#d-context">D4 context</a></td></tr>
+      <tr data-delta="10"><td>Guardrails</td><td>A layered content control plane — org-enforced baseline, Automated Reasoning, per-step InvokeGuardrailChecks — paired with Cedar for actions</td><td><span class="lane-pill det">envelope</span></td><td><a href="#d-governance">D6 governance</a></td></tr>
+      <tr data-delta="12"><td>Observability / FinOps</td><td>OTel gen_ai spans into CloudWatch GenAI observability; invocation logging off by default; app inference profiles for chargeback — the audit-trail and chargeback duties live with the governance split</td><td><span class="lane-pill det">envelope</span></td><td><a href="#d-governance">D6 governance</a></td></tr>
+      <tr data-delta="13"><td>Data retention</td><td>none / default / provider_data_share, SCP-enforceable — and the newest models sit on different sides of it</td><td><span class="lane-pill human">human</span></td><td><a href="#d-retention">D9 retention</a></td></tr>
+    </table></div>
+  </section>
+</main>
+
+<footer>
+  <p><b>About this explainer.</b> A synthesis of two case bundles in this repository. The <i>aws-claude</i> bundle (cases/claude-architect-foundation/aws-claude/, 10 Concepts) was split on 2026-08-27 from an AWS/Anthropic prompt-engineering course dump — its provenance is recorded in that bundle's log.md. The <i>aws-ai</i> bundle (cases/aws-ai/, ch01–ch10) is itself stitched from <b>two different books</b>: chapters 1–7 come from a Packt book on AI agents built on Strands and AgentCore, while chapters 8–10 come from a separate, console-era book on Amazon Bedrock whose managed-agents product is now Bedrock Agents Classic — see that bundle's log.md (2026-08-27 entry) for the seam. This page never treats the two books as one coherent stack; Part VI is where their difference is resolved.</p>
+  <p><b>Honesty note.</b> Color on this page carries meaning. In figures, the amber band is the model's probabilistic lane and the teal band is the deterministic envelope — the same two lanes the sticky key defines; slate marks a human decision. On a handful of figures, a dashed <span class="unverified">unverified</span> marker flags a number that could not be independently confirmed against a primary page; the list at the end of this footer reconciles every one. This guide is an independent synthesis of the author's study notes: all prose is fresh, nothing reproduces its sources beyond names, numbers, API fields, and rules of thumb, and the authoritative references are the current AWS and Anthropic documentation, not this page.</p>
+  <p><b>Provenance.</b> The facts on this page trace to a research pass over primary sources completed 2026-08-27, condensed into the coverage table in docs/research/aws-ai-architect-explainer-brainstorm.md (§3). Primary sources consulted, as plain-text names per this page's zero-external-link policy: the AWS Bedrock user guide and model cards; the Amazon Bedrock AgentCore developer guide and pricing page; AWS What's-New and Machine Learning Blog announcements; the Anthropic platform docs (models, pricing, tool use, adaptive thinking, effort, structured outputs) and engineering posts ("Building effective agents", "Effective context engineering", "Demystifying evals"); the Model Context Protocol specification (2026-07-28) and governance pages; the Strands Agents SDK documentation; Linux Foundation A2A announcements. SDD provenance: this page was produced spec-first — docs/sdd/specs/aws-ai-architect-story.spec.md and its plan/tasks siblings.</p>
+  <p><b>As of 2026-08-27.</b> Every fact on this page is dated to this research pass. Three figure classes could not be confirmed against a primary AWS page and carry inline <span class="unverified">unverified</span> markers where they appear:</p>
+  <ul>
+    <li>Claude 5-generation per-MTok prices as billed on Bedrock — the figures shown are Anthropic list prices; the AWS Bedrock pricing page is JS-rendered and its concrete rows were not directly confirmable (marked in Part I and card D3).</li>
+    <li>The 2× one-hour cache-write multiplier on Bedrock's bill — the 1h TTL itself is documented; only the 1.25× five-minute write and 0.1× read were confirmed on the AWS pricing page, and only for an older model row (marked in card D4).</li>
+    <li>Managed Knowledge Base rates — the per-GB-indexed plus per-retrieval pricing model is announced; the numbers are not published on a fetchable page (marked in card D4).</li>
+  </ul>
+</footer>
+</body>
+</html>

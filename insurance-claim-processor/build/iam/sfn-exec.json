@@ -1,0 +1,25 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvokeStepLambdas",
+      "Effect": "Allow",
+      "Action": "lambda:InvokeFunction",
+      "Resource": "arn:aws:lambda:*:*:function:claim-processor-*"
+    },
+    {
+      "Sid": "ExecutionLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:CreateLogGroup",
+        "logs:DescribeLogGroups"
+      ],
+      "Resource": [
+        "arn:aws:logs:*:*:log-group:/aws/vendedlogs/states/claim-processor*",
+        "arn:aws:logs:*:*:log-group:/aws/vendedlogs/states/claim-processor*:*"
+      ]
+    }
+  ]
+}

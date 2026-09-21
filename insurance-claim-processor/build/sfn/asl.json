@@ -1,0 +1,131 @@
+{
+  "Type": "STANDARD",
+  "Comment": "STANDARD workflow — one execution per claim (not EXPRESS). HITL is waitForTaskToken.",
+  "StartAt": "UnderstandExtract",
+  "States": {
+    "UnderstandExtract": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:claim-processor-understand-extract",
+      "TimeoutSeconds": 300,
+      "Retry": [
+        {
+          "ErrorEquals": ["ThrottlingException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 5,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.Timeout"],
+          "Next": "ExecutionTimedOut"
+        }
+      ],
+      "Next": "Validate"
+    },
+    "Validate": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:claim-processor-validate",
+      "TimeoutSeconds": 60,
+      "Next": "RetrieveSummarize"
+    },
+    "RetrieveSummarize": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:claim-processor-retrieve-summarize",
+      "TimeoutSeconds": 300,
+      "Retry": [
+        {
+          "ErrorEquals": ["ThrottlingException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 5,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.Timeout"],
+          "Next": "ExecutionTimedOut"
+        },
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "UngroundedFallback"
+        }
+      ],
+      "Next": "Route"
+    },
+    "UngroundedFallback": {
+      "Type": "Pass",
+      "Comment": "C11: RAG-down → ungrounded branch; extraction kept",
+      "Parameters": {
+        "bucket.$": "$.bucket",
+        "key.$": "$.key",
+        "extracted_info.$": "$.extracted_info",
+        "document_text.$": "$.document_text",
+        "validation.$": "$.validation",
+        "ungrounded": true,
+        "citations": [],
+        "summary": "(no policy excerpts retrieved)",
+        "route": "human_review"
+      },
+      "Next": "Route"
+    },
+    "Route": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.route",
+          "StringEquals": "auto_approve",
+          "Next": "Record"
+        }
+      ],
+      "Default": "ParkPending"
+    },
+    "ParkPending": {
+      "Type": "Task",
+      "Comment": "Write pending-review/<key>.json before the HITL wait (AC-E2)",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:claim-processor-record",
+      "TimeoutSeconds": 60,
+      "Next": "AwaitReview"
+    },
+    "AwaitReview": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "TimeoutSeconds": 604800,
+      "HeartbeatSeconds": 86400,
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:000000000000:function:claim-processor-await-review",
+        "Payload": {
+          "token.$": "$$.Task.Token",
+          "bucket.$": "$.bucket",
+          "key.$": "$.key"
+        }
+      },
+      "ResultPath": "$.hitl",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.Timeout"],
+          "Next": "ExpireReview"
+        }
+      ],
+      "Next": "Record"
+    },
+    "ExpireReview": {
+      "Type": "Task",
+      "Comment": "AC-E4: 7-day timeout → review-expired, never auto-approve",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:claim-processor-expire-review",
+      "TimeoutSeconds": 60,
+      "Next": "Record"
+    },
+    "Record": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:claim-processor-record",
+      "TimeoutSeconds": 60,
+      "End": true
+    },
+    "ExecutionTimedOut": {
+      "Type": "Fail",
+      "Error": "States.Timeout",
+      "Cause": "step exceeded C7 deadline"
+    }
+  }
+}

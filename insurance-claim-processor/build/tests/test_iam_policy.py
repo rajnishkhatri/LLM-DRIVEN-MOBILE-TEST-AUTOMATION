@@ -144,7 +144,11 @@ class IamPolicyLintTests(unittest.TestCase):
                             )
                             self.assertIn("/", resource)
 
-    def test_apply_guardrail_uses_named_pattern(self) -> None:
+    def test_apply_guardrail_is_id_scoped_not_named(self) -> None:
+        # Guardrail ARNs embed the system-generated ID (e.g. guardrail/l2oanwsu6no2),
+        # never the name — a `guardrail/claim-processor*` pattern can never match
+        # (deploy-readiness F4, 2026-09-22). Ship the GUARDRAIL_ID placeholder and
+        # substitute at deploy (DEPLOY.md §0), exactly like APPCONFIG_APP_ID.
         policy = self._load("step-lambda.json")
         apply_statements = [
             s
@@ -157,13 +161,16 @@ class IamPolicyLintTests(unittest.TestCase):
             self.assertTrue(resources, "ApplyGuardrail has no Resource")
             for resource in resources:
                 self.assertIn("guardrail/", resource)
-                self.assertFalse(
-                    resource.endswith("guardrail/*"),
-                    f"ApplyGuardrail must be a named pattern, not {resource!r}",
-                )
                 segment = _model_id_segment(resource)
-                self.assertNotEqual(segment, "*")
-                self.assertIn("claim-processor", segment)
+                self.assertNotIn(
+                    "*", segment, f"ApplyGuardrail must be one guardrail, not {resource!r}"
+                )
+                self.assertNotIn(
+                    "claim-processor",
+                    segment,
+                    f"guardrail ARNs carry the ID, not the name: {resource!r}",
+                )
+                self.assertEqual(segment, "GUARDRAIL_ID")
 
     def test_bedrock_invoke_names_both_arn_patterns(self) -> None:
         for name, policy in self._all_policies().items():
@@ -300,3 +307,22 @@ class IamPolicyLintTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IamPolicyGrammarTest(unittest.TestCase):
+    """IAM accepts only Version/Id/Statement at the top level and a fixed set of
+    statement keys — there is no comment syntax. A policy with an extra key is
+    valid JSON but is rejected by CreatePolicy as MalformedPolicyDocument
+    (deploy-readiness F7, 2026-09-22)."""
+
+    TOP = {"Version", "Id", "Statement"}
+    STMT = {"Sid", "Effect", "Principal", "NotPrincipal", "Action", "NotAction",
+            "Resource", "NotResource", "Condition"}
+
+    def test_only_iam_grammar_keys(self) -> None:
+        for path in sorted(IAM_DIR.glob("*.json")):
+            policy = json.loads(path.read_text(encoding="utf-8"))
+            self.assertLessEqual(set(policy), self.TOP, f"{path.name}: unknown top-level key")
+            self.assertEqual(policy.get("Version"), "2012-10-17", path.name)
+            for statement in _statements(policy):
+                self.assertLessEqual(set(statement), self.STMT, f"{path.name}: unknown statement key")

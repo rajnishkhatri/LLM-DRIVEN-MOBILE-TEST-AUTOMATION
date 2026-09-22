@@ -1,6 +1,5 @@
 {
   "Version": "2012-10-17",
-  "Comment": "Remediation Lambda (ADR 0015): bounded, reversible AppConfig writes only. No Resource '*', no broad managed grants, no cloudwatch:PutMetricData (EMF via Logs). APPCONFIG_APP_ID is a REQUIRED deploy-time substitution (DEPLOY.md §0): AppConfig ARNs embed the system-generated application ID, never the name.",
   "Statement": [
     {
       "Sid": "WriteFlagVersion",

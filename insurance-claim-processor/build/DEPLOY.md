@@ -6,6 +6,10 @@ verified by this checklist, not unit tests. Region pin: **us-east-1**
 (`CLAIM_PROCESSOR_REGION` other than us-east-1 is unsupported for IAM — see
 IAM ViaService).
 
+Companion documents: **`DEPLOY-WALKTHROUGH.md`** (first-timer, step-by-step,
+with the reasoning and the findings register F1–F11 from the 2026-09-22 manual
+deploy) and **`DEPLOY-LEDGER.md`** (every ID/ARN that deploy produced).
+
 ## 0. Prerequisites
 
 - S3 bucket `claim-documents-poc-<suffix>` with prefixes `claims/`,
@@ -14,6 +18,12 @@ IAM ViaService).
   grounding + prompt-attack) — ADR 0008.
 - Three base IAM roles from `iam/` (`sfn-exec.json`, `step-lambda.json`,
   `operator.json`) + the new **`remediation.json`** role (below).
+  **Both Lambda roles (`step-lambda`, `remediation`) must ALSO carry the AWS
+  managed `AWSLambdaBasicExecutionRole`** — the custom policies deliberately
+  contain no `logs:*`, but every Lambda needs it to write its log group, and
+  the ADR 0015 metrics are EMF log lines: without it there are no logs, no
+  metrics and no alarms (deploy-readiness F6). Trust policies: Lambda roles
+  trust `lambda.amazonaws.com`; the SFN role trusts `states.amazonaws.com`.
 - **REQUIRED substitution before creating the remediation role:** AppConfig
   ARNs embed the system-generated application **ID**, never the name. After
   creating the application (§1), fetch its ID and substitute the
@@ -24,9 +34,24 @@ IAM ViaService).
   sed -i '' "s/APPCONFIG_APP_ID/<that-id>/g" iam/remediation.json
   ```
 
-  (`step-lambda.json` needs no substitution — its data-plane read wildcards
-  the application segment.) A role created with the placeholder left in place
-  gets AccessDenied on every AppConfig write, and the failure is **silent**.
+  (`step-lambda.json` needs no AppConfig substitution — its data-plane read
+  wildcards the application segment.) A role created with the placeholder left
+  in place gets AccessDenied on every AppConfig write, and the failure is
+  **silent**.
+- **REQUIRED substitution before creating the step-lambda role:** Guardrail
+  ARNs likewise embed the system-generated guardrail **ID**
+  (`guardrail/l2oanwsu6no2`-style), never the name, so `guardrail/claim-processor*`
+  can never match. After creating the guardrail, substitute the `GUARDRAIL_ID`
+  placeholder in `iam/step-lambda.json` (deploy-readiness F4):
+
+  ```
+  aws bedrock list-guardrails --query "guardrails[?name=='claim-processor-guardrail'].id" --output text
+  sed -i '' "s/GUARDRAIL_ID/<that-id>/g" iam/step-lambda.json
+  ```
+
+  Left in place, every Converse call carrying `guardrailConfig` is denied
+  `bedrock:ApplyGuardrail`. Set `CLAIM_PROCESSOR_GUARDRAIL_ID` on the step
+  Lambdas to the same ID.
 
 ## 1. AppConfig — config + feature-flag plane (ADR 0010)
 
@@ -123,12 +148,21 @@ the API/client name and grants nothing as an action prefix (review #2).
 
 ## 5. Deploy the workflow
 
-1. Package the step Lambdas (`handler.py` entry points incl. `breaker_probe`
-   and `degraded_extract`). Construct each `ClaimPipeline` **with
-   `config_provider=`** (an `appconfigdata` client session against the
-   profile above) — without it the handlers run on bootstrap env config
-   forever and AC-K3 cannot hold (review #4).
-2. Import `sfn/asl.json` as a **Standard** state machine; set the Lambda ARNs.
+1. Package the step Lambdas with `deploy-out/build_lambda.sh` (one zip:
+   `claim_processor/` + `samples/policies/` + pinned boto3; arm64-safe, no
+   compiled extensions). **Point every function at
+   `claim_processor.lambda_entry.<name>`, never at `handler.<name>`** —
+   `handler.*` is keyword-only on `pipeline=` and raises `MissingPipelineError`
+   under Lambda's `fn(event, context)` call (deploy-readiness F1).
+   `lambda_entry` builds one `ClaimPipeline` per warm container **with
+   `config_provider=`** (an `appconfigdata` session against the profile above,
+   fallback = the `CLAIM_PROCESSOR_*` env bootstrap) — without it the handlers
+   run on bootstrap env config forever and AC-K3 cannot hold (review #4). Env:
+   `CLAIM_PROCESSOR_{REGION,GUARDRAIL_ID,*_MODEL_ID,AMOUNT_THRESHOLD,APPCONFIG_APP,APPCONFIG_ENV,APPCONFIG_PROFILE}`.
+2. Create the state machine from `sfn/asl.json` with **`--type STANDARD`** (the
+   type is a property of the resource, not of the definition — the definition
+   is pure ASL, deploy-readiness F9); substitute the account ID in the Lambda
+   ARNs (`000000000000` → yours).
 3. Smoke: run an auto-approve claim, a flagged claim (HITL), and — with
    `breaker_open_models` set — confirm `DegradedExtract` runs and the result is
    `degradation_tier`-stamped and routed to review.

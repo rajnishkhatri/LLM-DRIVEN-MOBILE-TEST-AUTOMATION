@@ -19,7 +19,7 @@
       "Sid": "ApplyGuardrail",
       "Effect": "Allow",
       "Action": "bedrock:ApplyGuardrail",
-      "Resource": "arn:aws:bedrock:*:*:guardrail/claim-processor*"
+      "Resource": "arn:aws:bedrock:*:*:guardrail/GUARDRAIL_ID"
     },
     {
       "Sid": "ReadClaims",

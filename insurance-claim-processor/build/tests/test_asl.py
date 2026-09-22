@@ -23,16 +23,20 @@ class AslStructureTests(unittest.TestCase):
     def test_asl_file_exists(self) -> None:
         self.assertTrue(ASL_PATH.is_file(), f"missing {ASL_PATH}")
 
-    def test_standard_type_not_express(self) -> None:
+    ASL_TOP_LEVEL_KEYS = {"Comment", "StartAt", "States", "Version", "TimeoutSeconds", "QueryLanguage"}
+
+    def test_definition_is_pure_asl_and_documents_standard(self) -> None:
+        # Standard-vs-Express is a property of the state machine RESOURCE
+        # (`create-state-machine --type STANDARD`, DEPLOY.md §5.2), not of the
+        # definition: a top-level "Type" key is rejected by CreateStateMachine
+        # with SCHEMA_VALIDATION_FAILED (deploy-readiness F9, 2026-09-22). The
+        # definition therefore must be pure ASL, and it records the STANDARD
+        # requirement (execution history = audit, ADR 0004) in its Comment.
         raw = json.loads(ASL_PATH.read_text(encoding="utf-8"))
-        machine_type = (raw.get("Type") or raw.get("type") or "").upper()
-        comment = (
-            (raw.get("Comment") or "")
-            + (raw.get("Definition", {}).get("Comment") or "")
-        ).upper()
-        self.assertEqual(machine_type, "STANDARD")
+        self.assertLessEqual(set(raw), self.ASL_TOP_LEVEL_KEYS, f"non-ASL top-level keys: {set(raw) - self.ASL_TOP_LEVEL_KEYS}")
+        comment = (raw.get("Comment") or "").upper()
         self.assertIn("STANDARD", comment)
-        self.assertNotEqual(machine_type, "EXPRESS")
+        self.assertNotIn("EXPRESS WORKFLOW", comment)
 
     def test_named_states_and_choice_to_wait_for_task_token(self) -> None:
         definition = _load_definition()

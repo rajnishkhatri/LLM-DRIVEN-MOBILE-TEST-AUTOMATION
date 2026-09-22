@@ -1,0 +1,23 @@
+{
+  "region": "us-east-1",
+  "extract_model_id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+  "summary_model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "understand_model_id": "us.amazon.nova-pro-v1:0",
+  "guardrail_id": "l2oanwsu6no2",
+  "amount_threshold": 10000,
+  "force_review_flags": [],
+  "ensemble_models": [],
+  "degradation_tiers": [],
+  "flags": {
+    "candidate_rollout_pct": 0,
+    "candidate_model_id": null,
+    "ensemble_enabled": false,
+    "ensemble_quorum": 2,
+    "breaker_enabled": true,
+    "breaker_open_models": [],
+    "degradation_enabled": true,
+    "kill_switch_candidate": false,
+    "kill_switch_ensemble": false,
+    "cost_per_1k_tokens_usd": 0.0
+  }
+}

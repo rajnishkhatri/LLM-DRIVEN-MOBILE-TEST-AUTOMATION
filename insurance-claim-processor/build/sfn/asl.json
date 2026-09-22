@@ -1,5 +1,4 @@
 {
-  "Type": "STANDARD",
   "Comment": "STANDARD workflow — one execution per claim (not EXPRESS). HITL is waitForTaskToken.",
   "StartAt": "BreakerProbe",
   "States": {
@@ -28,7 +27,10 @@
       "TimeoutSeconds": 300,
       "Retry": [
         {
-          "ErrorEquals": ["ThrottlingException", "Lambda.TooManyRequestsException"],
+          "ErrorEquals": [
+            "ThrottlingException",
+            "Lambda.TooManyRequestsException"
+          ],
           "IntervalSeconds": 2,
           "MaxAttempts": 5,
           "BackoffRate": 2.0
@@ -36,12 +38,16 @@
       ],
       "Catch": [
         {
-          "ErrorEquals": ["ThrottlingException"],
+          "ErrorEquals": [
+            "ThrottlingException"
+          ],
           "Comment": "Re-review #3, option B: the Retry tier above absorbed the short spike; a throttle that survives it is a sustained brownout — degrade the claim (AC-P1) instead of failing the execution. DegradedExtract walks throttles to the rule-based floor.",
           "Next": "DegradedExtract"
         },
         {
-          "ErrorEquals": ["States.Timeout"],
+          "ErrorEquals": [
+            "States.Timeout"
+          ],
           "Next": "ExecutionTimedOut"
         }
       ],
@@ -54,7 +60,10 @@
       "TimeoutSeconds": 300,
       "Retry": [
         {
-          "ErrorEquals": ["ThrottlingException", "Lambda.TooManyRequestsException"],
+          "ErrorEquals": [
+            "ThrottlingException",
+            "Lambda.TooManyRequestsException"
+          ],
           "IntervalSeconds": 2,
           "MaxAttempts": 5,
           "BackoffRate": 2.0
@@ -62,7 +71,9 @@
       ],
       "Catch": [
         {
-          "ErrorEquals": ["States.Timeout"],
+          "ErrorEquals": [
+            "States.Timeout"
+          ],
           "Next": "ExecutionTimedOut"
         }
       ],
@@ -80,7 +91,10 @@
       "TimeoutSeconds": 300,
       "Retry": [
         {
-          "ErrorEquals": ["ThrottlingException", "Lambda.TooManyRequestsException"],
+          "ErrorEquals": [
+            "ThrottlingException",
+            "Lambda.TooManyRequestsException"
+          ],
           "IntervalSeconds": 2,
           "MaxAttempts": 5,
           "BackoffRate": 2.0
@@ -88,11 +102,15 @@
       ],
       "Catch": [
         {
-          "ErrorEquals": ["States.Timeout"],
+          "ErrorEquals": [
+            "States.Timeout"
+          ],
           "Next": "ExecutionTimedOut"
         },
         {
-          "ErrorEquals": ["States.ALL"],
+          "ErrorEquals": [
+            "States.ALL"
+          ],
           "Next": "UngroundedFallback"
         }
       ],
@@ -159,7 +177,9 @@
       "ResultPath": "$.hitl",
       "Catch": [
         {
-          "ErrorEquals": ["States.Timeout"],
+          "ErrorEquals": [
+            "States.Timeout"
+          ],
           "Next": "ExpireReview"
         }
       ],

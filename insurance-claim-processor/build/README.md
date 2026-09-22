@@ -46,3 +46,7 @@ IAM must allow `bedrock:InvokeModel` on **both** `foundation-model/*` and
 `inference-profile/*`. Resolve model ids with
 `list_foundation_models` / `list_inference_profiles` before passing
 `--extract-model` / `--summary-model`.
+
+## Deploying to AWS by hand
+
+See `DEPLOY.md` (runbook), `DEPLOY-WALKTHROUGH.md` (step-by-step with reasoning) and `DEPLOY-LEDGER.md` (IDs/ARNs). First real deploy: 2026-09-22, auto-approve path green end-to-end.

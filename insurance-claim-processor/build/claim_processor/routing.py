@@ -43,6 +43,12 @@ def route_claim(
         return "human_review"
     if result.breaker_state == "open":  # model unhealthy (AC-N2)
         return "human_review"
+    if (result.guardrail or {}).get("intervened"):
+        # A guardrail fired somewhere in this claim's calls. On single-model
+        # paths an intervention already lands in review via the canned text;
+        # the ensemble path could exclude the intervened member and still
+        # reach quorum (re-review #4) — gate on the merged record instead.
+        return "human_review"
     if any(
         flag == "config_rejected" or flag.startswith("config_rejected:")
         for flag in flags

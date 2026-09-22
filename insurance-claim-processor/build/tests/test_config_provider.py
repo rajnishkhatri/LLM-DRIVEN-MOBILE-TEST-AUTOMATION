@@ -203,6 +203,45 @@ class ConfigProviderTests(unittest.TestCase):
         self.assertIn("amount_threshold", second.rejected)
         self.assertEqual(second.config["amount_threshold"], 25000.0)
 
+    def test_failed_poll_restarts_session_next_get(self) -> None:
+        """Re-review #2: AppConfig Data tokens are single-use and expire; a
+        failed poll left the dead token in place so every later poll failed
+        identically until a cold start — AC-K3 silently violated forever."""
+        client = _client()
+        stub = Stubber(client)
+        session_params = {
+            "ApplicationIdentifier": _APP,
+            "EnvironmentIdentifier": _ENV,
+            "ConfigurationProfileIdentifier": _PROF,
+        }
+        stub.add_response("start_configuration_session", _session("tok-1"), session_params)
+        stub.add_response(
+            "get_latest_configuration",
+            _latest({"amount_threshold": 25000}, next_token="tok-2"),
+            {"ConfigurationToken": "tok-1"},
+        )
+        stub.add_client_error(
+            "get_latest_configuration", "BadRequestException", expected_params=None
+        )
+        # recovery: a FRESH session must be started, not the dead token reused
+        stub.add_response("start_configuration_session", _session("tok-9"), session_params)
+        stub.add_response(
+            "get_latest_configuration",
+            _latest({"amount_threshold": 42000}, next_token="tok-10"),
+            {"ConfigurationToken": "tok-9"},
+        )
+        stub.activate()
+        provider = _provider(client)
+        first = provider.get()
+        failed = provider.get()
+        recovered = provider.get()
+        stub.deactivate()
+        stub.assert_no_pending_responses()
+        self.assertEqual(first.config["amount_threshold"], 25000.0)
+        self.assertEqual(failed.source, "cache")  # fail-safe held (AC-K1)
+        self.assertEqual(recovered.source, "appconfig")
+        self.assertEqual(recovered.config["amount_threshold"], 42000.0)
+
     def test_validate_config_is_pure(self) -> None:
         clean, rejected = validate_config(
             {

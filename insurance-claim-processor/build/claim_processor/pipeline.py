@@ -147,8 +147,15 @@ class ClaimPipeline:
         if self.config_provider is None:
             return
         resolved = self.config_provider.get()
-        # Rejected keys must reach routing as flags (AC-K4, review #10).
+        # Rejected keys must reach routing as flags (AC-K4, review #10) AND
+        # the metric plane (AC-K4 second clause, re-review #5).
         self._config_rejected = tuple(resolved.rejected or ())
+        if self._config_rejected:
+            emit_metric(
+                DEFAULT_NAMESPACE,
+                {Metric.CONFIG_REJECTED: (len(self._config_rejected), "Count")},
+                {"Source": resolved.source},
+            )
         self.policy = EscalationPolicy.from_config(resolved.config, base=self._bootstrap)
         self.extract_model_id = self.policy.extract_model_id
         self.summary_model_id = self.policy.summary_model_id
@@ -268,6 +275,19 @@ class ClaimPipeline:
                 extract_model_id = walk.model_id or primary
                 understand_model_id = walk.model_id if is_image else None
                 degradation_tier = walk.tier if is_degraded(walk.tier) else None
+
+        # Degradation-tier count + breaker transitions (AC-Q1/N5, re-review #5).
+        observed: dict[str, tuple[float, str]] = {}
+        if degradation_tier:
+            observed[Metric.DEGRADATION] = (1, "Count")
+        if breaker_state == "open":
+            observed[Metric.BREAKER_TRANSITION] = (1, "Count")
+        if observed:
+            emit_metric(
+                DEFAULT_NAMESPACE,
+                observed,
+                {"ModelId": extract_model_id, "Tier": degradation_tier or "none"},
+            )
 
         return {
             "document_text": document_text,
@@ -435,7 +455,43 @@ class ClaimPipeline:
         )
 
     def route(self, result: ProcessingResult) -> str:
-        return route_claim(result, self.policy)
+        decided = route_claim(result, self.policy)
+        self._emit_claim_metrics(result, decided)
+        return decided
+
+    def _emit_claim_metrics(self, result: ProcessingResult, decided: str) -> None:
+        """Per-claim HITL / ungrounded / $-cost metrics (AC-Q1, re-review #5)."""
+        metrics: dict[str, tuple[float, str]] = {}
+        if decided == "human_review":
+            metrics[Metric.HUMAN_REVIEW] = (1, "Count")
+        if result.ungrounded:
+            metrics[Metric.UNGROUNDED] = (1, "Count")
+        cost = self._claim_cost_usd(result.usage)
+        if cost is not None:
+            metrics[Metric.COST_USD] = (round(cost, 6), "None")
+        if metrics:
+            emit_metric(
+                DEFAULT_NAMESPACE,
+                metrics,
+                {"ModelId": result.extract_model_id or "unknown"},
+            )
+
+    def _claim_cost_usd(self, usage: dict[str, Any] | None) -> float | None:
+        """$/claim from usage at the deploy-configured token rate.
+
+        No configured rate → no metric (the alarm shows INSUFFICIENT_DATA,
+        which is honest) — never a fabricated zero.
+        """
+        rate = (self.policy.flags or {}).get("cost_per_1k_tokens_usd")
+        if not isinstance(rate, (int, float)) or isinstance(rate, bool) or rate <= 0:
+            return None
+        total = 0.0
+        found = False
+        for leg in (usage or {}).values():
+            if isinstance(leg, dict) and isinstance(leg.get("totalTokens"), (int, float)):
+                total += leg["totalTokens"]
+                found = True
+        return total / 1000.0 * rate if found else None
 
     def record(
         self,

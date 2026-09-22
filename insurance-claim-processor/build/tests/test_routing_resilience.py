@@ -39,6 +39,17 @@ class RoutingIntegrityTests(unittest.TestCase):
     def test_clean_still_auto_approves(self) -> None:
         self.assertEqual(route_claim(_clean(), _POLICY), "auto_approve")
 
+    def test_guardrail_intervened_routes_review(self) -> None:
+        """Re-review #4: the ensemble excluded an intervened member and could
+        auto-approve a claim the guardrail fired on. A record carrying
+        `guardrail.intervened` never auto-approves, whatever produced it."""
+        result = _clean(guardrail={"intervened": True, "actions": ["ANONYMIZED"]})
+        self.assertEqual(route_claim(result, _POLICY), "human_review")
+
+    def test_guardrail_clean_dict_still_auto_approves(self) -> None:
+        result = _clean(guardrail={"intervened": False, "actions": []})
+        self.assertEqual(route_claim(result, _POLICY), "auto_approve")
+
     def test_degraded_tier_routes_review(self) -> None:
         self.assertEqual(
             route_claim(_clean(degradation_tier="rule_based"), _POLICY), "human_review"

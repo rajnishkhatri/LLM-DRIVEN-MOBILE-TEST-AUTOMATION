@@ -1,21 +1,29 @@
 {
   "Version": "2012-10-17",
-  "Comment": "Remediation Lambda (ADR 0015): bounded, reversible AppConfig writes only. No Resource '*', no broad managed grants, no cloudwatch:PutMetricData (EMF via Logs).",
+  "Comment": "Remediation Lambda (ADR 0015): bounded, reversible AppConfig writes only. No Resource '*', no broad managed grants, no cloudwatch:PutMetricData (EMF via Logs). APPCONFIG_APP_ID is a REQUIRED deploy-time substitution (DEPLOY.md §0): AppConfig ARNs embed the system-generated application ID, never the name.",
   "Statement": [
     {
       "Sid": "WriteFlagVersion",
       "Effect": "Allow",
       "Action": "appconfig:CreateHostedConfigurationVersion",
-      "Resource": "arn:aws:appconfig:*:*:application/claim-processor*/configurationprofile/*"
+      "Resource": "arn:aws:appconfig:*:*:application/APPCONFIG_APP_ID/configurationprofile/*"
     },
     {
-      "Sid": "DeployOrRollbackFlag",
+      "Sid": "StartDeploymentForFlagFlipOrRollback",
       "Effect": "Allow",
-      "Action": [
-        "appconfig:StartDeployment",
-        "appconfig:StopDeployment"
-      ],
-      "Resource": "arn:aws:appconfig:*:*:application/claim-processor*/environment/*/deployment/*"
+      "Action": "appconfig:StartDeployment",
+      "Resource": [
+        "arn:aws:appconfig:*:*:application/APPCONFIG_APP_ID",
+        "arn:aws:appconfig:*:*:application/APPCONFIG_APP_ID/environment/*",
+        "arn:aws:appconfig:*:*:application/APPCONFIG_APP_ID/configurationprofile/*",
+        "arn:aws:appconfig:*:*:deploymentstrategy/*"
+      ]
+    },
+    {
+      "Sid": "StopInFlightDeployment",
+      "Effect": "Allow",
+      "Action": "appconfig:StopDeployment",
+      "Resource": "arn:aws:appconfig:*:*:application/APPCONFIG_APP_ID/environment/*/deployment/*"
     }
   ]
 }

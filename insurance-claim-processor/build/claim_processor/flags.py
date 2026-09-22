@@ -46,7 +46,12 @@ def assign_variant(claim_key: str, flags: dict[str, Any] | None) -> str:
 
 
 def ensemble_enabled(flags: dict[str, Any] | None) -> bool:
-    """Ensemble is on only when explicitly enabled and not kill-switched."""
+    """Ensemble is on only when explicitly enabled and not kill-switched.
+
+    `is True`, not truthiness: `bool("false")` is True, and the ensemble is
+    the one flag whose misread fails EXPENSIVE (N× token cost) rather than
+    safe — a non-bool value fails toward OFF (AC-M1, re-review #8).
+    """
     if flag(flags, "kill_switch_ensemble"):
         return False
-    return bool(flag(flags, "ensemble_enabled"))
+    return flag(flags, "ensemble_enabled") is True

@@ -16,6 +16,7 @@ from enum import Enum
 
 class RemediationAction(str, Enum):
     OPEN_BREAKER = "open_breaker"
+    CLOSE_BREAKER = "close_breaker"
     SWITCH_MODEL = "switch_model"
     DISABLE_ENSEMBLE = "disable_ensemble"
     ROLLBACK_DEPLOYMENT = "rollback_deployment"
@@ -28,6 +29,15 @@ _ALARM_ACTIONS: dict[str, RemediationAction] = {
     "LatencyP99": RemediationAction.SWITCH_MODEL,
     "CostPerClaim": RemediationAction.DISABLE_ENSEMBLE,
     "DeploymentBake": RemediationAction.ROLLBACK_DEPLOYMENT,
+}
+
+# Alarm leaving ALARM → the reversal of its action (AC-N4, re-review #6).
+# An open breaker starves its model of traffic, so ModelErrorRate recovers to
+# INSUFFICIENT_DATA (no samples), not only OK — both close the breaker; if the
+# fault persists, the next real traffic re-fires ALARM and re-opens (a coarse
+# half-open: the alarm's own evaluation window is the probe budget).
+_RECOVERY_ACTIONS: dict[str, RemediationAction] = {
+    "ModelErrorRate": RemediationAction.CLOSE_BREAKER,
 }
 
 
@@ -45,10 +55,13 @@ def decide_remediation(
     *,
     target: str | None = None,
 ) -> RemediationDecision:
-    """Map an alarm state to a bounded action. Only ALARM triggers action."""
-    if alarm_state != "ALARM":
-        return RemediationDecision(alarm_name, alarm_state, RemediationAction.NONE, target)
-    action = _ALARM_ACTIONS.get(alarm_name, RemediationAction.NONE)
+    """Map an alarm state to a bounded action or its recovery reversal."""
+    if alarm_state == "ALARM":
+        action = _ALARM_ACTIONS.get(alarm_name, RemediationAction.NONE)
+    elif alarm_state in ("OK", "INSUFFICIENT_DATA"):
+        action = _RECOVERY_ACTIONS.get(alarm_name, RemediationAction.NONE)
+    else:
+        action = RemediationAction.NONE
     return RemediationDecision(alarm_name, alarm_state, action, target)
 
 

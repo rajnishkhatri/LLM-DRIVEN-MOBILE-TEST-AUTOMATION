@@ -13,10 +13,13 @@ new pip dependency.
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError
+
+_LOG = logging.getLogger("claim_processor.config_provider")
 
 _MODEL_ID_KEYS = ("extract_model_id", "summary_model_id", "understand_model_id")
 
@@ -82,8 +85,17 @@ class ConfigProvider:
             resp = self._client.get_latest_configuration(
                 ConfigurationToken=self._token
             )
-        except (ClientError, BotoCoreError):
+        except (ClientError, BotoCoreError) as exc:
             # AppConfig unreachable / throttled / refused → fail safe (AC-K1).
+            # Data-API tokens are single-use and expire: drop the dead token so
+            # the NEXT poll starts a fresh session instead of failing forever
+            # on a warm Lambda (re-review #2). Log it — a permanent fallback
+            # must be distinguishable from "no change" (e.g. AccessDenied from
+            # a bad IAM grant).
+            self._token = None
+            _LOG.warning("appconfig poll failed (%s); serving %s",
+                         type(exc).__name__,
+                         "cache" if self._last_good is not None else "fallback")
             return self._fallback_result()
 
         self._token = resp.get("NextPollConfigurationToken", self._token)

@@ -58,6 +58,27 @@ class BreakerChoiceTests(unittest.TestCase):
         self.assertEqual(states["DegradedExtract"]["Type"], "Task")
         self.assertEqual(states["DegradedExtract"]["Next"], "Validate")
 
+    def test_ungrounded_fallback_keeps_wave3_provenance(self) -> None:
+        """Re-review #7: the Pass state's Parameters whitelist predated Wave 3
+        and stripped provenance, usage, and model ids from the RAG-down path —
+        exactly the executions most worth auditing (AC-K5/P5/R4)."""
+        params = _states()["States"]["UngroundedFallback"]["Parameters"]
+        for field in (
+            "extract_model_id.$",
+            "understand_model_id.$",
+            "usage.$",
+            "guardrail.$",
+            "config_snapshot.$",
+            "config_rejected.$",
+            "model_variant.$",
+            "ensemble.$",
+            "degradation_tier.$",
+            "breaker_state.$",
+            "breaker_open.$",
+        ):
+            self.assertIn(field, params)
+        self.assertEqual(params["route"], "human_review")  # AC-R3 unchanged
+
     def test_normal_path_unchanged(self) -> None:
         states = _states()["States"]
         self.assertEqual(states["UnderstandExtract"]["Next"], "Validate")

@@ -19,7 +19,7 @@ from claim_processor.remediation import (
     remediation_record,
 )
 
-_BOUNDED = {"open_breaker", "switch_model", "disable_ensemble", "rollback_deployment", "none"}
+_BOUNDED = {"open_breaker", "close_breaker", "switch_model", "disable_ensemble", "rollback_deployment", "none"}
 _DESTRUCTIVE = {"delete", "delete_stack", "terminate", "scale_up", "scale_down", "redeploy"}
 
 
@@ -48,14 +48,34 @@ class RemediationMappingTests(unittest.TestCase):
             RemediationAction.ROLLBACK_DEPLOYMENT,
         )
 
-    def test_non_alarm_state_takes_no_action(self) -> None:
+    def test_non_alarm_state_takes_no_action_for_other_alarms(self) -> None:
         self.assertEqual(
-            decide_remediation("ModelErrorRate", "OK").action, RemediationAction.NONE
+            decide_remediation("LatencyP99", "OK").action, RemediationAction.NONE
+        )
+        self.assertEqual(
+            decide_remediation("CostPerClaim", "OK").action, RemediationAction.NONE
+        )
+
+    def test_model_error_rate_recovery_closes_breaker(self) -> None:
+        """Re-review #6 / AC-N4: an opened breaker was a one-way latch — no
+        component ever closed it. ModelErrorRate leaving ALARM (OK, or
+        INSUFFICIENT_DATA because the open breaker starved it of traffic)
+        maps to the reversal; re-tripping re-opens (coarse half-open)."""
+        self.assertEqual(
+            decide_remediation("ModelErrorRate", "OK").action,
+            RemediationAction.CLOSE_BREAKER,
+        )
+        self.assertEqual(
+            decide_remediation("ModelErrorRate", "INSUFFICIENT_DATA").action,
+            RemediationAction.CLOSE_BREAKER,
         )
 
     def test_unknown_alarm_is_no_action(self) -> None:
         self.assertEqual(
             decide_remediation("SomethingElse", "ALARM").action, RemediationAction.NONE
+        )
+        self.assertEqual(
+            decide_remediation("SomethingElse", "OK").action, RemediationAction.NONE
         )
 
 

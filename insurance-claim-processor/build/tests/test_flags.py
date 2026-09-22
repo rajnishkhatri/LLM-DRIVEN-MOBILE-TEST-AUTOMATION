@@ -54,6 +54,13 @@ class EnsembleFlagTests(unittest.TestCase):
     def test_ensemble_enabled_reads_flag(self) -> None:
         self.assertTrue(ensemble_enabled({"ensemble_enabled": True}))
         self.assertFalse(ensemble_enabled({"ensemble_enabled": False}))
+
+    def test_ensemble_enabled_requires_a_real_bool(self) -> None:
+        """Re-review #8: `bool("false")` is True — a string-typed flag value
+        must fail toward OFF (the expensive direction is opt-in only, AC-M1)."""
+        self.assertFalse(ensemble_enabled({"ensemble_enabled": "false"}))
+        self.assertFalse(ensemble_enabled({"ensemble_enabled": "true"}))
+        self.assertFalse(ensemble_enabled({"ensemble_enabled": 1}))
         self.assertFalse(ensemble_enabled({}))  # safe default off
 
     def test_ensemble_kill_switch_forces_off(self) -> None:

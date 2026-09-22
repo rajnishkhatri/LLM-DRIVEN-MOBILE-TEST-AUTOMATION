@@ -53,6 +53,23 @@ class AppConfigReadTests(unittest.TestCase):
                     self.assertNotEqual(resource, "*")
                     self.assertIn("application/", resource)
 
+    def test_no_appconfig_arn_uses_the_application_name(self) -> None:
+        """Re-review #1: AppConfig ARNs embed system-generated IDs, never the
+        application NAME — `application/claim-processor*` matches nothing, so
+        the grant is dead and the config plane fails silently (fail-safe
+        swallows the AccessDenied). Data-plane reads wildcard the app segment;
+        write grants carry the APPCONFIG_APP_ID placeholder that DEPLOY.md
+        substitutes at role-creation time."""
+        for name in ALL_FILES:
+            for statement in _statements(_load(name)):
+                for resource in _resources(statement):
+                    if resource.startswith("arn:aws:appconfig:"):
+                        self.assertNotIn(
+                            "application/claim-processor",
+                            resource,
+                            f"{name}: {resource} scopes by application NAME",
+                        )
+
     def test_no_policy_uses_appconfigdata_namespace(self) -> None:
         """`appconfigdata` is the API/client name, NOT an IAM action namespace.
 
@@ -83,7 +100,26 @@ class RemediationRoleTests(unittest.TestCase):
                 self.assertIsNone(SERVICE_WIDE.fullmatch(action), f"service-wide {action}")
             for resource in _resources(statement):
                 self.assertNotEqual(resource, "*")
-                self.assertIn("claim-processor", resource)
+                self.assertTrue(resource.startswith("arn:aws:appconfig:"), resource)
+                # Writes pin the app to the deploy-time-substituted ID — never
+                # a wildcard application segment (re-review #1).
+                if "application/" in resource:
+                    self.assertIn("application/APPCONFIG_APP_ID", resource)
+
+    def test_remediation_start_deployment_not_scoped_to_deployment_arn(self) -> None:
+        """Re-review #1 (second half): StartDeployment authorizes against
+        application/environment/configurationprofile/deploymentstrategy ARNs;
+        only StopDeployment targets a `deployment/N` resource. Scoping
+        StartDeployment to `.../deployment/*` makes rollback impossible."""
+        policy = _load("remediation.json")
+        for statement in _statements(policy):
+            if "appconfig:StartDeployment" in _actions(statement):
+                for resource in _resources(statement):
+                    self.assertNotIn("/deployment/", resource)
+
+    def test_deploy_runbook_documents_the_id_substitution(self) -> None:
+        deploy = (ROOT / "DEPLOY.md").read_text(encoding="utf-8")
+        self.assertIn("APPCONFIG_APP_ID", deploy)
 
     def test_remediation_no_fullaccess(self) -> None:
         self.assertNotIn("FullAccess", json.dumps(_load("remediation.json")))

@@ -52,9 +52,10 @@ def _throttle() -> ClientError:
 class _ScriptedInvoker:
     """Invoker-like: per-model extract behavior; single summary."""
 
-    def __init__(self, *, extract_by_model=None, raise_by_model=None):
+    def __init__(self, *, extract_by_model=None, raise_by_model=None, intervene_models=()):
         self.extract_by_model = extract_by_model or {}
         self.raise_by_model = raise_by_model or {}
+        self.intervene_models = set(intervene_models)
         self.calls: list[str] = []
 
     def converse(self, prompt, *, model_id=None, content=None, guardrail_config=None, **_):
@@ -66,12 +67,16 @@ class _ScriptedInvoker:
             text = self.extract_by_model.get(model_id, _extract())
         else:
             text = "Summary grounded in the retrieved policy excerpts."
+        intervened = is_extract and model_id in self.intervene_models
         return {
-            "text": text,
+            "text": "(blocked)" if intervened else text,
             "model_id": model_id or "fake",
             "stop_reason": "end_turn",
             "usage": {"inputTokens": 5, "outputTokens": 5, "totalTokens": 10},
-            "guardrail": {"intervened": False, "actions": []},
+            "guardrail": {
+                "intervened": intervened,
+                "actions": ["ANONYMIZED"] if intervened else [],
+            },
         }
 
 
@@ -178,6 +183,20 @@ class PipelineResilienceTests(unittest.TestCase):
         self.assertEqual(result.usage["extract"]["outputTokens"], 15)
         self.assertEqual(result.usage["extract"]["totalTokens"], 30)
 
+    def test_ensemble_with_intervened_member_routes_review(self) -> None:
+        """Re-review #4: a member whose guardrail fired was silently excluded
+        while the remaining members reached quorum and auto-approved — the
+        record carried `guardrail.intervened: true` on an auto-approved claim."""
+        members = ("m-a", "m-b", "m-c")
+        invoker = _ScriptedInvoker(
+            extract_by_model={m: _extract() for m in members},
+            intervene_models={"m-a"},
+        )
+        policy = EscalationPolicy(ensemble_models=members, flags={"ensemble_enabled": True})
+        result = self._pipeline(invoker, policy).process("work", "claims/auto-fl-collision.txt")
+        self.assertTrue(result.guardrail["intervened"])
+        self.assertEqual(result.route, "human_review")
+
     def test_rejected_config_flags_and_routes_review(self) -> None:
         """Review #10: `ConfigResult.rejected` was dropped in `_refresh_policy`
         so the AC-K4 routing gate (`config_rejected`) could never fire."""
@@ -223,6 +242,69 @@ class PipelineResilienceTests(unittest.TestCase):
         with self.assertLogs(logger, level="INFO") as captured:
             pipe.process("work", "claims/auto-fl-collision.txt")
         self.assertTrue(any("_aws" in line for line in captured.output))
+
+    def _metric_names(self, captured) -> set[str]:
+        names: set[str] = set()
+        for line in captured.output:
+            record = json.loads(line.split(":", 2)[2])
+            for group in record["_aws"]["CloudWatchMetrics"]:
+                names.update(m["Name"] for m in group["Metrics"])
+        return names
+
+    def test_degraded_run_emits_degradation_and_human_review(self) -> None:
+        """Re-review #5: AC-Q1's vocabulary was declared but mostly never
+        emitted — the degradation-tier and HITL-rate metrics were dead."""
+        invoker = _ScriptedInvoker(
+            raise_by_model={EXTRACT_MODEL_EXAMPLE: ReadTimeoutError(endpoint_url="x")}
+        )
+        policy = EscalationPolicy(degradation_tiers=(EXTRACT_MODEL_EXAMPLE, "rule_based"))
+        logger = logging.getLogger("claim_processor.metrics")
+        with self.assertLogs(logger, level="INFO") as captured:
+            self._pipeline(invoker, policy).process("work", "claims/auto-fl-collision.txt")
+        names = self._metric_names(captured)
+        self.assertIn("Degradation", names)
+        self.assertIn("HumanReview", names)
+
+    def test_rejected_config_emits_config_rejected_metric(self) -> None:
+        """AC-K4 second half: '…and emit a `config_rejected` metric'."""
+
+        class _RejectingProvider:
+            def get(self):
+                return ConfigResult(
+                    config={"amount_threshold": 10000.0},
+                    source="appconfig",
+                    rejected=("extract_model_id",),
+                )
+
+        pipe = self._pipeline(_ScriptedInvoker(), EscalationPolicy())
+        pipe.config_provider = _RejectingProvider()
+        logger = logging.getLogger("claim_processor.metrics")
+        with self.assertLogs(logger, level="INFO") as captured:
+            pipe.process("work", "claims/auto-fl-collision.txt")
+        self.assertIn("ConfigRejected", self._metric_names(captured))
+
+    def test_cost_usd_emitted_only_when_rate_configured(self) -> None:
+        """AC-Q1 `$/claim (from usage)`: emitted when the deploy configures a
+        token rate; absent (never a fabricated zero) when it doesn't."""
+        rate_policy = EscalationPolicy(flags={"cost_per_1k_tokens_usd": 0.01})
+        logger = logging.getLogger("claim_processor.metrics")
+        with self.assertLogs(logger, level="INFO") as captured:
+            result = self._pipeline(_ScriptedInvoker(), rate_policy).process(
+                "work", "claims/auto-fl-collision.txt"
+            )
+        self.assertIn("CostUsd", self._metric_names(captured))
+        # extract 10 + summary 10 totalTokens at $0.01/1k
+        for line in captured.output:
+            record = json.loads(line.split(":", 2)[2])
+            if "CostUsd" in record:
+                self.assertAlmostEqual(record["CostUsd"], 0.0002)
+        self.assertEqual(result.route, "auto_approve")  # metric never re-routes
+
+        with self.assertLogs(logger, level="INFO") as captured:
+            self._pipeline(_ScriptedInvoker(), EscalationPolicy()).process(
+                "work", "claims/auto-fl-collision.txt"
+            )
+        self.assertNotIn("CostUsd", self._metric_names(captured))
 
 
 if __name__ == "__main__":

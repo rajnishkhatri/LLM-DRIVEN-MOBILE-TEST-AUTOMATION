@@ -253,3 +253,26 @@ fix red-first). `check_gate` (repo root): `SUMMARY: 7 families, 0 drifted,
 **Wave 3e sign-off:** all 15 Stage-7 findings closed (#14 as doc-alignment per
 gate). Next: re-run Stage-7 review on the remediation diff if desired, then the
 gated real-AWS smoke **R-17** (`CLAIM_PROCESSOR_REAL_AWS=1`, DEPLOY.md §6).
+
+### Stage-7 RE-review fixes (2026-09-21, direct-fix per owner — no replan)
+
+Fresh-thread re-review of commit e3ac15a: Wave 3e held (no reintroduced AC-R3
+bypass) but returned 8 new findings; owner chose "fix directly". All fixed
+red-first except **#3 (throttle re-raise vs AC-O5/P1 — OPEN, needs an owner
+spec decision:** bless orchestrator-owned throttle retries w/ execution failure
+terminal, or re-catch throttles inside the ladder**)**. Gate → **260 tests OK
+(skipped=1)** (was 247), `check_gate` 0 drift.
+
+| # | Fix | Files |
+|---|---|---|
+| 1 | AppConfig ARNs: name-scoping was dead (ARNs embed generated IDs). Read grant → `application/*` data-plane wildcard; remediation writes → `APPCONFIG_APP_ID` placeholder + REQUIRED substitution step in DEPLOY §0; `StartDeployment` re-scoped off `deployment/*`; lint forbids name-scoped ARNs + asserts the placeholder + DEPLOY documents it | `iam/step-lambda.json`, `iam/remediation.json`, `tests/test_iam_resilience.py`, `DEPLOY.md` |
+| 2 | `ConfigProvider` resets its session token on a failed poll (single-use/expiring tokens no longer brick warm Lambdas) + logs `appconfig poll failed` so fallback ≠ "no change"; §6 gains a config-plane-liveness check first | `config_provider.py`, `tests/test_config_provider.py`, `DEPLOY.md` |
+| 4 | Routing gates on `guardrail.intervened` — the ensemble can no longer auto-approve a claim a member's guardrail fired on | `routing.py`, `tests/test_routing_resilience.py`, `tests/test_pipeline_resilience.py` |
+| 5 | Missing AC-Q1/K4/N5 metrics emitted: `ConfigRejected` (on rejection), `Degradation`+`BreakerTransition` (at observation), `HumanReview`+`Ungrounded`+`CostUsd` (at route). `CostUsd` = usage totalTokens × `flags.cost_per_1k_tokens_usd` (>0 opt-in; absent, never fabricated-zero) — un-deadens the CostPerClaim→disable_ensemble loop | `pipeline.py`, `DEPLOY.md`, `tests/test_pipeline_resilience.py` |
+| 6 | Breaker recovery (AC-N4): `ModelErrorRate` leaving ALARM (OK/INSUFFICIENT_DATA) → new `close_breaker` action; alarm-window = coarse half-open probe (bounded-probe = production promote); alarms wire OK transitions to SNS | `remediation.py`, `tests/test_remediation.py`, `DEPLOY.md` |
+| 7 | `UngroundedFallback` Pass state carries the full Wave-3 provenance + usage/guardrail/model ids (audit contract on the RAG-down path) | `sfn/asl.json`, `tests/test_asl_resilience.py` |
+| 8 | `ensemble_enabled` requires a real bool (`is True`) — `"false"` can no longer switch the expensive path ON | `flags.py`, `tests/test_flags.py` |
+
+**R-17 remains next** once #3 is decided (as shipped, a sustained throttle
+fails the execution after the ASL retry tier — the smoke's outage scenario
+should be run with a timeout fault, or #3 resolved first).

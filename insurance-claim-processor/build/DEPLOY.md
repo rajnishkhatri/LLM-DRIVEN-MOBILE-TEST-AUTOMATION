@@ -14,6 +14,19 @@ IAM ViaService).
   grounding + prompt-attack) — ADR 0008.
 - Three base IAM roles from `iam/` (`sfn-exec.json`, `step-lambda.json`,
   `operator.json`) + the new **`remediation.json`** role (below).
+- **REQUIRED substitution before creating the remediation role:** AppConfig
+  ARNs embed the system-generated application **ID**, never the name. After
+  creating the application (§1), fetch its ID and substitute the
+  `APPCONFIG_APP_ID` placeholder in `iam/remediation.json`:
+
+  ```
+  aws appconfig list-applications --query "Items[?Name=='claim-processor'].Id"
+  sed -i '' "s/APPCONFIG_APP_ID/<that-id>/g" iam/remediation.json
+  ```
+
+  (`step-lambda.json` needs no substitution — its data-plane read wildcards
+  the application segment.) A role created with the placeholder left in place
+  gets AccessDenied on every AppConfig write, and the failure is **silent**.
 
 ## 1. AppConfig — config + feature-flag plane (ADR 0010)
 
@@ -36,7 +49,8 @@ IAM ViaService).
        "ensemble_enabled": false, "ensemble_quorum": 2,
        "breaker_enabled": true, "breaker_open_models": [],
        "degradation_enabled": true,
-       "kill_switch_candidate": false, "kill_switch_ensemble": false
+       "kill_switch_candidate": false, "kill_switch_ensemble": false,
+       "cost_per_1k_tokens_usd": 0.0
      }
    }
    ```
@@ -61,8 +75,14 @@ the API/client name and grants nothing as an action prefix (review #2).
 - **Alarms (AC-Q3):**
   - `ModelErrorRate` — `Errors / calls` per `ModelId` over threshold.
   - `LatencyP99` — p99 `LatencyMs` over threshold.
-  - `CostPerClaim` — `CostUsd` over threshold.
-- Wire each alarm’s ALARM action to the **SNS topic** `claim-processor-remediation`.
+  - `CostPerClaim` — `CostUsd` over threshold. `CostUsd` is emitted **only
+    when** `flags.cost_per_1k_tokens_usd` is set `> 0` in the AppConfig
+    document (blended $-per-1k-token rate for the deployed models); left at 0
+    the metric is absent and this alarm stays INSUFFICIENT_DATA — set the rate
+    or the cost-remediation loop is inert.
+- Wire each alarm’s **ALARM and OK/INSUFFICIENT_DATA** transitions to the
+  **SNS topic** `claim-processor-remediation` (recovery notifications drive
+  the breaker close — §3/§4).
 
 ## 3. SNS → remediation Lambda (ADR 0015, AC-Q4)
 
@@ -75,6 +95,12 @@ the API/client name and grants nothing as an action prefix (review #2).
    - `LatencyP99 → switch_model` (set `candidate_model_id` / rollout).
    - `CostPerClaim → disable_ensemble` (`kill_switch_ensemble = true`).
    - `DeploymentBake → rollback_deployment` (`StopDeployment`).
+   - **Recovery (AC-N4):** `ModelErrorRate` leaving ALARM (state OK, or
+     INSUFFICIENT_DATA — an open breaker starves the alarm of samples) →
+     `close_breaker` (remove the model from `breaker_open_models`). If the
+     fault persists, the next real traffic re-fires ALARM and re-opens: the
+     alarm's evaluation window is the coarse half-open probe budget; a
+     bounded-probe-count half-open is a production promote.
    Every action is a flag flip or an AppConfig deployment rollback — reversible
    and audited (`remediation_record`).
 
@@ -103,6 +129,12 @@ the API/client name and grants nothing as an action prefix (review #2).
 ## 6. Gated real-AWS checks (R-17, `[gate]`)
 
 Behind `CLAIM_PROCESSOR_REAL_AWS=1` (AC-R2):
+- **First, verify the config plane is actually live** (the provider fails
+  safe, so a broken IAM grant or wrong profile is otherwise invisible): call
+  `aws appconfigdata start-configuration-session` as the step-Lambda role and
+  confirm it succeeds; then confirm the Lambda logs show **no**
+  `appconfig poll failed` warnings and a claim's `config_snapshot` reflects
+  the deployed AppConfig document (not the env bootstrap).
 - Change a value in AppConfig → the running Lambda adopts it within one poll
   interval, no redeploy (AC-K3).
 - Trip `ModelErrorRate` → remediation flips `breaker_open_models` → next

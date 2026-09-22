@@ -46,7 +46,9 @@ class AslStructureTests(unittest.TestCase):
             "Record",
         ):
             self.assertIn(name, states, f"missing state {name}")
-        self.assertEqual(definition["StartAt"], "UnderstandExtract")
+        # Entry is the breaker Choice (ADR 0012); its Default is the normal path.
+        self.assertEqual(definition["StartAt"], "BreakerProbe")  # review #3
+        self.assertEqual(states["BreakerCheck"]["Default"], "UnderstandExtract")
         self.assertEqual(states["UnderstandExtract"]["Next"], "Validate")
         self.assertEqual(states["Validate"]["Next"], "RetrieveSummarize")
         self.assertEqual(states["RetrieveSummarize"]["Next"], "Route")

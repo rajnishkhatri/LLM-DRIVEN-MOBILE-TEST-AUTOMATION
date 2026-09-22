@@ -320,3 +320,41 @@ live error-rate metric exists (`../risk/resilience-clinic.md`).
    full, day-1; validator as defense-in-depth).
 6. Document understanding: text-only vs multimodal vs Textract/BDA — **decided
    → ADR 0006** (vision FM direct now; Textract/BDA promote).
+
+---
+
+## 8. Model resilience (increment — ADRs 0010–0015)
+
+Production-hardening layer added over §1–§7. Spec:
+`../specs/claim-processor-model-resilience.spec.md`; plan/tasks in `../plans/`.
+Model choice becomes runtime configuration; models sit behind an adapter; new
+models roll out gradually / A-B / roll back; the system degrades instead of
+failing; and CloudWatch metrics both feed the breaker and drive bounded,
+reversible remediation. The clean auto-approve predicate (§1a / AC-E1) stays
+the **single** approval gate — no resilience path auto-approves.
+
+| # | Practice | Where it lives | ADR |
+|---|---|---|---|
+| 1 | AppConfig config plane (env = bootstrap fallback) | `config_provider.py`, `config.py` (`from_config`) | 0010 |
+| 2 | Bedrock-family FM adapter (typed `CallOutcome`) | `adapter.py` | 0011 |
+| 3 | Feature flags: rollout / A-B (deterministic on `claim_key`) / kill-switch / alarm-rollback | `flags.py`, AppConfig deploy strategy | 0010 |
+| 4 | Step Functions circuit breaker (measured signal, shared flag) | `breaker.py`, ASL `BreakerProbe` Task (produces `$.breaker_open`) → `BreakerCheck` Choice → `DegradedExtract` | 0012 |
+| 5 | Extraction ensembling (field vote, flag-gated, disagreement → HITL) | `ensemble.py`, `pipeline.py` | 0013 |
+| 6 | Graceful degradation ladder → rule-based → HITL | `degrade.py`, `pipeline.py` | 0014 |
+| 7 | CloudWatch EMF metrics + alarms → reversible remediation | `metrics.py`, `remediation.py`, `iam/remediation.json`, `DEPLOY.md` | 0015 |
+
+**Integrity invariant (AC-R3):** ensemble split, degraded tier, rejected
+config, and breaker-open all route to human review — enforced in `routing.py`
+and carried through the SFN handler path by `ClaimPipeline.result_from_event`
+(Stage-5 replan 2026-09-21: the handler previously dropped the provenance,
+which defeated the gates in the deployed runtime; `tests/
+test_handler_routing_path.py` guards the path).
+**Provenance:** `ProcessingResult` records `config_snapshot`, `model_variant`,
+`ensemble`, `degradation_tier`, `breaker_state`, `remediation`.
+**Offline-first:** AppConfig Data + EMF are Stubber/assert-provable; **no new
+pip dependency**; real-AWS behavior is `[gate]` behind `CLAIM_PROCESSOR_REAL_AWS=1`.
+
+Two decisions reversed earlier PoC scoping (recorded as superseding ADRs, as
+0004 superseded 0003): **0012** amends the resilience-clinic C1 deferral;
+**0013** reverses (bounded to extraction) the capability-brief §4 cascade-only
+choice.

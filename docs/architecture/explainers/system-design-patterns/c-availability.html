@@ -1,0 +1,908 @@
+<title>Four NOs That Keep a Service Up</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    /* ---- chosen neutrals, biased warm toward the teal ink ---- */
+    --paper:      #F5F1E7;
+    --paper-2:    #EEE8DA;   /* raised panels */
+    --paper-edge: #E2DAC6;   /* hairlines on paper */
+    --ink:        #1B2A2B;   /* deep ink-teal, body text */
+    --ink-soft:   #4A5A59;   /* secondary text */
+    --ink-faint:  #7A8683;   /* captions */
+
+    /* ---- meaning colors (the honesty key) ---- */
+    --det:        #1F6F6B;   /* deterministic / machine / trustworthy */
+    --det-wash:   #DCECE9;
+    --llm:        #B0742A;   /* LLM / authoring / "fuzzy" reasoning */
+    --llm-wash:   #F1E3CE;
+    --proposed:   #6A5A9C;   /* proposed enhancement — never confused with real */
+    --proposed-wash:#E7E1F1;
+    --human:      #495C77;   /* human decision */
+
+    --pass:       #2E7D5B;
+    --fail:       #A6402F;
+
+    --accent:     var(--det);
+    --rule:       #D8CFBB;
+
+    --measure: 66ch;
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "Menlo", Consolas, "Liberation Mono", monospace;
+
+    --shadow: 0 1px 2px rgba(27,42,43,.06), 0 8px 24px rgba(27,42,43,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #14201F;
+      --paper-2:    #1B2B29;
+      --paper-edge: #263A37;
+      --ink:        #E7EBE7;
+      --ink-soft:   #AEBCB8;
+      --ink-faint:  #7E908B;
+      --det:        #6FC9C0;
+      --det-wash:   #17332F;
+      --llm:        #E0A65A;
+      --llm-wash:   #33280F;
+      --proposed:   #A99AD6;
+      --proposed-wash:#241E38;
+      --human:      #8BA3C4;
+      --pass:       #6BC79A;
+      --fail:       #E48374;
+      --rule:       #2A3D39;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  /* explicit toggle overrides — must win both directions */
+  :root[data-theme="light"] {
+    --paper:#F5F1E7;--paper-2:#EEE8DA;--paper-edge:#E2DAC6;--ink:#1B2A2B;--ink-soft:#4A5A59;--ink-faint:#7A8683;
+    --det:#1F6F6B;--det-wash:#DCECE9;--llm:#B0742A;--llm-wash:#F1E3CE;--proposed:#6A5A9C;--proposed-wash:#E7E1F1;
+    --human:#495C77;--pass:#2E7D5B;--fail:#A6402F;--rule:#D8CFBB;
+    --shadow:0 1px 2px rgba(27,42,43,.06),0 8px 24px rgba(27,42,43,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper:#14201F;--paper-2:#1B2B29;--paper-edge:#263A37;--ink:#E7EBE7;--ink-soft:#AEBCB8;--ink-faint:#7E908B;
+    --det:#6FC9C0;--det-wash:#17332F;--llm:#E0A65A;--llm-wash:#33280F;--proposed:#A99AD6;--proposed-wash:#241E38;
+    --human:#8BA3C4;--pass:#6BC79A;--fail:#E48374;--rule:#2A3D39;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* faint survey-grid texture on the ground */
+  body::before {
+    content:""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(var(--paper-edge) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-edge) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: .28;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 80%);
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+  .measure { max-width: var(--measure); margin-left: auto; margin-right: auto; }
+
+  /* ---------- masthead ---------- */
+  header.mast {
+    max-width: 1000px; margin: 0 auto; padding: 64px 24px 28px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--det); margin: 0 0 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow::before {
+    content:""; width: 34px; height: 2px; background: var(--det); display:inline-block;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 700; line-height: 1.05;
+    font-size: clamp(2.4rem, 6vw, 4.1rem); margin: 0 0 .35em; letter-spacing: -.01em;
+    text-wrap: balance; color: var(--ink);
+  }
+  .dek {
+    font-family: var(--serif); font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    line-height: 1.4; color: var(--ink-soft); max-width: 40ch; text-wrap: balance;
+    font-style: italic; margin: 0 0 26px;
+  }
+  .byline {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    letter-spacing: .04em; border-top: 1px solid var(--rule);
+    padding-top: 14px; display:flex; gap: 18px 26px; flex-wrap: wrap;
+  }
+  .byline b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- body typography ---------- */
+  main { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  p { margin: 0 0 1.15em; }
+  main > .measure > p,
+  main > .measure > h2,
+  main > .measure > h3,
+  main > .measure > ul,
+  main > .measure > ol,
+  main > .measure > .callout { }
+
+  h2 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.01em;
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem); line-height: 1.12;
+    margin: 2.2em 0 .1em; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .5em; color: var(--det); font-weight: 500;
+    letter-spacing: .1em; vertical-align: middle; margin-right: .8em;
+    border: 1px solid var(--det); border-radius: 3px; padding: .18em .5em;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.16rem;
+    margin: 1.9em 0 .3em; color: var(--ink); letter-spacing: -.005em;
+  }
+  .lede { font-size: 1.28rem; line-height: 1.5; color: var(--ink);
+    font-family: var(--serif); }
+  .lede b { color: var(--det); }
+  a { color: var(--det); text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { }
+  code {
+    font-family: var(--mono); font-size: .84em;
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 4px; padding: .08em .38em; color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .drop::first-letter {
+    font-family: var(--serif); float: left; font-size: 3.7em; line-height: .78;
+    padding: .06em .12em 0 0; color: var(--det); font-weight: 700;
+  }
+
+  ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--det); }
+
+  /* ---------- the honesty key (persistent legend) ---------- */
+  .key {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    margin: 0 -24px 0; padding: 10px 24px;
+  }
+  .key-inner {
+    max-width: 1000px; margin: 0 auto; display: flex; gap: 8px 22px;
+    flex-wrap: wrap; align-items: center;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .02em;
+  }
+  .key-inner .klabel { color: var(--ink-faint); text-transform: uppercase; letter-spacing:.12em; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+  .sw { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .sw.det { background: var(--det); }
+  .sw.llm { background: var(--llm); }
+  .sw.human { background: var(--human); }
+  .sw.prop { background: var(--proposed-wash); border: 1.5px dashed var(--proposed); }
+
+  /* ---------- figure bands (break the measure) ---------- */
+  figure {
+    margin: 2.4em 0; padding: 0;
+  }
+  figure svg { display: block; width: 100%; height: auto; }
+  .fig-card {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 12px; padding: 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    margin-top: 12px; line-height: 1.5; letter-spacing: .01em;
+    max-width: 74ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--det); background: var(--det-wash);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 1.6em 0;
+    font-size: .98rem;
+  }
+  .callout .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--det); display:block; margin-bottom: 6px; font-weight: 600;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout.proposed { border-left-color: var(--proposed); background: var(--proposed-wash); border-left-style: dashed; }
+  .callout.proposed .tag { color: var(--proposed); }
+
+  .callout.judgment { border-left-color: var(--llm); background: var(--llm-wash); }
+  .callout.judgment .tag { color: var(--llm); }
+
+  .callout.human { border-left-color: var(--human); background: color-mix(in srgb, var(--human) 12%, transparent); }
+  .callout.human .tag { color: var(--human); }
+
+  /* ---------- proposed section wrapper ---------- */
+  .proposed-zone {
+    border: 1.5px dashed var(--proposed); border-radius: 14px;
+    background: color-mix(in srgb, var(--proposed-wash) 55%, transparent);
+    padding: 8px 26px 26px; margin: 2.4em 0;
+  }
+  .proposed-banner {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--proposed); font-weight: 700;
+    background: var(--paper); border: 1.5px dashed var(--proposed); border-radius: 999px;
+    padding: 7px 16px; transform: translateY(-20px); box-shadow: var(--shadow);
+  }
+  .proposed-zone h2, .proposed-zone h3 { }
+  .proposed-zone h2 .num { color: var(--proposed); border-color: var(--proposed); }
+
+  /* ---------- scorecard table ---------- */
+  .table-wrap { overflow-x: auto; margin: 1.8em 0; border-radius: 10px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--paper-2); font-size: .95rem; }
+  caption { text-align: left; font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint); padding: 0 0 10px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--paper-edge); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600; background: color-mix(in srgb, var(--paper-2) 60%, var(--paper)); }
+  tbody tr:last-child td { border-bottom: none; }
+  td .who { font-weight: 700; }
+  td .who.det { color: var(--det); }
+  td .who.llm { color: var(--llm); }
+  td .who.human { color: var(--human); }
+  td .who.excl { color: var(--fail); }
+
+  .owner-pill {
+    display:inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .owner-pill.det { background: var(--det-wash); color: var(--det); border:1px solid var(--det); }
+  .owner-pill.llm { background: var(--llm-wash); color: var(--llm); border:1px solid var(--llm); }
+  .owner-pill.human { background: color-mix(in srgb,var(--human) 16%, transparent); color: var(--human); border:1px solid var(--human); }
+  .owner-pill.excl { background: color-mix(in srgb,var(--fail) 12%, transparent); color: var(--fail); border:1px dashed var(--fail); }
+
+  /* ---------- section rule ---------- */
+  .rule-orn { display: flex; align-items: center; gap: 16px; margin: 3em 0 0; color: var(--rule); }
+  .rule-orn::before, .rule-orn::after { content:""; height: 1px; background: var(--rule); flex: 1; }
+  .rule-orn span { font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: var(--ink-faint); }
+
+  /* ---------- pull quote ---------- */
+  .pull {
+    font-family: var(--serif); font-size: clamp(1.4rem, 3.4vw, 2rem); line-height: 1.28;
+    color: var(--ink); font-style: italic; text-wrap: balance;
+    border-top: 2px solid var(--det); border-bottom: 2px solid var(--det);
+    padding: .7em 0; margin: 1.8em 0;
+  }
+  .pull b { font-style: normal; color: var(--det); }
+
+  /* footer */
+  footer {
+    max-width: 1000px; margin: 60px auto 0; padding: 26px 24px 0;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+  footer b { color: var(--ink-soft); }
+  footer .sibs { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: .6em 0 1.2em; }
+  footer .sibs a { color: var(--det); }
+
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    header.mast { padding-top: 40px; }
+    .key-inner { font-size: 11px; gap: 6px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<header class="mast">
+  <p class="eyebrow">System design patterns · Group C · Availability</p>
+  <h1>Four NOs That Keep a Service Up</h1>
+  <p class="dek">Availability is not one pattern. It is a stack of admission, isolation, and recovery — four refusals, in order.</p>
+  <div class="byline">
+    <span><b>Audience</b> Engineering &amp; architecture</span>
+    <span><b>Reading time</b> ~14 min</span>
+    <span><b>Status</b> Explainer — catalog group C</span>
+  </div>
+</header>
+
+<div class="key">
+  <div class="key-inner">
+    <span class="klabel">How to read the colours:</span>
+    <span class="chip"><span class="sw det"></span> Verified mechanic / default</span>
+    <span class="chip"><span class="sw llm"></span> Judgment / trade-off / when-not</span>
+    <span class="chip"><span class="sw human"></span> Operator or product decision</span>
+    <span class="chip"><span class="sw prop"></span> Uncertain in the source</span>
+  </div>
+</div>
+
+<main>
+
+  <div class="measure">
+    <p class="lede drop">A single query that stretches from a few hundred milliseconds to half a minute is enough. The caller’s thread pool fills. Requests queue. Latency walks upstream. A whole service graph degrades — not because every hop is dead, but because one hop <b>never comes back</b>.</p>
+
+    <p>Nygard’s electrical metaphor is the right one: trip the circuit so a short does not burn the building. The software version is a stack, not a switch. Timeouts make silence countable. Retries decide whether to try again. The breaker decides whether to call at all. None of those three answers “who may ask,” “how much may run at once,” “what to drop when the box is already full,” or “when this host is dead and another must take its place.”</p>
+
+    <p class="pull">Availability is a stack of <b>admission</b>, <b>isolation</b>, and <b>recovery</b>: when to refuse work, when to stop calling, when to fail over, and when to do less.</p>
+
+    <p>Eleven Concepts sit on that stack. They are not a catalog of peers. They are five questions a request meets, in order. Smash them together and you get the usual production confusion: a 429 treated as a fleet outage, a 503 retried as if it were a blip, a widget omit sold as a failover, a gateway that thinks it is a strangler.</p>
+  </div>
+
+  <!-- ============ FIG 1: LANDSCAPE ============ -->
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 360" role="img" aria-labelledby="f1t f1d">
+        <title id="f1t">Five layers of the availability stack a request meets: bound the call, admit and place, isolate, survive overload, replace the dead.</title>
+        <desc id="f1d">A request enters from the left and meets five stacked decisions. Bound asks how long to wait, whether to retry, and whether to call. Admit and place asks how much a named key may ask, which live host gets the request, and what the edge offloads. Isolate partitions capacity and reuses one idempotency key. Survive overload either sheds the request or shrinks the work. Replace the dead detects unhealth and moves traffic to a survivor.</desc>
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="var(--ink-soft)"/>
+          </marker>
+        </defs>
+
+        <text x="28" y="28" font-family="var(--mono)" font-size="12" letter-spacing="1.4" fill="var(--ink-faint)" font-weight="700">A REQUEST MEETS FIVE QUESTIONS · not eleven peer cards</text>
+
+        <!-- inbound -->
+        <rect x="16" y="150" width="72" height="56" rx="8" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.2"/>
+        <text x="52" y="174" text-anchor="middle" font-family="var(--sans)" font-size="12" font-weight="700" fill="var(--ink)">request</text>
+        <text x="52" y="192" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-faint)">in</text>
+        <line x1="88" y1="178" x2="112" y2="178" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- 1 bound -->
+        <rect x="116" y="58" width="148" height="244" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.6"/>
+        <text x="190" y="82" text-anchor="middle" font-family="var(--mono)" font-size="10.5" letter-spacing="1.2" fill="var(--det)" font-weight="700">01 · BOUND</text>
+        <text x="128" y="112" font-family="var(--serif)" font-size="15" font-weight="700" fill="var(--ink)">How long?</text>
+        <text x="128" y="130" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Try again?</text>
+        <text x="128" y="148" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Call at all?</text>
+        <rect x="128" y="168" width="124" height="28" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="190" y="187" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">C7 timeout</text>
+        <rect x="128" y="204" width="124" height="28" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="190" y="223" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">C2 retry + budget</text>
+        <rect x="128" y="240" width="124" height="28" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="190" y="259" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">C1 breaker</text>
+        <text x="190" y="288" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">stop calling</text>
+
+        <line x1="264" y1="178" x2="284" y2="178" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- 2 admit -->
+        <rect x="288" y="58" width="148" height="244" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="362" y="82" text-anchor="middle" font-family="var(--mono)" font-size="10.5" letter-spacing="1.2" fill="var(--det)" font-weight="700">02 · ADMIT</text>
+        <text x="300" y="112" font-family="var(--serif)" font-size="15" font-weight="700" fill="var(--ink)">Who may ask?</text>
+        <text x="300" y="130" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Which host?</text>
+        <text x="300" y="148" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">What at the edge?</text>
+        <rect x="300" y="168" width="124" height="28" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="362" y="187" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">C4 429 policy</text>
+        <rect x="300" y="204" width="124" height="28" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="362" y="223" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">C5 place</text>
+        <rect x="300" y="240" width="124" height="28" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="362" y="259" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">C6 gateway</text>
+        <text x="362" y="288" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">refuse work</text>
+
+        <line x1="436" y1="178" x2="456" y2="178" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- 3 isolate -->
+        <rect x="460" y="58" width="140" height="244" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="530" y="82" text-anchor="middle" font-family="var(--mono)" font-size="10.5" letter-spacing="1.2" fill="var(--det)" font-weight="700">03 · ISOLATE</text>
+        <text x="472" y="112" font-family="var(--serif)" font-size="15" font-weight="700" fill="var(--ink)">How much</text>
+        <text x="472" y="130" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">at once?</text>
+        <text x="472" y="148" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Twice = once?</text>
+        <rect x="472" y="168" width="116" height="28" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="530" y="187" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">C8 bulkhead</text>
+        <rect x="472" y="204" width="116" height="28" rx="5" fill="var(--paper)" stroke="var(--det)" stroke-width="1"/>
+        <text x="530" y="223" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--det)">C9 key</text>
+        <text x="530" y="256" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">own share</text>
+        <text x="530" y="274" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">+ same key</text>
+
+        <line x1="600" y1="178" x2="620" y2="178" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- 4 survive -->
+        <rect x="624" y="58" width="140" height="244" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="694" y="82" text-anchor="middle" font-family="var(--mono)" font-size="10.5" letter-spacing="1.2" fill="var(--llm)" font-weight="700">04 · SURVIVE</text>
+        <text x="636" y="112" font-family="var(--serif)" font-size="15" font-weight="700" fill="var(--ink)">Drop it?</text>
+        <text x="636" y="130" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Or do less?</text>
+        <rect x="636" y="168" width="116" height="28" rx="5" fill="var(--paper)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="694" y="187" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--llm)">C10 503 shed</text>
+        <rect x="636" y="204" width="116" height="28" rx="5" fill="var(--paper)" stroke="var(--llm)" stroke-width="1"/>
+        <text x="694" y="223" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--llm)">C11 do-less</text>
+        <text x="694" y="256" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--llm)">goodput</text>
+        <text x="694" y="274" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--llm)">≠ throughput</text>
+
+        <line x1="764" y1="178" x2="784" y2="178" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- 5 replace -->
+        <rect x="788" y="58" width="116" height="244" rx="12" fill="color-mix(in srgb, var(--human) 14%, transparent)" stroke="var(--human)" stroke-width="1.5"/>
+        <text x="846" y="82" text-anchor="middle" font-family="var(--mono)" font-size="10.5" letter-spacing="1.2" fill="var(--human)" font-weight="700">05 · REPLACE</text>
+        <text x="800" y="112" font-family="var(--serif)" font-size="14" font-weight="700" fill="var(--ink)">Who is</text>
+        <text x="800" y="130" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">dead?</text>
+        <rect x="800" y="168" width="92" height="44" rx="5" fill="var(--paper)" stroke="var(--human)" stroke-width="1"/>
+        <text x="846" y="186" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--human)">C3 health</text>
+        <text x="846" y="202" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--human)">+ failover</text>
+        <text x="846" y="256" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--human)">detect,</text>
+        <text x="846" y="274" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--human)">then move</text>
+
+        <text x="28" y="334" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">Teal columns are verified mechanics. Amber is the overload judgment. Slate is operator topology — automatic for one host, deliberate for a region.</text>
+      </svg>
+    </div>
+    <figcaption><b>The whole stack in one picture.</b> Bound the call, then admit and place it, then isolate the blast radius, then survive overload by dropping or shrinking work, then replace a destination that is actually dead. C4, C10, and C11 sit on different columns on purpose: policy-429, goodput-shedding, and do-less are three answers, not one knob.</figcaption>
+  </figure>
+
+  <div class="rule-orn"><span>PART ONE · BOUND THE CALL</span></div>
+
+  <div class="measure">
+    <h2><span class="num">01</span>Bound the call before you count it</h2>
+    <p>The breaker decides <strong>whether to call</strong>. Retries decide <strong>whether to try again</strong>. The timeout decides <strong>how long to wait</strong> — and the other two depend on it. A hung call that never returns increments no failure counter and holds a worker forever. Nygard lists Timeouts first among the Stability patterns for that reason: a breaker that never sees a failure is not a breaker.</p>
+
+    <p>A <strong>timeout</strong> is a duration. Copied hop-to-hop, it restarts and silently extends the budget. A <strong>deadline</strong> is a point in time, converted to remaining duration so clock skew does not add time. SRE’s picture: the edge starts at 30 seconds, spends 7, the next hop gets 23, then 19. Without the subtraction, a downstream hop invents a fresh 20 seconds while the caller has 2 left — and does work nobody will read. Five timers share the name; Brooker’s minimum pair is <strong>connect + request</strong> on every remote call. Idle / between-byte bounds silence (a trickle defeats it). A request bound that includes connect will false-timeout on cold TLS after a deploy.</p>
+
+    <div class="callout">
+      <span class="tag">Verified mechanic · C7</span>
+      <p>Pick the request timeout from the measured latency distribution at the percentile that matches an acceptable false-timeout rate — <strong>p99.9 for a 0.1% budget</strong>. Pad when p99.9 sits near p50. The shortest timer on the path is the real SLO, and it is usually one nobody chose. Without an application timeout you inherit the kernel floor: about 127 seconds for a blackholed SYN, about 13–30 minutes for a write to a silently dead peer.</p>
+    </div>
+
+    <p>Retries absorb transient faults. Done badly they are the most common sustaining effect in metastable outages — Huang et al. found retry policy in more than half of the studied incidents. Brooker: retries are selfish. Retry connection failures, 408 / 429-with-<code>Retry-After</code> / 502 / 503 / 504, and a timeout under a remaining deadline — the timeout path only if the work is idempotent. Do not retry validation 400s, 401 / 403, spend-cap 429s, cancellation, an <strong>Open</strong> breaker, or a half-open probe.</p>
+
+    <p>Capped exponential backoff without jitter still herds a fleet. <strong>Full jitter</strong> — <code>random(0, expo(n))</code> — does the least callee work and is the default for most distributed callers. Backoff helps short spikes, not open-loop overload. A <strong>budget</strong> caps the fleet: SRE’s three-attempt cap and ~10% retry ratio (about 1.1× load instead of just under 3×). Retry at <strong>one layer</strong>, typically the one immediately above the failure. Three layers × 4 attempts = 64; five layers × 3 tries = 243×. If Envoy owns retries, the app must not wrap the same call.</p>
+
+    <p>Only then does the breaker earn its keep: Closed (count), Open (fail fast — no call reaches the downstream), Half-Open (a limited probe). The caller reclaims threads; the callee gets breathing room. Treat <code>FORCED_OPEN</code> / <code>DISABLED</code> / <code>METRICS_ONLY</code> as kill switches, not happy-path policy. Count connection failures, timeouts, 5xx, and slow-but-successful calls. Do not count 400-class business outcomes. 401 / 403 should alert, not trip. A 429 or 503 that names a delay opens immediately for at least that long, <strong>scoped to the quota that was hit</strong> — not the whole provider.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 340" role="img" aria-labelledby="f2t f2d">
+        <title id="f2t">How timeout, retry, and breaker coordinate: remaining-time budgets flow downstream, retries sit under a budget at one layer, and an Open breaker fails fast with no retry.</title>
+        <desc id="f2d">Left: remaining-time propagation from 30 seconds at the edge to 23 then 19 seconds downstream. Center: one retry layer with full jitter and a ten percent budget. Right: breaker states Closed, Open, and Half-Open. Open means no retry; the fallback is orchestration, not a state inside the breaker.</desc>
+        <defs>
+          <marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--ink-faint)"/>
+          </marker>
+        </defs>
+
+        <text x="24" y="26" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">C7 + C2 + C1 · one pipeline, three questions</text>
+
+        <!-- remaining time -->
+        <rect x="20" y="46" width="280" height="268" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="36" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--det)" font-weight="700">C7 · REMAINING TIME</text>
+        <rect x="40" y="92" width="240" height="44" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.2"/>
+        <text x="56" y="118" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--ink)">edge 30.0 s</text>
+        <path d="M160,136 L160,154" stroke="var(--det)" stroke-width="1.4" marker-end="url(#ah2)"/>
+        <text x="172" y="152" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">spend 7 s</text>
+        <rect x="40" y="160" width="240" height="44" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.2"/>
+        <text x="56" y="186" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--ink)">hop B 23.0 s</text>
+        <path d="M160,204 L160,222" stroke="var(--det)" stroke-width="1.4" marker-end="url(#ah2)"/>
+        <text x="172" y="220" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">spend 4 s</text>
+        <rect x="40" y="228" width="240" height="44" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.2"/>
+        <text x="56" y="254" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--ink)">hop C 19.0 s</text>
+        <text x="40" y="294" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">Copy a duration and the budget grows.</text>
+
+        <!-- retry -->
+        <rect x="320" y="46" width="280" height="268" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="336" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--llm)" font-weight="700">C2 · ONE LAYER + BUDGET</text>
+        <text x="336" y="106" font-family="var(--sans)" font-size="13.5" fill="var(--ink)">Transient + idempotent only.</text>
+        <text x="336" y="128" font-family="var(--sans)" font-size="13.5" fill="var(--ink)">Full jitter. Cap attempts at 3.</text>
+        <text x="336" y="150" font-family="var(--sans)" font-size="13.5" fill="var(--ink)">Retry ratio ~10% of requests.</text>
+        <rect x="336" y="172" width="248" height="56" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.2"/>
+        <text x="352" y="196" font-family="var(--mono)" font-size="11.5" fill="var(--llm)" font-weight="700">4³ = 64 · 3⁵ = 243×</text>
+        <text x="352" y="216" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">the product of per-layer attempts</text>
+        <text x="336" y="258" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">Open circuit → no retry.</text>
+        <text x="336" y="278" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">Half-open probe → one attempt.</text>
+        <text x="336" y="298" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">Spend-cap 429 → page a human.</text>
+
+        <!-- breaker -->
+        <rect x="620" y="46" width="280" height="268" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="636" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--det)" font-weight="700">C1 · THREE STATES</text>
+        <rect x="648" y="92" width="224" height="42" rx="8" fill="var(--paper)" stroke="var(--pass)" stroke-width="1.4"/>
+        <text x="760" y="118" text-anchor="middle" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--pass)">Closed · count</text>
+        <path d="M760,134 L760,150" stroke="var(--ink-faint)" stroke-width="1.3" marker-end="url(#ah2)"/>
+        <rect x="648" y="152" width="224" height="42" rx="8" fill="var(--paper)" stroke="var(--fail)" stroke-width="1.4"/>
+        <text x="760" y="178" text-anchor="middle" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--fail)">Open · fail fast</text>
+        <path d="M760,194 L760,210" stroke="var(--ink-faint)" stroke-width="1.3" marker-end="url(#ah2)"/>
+        <rect x="648" y="212" width="224" height="42" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.4"/>
+        <text x="760" y="238" text-anchor="middle" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--llm)">Half-Open · probe</text>
+        <text x="636" y="278" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">Fallback lives in orchestration.</text>
+        <text x="636" y="296" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">The breaker only decides whether.</text>
+      </svg>
+    </div>
+    <figcaption><b>Bound, then retry, then trip.</b> Remaining time is subtracted, not copied. Retries sit at one layer under a budget, with full jitter. An Open breaker fails into the fallback and is not retried. Two mechanisms share the name “circuit breaking”: a failure-trip automaton, and Envoy/Istio concurrency limits. Do not confuse a limit that was never exceeded with a breaker that never tripped.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <h3>Knobs that actually move capacity</h3>
+    <p>The timeout, not the breaker, sets the capacity floor. Eskildsen: a 5-second timeout on a 100 ms worker is about 1/50 of capacity. The breaker stops <em>new</em> calls; threads already parked stay parked. Order the pipeline: .NET runs rate limiter → total timeout → retry → breaker → per-attempt timeout. Resilience4j nests Retry outermost. Retry <em>outside</em> the breaker can be refused by an Open circuit (good). Envoy’s route timeout includes all retries — a 3 s outer with a 2.7 s first try leaves 0.3 s for backoff and the retry. Watch time spent Open, half-open attempts before close, and the spike on close; a breaker without metrics rejects silently.</p>
+
+    <div class="callout judgment">
+      <span class="tag">Trade-off · when-not</span>
+      <p>A breaker is the wrong tool when the dependency is slower, not down — prefer adaptive concurrency. A retry is the wrong tool for open-loop overload, a non-idempotent write without a key, or an Open circuit. Hedging is the read-path alternative when the replica is slow: backup after expected p95, cancel the loser. gRPC A6 forbids retry and hedge on the same method. Do not hedge a capture.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>PART TWO · ADMIT AND PLACE</span></div>
+
+  <div class="measure">
+    <h2><span class="num">02</span>Refuse early, then pick a live host</h2>
+    <p>Once a call is bounded, the next refusal is <strong>admission</strong>. A rate limiter bounds how much a <em>named key</em> may submit per unit time <em>before</em> the work is done. That is policy, not health. The response is <strong>429</strong> — this key exceeded its allocation — optionally with <code>Retry-After</code>. It is not 503, and it is not “the server is doing less per request.”</p>
+
+    <p>Keep the three codes honest. <strong>429</strong> means this caller’s quota. <strong>503</strong> means the service is short for everyone (C10). A smaller body, a hidden rail, or already-held stale means the request was <em>accepted</em> and the work shrank (C11). RFC 6585 is explicit that answering every attacker with 429 still costs resources — under attack it may be more appropriate to drop the connection. That escape hatch is shedding, not throttling.</p>
+
+    <p>Algorithm family matters less than <strong>who owns fairness</strong>. Token bucket and meter-form leaky are mirrors; fixed windows herd at the window edge. Stacking a client limiter, a gateway cap, and ten sidecar buckets is N×, not “the” limit. Pick one fairness owner, usually a store keyed by tenant. Envoy’s documented fix for per-instance multiplication is <code>local_cluster_rate_limit</code>.</p>
+
+    <div class="callout">
+      <span class="tag">Verified mechanic · C4 defaults that do not limit</span>
+      <p>Resilience4j’s RateLimiter default is 50 permits every 500 nanoseconds — about 10⁸ permits per second if left untouched. Envoy’s <em>local</em> token bucket ships with <code>filter_enabled</code> / <code>filter_enforced</code> at 0% and is inert until you raise them. Polly’s and .NET’s “rate limiter” default is 1 000 in-flight permits with queue 0 — a concurrency cap, closer to a bulkhead than a token bucket. Fail-open is the documented default wherever a store is involved: the limiter vanishes under the load you bought it for. Alarm <code>failure_mode_allowed</code>; keep a local backstop that cannot fail open.</p>
+    </div>
+
+    <p>Admitted work still has to land somewhere. Load balancing is <strong>placement</strong> among a live set that health checks have already named. It is not discovery, and it is not key-to-shard routing — that map is Group B’s rebalance / request-routing card (B2). Cite it and stop: a stateless replica may sit behind any peer; a shard can serve a key only on a replica that owns it. A gateway in front is product routing, not a substitute for per-call spreading. The coarsest hop that still multiplexes HTTP/2 wins the imbalance: an L7 façade does not fix an L4 hop behind it.</p>
+
+    <p>The gRPC pinning trap is the usual production surprise. HTTP/2 multiplexes many streams on one TCP connection. An L4 hop sees one flow and parks every RPC on one pod. Kubernetes’ kube-proxy is connection-level: no new connections, no opportunity for load balancing. gRPC’s client default is <code>pick_first</code> — all RPCs go to the first READY address until you select <code>round_robin</code> or xDS. Staging with one address hides it. The signature after a rolling deploy is old pods hot, new pods idle. If any L4 hop remains, set <code>MAX_CONNECTION_AGE</code> in minutes — not infinite — with the mandated ±10% jitter.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="f3t f3d">
+        <title id="f3t">L4 pins a multiplexed HTTP/2 channel to one backend; L7 can place each stream. Outlier ejection is the breaker on the load-balancer path; panic fail-open puts ejected hosts back.</title>
+        <desc id="f3d">Left: an L4 load balancer copies frames so one TCP connection stays on one backend for life. Right: an L7 hop parses HTTP/2 and sprays streams across backends. Below: caller-side fail-fast versus load-balancer outlier ejection, with panic or fail-open when the healthy set is too small.</desc>
+        <defs>
+          <marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--ink-faint)"/>
+          </marker>
+        </defs>
+
+        <text x="24" y="26" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">C5 · PLACE AMONG THE ELIGIBLE · L4 pin vs L7 spray</text>
+
+        <rect x="20" y="46" width="430" height="150" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="36" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--llm)" font-weight="700">L4 · ONE CONNECTION, ONE BACKEND</text>
+        <text x="36" y="100" font-family="var(--sans)" font-size="13.5" fill="var(--ink)">client ──TCP──► LB ──TCP──► pod A for life</text>
+        <text x="36" y="124" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">HTTP/2 multiplex pins every RPC.</text>
+        <text x="36" y="146" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">gRPC default: pick_first.</text>
+        <text x="36" y="176" font-family="var(--mono)" font-size="11" fill="var(--llm)">signature: old pods hot, new pods idle</text>
+
+        <rect x="470" y="46" width="430" height="150" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="486" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--det)" font-weight="700">L7 · PER STREAM</text>
+        <text x="486" y="100" font-family="var(--sans)" font-size="13.5" fill="var(--ink)">client ──H2──► LB parses ──► A / B / C</text>
+        <text x="486" y="124" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">P2C least-request, d = 2.</text>
+        <text x="486" y="146" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Outlier ejects one host (C1 on this path).</text>
+        <text x="486" y="176" font-family="var(--mono)" font-size="11" fill="var(--det)">a gateway in front does not fix L4 behind</text>
+
+        <rect x="20" y="214" width="880" height="68" rx="10" fill="var(--paper)" stroke="var(--human)" stroke-width="1.3"/>
+        <text x="36" y="240" font-family="var(--mono)" font-size="11" fill="var(--human)" font-weight="700">PANIC / FAIL-OPEN</text>
+        <text x="36" y="262" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Envoy healthy_panic_threshold default 50% — below that, ignore health and spray all hosts (or 503 if fail_traffic_on_panic). ALB/NLB: only-unhealthy targets → route to all. Isolation was theatre if max_ejection_percent then panic puts them back.</text>
+      </svg>
+    </div>
+    <figcaption><b>Health checks name the live set; this pattern picks one.</b> P2C least-request with two draws is the usual starting algorithm for heterogeneous RPC. Peak EWMA without outlier is a magnet for fast-fail hosts. Sticky cookies after scale-out keep load on the old targets. B2 owns key → shard; do not put one hash and one breaker over many shards.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>The north–south façade in front of all of this is an <strong>API gateway</strong>: TLS, authn, routing, optional aggregation, protocol translation, and Azure’s offloads. A BFF is the same hop, one per user experience, owned by the UI team. A mesh is east–west. A load balancer only spreads. Azure’s absolute rule: business logic never lives in the gateway. ThoughtWorks held “overambitious API gateways” for the same reason. The strangler fig uses the gateway as the usual physical seam; cutover, shadow, dual-write, rollback, and the anticorruption layer belong to <strong>B4</strong>. Cite that card; do not put the ACL in the gateway.</p>
+
+    <div class="callout judgment">
+      <span class="tag">Trade-off · C6 placement</span>
+      <p>Put C4 at the edge on the identity you already terminated. Put the outer timeout at the gateway and the per-try timeout in-mesh or in-process. Put failure-trip C1 on the dependency, concurrency C1 on the proxy. AWS API Gateway does not retry integration timeouts — clients must. Kong’s default five retries are transport-only (not 5xx / 429). Stacking Kong 5 × Envoy 2 × SDK 2 on GET is the 243× starter kit. Product defaults are not SLOs: AWS REST 29 s, Kong 60 s, Apigee 55 s / unset Ingress 300 s, APIM 300 s header wait, Envoy Gateway 15 s. Override them. Object-level authorization stays in the service — the gateway cannot know who may touch order 4711.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>PART THREE · ISOLATE</span></div>
+
+  <div class="measure">
+    <h2><span class="num">03</span>One compartment, one key</h2>
+    <p>The timeout bounds how long a unit is held. The breaker stops new calls once failure is proven. The <strong>bulkhead</strong> bounds the damage <em>while the breaker is still counting</em>. Partition threads, connections, memory, or whole servers so one dependency, tenant, or request class can exhaust only its own share.</p>
+
+    <p>Hystrix’s surviving lesson: a <strong>semaphore is not a timeout</strong>. Thread-pool isolation runs the call on a dedicated pool; the caller can time out and leave (the pool thread may keep running if the client ignores interrupt). Semaphore isolation is a counter on the calling thread — reject at zero permits, no walk-away. Pair every semaphore with a C7 timeout or the caller still holds the slot for the I/O bound. A single shared outbound pool for “all remote calls” is the anti-pattern the pattern exists to stop.</p>
+
+    <p>Envoy’s “circuit breaking” settings on this card are <strong>limits</strong> — max connections / pending / requests / retries, defaults 1024 / 1024 / 1024 / 3 — not a failure-rate automaton. Overflow is 503 with <code>x-envoy-overloaded</code>. A cluster at 200 rps with 1024 <code>max_requests</code> will not overflow and will not look Open. Istio without a <code>connectionPool</code> stanza is not running those defaults; the knobs sit at 2³²−1. Little’s law sizes the pool: concurrency ≈ throughput × hold-time, from healthy sojourn, not from the timeout. Size to λW, then remember that a hung fraction at T occupies slots the healthy traffic needed — the 20% hang row in the Concept turns a 24-slot, 200 rps pool into a shed of healthy work.</p>
+
+    <p>Isolation of <em>effect</em> is the other compartment. Every retry, redelivery, and failover replay asks: what happens if this work runs twice? <strong>Exactly-once is at-least-once plus idempotence or deduplication</strong> — an effect, not a wire property. HTTP safety is not application idempotency. GET is safe and idempotent; PUT and DELETE are idempotent and unsafe; POST that creates an order is neither. The control is not the method. The control is a key minted <strong>once per business operation</strong>, before the first attempt, and reused across HTTP retries, queue replays, breaker fallbacks, and workflow activity retries. Minting a key per HTTP attempt is dedup theatre.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 292" role="img" aria-labelledby="f4t f4d">
+        <title id="f4t">Bulkheads partition capacity per dependency; one idempotency key is reused across retry, queue replay, and fallback so a timeout cannot double-charge.</title>
+        <desc id="f4d">Left: three compartments — payment, catalog, recommendations — each with its own permit pool, so a hung payment cannot take catalog threads. Right: a single key minted on the order rides the first attempt, every retry, the Open-breaker queue, and the consumer inbox. A 409 in-flight conflict waits and reuses the same key.</desc>
+        <text x="24" y="26" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">C8 + C9 · THE SHARE AND THE KEY</text>
+
+        <rect x="20" y="46" width="430" height="226" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="36" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--det)" font-weight="700">C8 · ONE HUNG DEP ≠ THE PROCESS</text>
+        <rect x="40" y="92" width="122" height="100" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="101" y="122" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--ink)">payment</text>
+        <text x="101" y="144" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--det)">own pool</text>
+        <text x="101" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--fail)">hung at T</text>
+        <rect x="174" y="92" width="122" height="100" rx="8" fill="var(--paper)" stroke="var(--pass)" stroke-width="1.3"/>
+        <text x="235" y="122" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--ink)">catalog</text>
+        <text x="235" y="144" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--pass)">own pool</text>
+        <text x="235" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--pass)">siblings flat</text>
+        <rect x="308" y="92" width="122" height="100" rx="8" fill="var(--paper)" stroke="var(--pass)" stroke-width="1.3"/>
+        <text x="369" y="122" text-anchor="middle" font-family="var(--sans)" font-size="13" font-weight="700" fill="var(--ink)">recs</text>
+        <text x="369" y="144" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--pass)">own pool</text>
+        <text x="369" y="166" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--pass)">siblings flat</text>
+        <text x="40" y="220" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">The flat-sibling assertion is the bulkhead test.</text>
+        <text x="40" y="244" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">Shared pool / one DB / one heap = shared fate.</text>
+
+        <rect x="470" y="46" width="430" height="226" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="486" y="72" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--llm)" font-weight="700">C9 · SAME KEY ON EVERY PATH</text>
+        <rect x="490" y="92" width="390" height="36" rx="7" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.2"/>
+        <text x="685" y="115" text-anchor="middle" font-family="var(--mono)" font-size="12.5" fill="var(--ink)">mint once on the order row</text>
+        <text x="506" y="156" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">HTTP retry · queue replay · Open fallback</text>
+        <text x="506" y="178" font-family="var(--sans)" font-size="12.5" fill="var(--ink-soft)">consumer inbox · foreign capture API</text>
+        <rect x="490" y="196" width="390" height="54" rx="7" fill="var(--paper)" stroke="var(--fail)" stroke-width="1.2"/>
+        <text x="506" y="218" font-family="var(--mono)" font-size="11.5" fill="var(--fail)" font-weight="700">409 IN FLIGHT → WAIT, SAME KEY</text>
+        <text x="506" y="238" font-family="var(--sans)" font-size="12" fill="var(--ink-soft)">Rotating the key is how a double charge is born.</text>
+      </svg>
+    </div>
+    <figcaption><b>Capacity per compartment; one key per business operation.</b> Saturate payment and assert catalog latency stays flat — that assertion is the bulkhead test. The same string must survive every hop; a gateway that mints a fresh UUID per proxy attempt breaks the chain. A 409 means in-flight: wait and reuse. A refund is a new operation and needs a new key.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>The dedup memory must outlive the longest path a duplicate can travel — client retry schedule, queue visibility plus DLQ redrive, operator replay, Brandur’s completer (about 72 hours in that design). Broker windows are a first line only: SQS FIFO’s producer window is a fixed five minutes against default four-day / max fourteen-day retention. After the window, reuse is a new operation. Inbox the business key in the same ACID transaction as the effect; an email server that is not in that transaction will still double-send. Every effect needs its own guard.</p>
+
+    <div class="callout judgment">
+      <span class="tag">Trade-off · when-not</span>
+      <p>A bulkhead is the wrong tool when you need a <em>priority</em> decision about whom to fail (C10), or when the dependency is hard-down and you want fail-fast plus fallback (C1). Cells as an architecture style belong to E13 — this card only uses a cell as another bulkhead granularity above pools. A key store is the wrong first tool when you needed an atomic increment, causal metadata across replicas, or an outbox so the publish commits with the write. Do not treat the expired IETF <code>Idempotency-Key</code> draft as an RFC; vendors already diverge.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>PART FOUR · SURVIVE OVERLOAD</span></div>
+
+  <div class="measure">
+    <h2><span class="num">04</span>Drop the request, or do less of it</h2>
+    <p>When offered load exceeds what a server can finish <em>usefully</em>, it has three honest moves: <strong>shed</strong> (drop some work, cheaply and by priority), <strong>push back</strong> (make producers slow down), or <strong>degrade</strong> (do less per accepted request). Everything else is a queue, and a queue only converts overload into latency, memory, and a later bigger failure.</p>
+
+    <p>These three are the cuts the Concepts already make. Do not smash them:</p>
+    <ul>
+      <li><strong>C4 policy-429.</strong> This named key exceeded its allocation. Others may still pass. Headers help honest clients pace.</li>
+      <li><strong>C10 goodput-shedding.</strong> The <em>service</em> is short for everyone. Answer <strong>503</strong> (optionally with <code>Retry-After</code>), or refuse the connection. Goodput — work finished without error <em>and</em> inside a latency the client can still use — should plateau as offered load keeps rising. Throughput that includes doomed work is a vanity metric.</li>
+      <li><strong>C11 do-less.</strong> The request is accepted. Hide a rail, serve already-held stale, rank against a smaller index, queue a write. The user still gets the core function.</li>
+    </ul>
+
+    <p>Yanacek: shed early and cheaply; do not fold reject latency into the success histogram; <strong>never shed the load-balancer ping</strong> — a missed check shrinks the fleet. Drop doomed work (remaining deadline, queue age, LIFO when the protocol allows). Shed on the same CPU target as autoscaling starves the scale-out signal. A static in-flight cap is a bulkhead; adaptive concurrency <em>moves</em> the cap from measured latency. Netflix named the two anti-patterns: no shedding, and congestive failure (the reject path ate the CPU). PlayAPI’s partition: user-initiated = 1.0, pre-fetch = 0.0. Backpressure issues credit when the producer is yours and can wait. For a synchronous RPC whose caller will time out and retry, shed.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 318" role="img" aria-labelledby="f5t f5d">
+        <title id="f5t">Three different refusals at overload: 429 for this key’s quota, 503 for everyone’s capacity, and an accepted request whose work shrank.</title>
+        <desc id="f5d">Three columns. Left: C4 emits 429 plus Retry-After when a named key exceeds policy. Center: C10 emits 503 when measured capacity is short, never shedding the health-check ping, dropping prefetch before user-initiated work. Right: C11 accepts the request and omits a soft rail, serves already-held stale, or queues a write. A fabricated “charged” stub is not degradation.</desc>
+        <text x="24" y="26" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">C4 ≠ C10 ≠ C11 · POLICY, GOODPUT, DO-LESS</text>
+
+        <rect x="20" y="46" width="288" height="250" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.4"/>
+        <text x="36" y="74" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--det)" font-weight="700">C4 · 429 THIS KEY</text>
+        <text x="36" y="108" font-family="var(--serif)" font-size="20" font-weight="700" fill="var(--ink)">You asked</text>
+        <text x="36" y="132" font-family="var(--serif)" font-size="20" font-weight="700" fill="var(--ink)">too much.</text>
+        <text x="36" y="168" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Named key. Before work.</text>
+        <text x="36" y="190" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Retry-After. Others may pass.</text>
+        <text x="36" y="212" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">In-quota traffic can still</text>
+        <text x="36" y="234" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">overload the fleet — that</text>
+        <text x="36" y="256" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">is when C10 fires.</text>
+        <text x="36" y="280" font-family="var(--mono)" font-size="11" fill="var(--det)">scope the breaker to the quota</text>
+
+        <rect x="324" y="46" width="288" height="250" rx="12" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="340" y="74" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--llm)" font-weight="700">C10 · 503 EVERYONE</text>
+        <text x="340" y="108" font-family="var(--serif)" font-size="20" font-weight="700" fill="var(--ink)">We are</text>
+        <text x="340" y="132" font-family="var(--serif)" font-size="20" font-weight="700" fill="var(--ink)">short.</text>
+        <text x="340" y="168" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Measured capacity. Goodput.</text>
+        <text x="340" y="190" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Never shed the ping.</text>
+        <text x="340" y="212" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">User-initiated 1.0;</text>
+        <text x="340" y="234" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">prefetch 0.0 (excess).</text>
+        <text x="340" y="256" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Shed after the scale signal.</text>
+        <text x="340" y="280" font-family="var(--mono)" font-size="11" fill="var(--llm)">honour Retry-After; don’t retry</text>
+
+        <rect x="628" y="46" width="272" height="250" rx="12" fill="color-mix(in srgb, var(--human) 14%, transparent)" stroke="var(--human)" stroke-width="1.5"/>
+        <text x="644" y="74" font-family="var(--mono)" font-size="11" letter-spacing="1.1" fill="var(--human)" font-weight="700">C11 · ACCEPTED, SMALLER</text>
+        <text x="644" y="108" font-family="var(--serif)" font-size="20" font-weight="700" fill="var(--ink)">Do less.</text>
+        <text x="644" y="132" font-family="var(--serif)" font-size="20" font-weight="700" fill="var(--ink)">Keep the core.</text>
+        <text x="644" y="168" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Omit a soft rail.</text>
+        <text x="644" y="190" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Already-held stale (RFC 5861).</text>
+        <text x="644" y="212" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Cheaper ranker. Queue a write.</text>
+        <text x="644" y="234" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Never fabricate a charge.</text>
+        <text x="644" y="256" font-family="var(--sans)" font-size="13.5" fill="var(--ink-soft)">Kill switch ≠ replica promote.</text>
+        <text x="644" y="280" font-family="var(--mono)" font-size="11" fill="var(--human)">product names the core</text>
+      </svg>
+    </div>
+    <figcaption><b>Three refusals, three owners.</b> A 429 on capacity trains clients to wait out their quota while the fleet is sick. A 503 retried immediately is C2’s sustaining loop. An omit that 500s the page has only moved the failure earlier. In-quota tenants can still drive the fleet into C10; C11 has already dropped work when the remaining core still overloads the box.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>Degradation owns the product decision: what the user gets, which dependencies are soft, how stale is sellable, who may flip which switch. REL05-BP01: hard means no substitute — the caller’s availability is the product of its own and the dependency’s. Soft means the caller still performs its <strong>core function</strong> when the dependency is unhealthy. Ranking that split is a business decision, not an SRE default. An ecommerce landing page can hide recommendations and still show the rest; a static “charged” stub on a consistency core is fraud, not degradation.</p>
+
+    <p>Gabrielson’s warning is the failure mode that keeps coming back: an untested second mechanism that dumps load onto a weaker path (cache-miss → database) turned a partial cache outage into a total one. Prefer omit, or serve bytes you already hold. RFC 5861’s <code>stale-if-error</code> hides origin 500 / 502 / 503 / 504 with bytes already in cache. A look-aside miss that multiplies origin load is the opposite. Hystrix is explicit that a cache-via-network fallback lives on a <strong>separate</strong> bulkhead, else a saturated primary pool blocks the fallback.</p>
+
+    <div class="callout human">
+      <span class="tag">Operator / product · kill switch</span>
+      <p>A kill switch is a long-lived ops toggle that turns a capability off on purpose. C1 <code>FORCED_OPEN</code> / Polly <code>Isolate</code> / Hystrix <code>forceOpen</code> are actuators that stop <em>calling</em> one dependency — they do not hide the widget. Isolating a circuit without an omit still 500s the BFF. LaunchDarkly and Unleash disagree on polarity; pick one convention per fleet. Invert ops switches (Unleash: name <code>disable-recommendations</code>, default false) or fail the SDK default to “feature on.” Never default a kill switch to “feature off” on a core path. A flag flip is not failover (C3) and not a shed of other URLs (C10).</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>PART FIVE · REPLACE THE DEAD</span></div>
+
+  <div class="measure">
+    <h2><span class="num">05</span>Detect, then move — and know what fences the zombie</h2>
+    <p>The breaker decides whether to call. Retries decide whether to try again. Both assume a destination still exists. Failover owns the complementary question: <strong>when is that destination declared dead, taken out of rotation, and replaced?</strong> Detect-then-move. A health check names unhealth; a routing or promotion action points traffic at a survivor. Automatic where the blast radius is one host; deliberate where it is a region.</p>
+
+    <p>Five questions share the name “health check.” Mixing them is how a soft dependency becomes a hard one. <strong>Liveness</strong> is a process on the port. <strong>Local</strong> is this box independently broken. Kubernetes <strong>startup</strong> gates the other two until init finishes. <strong>Readiness</strong> is whether new work should land here. <strong>Dependency / anomaly</strong> belongs on a central actor with a rate limit, not on the load-balancer ping. Yanacek’s blank-page fleet still answered pings, failed <em>fast</em>, and a least-requests balancer sent it a disproportionate share.</p>
+
+    <p>Fail-open versus fail-closed is a layer property. DNS and LB fail open because an all-fail signal is often a check bug: Route 53 “if no record is healthy, all records are healthy”; ALB/NLB route to all when only-unhealthy targets remain. Readiness and gRPC client health fail closed because a sibling can absorb the traffic. Test <em>partial</em> dependency failure — flapping around the fail-open threshold is worse than a clean all-down.</p>
+  </div>
+
+  <figure>
+    <div class="fig-card">
+      <svg viewBox="0 0 920 300" role="img" aria-labelledby="f6t f6d">
+        <title id="f6t">User-visible RTO is detection plus failover action plus DNS or cache plus reconnect. Fail-open at DNS and load balancer; fail-closed at readiness. Split-brain is a failure mode of automatic failover.</title>
+        <desc id="f6d">A timeline: t_detect from probe interval and threshold, then t_failover_action, then t_DNS or cache, then t_reconnect. Below: DNS and LB fail open; Kubernetes readiness fails closed. A warning that automatic promotion across a regional boundary is how split-brain writes happen.</desc>
+        <text x="24" y="26" font-family="var(--mono)" font-size="12" letter-spacing="1.2" fill="var(--ink-faint)" font-weight="700">C3 · t_user ≥ t_detect + t_action + t_DNS + t_reconnect</text>
+
+        <rect x="20" y="46" width="200" height="100" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="36" y="74" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">t_DETECT</text>
+        <text x="36" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink)">(fail − 1) × interval</text>
+        <text x="36" y="118" font-family="var(--sans)" font-size="13" fill="var(--ink)">+ timeout</text>
+
+        <rect x="236" y="46" width="200" height="100" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="252" y="74" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">t_ACTION</text>
+        <text x="252" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink)">promote, eject,</text>
+        <text x="252" y="118" font-family="var(--sans)" font-size="13" fill="var(--ink)">shift the data plane</text>
+
+        <rect x="452" y="46" width="200" height="100" rx="10" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+        <text x="468" y="74" font-family="var(--mono)" font-size="11" fill="var(--llm)" font-weight="700">t_DNS / CACHE</text>
+        <text x="468" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink)">TTL + stub resolver</text>
+        <text x="468" y="118" font-family="var(--sans)" font-size="13" fill="var(--ink)">+ JVM never-refresh</text>
+
+        <rect x="668" y="46" width="232" height="100" rx="10" fill="color-mix(in srgb, var(--human) 14%, transparent)" stroke="var(--human)" stroke-width="1.4"/>
+        <text x="684" y="74" font-family="var(--mono)" font-size="11" fill="var(--human)" font-weight="700">t_RECONNECT</text>
+        <text x="684" y="98" font-family="var(--sans)" font-size="13" fill="var(--ink)">warmup, pool rebuild,</text>
+        <text x="684" y="118" font-family="var(--sans)" font-size="13" fill="var(--ink)">the user sees it now</text>
+
+        <rect x="20" y="164" width="430" height="116" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.3"/>
+        <text x="36" y="190" font-family="var(--mono)" font-size="11" fill="var(--det)" font-weight="700">FAIL-OPEN · DNS / LB</text>
+        <text x="36" y="214" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Route 53 group rule; ALB/NLB all-unhealthy;</text>
+        <text x="36" y="234" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Envoy UNKNOWN = HEALTHY. Dashboards</text>
+        <text x="36" y="254" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">can still show 200s to dead targets.</text>
+
+        <rect x="470" y="164" width="430" height="116" rx="10" fill="var(--paper)" stroke="var(--fail)" stroke-width="1.3"/>
+        <text x="486" y="190" font-family="var(--mono)" font-size="11" fill="var(--fail)" font-weight="700">SPLIT-BRAIN · AUTO FAILOVER</text>
+        <text x="486" y="214" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">Timeout declared death; the zombie still writes.</text>
+        <text x="486" y="234" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">GitHub 2018: 43 s partition, 954 unreplicated</text>
+        <text x="486" y="254" font-family="var(--sans)" font-size="13" fill="var(--ink-soft)">writes. Fence the zombie. Do not promote across region.</text>
+      </svg>
+    </div>
+    <figcaption><b>Health checks decide who is eligible; load balancing spreads across the eligible; the breaker is the per-client view of the same dependency.</b> Write user RTO, subtract DNS/cache and reconnect; the remainder is what probes and the engine may spend. Default ALB 30 s / 5 s / 2 unhealthy is already on the order of a minute before a database has even failed over. Regional DR tiers (backup, pilot light, warm standby, multi-site) are cost labels, not SLAs — do not pick a stricter tier than the business RTO/RPO. Automatic failover on a gray signal is the wrong tool; prefer push-button data-plane.</figcaption>
+  </figure>
+
+  <div class="measure">
+    <p>The first-pass Failover card is superseded here. Outlier ejection is C1 on the data path; brownout of the survivors’ page is C11; least-requests amplification of a black hole is C5; probe timeout as a timer kind is C7. Name <strong>what fences the zombie</strong> — a DCS lock, a storage epoch, or “we will not promote across this boundary.” A lease without a fencing token is split-brain.</p>
+
+    <div class="callout judgment">
+      <span class="tag">Trade-off · when-not</span>
+      <p>A health check is the wrong tool for deciding whether to call (C1), bounding how long to wait (C7), shedding load (C10), serving stale (C11), choosing among already-healthy backends (C5), or fencing a zombie writer. Automatic failover is the wrong tool for cross-region promote when the app cannot bear the RTT, for gray failures, and for any path whose fence is “we will reconstruct from backups” — that is restore, not failover. An RTO smaller than detect + TTL is a number you did not choose.</p>
+    </div>
+  </div>
+
+  <div class="rule-orn"><span>THE SCORECARD</span></div>
+
+  <div class="measure">
+    <h2><span class="num">06</span>Which NO, and who owns it</h2>
+    <p>Pulling the stack together: each Concept answers one question, has a small set of operational knobs, and fails in a characteristic way when those knobs are wrong. The pattern is consistent — <strong>coordinate the refusals; do not treat any one of them as a complete availability strategy.</strong></p>
+  </div>
+
+  <div class="table-wrap measure" style="max-width:var(--measure)">
+    <table>
+      <caption>Group C — the availability stack, as the Concepts specify it</caption>
+      <thead>
+        <tr><th>The question</th><th>Answer</th><th>Owner</th><th>Characteristic failure</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>How long may this attempt run?</td>
+          <td>Connect + request; propagate remaining; cancel</td>
+          <td><span class="owner-pill det">C7 mechanic</span></td>
+          <td>Hung call never increments anything; TCP floor; duration copied hop-to-hop</td>
+        </tr>
+        <tr>
+          <td>Whether, when, how often to try again?</td>
+          <td>Transient + idempotent; full jitter; one layer; ~10% budget</td>
+          <td><span class="owner-pill det">C2 mechanic</span></td>
+          <td>Retry storm / 64× / 243×; herd without jitter; retry of Open or spend-cap</td>
+        </tr>
+        <tr>
+          <td>Whether to call at all?</td>
+          <td>Closed / Open / Half-Open; fallback in orchestration</td>
+          <td><span class="owner-pill det">C1 mechanic</span></td>
+          <td>Modal behaviour; wrong granularity; stampede on close; threads already blocked</td>
+        </tr>
+        <tr>
+          <td>How much may this key ask?</td>
+          <td>429 + Retry-After; one fairness owner</td>
+          <td><span class="owner-pill det">C4 mechanic</span></td>
+          <td>N× after scale-out; inert defaults; 429 counted as a fleet trip</td>
+        </tr>
+        <tr>
+          <td>Which live host gets this request?</td>
+          <td>L7 or client per-call; P2C; no pick_first</td>
+          <td><span class="owner-pill det">C5 mechanic</span></td>
+          <td>HTTP/2 pin; Brooker herd; panic fail-open of a bad deploy</td>
+        </tr>
+        <tr>
+          <td>What does the north–south edge offload?</td>
+          <td>TLS, authn, route, C4; no business logic</td>
+          <td><span class="owner-pill llm">C6 trade-off</span></td>
+          <td>Product default as SLO; stacked retries; ACL-in-gateway (that is B4)</td>
+        </tr>
+        <tr>
+          <td>How much may run at once, per compartment?</td>
+          <td>Per-dep pool; λW; semaphore + timeout</td>
+          <td><span class="owner-pill det">C8 mechanic</span></td>
+          <td>Shared pool; Istio unlimited; queue-as-bulkhead; hang holds the slot</td>
+        </tr>
+        <tr>
+          <td>Is trying again safe?</td>
+          <td>One key per operation, reused everywhere</td>
+          <td><span class="owner-pill det">C9 mechanic</span></td>
+          <td>Key per attempt; window &lt; replay horizon; rotate on 409</td>
+        </tr>
+        <tr>
+          <td>What does the server drop when already overloaded?</td>
+          <td>503 by priority; goodput plateaus; never shed the ping</td>
+          <td><span class="owner-pill llm">C10 trade-off</span></td>
+          <td>No shed → collapse; congestive reject path; shed starves autoscale</td>
+        </tr>
+        <tr>
+          <td>What does the user get when a soft dep fails?</td>
+          <td>Omit / already-held stale / cheaper / queue the write</td>
+          <td><span class="owner-pill human">C11 product</span></td>
+          <td>Untested fallback becomes the outage; SIE hides origin death; flag-plane as a hard dep</td>
+        </tr>
+        <tr>
+          <td>When is this destination dead, and who replaces it?</td>
+          <td>Detect-then-move; fail-open at DNS/LB; fence the zombie</td>
+          <td><span class="owner-pill human">C3 operator</span></td>
+          <td>Shallow black hole; deep check on the LB path; split-brain; DNS longer than failover</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="measure">
+    <p>Two adjacent cards are neighbours, not retellings. <strong>B4</strong> owns strangler cutover, shadow, dual-write, and the anticorruption layer — the gateway is only the usual physical seam. <strong>B2</strong> owns key → shard → node for a partitioned store — C5 places among already-healthy replicas of the same role.</p>
+  </div>
+
+  <div class="proposed-zone">
+    <div class="proposed-banner">◆ Uncertain in the source</div>
+    <div class="measure" style="margin-top:-6px">
+      <h2><span class="num">07</span>Parked — do not treat as settled</h2>
+      <p>The Concepts themselves mark these as drafts, vendor claims, or unverified strings. They are fenced so a reader does not promote them into knobs.</p>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · drafts, not RFCs</span>
+        <p><strong>IETF <code>Idempotency-Key</code> draft-07</strong> expired 2026-04-18 — vocabulary (400 / 422 / 409), not a standard. Vendors already diverge. Stripe v1 says “errors” on payload mismatch and does <em>not</em> name 422. <strong>IETF ratelimit-headers draft-11</strong> is likewise not an RFC; <code>Retry-After</code> still wins when both headers exist, and remaining is advisory.</p>
+      </div>
+
+      <div class="callout proposed">
+        <span class="tag">◆ Uncertain · unverified or vendor-claim</span>
+        <p>Whether Istio MeshConfig injects <code>retriable-status-codes</code> is <strong>unverified</strong> in C2. RDS Proxy’s “up to 66%” is a vendor reduction claim, not a measured distribution. Envoy hedge <code>initial_requests</code> is tagged not-implemented. Cloudflare AI Gateway’s page says both “5 retry attempts” and “5 tries.” Patroni <code>maximum_lag_on_failover</code> has no documented default. B4 is cited, not retold.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="measure">
+    <div class="pull">Refuse the work that would not finish. Stop calling the dest that will not recover. Isolate the blast. Drop what you cannot finish, or do less of what you can. Then — and only then — replace the dead.</div>
+
+    <p>If you remember only the thesis, you can retell the group without opening the Concepts: availability is a stack of admission, isolation, and recovery. The four NOs are when to refuse work, when to stop calling, when to fail over, and when to do less. Everything above is the receipts.</p>
+  </div>
+
+</main>
+
+<footer>
+  <p><b>Grounded in.</b> CircuitBreaker.md (C1) · RetryBackoff.md (C2) · FailoverHealth.md (C3) · RateLimiting.md (C4) · LoadBalancing.md (C5) · ApiGateway.md (C6) · TimeoutsDeadlines.md (C7) · Bulkhead.md (C8) · Idempotency.md (C9) · LoadShedding.md (C10) · GracefulDegradation.md (C11). Failover.md was read as the superseded first-pass C3 trail only — claims come from FailoverHealth.md.</p>
+  <p><b>Honesty note.</b> Teal marks mechanics and library/proxy defaults the Concepts actually state. Amber marks trade-offs and when-not lists those same Concepts already make. Slate marks operator or product decisions (core vs soft, RTO/RPO tier, kill-switch polarity, promote-across-region fence). Dashed violet marks items the sources themselves leave uncertain. No vendors, SLAs, regions, replica counts, latencies, or coverage percentages were invented beyond the Concepts’ own verified defaults and labelled design drills.</p>
+  <p><b>Siblings.</b></p>
+  <p class="sibs">
+    <a href="a-communication.html">a-communication.html</a>
+    <a href="b-scaling.html">b-scaling.html</a>
+    <a href="c-availability.html">c-availability.html</a>
+    <a href="d-reliability-monitoring.html">d-reliability-monitoring.html</a>
+    <a href="e-architectural-styles.html">e-architectural-styles.html</a>
+  </p>
+</footer>

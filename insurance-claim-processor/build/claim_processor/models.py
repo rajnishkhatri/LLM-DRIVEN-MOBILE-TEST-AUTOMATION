@@ -54,6 +54,14 @@ class ProcessingResult:
     schema_version: str = "1.0"
     understand_model_id: str | None = None
     embeddings: dict[str, Any] | None = None
+    # Model-resilience provenance (ADRs 0010-0015). Optional/defaulted so
+    # pre-increment results still serialize (AC-R4).
+    config_snapshot: dict[str, Any] | None = None
+    model_variant: str | None = None
+    ensemble: dict[str, Any] | None = None
+    degradation_tier: str | None = None
+    breaker_state: str | None = None
+    remediation: dict[str, Any] | None = None
 
     def to_record(self, claim_key: str | None = None) -> dict[str, Any]:
         """§7-shaped dict: validation flattened to {accepted, flags};
@@ -78,6 +86,12 @@ class ProcessingResult:
             "schema_version": self.schema_version,
             "understand_model_id": self.understand_model_id,
             "embeddings": self.embeddings,
+            "config_snapshot": self.config_snapshot,
+            "model_variant": self.model_variant,
+            "ensemble": self.ensemble,
+            "degradation_tier": self.degradation_tier,
+            "breaker_state": self.breaker_state,
+            "remediation": self.remediation,
         }
         if claim_key is not None:
             record["claim_key"] = claim_key

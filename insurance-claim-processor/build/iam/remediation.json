@@ -1,0 +1,21 @@
+{
+  "Version": "2012-10-17",
+  "Comment": "Remediation Lambda (ADR 0015): bounded, reversible AppConfig writes only. No Resource '*', no broad managed grants, no cloudwatch:PutMetricData (EMF via Logs).",
+  "Statement": [
+    {
+      "Sid": "WriteFlagVersion",
+      "Effect": "Allow",
+      "Action": "appconfig:CreateHostedConfigurationVersion",
+      "Resource": "arn:aws:appconfig:*:*:application/claim-processor*/configurationprofile/*"
+    },
+    {
+      "Sid": "DeployOrRollbackFlag",
+      "Effect": "Allow",
+      "Action": [
+        "appconfig:StartDeployment",
+        "appconfig:StopDeployment"
+      ],
+      "Resource": "arn:aws:appconfig:*:*:application/claim-processor*/environment/*/deployment/*"
+    }
+  ]
+}

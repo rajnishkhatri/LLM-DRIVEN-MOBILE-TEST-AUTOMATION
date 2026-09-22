@@ -35,6 +35,19 @@ def route_claim(
         for flag in flags
     ):
         return "human_review"
+    # Model-resilience integrity gates (AC-R3): no path added by the resilience
+    # increment may auto-approve — each routes to human review.
+    if result.degradation_tier:  # produced below the advanced FM (AC-P3)
+        return "human_review"
+    if result.ensemble and result.ensemble.get("low_confidence_fields"):  # split vote (AC-O1)
+        return "human_review"
+    if result.breaker_state == "open":  # model unhealthy (AC-N2)
+        return "human_review"
+    if any(
+        flag == "config_rejected" or flag.startswith("config_rejected:")
+        for flag in flags
+    ):  # bad AppConfig value must not widen auto-approve (AC-K4)
+        return "human_review"
     amount = _numeric_claim_amount(result.extracted_info)
     if amount is None or amount > policy.amount_threshold:
         return "human_review"

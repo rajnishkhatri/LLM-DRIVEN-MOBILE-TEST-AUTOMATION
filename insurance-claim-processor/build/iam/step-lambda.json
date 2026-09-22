@@ -58,6 +58,15 @@
       "Effect": "Allow",
       "Action": "bedrock:Retrieve",
       "Resource": "arn:aws:bedrock:*:*:knowledge-base/*"
+    },
+    {
+      "Sid": "AppConfigRead",
+      "Effect": "Allow",
+      "Action": [
+        "appconfig:StartConfigurationSession",
+        "appconfig:GetLatestConfiguration"
+      ],
+      "Resource": "arn:aws:appconfig:*:*:application/claim-processor*/environment/*/configuration/*"
     }
   ]
 }

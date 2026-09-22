@@ -1,11 +1,51 @@
 {
   "Type": "STANDARD",
   "Comment": "STANDARD workflow — one execution per claim (not EXPRESS). HITL is waitForTaskToken.",
-  "StartAt": "UnderstandExtract",
+  "StartAt": "BreakerProbe",
   "States": {
+    "BreakerProbe": {
+      "Type": "Task",
+      "Comment": "Produce $.breaker_open for BreakerCheck (review #3: the Choice variable had no producer). Adopts the live AppConfig flags first (AC-K3).",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:claim-processor-breaker-probe",
+      "TimeoutSeconds": 60,
+      "Next": "BreakerCheck"
+    },
+    "BreakerCheck": {
+      "Type": "Choice",
+      "Comment": "AC-N2 (ADR 0012): if the primary model's breaker is open, take the degraded extract path — never invoke the failing model.",
+      "Choices": [
+        {
+          "Variable": "$.breaker_open",
+          "BooleanEquals": true,
+          "Next": "DegradedExtract"
+        }
+      ],
+      "Default": "UnderstandExtract"
+    },
     "UnderstandExtract": {
       "Type": "Task",
       "Resource": "arn:aws:lambda:us-east-1:000000000000:function:claim-processor-understand-extract",
+      "TimeoutSeconds": 300,
+      "Retry": [
+        {
+          "ErrorEquals": ["ThrottlingException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 5,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.Timeout"],
+          "Next": "ExecutionTimedOut"
+        }
+      ],
+      "Next": "Validate"
+    },
+    "DegradedExtract": {
+      "Type": "Task",
+      "Comment": "Breaker open → extract via the degradation ladder (basic/rule-based), never the failing model (ADR 0012/0014). A degraded result is stamped and always routes to human review.",
+      "Resource": "arn:aws:lambda:us-east-1:000000000000:function:claim-processor-degraded-extract",
       "TimeoutSeconds": 300,
       "Retry": [
         {

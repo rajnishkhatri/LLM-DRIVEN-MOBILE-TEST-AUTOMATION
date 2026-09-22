@@ -171,6 +171,21 @@ class PipelineResilienceTests(unittest.TestCase):
         with self.assertRaises(ThrottlingException):
             self._pipeline(invoker, policy).process("work", "claims/auto-fl-collision.txt")
 
+    def test_degraded_path_walks_throttles_to_the_floor(self) -> None:
+        """Re-review #3 / option B: the DegradedExtract path is the last
+        resort AFTER the orchestrator's Retry tier exhausted — re-raising
+        there would bounce the same throttled model forever. With
+        `walk_throttles=True` a throttled tier is a failed tier: descend,
+        floor at rule_based, route to review (AC-P1)."""
+        invoker = _ScriptedInvoker(raise_by_model={EXTRACT_MODEL_EXAMPLE: _throttle()})
+        policy = EscalationPolicy(degradation_tiers=(EXTRACT_MODEL_EXAMPLE, "rule_based"))
+        pipe = self._pipeline(invoker, policy)
+        out = pipe.understand_extract(
+            "work", "claims/auto-fl-collision.txt", walk_throttles=True
+        )
+        self.assertEqual(out["degradation_tier"], "rule_based")
+        self.assertEqual(out["extract_model_id"], "rule_based")
+
     def test_ensemble_usage_accumulates_across_member_calls(self) -> None:
         """Review #6: `dict.update` kept only the LAST call's tokens — an
         N-member ensemble under-reported cost N×."""

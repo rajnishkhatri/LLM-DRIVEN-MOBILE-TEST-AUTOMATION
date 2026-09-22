@@ -36,6 +36,11 @@
       ],
       "Catch": [
         {
+          "ErrorEquals": ["ThrottlingException"],
+          "Comment": "Re-review #3, option B: the Retry tier above absorbed the short spike; a throttle that survives it is a sustained brownout — degrade the claim (AC-P1) instead of failing the execution. DegradedExtract walks throttles to the rule-based floor.",
+          "Next": "DegradedExtract"
+        },
+        {
           "ErrorEquals": ["States.Timeout"],
           "Next": "ExecutionTimedOut"
         }

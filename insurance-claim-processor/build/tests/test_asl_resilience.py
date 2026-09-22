@@ -79,6 +79,21 @@ class BreakerChoiceTests(unittest.TestCase):
             self.assertIn(field, params)
         self.assertEqual(params["route"], "human_review")  # AC-R3 unchanged
 
+    def test_exhausted_throttle_degrades_instead_of_failing(self) -> None:
+        """Re-review #3, resolved as option B (2026-09-22): after the Retry
+        tier exhausts on a sustained throttle, the claim walks the degradation
+        ladder (AC-P1 'retries exhausted → degrade') rather than failing the
+        execution. Short spikes stay absorbed by the Retry tier (C2); only
+        what survives it degrades (C11)."""
+        states = _states()["States"]
+        catches = states["UnderstandExtract"].get("Catch", [])
+        throttle_targets = [
+            c.get("Next")
+            for c in catches
+            if "ThrottlingException" in c.get("ErrorEquals", [])
+        ]
+        self.assertEqual(throttle_targets, ["DegradedExtract"])
+
     def test_normal_path_unchanged(self) -> None:
         states = _states()["States"]
         self.assertEqual(states["UnderstandExtract"]["Next"], "Validate")

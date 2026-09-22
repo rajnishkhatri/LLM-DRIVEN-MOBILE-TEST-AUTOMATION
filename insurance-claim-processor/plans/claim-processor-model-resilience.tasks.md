@@ -257,11 +257,17 @@ gated real-AWS smoke **R-17** (`CLAIM_PROCESSOR_REAL_AWS=1`, DEPLOY.md §6).
 ### Stage-7 RE-review fixes (2026-09-21, direct-fix per owner — no replan)
 
 Fresh-thread re-review of commit e3ac15a: Wave 3e held (no reintroduced AC-R3
-bypass) but returned 8 new findings; owner chose "fix directly". All fixed
-red-first except **#3 (throttle re-raise vs AC-O5/P1 — OPEN, needs an owner
-spec decision:** bless orchestrator-owned throttle retries w/ execution failure
-terminal, or re-catch throttles inside the ladder**)**. Gate → **260 tests OK
-(skipped=1)** (was 247), `check_gate` 0 drift.
+bypass) but returned 8 new findings; owner chose "fix directly". #1/#2/#4–#8
+fixed red-first same day (gate → **260 tests OK**, was 247). **#3 resolved
+2026-09-22 as option B** (owner decision after an sdp-resilience clinic pass —
+C2: retry tier owns short spikes; C11: ladder owns sustained brownouts; C1
+breaker already converts sustained throttle into fleet-level degradation via
+the ModelErrorRate loop): `UnderstandExtract` gains
+`Catch: ThrottlingException → DegradedExtract`; `understand_extract(...,
+walk_throttles=True)` on the degraded path descends through throttled tiers to
+the rule-based floor instead of re-raising; the normal path still re-raises
+into the Retry tier. AC-P1 clarified in the spec (orchestrator tier = "retries
+exhausted"). Gate → **263 tests OK (skipped=1)**, `check_gate` 0 drift.
 
 | # | Fix | Files |
 |---|---|---|
@@ -273,6 +279,7 @@ terminal, or re-catch throttles inside the ladder**)**. Gate → **260 tests OK
 | 7 | `UngroundedFallback` Pass state carries the full Wave-3 provenance + usage/guardrail/model ids (audit contract on the RAG-down path) | `sfn/asl.json`, `tests/test_asl_resilience.py` |
 | 8 | `ensemble_enabled` requires a real bool (`is True`) — `"false"` can no longer switch the expensive path ON | `flags.py`, `tests/test_flags.py` |
 
-**R-17 remains next** once #3 is decided (as shipped, a sustained throttle
-fails the execution after the ASL retry tier — the smoke's outage scenario
-should be run with a timeout fault, or #3 resolved first).
+**R-17 is next** — all re-review findings including #3 are closed; the smoke's
+outage scenario can use a throttle fault (expect: retries → DegradedExtract →
+`degradation_tier`-stamped result in human review, and the breaker opening
+behind it).

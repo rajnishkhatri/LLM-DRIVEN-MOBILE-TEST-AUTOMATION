@@ -160,7 +160,18 @@ class ClaimPipeline:
         self.extract_model_id = self.policy.extract_model_id
         self.summary_model_id = self.policy.summary_model_id
 
-    def understand_extract(self, bucket: str, key: str) -> dict[str, Any]:
+    def understand_extract(
+        self, bucket: str, key: str, *, walk_throttles: bool = False
+    ) -> dict[str, Any]:
+        """Extract via adapter/flags/ensemble/ladder.
+
+        `walk_throttles=False` (the normal path): a THROTTLED outcome
+        re-raises so the orchestrator's Retry tier owns the backoff (C2).
+        `walk_throttles=True` (the DegradedExtract path, reached AFTER that
+        tier exhausted — re-review #3, option B): a throttled tier is a failed
+        tier — descend the ladder to the rule-based floor (AC-P1/O5) instead
+        of bouncing the same throttled model back into the tier that gave up.
+        """
         payload = self.store.get_bytes(bucket, key)
         blocks = to_content_blocks(payload, filename=key)
         first = blocks[0]
@@ -191,7 +202,7 @@ class ClaimPipeline:
             _accumulate_usage(call_usage, result.usage)
             call_guardrail = _merge_guardrail(call_guardrail, result.guardrail)
             self._emit_call_metrics(model_id, result, started)
-            if result.outcome == CallOutcome.THROTTLED:
+            if result.outcome == CallOutcome.THROTTLED and not walk_throttles:
                 raise ThrottlingException(f"model {model_id} throttled")
             return result
 

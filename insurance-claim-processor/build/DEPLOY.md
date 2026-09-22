@@ -106,6 +106,13 @@ the API/client name and grants nothing as an action prefix (review #2).
 
 ## 4. Circuit breaker (ADR 0012)
 
+- **Sustained throttle** (the common Bedrock brownout): the Retry tier on
+  `UnderstandExtract` absorbs short spikes (5 backed-off attempts); a
+  `ThrottlingException` that survives it is caught → `DegradedExtract`, which
+  walks throttled tiers down to the rule-based floor — the claim degrades to
+  human review instead of the execution failing (AC-P1, option B 2026-09-22).
+  Meanwhile the throttle-driven `Errors` metric trips `ModelErrorRate` → the
+  breaker opens → subsequent claims skip the sick model entirely.
 - The breaker signal is the `ModelErrorRate` alarm; the shared state is the
   `breaker_open_models` flag. The state machine starts at the **`BreakerProbe`**
   Task (Lambda `claim-processor-breaker-probe`, `handler.breaker_probe`), which

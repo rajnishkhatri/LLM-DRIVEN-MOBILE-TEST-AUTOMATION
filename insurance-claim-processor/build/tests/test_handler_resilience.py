@@ -24,8 +24,9 @@ class _StubPipeline:
     def refresh_policy(self):
         self.refreshes += 1
 
-    def understand_extract(self, bucket, key):
+    def understand_extract(self, bucket, key, *, walk_throttles=False):
         self.seen = (bucket, key)
+        self.walk_throttles = walk_throttles
         return {
             "document_text": "",
             "extracted_info": {"claim_amount": 1},
@@ -48,6 +49,14 @@ class DegradedExtractHandlerTests(unittest.TestCase):
     def test_requires_pipeline(self) -> None:
         with self.assertRaises(MissingPipelineError):
             degraded_extract({"bucket": "b", "key": "k"}, pipeline=None)
+
+    def test_degraded_extract_walks_throttles(self) -> None:
+        """Option B (re-review #3): the degraded handler is reached AFTER the
+        Retry tier exhausted, so it must descend through throttles, never
+        re-raise them back into the tier that just gave up."""
+        pipe = _StubPipeline()
+        degraded_extract({"bucket": "b", "key": "k"}, pipeline=pipe)
+        self.assertIs(pipe.walk_throttles, True)
 
     def test_extract_handlers_refresh_config_per_invocation(self) -> None:
         """Review #4: `_refresh_policy` ran only in the CLI `process()` path —

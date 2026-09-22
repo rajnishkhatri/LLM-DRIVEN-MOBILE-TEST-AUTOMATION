@@ -60,15 +60,17 @@ def degraded_extract(
     *,
     pipeline: ClaimPipeline | None = None,
 ) -> dict[str, Any]:
-    """Breaker-open entry (AC-N2): extract via the degradation ladder.
+    """Degraded entry: breaker-open (AC-N2) or exhausted-throttle Catch.
 
-    Same thin adapter as `understand_extract`; the deployed Lambda's config
-    marks the primary model's breaker open, so `understand_extract` walks to a
-    lower tier and never invokes the failing model.
+    Same thin adapter as `understand_extract`, in last-resort mode: an open
+    breaker walks to a lower tier without invoking the failing model, and —
+    since the orchestrator's Retry tier has already given up by the time this
+    state runs (re-review #3, option B) — a throttled tier descends the
+    ladder instead of re-raising (AC-P1).
     """
     pipe = _require_pipeline(pipeline)
     pipe.refresh_policy()
-    out = pipe.understand_extract(event["bucket"], event["key"])
+    out = pipe.understand_extract(event["bucket"], event["key"], walk_throttles=True)
     return {**event, **out}
 
 

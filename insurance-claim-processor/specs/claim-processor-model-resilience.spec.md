@@ -165,6 +165,13 @@ rejected in ADR 0012.
   retries exhausted), THEN the system SHALL degrade through the configured
   ladder in order: advanced FM → basic/cheaper FM → deterministic rule-based
   extractor → human review. *(ADR-0014; extends ADR-0006 / C11; #6)*
+  *Clarified 2026-09-22 (Stage-7 re-review #3, option B): "retries exhausted"
+  means the **orchestrator's** Retry tier (C2 — the single retry layer). A
+  throttle inside that tier re-raises so SFN owns the backoff; only a throttle
+  that survives the tier reaches the ladder (ASL Catch → DegradedExtract,
+  which walks throttled tiers to the floor). Same reading applies to AC-O5's
+  throttle clause: an in-tier throttled member aborts the step to the Retry
+  tier; the sub-quorum fallback engages on the degraded path.*
 - **AC-P2** `[off]` A rule-based extractor SHALL produce the five-field schema
   shape from deterministic patterns (regex/keyword) when no FM is available,
   so core intake continues. *(ADR-0014; #6 rule-based floor)*

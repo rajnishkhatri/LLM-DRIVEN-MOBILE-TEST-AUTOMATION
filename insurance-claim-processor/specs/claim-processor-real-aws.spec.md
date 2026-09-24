@@ -41,6 +41,13 @@ Permissions authz, PrivateLink, a relational DB / DynamoDB worklist, Textract/BD
   the resolved id on every result `[off]`. *(ADR-0001)*
 - **AC-A5** `[off]` WHERE Guardrails are enabled, every `converse` call SHALL
   include `guardrailConfig`. *(ADR-0008)*
+- **AC-A5a** `[off]` WHERE Guardrails are enabled, a text claim's `converse`
+  call SHALL carry claim-derived text (the claim document, the extracted fields)
+  only inside `guardContent` blocks, and instructions and policy excerpts only
+  as plain `text` blocks; an image claim SHALL carry no `guardContent`, so the
+  guardrail still evaluates the whole message, image included. *(ADR-0008;
+  F14, added 2026-09-23 — untagged, the prompt-attack filter blocked our own
+  instructions)*
 
 ## B. Extraction + validation (integrity)
 

@@ -51,6 +51,31 @@ threshold is flagged `ungrounded`; the validator still asserts schema +
 citation. Regression: a Converse call without `guardrailConfig` fails the
 fitness check.
 
+## Amendment 2026-09-23 — input tagging (F14, option F14-a)
+Found on real AWS: with no input tagging, the guardrail evaluated the **whole**
+user turn, and the prompt-attack filter (strength HIGH) blocked **our own**
+summary instructions (PROMPT_ATTACK, confidence LOW), so every clean claim
+routed to review. We now tag input. WHERE a guardrail is configured, only
+claim-derived text (the claim document, the extracted fields) travels as
+Converse `guardContent`; instructions and policy excerpts are plain `text`
+(v1 AC-A5a). An image claim is **not** tagged, so the whole message, image
+included, stays evaluated.
+- *Why this over the alternatives:* lowering the filter to MEDIUM weakens
+  injection defense for all content; dropping the guardrail from the summary
+  breaks AC-A5. Tagging is the documented Converse practice.
+- *Trade-off accepted:* our own instructions and the policy excerpts are no
+  longer guardrail-evaluated. They are developer-authored, so this is intended.
+  A claim-derived field that is left *untagged* would be unguarded. Mitigation:
+  the fields are classified once per template (`prompts.py`
+  `_UNTRUSTED_FIELDS`), and a fitness test requires every template to declare
+  them.
+- *Evidence:* an injected claim is still blocked; the clean claim
+  auto-approves (smoke #3, `../build/DEPLOY-LEDGER.md` "Fix F14").
+- Contextual grounding stays inert: no `grounding_source` / `query`
+  qualifiers are sent yet (finding F5).
+
+Approved by / date: Rajnish Khatri / 2026-09-23 ("go with F14a")
+
 ## Notes
 Author: aws-ai-design (provisional kata run)
 Approved by / date:

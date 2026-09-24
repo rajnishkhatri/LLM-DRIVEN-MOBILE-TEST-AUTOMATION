@@ -20,7 +20,7 @@ REQUIREMENTS = ROOT / "requirements.txt"
 _STDLIB = {
     "__future__", "argparse", "ast", "collections", "copy", "dataclasses",
     "datetime", "enum", "hashlib", "json", "logging", "os", "pathlib", "re",
-    "sys", "time", "typing", "io", "functools", "itertools",
+    "sys", "time", "typing", "io", "functools", "itertools", "string",
 }
 _ALLOWED_THIRD_PARTY = {"botocore", "boto3"}
 _ALLOWED = _STDLIB | _ALLOWED_THIRD_PARTY | {"claim_processor"}

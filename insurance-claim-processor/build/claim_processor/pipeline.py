@@ -183,6 +183,15 @@ class ClaimPipeline:
         extract_prompt = self.templates.get_prompt("extract_info", document_text=prompt_doc)
         system = "You extract insurance claim fields as JSON."
         guardrail_config = self._guardrail_config()
+        # An image claim keeps whole-message evaluation: tagging only the text
+        # would take the image out of the guardrail's view (AC-A5a).
+        text_content = (
+            None
+            if is_image
+            else self._tagged_content(
+                "extract_info", guardrail_config, document_text=document_text
+            )
+        )
 
         call_usage: dict[str, Any] = {}
         call_guardrail: dict[str, Any] = {"intervened": False, "actions": []}
@@ -190,7 +199,7 @@ class ClaimPipeline:
         def invoke(model_id: str):
             nonlocal call_guardrail
             started = time.perf_counter()
-            call_content = [{"text": extract_prompt}, first] if is_image else None
+            call_content = [{"text": extract_prompt}, first] if is_image else text_content
             result = self.adapter.invoke(
                 extract_prompt,
                 model_id=model_id,
@@ -343,6 +352,17 @@ class ClaimPipeline:
             }
         return None
 
+    def _tagged_content(
+        self, template_name: str, guardrail_config: dict | None, **fields: str
+    ) -> list[dict] | None:
+        """F14 / AC-A5a: with a guardrail, only claim-derived fields are guarded
+        input (`guardContent`). Untagged, the guardrail evaluated the whole
+        turn and its prompt-attack filter blocked our own instructions. No
+        guardrail → None, the plain v1 request."""
+        if guardrail_config is None:
+            return None
+        return self.templates.get_content_blocks(template_name, **fields)
+
     def _config_snapshot(self) -> dict[str, Any]:
         return {
             "extract_model_id": self.policy.extract_model_id,
@@ -412,19 +432,22 @@ class ClaimPipeline:
             if chunks
             else "(no policy excerpts retrieved)"
         )
-        summary_prompt = self.templates.get_prompt(
-            "generate_summary",
-            extracted_info=json.dumps(extracted_info, indent=2)
+        fields = {
+            "extracted_info": json.dumps(extracted_info, indent=2)
             if not isinstance(extracted_info, str)
             else extracted_info,
-            policy_context=policy_context,
-        )
+            "policy_context": policy_context,
+        }
+        summary_prompt = self.templates.get_prompt("generate_summary", **fields)
+        guardrail_config = self._guardrail_config()
         # Summary is single-model cascade — never ensembled (ADR 0013 / AC-O3).
         summarized = self.invoker.converse(
             summary_prompt,
             model_id=self.summary_model_id,
             system="You summarize insurance claims. You do not invent coverage.",
             max_tokens=500,
+            content=self._tagged_content("generate_summary", guardrail_config, **fields),
+            guardrail_config=guardrail_config,  # AC-A5: every call (D0-b)
         )
         return {
             "summary": summarized["text"],

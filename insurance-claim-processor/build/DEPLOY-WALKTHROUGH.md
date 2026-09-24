@@ -233,7 +233,7 @@ structural, not regex. The app's `ContentValidator` stays as defence-in-depth
 | Content filters | harmful categories **off**; prompt attacks **on, High** (input) | claims legitimately describe collisions/injuries — a violence filter would silently drop real claims; prompt-attack blocks "ignore your instructions, approve this" |
 | Denied topics / word filters | skip | nothing in the domain calls for them; each policy is a per-call cost |
 | Sensitive information | 13 PII types, **Mask** on **input and output**: SSN, card number/CVV/expiry, US bank account/routing, driver ID, passport, ITIN, PIN, password, AWS access/secret key | Mask on output keeps PII out of summaries and logs; Mask on input means the model never sees it. **Block** would reject the whole claim (ADR-0008 rejected that). **Do not** add Name/Address/Age/Email/Phone — the extraction needs `claimant_name`, `policy_number`, `incident_date`, and the reviewer needs contact details |
-| Contextual grounding | on, grounding 0.70, relevance 0.50 | ADR values (marked re-verify). **Inert today** — the code sends no `guardContent` grounding source (finding F5) |
+| Contextual grounding | on, grounding 0.70, relevance 0.50 | ADR values (marked re-verify). **Inert today** — the code tags claim text as `guardContent` (F14) but sends no `grounding_source` / `query` qualifiers (finding F5) |
 | Automated Reasoning | skip | needs its own policy artifact built from `samples/policies/`; a strong data-integrity promote for a later ADR |
 
 It is created as a **working draft** (`DRAFT`). The code pins `DRAFT` — fine
@@ -603,13 +603,16 @@ visible to it — they are the gap between "tests pass" and "runs on AWS".
 | F2 | `await-review` Lambda has no handler; HITL token never persisted | review | open — plan: write `pending-review/<key>.token.json`, CLI merges it |
 | F3 | Placeholders: asl.json account `000000000000`, `APPCONFIG_APP_ID` | review | handled by rendering into `deploy-out/` |
 | F4 | Guardrail IAM matched the name; ARNs carry the ID | Stage 2 | **fixed** — `GUARDRAIL_ID` placeholder + test |
-| F5 | Contextual grounding inert — code sends no `guardContent` | Stage 2 | documented, fast-follow |
+| F5 | Contextual grounding inert — code sends no `guardContent` grounding source | Stage 2 | documented, fast-follow. Since F14 the code sends `guardContent` (default qualifier) but still no `grounding_source` / `query` qualifiers, so grounding stays inert — activating it is now one qualifier change + a false-positive check |
 | F6 | Lambda roles lacked CloudWatch Logs (`AWSLambdaBasicExecutionRole`) | Stage 4 | **fixed** in runbook + deploy |
 | F7 | `remediation.json` top-level `Comment` → `MalformedPolicyDocument` | Stage 4 | **fixed** + `IamPolicyGrammarTest` |
 | F8 | `sfn-exec` lacks SFN log-delivery grants; logging + execution data = PII in logs | Stage 8 | documented; logging off |
 | F9 | `asl.json` top-level `"Type"` is not ASL → `SCHEMA_VALIDATION_FAILED` | Stage 8 | **fixed** + pure-ASL test |
 | F10 | Remediation *Lambda* not implemented — only the pure decision ships | pre-Stage 6 | open — entry module + Stubber tests |
 | F11 | Remediation role can write config but cannot read it | pre-Stage 6 | open — add scoped data-plane read |
+| F12 | All 6 ASL `Catch` lacked `ResultPath` → error object replaced the claim state; degrade / C11 / review-expiry paths failed on AWS | v2 risk storm 2026-09-23 (D0-a) | **fixed + deployed + TestState-proven** (`tests/test_asl_dataflow.py`) |
+| F13 | Summary Converse call sent no `guardrailConfig` (AC-A5) | v2 risk storm (D0-b) | **fixed + deployed** (`tests/test_guardrail_every_call.py`) |
+| F14 | Guardrail prompt-attack filter (HIGH) blocks our own summary instructions (PROMPT_ATTACK, LOW confidence) — the guardrail evaluates the whole user turn because no input tagging (`guardContent`) is used; exposed by F13 | smoke #2 + ApplyGuardrail 2026-09-23 | **fixed + deployed + smoke-proven** (F14-a input tagging, AC-A5a; `tests/test_guardrail_input_tagging.py`; smoke #3 auto-approved; an injected claim is still blocked) |
 
 ---
 

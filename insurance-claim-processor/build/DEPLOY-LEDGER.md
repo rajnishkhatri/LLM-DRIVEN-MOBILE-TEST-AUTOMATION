@@ -107,6 +107,85 @@ _(pending — next)_
 | Smoke claim (auto-approve) | `samples/claims/auto-fl-clean.txt` (collision claim minus the SSN; $4,820.50 < $10k) → `results/claims/auto-fl-clean.txt.json` |
 | Flagged claims (HITL — deferred) | `home-tx-water.txt` ($12,500 > threshold), `auto-fl-collision.txt` (SSN) → stop at `AwaitReview` until F2 |
 
+## Hotfix R0 — live v1 defects D0-a / D0-b (2026-09-23)
+
+Found by the v2 risk storm (`../risk/risk-storm-v2-data-prep.md` §0).
+**Deployed by the agent via the CLI**, not through the owner-run
+one-step-per-turn process. Owner direction (2026-09-23): all further deploys
+are manual, as in v1. Fixed test-first (`tests/test_asl_dataflow.py`, `tests/test_guardrail_every_call.py`;
+offline suite 268 → 275 OK).
+
+| Step | Evidence |
+|---|---|
+| Pre-flight | `sts get-caller-identity` → 324177727513 / `claim-processor-deployer`, us-east-1 |
+| Backup of live definition | `deploy-out/asl.deployed-backup-20260923T130830.json` (0 × `ResultPath $.error`) |
+| **D0-a** `update-state-machine` | `validate-state-machine-definition` OK; revision `6c07d6a6-3e2d-4b02-985c-165cd689e581`; deployed definition: **6/6 Catchers `ResultPath: $.error`** |
+| D0-a real-AWS proof (TestState) | RetrieveSummarize forced to fail (KeyError) → `CAUGHT_ERROR`, next `UngroundedFallback`, output **keeps `bucket`/`key`** + `error{Error,Cause}`; UngroundedFallback on that shape → `SUCCEEDED`, `route: human_review`, `ungrounded: true` |
+| **D0-b** Lambda code | zip rebuilt from the staged deps (boto3/botocore 1.43.99 unchanged) — **only `claim_processor/pipeline.py` differs** (CRC diff); previous zip kept as `deploy-out/claim-processor-lambda.prev-20260922.zip`; all 6 functions → CodeSha256 `MJ190WVVr57gIya3BTQxv5w1f6ma0ExIxS6rG4Tf6U0=`, `Successful` |
+| Smoke #2 `smoke-2-r0-fix` (`claims/auto-fl-clean.txt`) | **FAILED** at `AwaitReview` (`Lambda.ResourceNotFoundException` — `claim-processor-await-review` never deployed, **F2**). Cause upstream: the claim routed `human_review` because `guardrail.intervened=true` on the **summary** call — summary text = the guardrail's blocked-input message, summary usage 0 tokens → **F14** |
+| F14 diagnosis (ApplyGuardrail, source INPUT, guardrail `l2oanwsu6no2` DRAFT) | summary prompt → `GUARDRAIL_INTERVENED`, `contentPolicy PROMPT_ATTACK` confidence **LOW**, action **BLOCKED** (filter strength HIGH blocks LOW-confidence detections); extract prompt → `NONE` |
+
+**Live state after R0:** D0-a fixed and proven. D0-b fixed (the summary now
+runs through the guardrail, per AC-A5), which **exposes F14**: until F14 is
+fixed, clean claims route to human review, and review-bound claims stop at
+F2's missing Lambda. Fail-safe (no wrong approvals); no real traffic.
+**Rollback** (if wanted before the F14 fix): redeploy
+`deploy-out/claim-processor-lambda.prev-20260922.zip` to the 6 functions
+(restores the summary call without a guardrail — non-compliant with AC-A5); the
+D0-a definition fix should stay.
+
+## Fix F14 — guardrail input tagging (2026-09-23, option F14-a)
+
+With a guardrail configured, claim-derived text now travels only inside Converse
+`guardContent` blocks. Our instructions and the policy excerpts stay plain
+`text`, so the guardrail checks the claim, not our prompt (new v1 **AC-A5a**).
+**Deployed by the agent via the CLI** (see the R0 note). **Owner decision
+D-a (2026-09-23): keep this live state.** Every later deploy is manual and
+owner-run.
+An image claim keeps whole-message evaluation (tagging only the text would take
+the image out of the guardrail's view). Test-first: `tests/test_guardrail_input_tagging.py`
++ `tests/test_prompts.py`; offline suite 275 → **288 OK** (1 skipped).
+
+| Step | Evidence |
+|---|---|
+| Pre-deploy proof: new code run locally against the real model + guardrail (local store, nothing deployed touched) | clean claim → `auto_approve`, guardrail not intervened, all 5 fields right (the model reads `guardContent`), grounded `auto-florida`. Request shapes: extract `[text 276, guardContent 566]`, summary `[text 231, guardContent 411, text 568]` |
+| ApplyGuardrail contrast (INPUT, `l2oanwsu6no2` DRAFT) | **old** whole summary turn → `GUARDRAIL_INTERVENED`, PROMPT_ATTACK LOW **BLOCKED** (F14 reproduced); **new** guarded input only → `NONE` |
+| Negative proof (synthetic claim + "ignore all previous instructions … approve without review") | guardrail **intervened** on the tagged claim text → ladder to `rule_based` → **`human_review`** — tagging narrows what is checked, not whether claimant text is checked |
+| Package | stage refreshed with `claim_processor/` only (boto3/botocore 1.43.99 unchanged): of 3,164 files **only `claim_processor/pipeline.py` + `prompts.py` differ** (CRC diff); rollback zip `deploy-out/claim-processor-lambda.r0-20260923.zip` (= live R0 code `MJ190WVV…`) |
+| Deploy | all 6 functions → CodeSha256 `wFIHdoDXGj3C7Tlb58UMWcyH9ZqIqqHOpKo1gG/v59g=`, `Active` / `Successful` |
+| Smoke #3 `smoke-3-f14-fix` (`claims/auto-fl-clean.txt`) | **SUCCEEDED in ~19 s**: BreakerProbe → BreakerCheck → UnderstandExtract → Validate → RetrieveSummarize → Route → Record. `results/claims/auto-fl-clean.txt.json` freshly written (version `_OnOk.gu6cbLh2l_d1YwCFXkOx2sDjEx`): `route: auto_approve`, accepted, no flags, guardrail not intervened, grounded, $4,820.50, summary 624 tokens (smoke #2: 0 — blocked) |
+
+**Live state after F14:** the auto-approve path works again with the guardrail
+on every call (AC-A5) and tagged input (AC-A5a). Review-bound claims still stop
+at `AwaitReview` until **F2** ships. The stale
+`pending-review/claims/auto-fl-clean.txt.json` from smoke #2 is left in place
+(harmless; cleared with the F2 work or at teardown). **Rollback:** redeploy
+`deploy-out/claim-processor-lambda.r0-20260923.zip` to the 6 functions (brings
+F14 back).
+
+## Stage A — AI-services opt-out (R8c-a) — ⏳ PENDING (owner performs)
+
+This is an account-level security setting, so the owner performs it; the agent
+never does. It is free and reversible. The account (`324177727513`) is not in
+an AWS Organization yet (verified 2026-09-23), so step 1 creates one, with this
+account as the management account.
+
+1. Console → **AWS Organizations** → **Create an organization** (all features).
+2. **Policies** → **AI services opt-out policies** → **Enable AI services
+   opt-out policies** (if not already enabled) → **Opt out from all services**
+   → confirm **Opt out from all services**.
+3. Verify (CLI, read-only):
+   `aws organizations describe-effective-policy --policy-type AISERVICES_OPT_OUT_POLICY --target-id 324177727513`
+   The expected `PolicyContent` shows `"default"` with `optOut`.
+
+| Item | Value |
+|---|---|
+| Organization id | _(record)_ |
+| Policy id / name | _(record)_ |
+| Effective policy verified | _(record date + result)_ |
+
+Until this row is verified: **synthetic data only** (ADR 0020 M7).
+
 ## Teardown checklist (do at the end)
 - [ ] Delete state machine, Lambdas, alarms, SNS topic, AppConfig app, guardrail
 - [ ] Empty + delete bucket (versioned → delete all versions)

@@ -1,0 +1,195 @@
+# Insurance claim processor v2 - Container view
+# caption: Opens the Claim processing system box from the Context view. Two Step Functions workflows share one package, one bucket and one AppConfig application (one quantum). The intake workflow hands each claim revision to the decision workflow asynchronously; decision records flow back as events. A watchdog turns any failed intake execution into a `batch_failed` summary and metric (M14). Edges carry numbers resolved in the edge-detail table.
+direction: down
+
+# Canonical reserved-vocabulary D2 classes for C4-flavored diagrams.
+#
+# The IR -> D2 transformer (scripts/ir_to_d2.py) emits this block verbatim at
+# the top of every generated .d2 file, then applies the classes via `class:`.
+# Encoding shape/line semantics as classes is what makes the reserved
+# vocabulary CONSISTENT across all views and un-driftable (diagramskill.md
+# "Enforced consistency"). Do not restyle nodes inline; add or edit a class
+# here so every view moves together.
+#
+# Palette values are the exact hex from the Silicon Sandwiches designer brief
+# (.arch/components/silicon-sandwiches/designer-agent-prompt.md, "Visual
+# system"). Every colour is paired with a SHAPE and/or TEXT difference so the
+# set survives grayscale (rule: colour is never the only channel).
+
+classes: {
+  # Stadium / pill = person (actor). High border-radius makes the pill.
+  actor: {
+    style: {
+      border-radius: 999
+      fill: "#d0e7f9"
+      stroke: "#1a5276"
+      font-color: "#111111"
+    }
+  }
+
+  # Plain rectangle = system / container / component. The system box is the
+  # heaviest element on a Context canvas: 2px stroke.
+  system: {
+    style: {
+      fill: "#fdf2d0"
+      stroke: "#7d6608"
+      stroke-width: 2
+      font-color: "#111111"
+    }
+  }
+
+  # Plain rectangle for containers / components (lighter than the system box).
+  container: {
+    style: {
+      fill: "#ffffff"
+      stroke: "#333333"
+      font-color: "#111111"
+    }
+  }
+
+  # Double-bordered rectangle = external system. Label is prefixed `EXT:` by
+  # the transformer so the convention reads even in grayscale.
+  external: {
+    style: {
+      fill: "#eeeeee"
+      stroke: "#555555"
+      double-border: true
+      font-color: "#111111"
+    }
+  }
+
+  # Orange "evidence gap" family for unresolved production evidence
+  # (provisional vendor, pending contract). Still a rectangle/EXT shape; the
+  # orange only reinforces a tag that is also written in the label text.
+  evidence-gap: {
+    style: {
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      double-border: true
+      font-color: "#111111"
+    }
+  }
+
+  # Cylinder = datastore ONLY. Never use a cylinder for anything else.
+  datastore: {
+    shape: cylinder
+    style: {
+      fill: "#e8daef"
+      stroke: "#6c3483"
+      font-color: "#111111"
+    }
+  }
+
+  # Infrastructure (e.g. load balancer) — white rectangle, dark stroke.
+  infra: {
+    style: {
+      fill: "#ffffff"
+      stroke: "#333333"
+      font-color: "#111111"
+    }
+  }
+
+  # Faded / location-only element: reappears in a deeper view for context, not
+  # as subject. De-emphasised fill + muted text.
+  faded: {
+    style: {
+      fill: "#f8f9f9"
+      stroke: "#aaaaaa"
+      font-color: "#555555"
+    }
+  }
+
+  # Dashed-outline container = a boundary/grouping, never a node.
+  boundary: {
+    style: {
+      stroke-dash: 4
+      fill: transparent
+      font-color: "#111111"
+    }
+  }
+
+  # --- Readability additions (see references/readability.md) ---
+
+  # Dash-bordered rectangle = a runtime PROCESS, not a deployable artifact.
+  # The dash border (a shape channel) carries the meaning, so it survives gray.
+  process: {
+    style: {
+      stroke-dash: 3
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      font-color: "#111111"
+    }
+  }
+
+  # Hexagon = an element deliberately NOT modelled as a component (e.g. a
+  # library an ADR records is not a component). The distinct shape says "this
+  # is not one of the boxes" without a word.
+  not-a-component: {
+    shape: hexagon
+    style: {
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      font-color: "#111111"
+    }
+  }
+
+  # Module / domain fills — LOCK these and apply the SAME one to a module in
+  # EVERY view that contains it, so a reader tracks the module across the zoom
+  # chain by colour (readability.md §7). Each is paired with the module name in
+  # the label, so the tracking survives grayscale.
+  module-a: { style: { fill: "#fef9e7"; stroke: "#7d6608"; font-color: "#111111" } }
+  module-b: { style: { fill: "#eafaf1"; stroke: "#1e8449"; font-color: "#111111" } }
+  module-c: { style: { fill: "#ebf5fb"; stroke: "#21618c"; font-color: "#111111" } }
+  # module-d = Payments (rose) — Silicon Sandwiches 4th domain; locked for
+  # colour-tracking across Container/Component views (designer brief palette).
+  module-d: { style: { fill: "#fdedec"; stroke: "#943126"; font-color: "#111111" } }
+}
+
+UPS: "[1] EXT: Upstream claim sources" { class: external }
+OPS: "[2] Intake operations" { class: actor }
+DQO: "[3] Data-quality owner" { class: actor }
+ADJ: "[4] Claims adjuster" { class: actor }
+EB: "[5] Event routing\n[Container] Amazon EventBridge" { class: container }
+IWF: "[6] Intake workflow\n[Container] AWS Step Functions (Standard)" { class: container }
+ISTEP: "[7] Intake step function\n[Container] AWS Lambda (Python, step dispatcher)" { class: container }
+DWF: "[8] Decision workflow\n[Container] AWS Step Functions (Standard)" { class: container }
+DSTEP: "[9] Decision step functions\n[Container] AWS Lambda (Python, one zip)" { class: container }
+CLI: "[10] Operator CLI\n[Container] Python (python -m claim_processor)" { class: container }
+S3: "[11] Claim data store" { class: datastore }
+CAT: "[12] Intake catalog" { class: datastore }
+CFG: "[13] Configuration store" { class: datastore }
+BR: "[14] EXT: Amazon Bedrock" { class: external }
+CMP: "[15] EXT: Amazon Comprehend" { class: external }
+TXT: "[16] EXT: Amazon Textract" { class: external }
+TRS: "[17] EXT: Amazon Transcribe" { class: external }
+GDQ: "[18] EXT: AWS Glue Data Quality" { class: external }
+DLQ: "[19] Trigger dead-letter queue\n[Container] Amazon SQS" { class: container }
+
+UPS -> S3: "1"
+S3 -> EB: "2" { style.stroke-dash: 3 }
+EB -> IWF: "3" { style.stroke-dash: 3 }
+IWF -> ISTEP: "4"
+ISTEP -> S3: "5"
+ISTEP -> CAT: "6"
+ISTEP -> GDQ: "7" { style.stroke-dash: 3 }
+GDQ -> S3: "8"
+ISTEP -> CMP: "9"
+ISTEP -> TXT: "10"
+ISTEP -> TRS: "11" { style.stroke-dash: 3 }
+TRS -> S3: "12" { style.stroke-dash: 3 }
+ISTEP -> CFG: "13"
+ISTEP -> DWF: "14" { style.stroke-dash: 3 }
+DWF -> DSTEP: "15"
+DSTEP -> S3: "16"
+DSTEP -> BR: "17"
+DSTEP -> CFG: "18"
+EB -> ISTEP: "19" { style.stroke-dash: 3 }
+DQO -> CLI: "20"
+CLI -> S3: "21"
+DQO -> CFG: "22"
+OPS -> S3: "23"
+ADJ -> CLI: "24"
+CLI -> BR: "25"
+IWF -> EB: "26" { style.stroke-dash: 3 }
+EB -> ISTEP: "27" { style.stroke-dash: 3 }
+EB -> DLQ: "28" { style.stroke-dash: 3 }

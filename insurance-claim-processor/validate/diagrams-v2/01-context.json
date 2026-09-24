@@ -1,0 +1,176 @@
+{
+  "view": {
+    "id": "01-context",
+    "level": "context",
+    "title": "Insurance claim processor v2 - Context view",
+    "caption": "The whole. The claim processing system (v1 decision workflow plus the v2 data-preparation workflow), the people who operate it, the upstream sources that feed it, and the managed AWS AI services it depends on. The system box is opened in the Container view.",
+    "direction": "down",
+    "completeness": "complete",
+    "overlays": "none"
+  },
+  "nodes": [
+    {
+      "id": "UPS",
+      "kind": "external",
+      "label": "Upstream claim sources",
+      "detail": [
+        "claims-admin and FNOL exports, partner TPAs, call-recording store",
+        "drop zone: attachments first, intake CSV last (ADR 0017)"
+      ]
+    },
+    {
+      "id": "OPS",
+      "kind": "actor",
+      "label": "Intake operations",
+      "detail": [
+        "own quarantined batches and rows"
+      ]
+    },
+    {
+      "id": "DQO",
+      "kind": "actor",
+      "label": "Data-quality owner",
+      "detail": [
+        "approves bounded DQ proposals (ADR 0022)"
+      ]
+    },
+    {
+      "id": "ADJ",
+      "kind": "actor",
+      "label": "Claims adjuster",
+      "detail": [
+        "asks questions over a claim bundle (CLI today)",
+        "HITL review UI deferred with F2 - PROVISIONAL"
+      ]
+    },
+    {
+      "id": "SYS",
+      "kind": "system",
+      "label": "Claim processing system",
+      "emphasis": "heaviest",
+      "detail": [
+        "v1 decision workflow + v2 data-preparation workflow",
+        "ONE architecture quantum, pre-cut seam (ADR 0016)",
+        "(opened in the Container view)"
+      ]
+    },
+    {
+      "id": "BR",
+      "kind": "external",
+      "label": "Amazon Bedrock",
+      "detail": [
+        "Converse + Guardrails (ADR 0001, ADR 0008)",
+        "model ids resolved at runtime, never hard-coded"
+      ]
+    },
+    {
+      "id": "CMP",
+      "kind": "external",
+      "label": "Amazon Comprehend",
+      "detail": [
+        "PII, entities, key phrases, sentiment (ADR 0018)",
+        "content-use opt-out via an AWS Organizations AI-services opt-out policy: owner action pending (R8c-a)"
+      ]
+    },
+    {
+      "id": "TXT",
+      "kind": "external",
+      "label": "Amazon Textract",
+      "detail": [
+        "AnalyzeDocument with QUERIES (ADR 0018)",
+        "content-use opt-out via an AWS Organizations AI-services opt-out policy: owner action pending (R8c-a)"
+      ]
+    },
+    {
+      "id": "TRS",
+      "kind": "external",
+      "label": "Amazon Transcribe",
+      "detail": [
+        "batch jobs with PII redaction at source (ADR 0020)",
+        "content-use opt-out via an AWS Organizations AI-services opt-out policy: owner action pending (R8c-a)"
+      ]
+    },
+    {
+      "id": "GDQ",
+      "kind": "external",
+      "label": "AWS Glue Data Quality",
+      "detail": [
+        "DQDL ruleset per batch partition (ADR 0019)",
+        "content-use opt-out via an AWS Organizations AI-services opt-out policy: owner action pending (R8c-a)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "UPS",
+      "to": "SYS",
+      "kind": "async",
+      "label": "drops intake batches and claim artifacts into"
+    },
+    {
+      "from": "OPS",
+      "to": "SYS",
+      "kind": "sync",
+      "label": "reviews quarantine records in"
+    },
+    {
+      "from": "DQO",
+      "to": "SYS",
+      "kind": "sync",
+      "label": "approves and deploys DQ config to"
+    },
+    {
+      "from": "ADJ",
+      "to": "SYS",
+      "kind": "sync",
+      "label": "asks questions about a claim bundle in"
+    },
+    {
+      "from": "SYS",
+      "to": "BR",
+      "kind": "sync",
+      "label": "extracts, summarizes and answers via"
+    },
+    {
+      "from": "SYS",
+      "to": "CMP",
+      "kind": "sync",
+      "label": "detects PII, entities and sentiment via"
+    },
+    {
+      "from": "SYS",
+      "to": "TXT",
+      "kind": "sync",
+      "label": "reads police reports and estimates via"
+    },
+    {
+      "from": "SYS",
+      "to": "TRS",
+      "kind": "async",
+      "label": "transcribes FNOL calls via"
+    },
+    {
+      "from": "SYS",
+      "to": "GDQ",
+      "kind": "async",
+      "label": "evaluates batch quality rules via"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.9",
+    "\\bSLA\\b:?\\s*\\d",
+    "\\bms\\b",
+    "\\$\\s?\\d",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "\\bKafka\\b",
+    "\\bRedis\\b",
+    "\\bPostgres\\b",
+    "\\bOpenAI\\b",
+    "\\bDynamoDB\\b",
+    "\\bSageMaker\\b",
+    "\\bRekognition\\b",
+    "us-east",
+    "eu-west"
+  ]
+}

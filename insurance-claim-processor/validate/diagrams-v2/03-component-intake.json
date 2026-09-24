@@ -1,0 +1,488 @@
+{
+  "view": {
+    "id": "03-component-intake",
+    "level": "component",
+    "title": "Insurance claim processor v2 - Component view (intake step function)",
+    "caption": "Opens the Intake step function container from the Container view. Each component runs as a state of the Intake workflow, except where Event routing delivers events directly (edges 29 and 30); edges show the per-batch and per-claim data flow. Edges carry numbers resolved in the edge-detail table.",
+    "direction": "right",
+    "opens": "ISTEP",
+    "opens_from": "02-container",
+    "completeness": "complete",
+    "overlays": "none",
+    "omitted": [
+      {
+        "label": "Intake workflow orchestration",
+        "note": "every component below is invoked as a state of the Intake workflow container, except the Event routing entries (edges 29 and 30)"
+      },
+      {
+        "label": "Claim data store",
+        "note": "every component reads and writes only its own S3 prefix (single writer per prefix)"
+      },
+      {
+        "label": "Propose Quality Rule Change and Answer Adjuster Question",
+        "note": "these run in the Operator CLI container, not in this step function"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "ADM",
+      "kind": "component",
+      "label": "Admit Intake Batch",
+      "detail": [
+        "S3 conditional-put lock with takeover; registers the partition",
+        "intake contract version in the key path `intake/v=1/…`; attachment keys confined to `raw/claims/<claim_id>/` (M3)",
+        "lock correctness: holder ARN == `$$.Execution.Id` → self-retry proceeds; `states:DescribeExecution` for takeover; `CreatePartition` `AlreadyExistsException` counts as success (M13)",
+        "pins the DQ config per batch; `config_source=fallback` → batch quarantined, fail closed (M17)"
+      ]
+    },
+    {
+      "id": "RCAT",
+      "kind": "component",
+      "label": "Intake Rule Catalog",
+      "detail": [
+        "defines each rule once and renders the DQDL (ADR 0019)",
+        "completeness renders as non-empty; header exact-match → `invalid_schema`; report_date ≥ loss_date; exactly one CSV per partition (M3)"
+      ]
+    },
+    {
+      "id": "GBQ",
+      "kind": "component",
+      "label": "Gate Batch Quality",
+      "detail": [
+        "quarantines the whole batch below the score threshold",
+        "catalog hash stamped into the Glue ruleset description and compared (M17)"
+      ]
+    },
+    {
+      "id": "GCR",
+      "kind": "component",
+      "label": "Gate Claim Rows",
+      "detail": [
+        "quarantines blocking rows, flags warnings, splits claims"
+      ]
+    },
+    {
+      "id": "CAN",
+      "kind": "component",
+      "label": "Canonicalize Values",
+      "detail": [
+        "dates, amounts, policy numbers, VINs under configured formats and date orders",
+        "a date with day ≤ 12 valid both ways → blocking `dq_warn:ambiguous_date` unless independently corroborated; date order keyed by source / issuer, not channel (M2)"
+      ]
+    },
+    {
+      "id": "ANQ",
+      "kind": "component",
+      "label": "Assess Narrative Quality",
+      "detail": [
+        "deterministic checks and score"
+      ]
+    },
+    {
+      "id": "RSD",
+      "kind": "component",
+      "label": "Redact Sensitive Data",
+      "detail": [
+        "typed placeholders before persistence (ADR 0020)",
+        "adds `DRIVER_ID`, `PASSPORT_NUMBER` and peer PII types; transcripts and OCR text are redacted, not verified; stdlib scrub of runs of ≥ 4 digits in transcripts (M6)"
+      ]
+    },
+    {
+      "id": "ELI",
+      "kind": "component",
+      "label": "Extract Language Insights",
+      "detail": [
+        "sentiment is context only, never a decision input"
+      ]
+    },
+    {
+      "id": "RDT",
+      "kind": "component",
+      "label": "Read Document Text",
+      "detail": [
+        "answers below confidence 80 are never reconciliation sources"
+      ]
+    },
+    {
+      "id": "TRC",
+      "kind": "component",
+      "label": "Transcribe Call",
+      "detail": [
+        "redacted speaker turns; context, not a reconciliation source"
+      ]
+    },
+    {
+      "id": "SLH",
+      "kind": "component",
+      "label": "Summarize Loss History",
+      "detail": [
+        "deterministic text and stats; no FM"
+      ]
+    },
+    {
+      "id": "RCF",
+      "kind": "component",
+      "label": "Reconcile Claim Facts",
+      "detail": [
+        "per-field agreement across sources; uses Canonicalize Values",
+        "unverifiable is not clean: blocking `recon_unverifiable:<field>`, `source_disabled:<src>`, `history_failed`, `history_unavailable` (M4)"
+      ]
+    },
+    {
+      "id": "FMC",
+      "kind": "component",
+      "label": "Format Model Context",
+      "detail": [
+        "tagged, lineage-attributed sections then images (ADR 0021)",
+        "claim-derived sections travel in Converse `guardContent`; instructions, schema and policy excerpts as plain `text`; images as plain `image` blocks, not guardrail-checked (H-F14-a)",
+        "an image only when OCR confidence is insufficient and no PII was found; OCR insufficient with PII found: blocking `image_withheld:pii`; OCR sufficient: no image, no flag (M6)",
+        "escapes `<` and `>` in claimant-derived text inside the context tags (M10)"
+      ]
+    },
+    {
+      "id": "ASM",
+      "kind": "component",
+      "label": "Assemble Claim Bundle",
+      "detail": [
+        "bundle plus lineage plus quality block; copies images (ADR 0017)",
+        "writes the revision-scoped key `bundles/<claim_id>/r<rev>` (M12)"
+      ]
+    },
+    {
+      "id": "DSP",
+      "kind": "component",
+      "label": "Dispatch Claim Decision",
+      "detail": [
+        "one decision execution per claim revision",
+        "resubmitting a decided claim → human review only, unless it is a DQ-owner-tagged proposal re-run (M5)",
+        "passes the bundle key plus its S3 VersionId in the v1 input (M12)"
+      ]
+    },
+    {
+      "id": "ACC",
+      "kind": "component",
+      "label": "Account Batch Outcome",
+      "detail": [
+        "conservation: rows in equals processed plus quarantined plus failed",
+        "quarantine records hold no values: row index + rule ids + object version (M9)",
+        "second entry: a FAILED / TIMED_OUT / ABORTED intake execution → `batch_failed` summary + `BatchFailed{Status}` metric (M14)"
+      ]
+    },
+    {
+      "id": "THM",
+      "kind": "component",
+      "label": "Aggregate Themes",
+      "detail": [
+        "ranked batch phrases and entity types"
+      ]
+    },
+    {
+      "id": "MEA",
+      "kind": "component",
+      "label": "Measure Extraction Agreement",
+      "detail": [
+        "FM fields versus sources, per field and channel",
+        "the measuring prompt hides the intake record; degraded results are excluded (M5)",
+        "feedback records hold no values (M9)"
+      ]
+    },
+    {
+      "id": "EB",
+      "kind": "container",
+      "label": "Event routing",
+      "technology": "Amazon EventBridge",
+      "family": "faded"
+    },
+    {
+      "id": "DWF",
+      "kind": "container",
+      "label": "Decision workflow",
+      "technology": "AWS Step Functions (Standard)",
+      "family": "faded"
+    },
+    {
+      "id": "CMP",
+      "kind": "external",
+      "label": "Amazon Comprehend",
+      "detail": []
+    },
+    {
+      "id": "TXT",
+      "kind": "external",
+      "label": "Amazon Textract",
+      "detail": []
+    },
+    {
+      "id": "TRS",
+      "kind": "external",
+      "label": "Amazon Transcribe",
+      "detail": []
+    },
+    {
+      "id": "GDQ",
+      "kind": "external",
+      "label": "AWS Glue Data Quality",
+      "detail": []
+    }
+  ],
+  "edges": [
+    {
+      "from": "ADM",
+      "to": "GBQ",
+      "kind": "sync",
+      "label": "",
+      "ref": 1,
+      "detail": "Admit Intake Batch hands the admitted, registered batch to Gate Batch Quality."
+    },
+    {
+      "from": "RCAT",
+      "to": "GBQ",
+      "kind": "sync",
+      "label": "",
+      "ref": 2,
+      "detail": "Intake Rule Catalog renders the DQDL ruleset that Gate Batch Quality submits."
+    },
+    {
+      "from": "GBQ",
+      "to": "GDQ",
+      "kind": "async",
+      "label": "",
+      "ref": 3,
+      "detail": "Gate Batch Quality starts and polls the ruleset run on the batch partition."
+    },
+    {
+      "from": "GBQ",
+      "to": "GCR",
+      "kind": "sync",
+      "label": "",
+      "ref": 4,
+      "detail": "Gate Batch Quality passes a fit batch to Gate Claim Rows."
+    },
+    {
+      "from": "RCAT",
+      "to": "GCR",
+      "kind": "sync",
+      "label": "",
+      "ref": 5,
+      "detail": "Intake Rule Catalog supplies the row checks with their severities to Gate Claim Rows."
+    },
+    {
+      "from": "GCR",
+      "to": "CAN",
+      "kind": "sync",
+      "label": "",
+      "ref": 6,
+      "detail": "Gate Claim Rows canonicalizes raw row values with Canonicalize Values."
+    },
+    {
+      "from": "GCR",
+      "to": "ANQ",
+      "kind": "sync",
+      "label": "",
+      "ref": 7,
+      "detail": "Gate Claim Rows sends each claim's narrative to Assess Narrative Quality."
+    },
+    {
+      "from": "GCR",
+      "to": "RDT",
+      "kind": "sync",
+      "label": "",
+      "ref": 8,
+      "detail": "Gate Claim Rows sends each claim's document images to Read Document Text."
+    },
+    {
+      "from": "GCR",
+      "to": "TRC",
+      "kind": "sync",
+      "label": "",
+      "ref": 9,
+      "detail": "Gate Claim Rows sends each claim's call recording to Transcribe Call."
+    },
+    {
+      "from": "GCR",
+      "to": "SLH",
+      "kind": "sync",
+      "label": "",
+      "ref": 10,
+      "detail": "Gate Claim Rows sends each claim's policy number to Summarize Loss History."
+    },
+    {
+      "from": "ANQ",
+      "to": "RSD",
+      "kind": "sync",
+      "label": "",
+      "ref": 11,
+      "detail": "Assess Narrative Quality passes the scored narrative to Redact Sensitive Data."
+    },
+    {
+      "from": "RDT",
+      "to": "RSD",
+      "kind": "sync",
+      "label": "",
+      "ref": 12,
+      "detail": "Read Document Text redacts OCR text with Redact Sensitive Data."
+    },
+    {
+      "from": "RSD",
+      "to": "CMP",
+      "kind": "sync",
+      "label": "",
+      "ref": 13,
+      "detail": "Redact Sensitive Data detects PII offsets through Comprehend."
+    },
+    {
+      "from": "RSD",
+      "to": "ELI",
+      "kind": "sync",
+      "label": "",
+      "ref": 14,
+      "detail": "Redact Sensitive Data passes redacted narrative text to Extract Language Insights."
+    },
+    {
+      "from": "ELI",
+      "to": "CMP",
+      "kind": "sync",
+      "label": "",
+      "ref": 15,
+      "detail": "Extract Language Insights detects entities, key phrases and sentiment through Comprehend."
+    },
+    {
+      "from": "RDT",
+      "to": "TXT",
+      "kind": "sync",
+      "label": "",
+      "ref": 16,
+      "detail": "Read Document Text analyzes document images through Textract QUERIES."
+    },
+    {
+      "from": "TRC",
+      "to": "TRS",
+      "kind": "async",
+      "label": "",
+      "ref": 17,
+      "detail": "Transcribe Call starts and polls a redacted transcription job."
+    },
+    {
+      "from": "ELI",
+      "to": "RCF",
+      "kind": "sync",
+      "label": "",
+      "ref": 18,
+      "detail": "Extract Language Insights hands narrative facts to Reconcile Claim Facts."
+    },
+    {
+      "from": "RDT",
+      "to": "RCF",
+      "kind": "sync",
+      "label": "",
+      "ref": 19,
+      "detail": "Read Document Text hands confidence-gated OCR answers to Reconcile Claim Facts."
+    },
+    {
+      "from": "SLH",
+      "to": "RCF",
+      "kind": "sync",
+      "label": "",
+      "ref": 20,
+      "detail": "Summarize Loss History hands the loss-history summary and frequency flag to Reconcile Claim Facts."
+    },
+    {
+      "from": "GCR",
+      "to": "RCF",
+      "kind": "sync",
+      "label": "",
+      "ref": 21,
+      "detail": "Gate Claim Rows hands canonical intake fields and warning flags to Reconcile Claim Facts."
+    },
+    {
+      "from": "RCF",
+      "to": "FMC",
+      "kind": "sync",
+      "label": "",
+      "ref": 22,
+      "detail": "Reconcile Claim Facts passes reconciled facts and mismatch flags to Format Model Context."
+    },
+    {
+      "from": "TRC",
+      "to": "FMC",
+      "kind": "sync",
+      "label": "",
+      "ref": 23,
+      "detail": "Transcribe Call passes redacted dialog turns to Format Model Context."
+    },
+    {
+      "from": "FMC",
+      "to": "ASM",
+      "kind": "sync",
+      "label": "",
+      "ref": 24,
+      "detail": "Format Model Context passes Converse context blocks to Assemble Claim Bundle."
+    },
+    {
+      "from": "ASM",
+      "to": "DSP",
+      "kind": "sync",
+      "label": "",
+      "ref": 25,
+      "detail": "Assemble Claim Bundle passes the written bundle key to Dispatch Claim Decision."
+    },
+    {
+      "from": "DSP",
+      "to": "DWF",
+      "kind": "async",
+      "label": "",
+      "ref": 26,
+      "detail": "Dispatch Claim Decision starts one decision execution per claim revision and does not wait."
+    },
+    {
+      "from": "ASM",
+      "to": "ACC",
+      "kind": "sync",
+      "label": "",
+      "ref": 27,
+      "detail": "Assemble Claim Bundle reports each claim's fate to Account Batch Outcome."
+    },
+    {
+      "from": "ELI",
+      "to": "THM",
+      "kind": "sync",
+      "label": "",
+      "ref": 28,
+      "detail": "Extract Language Insights feeds key phrases and entity types to Aggregate Themes."
+    },
+    {
+      "from": "EB",
+      "to": "ACC",
+      "kind": "async",
+      "label": "",
+      "ref": 30,
+      "detail": "Event routing routes failed intake executions (FAILED, TIMED_OUT, ABORTED) to Account Batch Outcome for batch-failure accounting (M14)."
+    },
+    {
+      "from": "EB",
+      "to": "MEA",
+      "kind": "async",
+      "label": "",
+      "ref": 29,
+      "detail": "Event routing delivers decision-record events to Measure Extraction Agreement."
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.9",
+    "\\bSLA\\b:?\\s*\\d",
+    "\\bms\\b",
+    "\\$\\s?\\d",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "\\bKafka\\b",
+    "\\bRedis\\b",
+    "\\bPostgres\\b",
+    "\\bOpenAI\\b",
+    "\\bDynamoDB\\b",
+    "\\bSageMaker\\b",
+    "\\bRekognition\\b",
+    "us-east",
+    "eu-west"
+  ]
+}

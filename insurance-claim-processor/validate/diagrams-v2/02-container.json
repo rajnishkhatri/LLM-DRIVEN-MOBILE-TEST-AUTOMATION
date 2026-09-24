@@ -1,0 +1,426 @@
+{
+  "view": {
+    "id": "02-container",
+    "level": "container",
+    "title": "Insurance claim processor v2 - Container view",
+    "caption": "Opens the Claim processing system box from the Context view. Two Step Functions workflows share one package, one bucket and one AppConfig application (one quantum). The intake workflow hands each claim revision to the decision workflow asynchronously; decision records flow back as events. A watchdog turns any failed intake execution into a `batch_failed` summary and metric (M14). Edges carry numbers resolved in the edge-detail table.",
+    "direction": "down",
+    "opens": "SYS",
+    "opens_from": "01-context",
+    "completeness": "complete",
+    "overlays": "none",
+    "omitted": [
+      {
+        "label": "Amazon CloudWatch",
+        "note": "every container emits EMF metrics and logs to CloudWatch; the data-quality dashboard and alarms read them"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "UPS",
+      "kind": "external",
+      "label": "Upstream claim sources",
+      "detail": [
+        "claims-admin and FNOL exports, partner TPAs, call-recording store"
+      ]
+    },
+    {
+      "id": "OPS",
+      "kind": "actor",
+      "label": "Intake operations"
+    },
+    {
+      "id": "DQO",
+      "kind": "actor",
+      "label": "Data-quality owner"
+    },
+    {
+      "id": "ADJ",
+      "kind": "actor",
+      "label": "Claims adjuster"
+    },
+    {
+      "id": "EB",
+      "kind": "container",
+      "label": "Event routing",
+      "technology": "Amazon EventBridge",
+      "detail": [
+        "rules: intake CSV objects; decision-record objects; failed intake executions (M14)",
+        "at-least-once delivery; consumers dedupe (ADR 0017)"
+      ]
+    },
+    {
+      "id": "IWF",
+      "kind": "container",
+      "label": "Intake workflow",
+      "technology": "AWS Step Functions (Standard)",
+      "detail": [
+        "one execution per batch; Map over claims, Parallel over sources",
+        "inline Map ≤ 50 claims; Distributed Map (a Standard child execution per claim) for 51–200 (M14)",
+        "batches > 200 rows are quarantined at admission (ADR 0019)",
+        "one orchestrator retry layer with full jitter (ADR 0016)"
+      ]
+    },
+    {
+      "id": "ISTEP",
+      "kind": "container",
+      "label": "Intake step function",
+      "technology": "AWS Lambda (Python, step dispatcher)",
+      "detail": [
+        "dataprep subpackage, one handler dispatching on step",
+        "role reads raw PII and cannot call Bedrock (ADR 0020)"
+      ]
+    },
+    {
+      "id": "DWF",
+      "kind": "container",
+      "label": "Decision workflow",
+      "technology": "AWS Step Functions (Standard)",
+      "detail": [
+        "v1, live; one execution per claim revision",
+        "definition changes by one pass-through only"
+      ]
+    },
+    {
+      "id": "DSTEP",
+      "kind": "container",
+      "label": "Decision step functions",
+      "technology": "AWS Lambda (Python, one zip)",
+      "detail": [
+        "v1 pipeline; reads `bundles/*` only, with an explicit Deny on `raw/*` (M6)",
+        "checks FM output against canonical intake values before routing; threshold on the canonical amount (M1)",
+        "calls Bedrock with a guardrail on every request; only claim-derived text is guardrail-checked input (H-F14-a)"
+      ]
+    },
+    {
+      "id": "CLI",
+      "kind": "container",
+      "label": "Operator CLI",
+      "technology": "Python (python -m claim_processor)",
+      "detail": [
+        "dq propose, ask, decide"
+      ]
+    },
+    {
+      "id": "S3",
+      "kind": "datastore",
+      "label": "Claim data store",
+      "detail": [
+        "Amazon S3 bucket, versioned, SSE-KMS",
+        "single-writer zones: intake, raw, processed, bundles, quality, results (ADR 0017)",
+        "revision-scoped keys `bundles/<claim_id>/r<rev>` and `processed/claims/<claim_id>/r<rev>/…` (M12)",
+        "intake contract version path `intake/v=1/…` (M3)"
+      ]
+    },
+    {
+      "id": "CAT",
+      "kind": "datastore",
+      "label": "Intake catalog",
+      "detail": [
+        "AWS Glue Data Catalog: all-string claims_intake table, one partition per batch (ADR 0019)"
+      ]
+    },
+    {
+      "id": "CFG",
+      "kind": "datastore",
+      "label": "Configuration store",
+      "detail": [
+        "AWS AppConfig: model-selection and data-quality profiles",
+        "linear-bake deployments with rollback (ADR 0010, ADR 0022)"
+      ]
+    },
+    {
+      "id": "BR",
+      "kind": "external",
+      "label": "Amazon Bedrock",
+      "detail": [
+        "Converse + Guardrails"
+      ]
+    },
+    {
+      "id": "CMP",
+      "kind": "external",
+      "label": "Amazon Comprehend",
+      "detail": [
+        "sync Detect APIs, chunked to documented limits"
+      ]
+    },
+    {
+      "id": "TXT",
+      "kind": "external",
+      "label": "Amazon Textract",
+      "detail": [
+        "AnalyzeDocument QUERIES"
+      ]
+    },
+    {
+      "id": "TRS",
+      "kind": "external",
+      "label": "Amazon Transcribe",
+      "detail": [
+        "batch jobs, redacted output only"
+      ]
+    },
+    {
+      "id": "GDQ",
+      "kind": "external",
+      "label": "AWS Glue Data Quality",
+      "detail": [
+        "ruleset evaluation runs"
+      ]
+    },
+    {
+      "id": "DLQ",
+      "kind": "container",
+      "label": "Trigger dead-letter queue",
+      "technology": "Amazon SQS",
+      "detail": [
+        "holds intake start events Event routing could not deliver (M14)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "UPS",
+      "to": "S3",
+      "kind": "sync",
+      "label": "",
+      "ref": 1,
+      "detail": "Upstream claim sources write raw claim artifacts first, then the intake CSV last (manifest-last commit)."
+    },
+    {
+      "from": "S3",
+      "to": "EB",
+      "kind": "async",
+      "label": "",
+      "ref": 2,
+      "detail": "The claim data store emits Object Created events for intake CSVs and for decision records."
+    },
+    {
+      "from": "EB",
+      "to": "IWF",
+      "kind": "async",
+      "label": "",
+      "ref": 3,
+      "detail": "Event routing starts one intake execution per batch CSV."
+    },
+    {
+      "from": "IWF",
+      "to": "ISTEP",
+      "kind": "sync",
+      "label": "",
+      "ref": 4,
+      "detail": "The intake workflow invokes each intake step: admit, gates, sources, reconcile, bundle, dispatch, account."
+    },
+    {
+      "from": "ISTEP",
+      "to": "S3",
+      "kind": "sync",
+      "label": "",
+      "ref": 5,
+      "detail": "The intake step function reads the raw, intake and history zones and writes the processed, bundles and quality zones."
+    },
+    {
+      "from": "ISTEP",
+      "to": "CAT",
+      "kind": "sync",
+      "label": "",
+      "ref": 6,
+      "detail": "The intake step function registers each batch partition in the intake catalog."
+    },
+    {
+      "from": "ISTEP",
+      "to": "GDQ",
+      "kind": "async",
+      "label": "",
+      "ref": 7,
+      "detail": "The intake step function starts and polls the batch ruleset run (budgeted poll, cancel on exhaustion)."
+    },
+    {
+      "from": "GDQ",
+      "to": "S3",
+      "kind": "sync",
+      "label": "",
+      "ref": 8,
+      "detail": "Glue Data Quality reads the batch partition and writes DQ results to the quality zone."
+    },
+    {
+      "from": "ISTEP",
+      "to": "CMP",
+      "kind": "sync",
+      "label": "",
+      "ref": 9,
+      "detail": "The intake step function detects PII, entities, key phrases and sentiment through Comprehend."
+    },
+    {
+      "from": "ISTEP",
+      "to": "TXT",
+      "kind": "sync",
+      "label": "",
+      "ref": 10,
+      "detail": "The intake step function analyzes police-report and estimate images through Textract QUERIES."
+    },
+    {
+      "from": "ISTEP",
+      "to": "TRS",
+      "kind": "async",
+      "label": "",
+      "ref": 11,
+      "detail": "The intake step function starts and polls redacted transcription jobs."
+    },
+    {
+      "from": "TRS",
+      "to": "S3",
+      "kind": "async",
+      "label": "",
+      "ref": 12,
+      "detail": "Transcribe writes redacted transcripts to the transcripts zone."
+    },
+    {
+      "from": "ISTEP",
+      "to": "CFG",
+      "kind": "sync",
+      "label": "",
+      "ref": 13,
+      "detail": "The intake step function reads the data-quality configuration (last-known-good on failure)."
+    },
+    {
+      "from": "ISTEP",
+      "to": "DWF",
+      "kind": "async",
+      "label": "",
+      "ref": 14,
+      "detail": "The intake step function starts one decision execution per claim revision, named `claim-<id>-r<rev>`, passing the bundle key plus its S3 VersionId (M12), and does not wait for it."
+    },
+    {
+      "from": "DWF",
+      "to": "DSTEP",
+      "kind": "sync",
+      "label": "",
+      "ref": 15,
+      "detail": "The decision workflow invokes each decision step."
+    },
+    {
+      "from": "DSTEP",
+      "to": "S3",
+      "kind": "sync",
+      "label": "",
+      "ref": 16,
+      "detail": "The decision step functions read bundles and write results and pending-review records."
+    },
+    {
+      "from": "DSTEP",
+      "to": "BR",
+      "kind": "sync",
+      "label": "",
+      "ref": 17,
+      "detail": "The decision step functions extract and summarize through Converse with a guardrail."
+    },
+    {
+      "from": "DSTEP",
+      "to": "CFG",
+      "kind": "sync",
+      "label": "",
+      "ref": 18,
+      "detail": "The decision step functions read model-selection configuration and flags."
+    },
+    {
+      "from": "EB",
+      "to": "ISTEP",
+      "kind": "async",
+      "label": "",
+      "ref": 19,
+      "detail": "Event routing delivers decision-record events to the intake feedback step."
+    },
+    {
+      "from": "DQO",
+      "to": "CLI",
+      "kind": "sync",
+      "label": "",
+      "ref": 20,
+      "detail": "The data-quality owner runs dq propose in the operator CLI."
+    },
+    {
+      "from": "CLI",
+      "to": "S3",
+      "kind": "sync",
+      "label": "",
+      "ref": 21,
+      "detail": "The operator CLI reads feedback records and writes proposals to the quality zone."
+    },
+    {
+      "from": "DQO",
+      "to": "CFG",
+      "kind": "sync",
+      "label": "",
+      "ref": 22,
+      "detail": "The data-quality owner deploys an approved data-quality configuration version."
+    },
+    {
+      "from": "OPS",
+      "to": "S3",
+      "kind": "sync",
+      "label": "",
+      "ref": 23,
+      "detail": "Intake operations review quarantine records in the quality zone."
+    },
+    {
+      "from": "ADJ",
+      "to": "CLI",
+      "kind": "sync",
+      "label": "",
+      "ref": 24,
+      "detail": "The claims adjuster asks questions about a claim bundle through the operator CLI."
+    },
+    {
+      "from": "CLI",
+      "to": "BR",
+      "kind": "sync",
+      "label": "",
+      "ref": 25,
+      "detail": "The operator CLI answers adjuster questions through multi-turn Converse with a guardrail."
+    },
+    {
+      "from": "IWF",
+      "to": "EB",
+      "kind": "async",
+      "label": "",
+      "ref": 26,
+      "detail": "Step Functions emits the intake workflow's execution status-change events to Event routing (M14)."
+    },
+    {
+      "from": "EB",
+      "to": "ISTEP",
+      "kind": "async",
+      "label": "",
+      "ref": 27,
+      "detail": "Event routing routes FAILED, TIMED_OUT and ABORTED intake executions to the intake step function for failed-batch accounting: a `batch_failed` summary plus the `BatchFailed{Status}` metric (M14)."
+    },
+    {
+      "from": "EB",
+      "to": "DLQ",
+      "kind": "async",
+      "label": "",
+      "ref": 28,
+      "detail": "Event routing sends intake start events it could not deliver to the trigger dead-letter queue (M14)."
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.9",
+    "\\bSLA\\b:?\\s*\\d",
+    "\\bms\\b",
+    "\\$\\s?\\d",
+    "\\bAzure\\b",
+    "\\bGCP\\b",
+    "\\bKafka\\b",
+    "\\bRedis\\b",
+    "\\bPostgres\\b",
+    "\\bOpenAI\\b",
+    "\\bDynamoDB\\b",
+    "\\bSageMaker\\b",
+    "\\bRekognition\\b",
+    "us-east",
+    "eu-west"
+  ]
+}

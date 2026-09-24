@@ -184,3 +184,233 @@ Stop sequences / JSON-mode where the model supports structured output
    vs AgentCore Runtime.
 
 Advance → **arch-decide** (record) → **aws-ai-design**.
+
+---
+
+## v2 addendum — data-preparation plane (2026-09-23)
+
+**VP-ready one-liner:** *Managed AI services read the claim, code checks the
+facts, and the foundation model only judges what is left. Nothing it sees
+carries a raw SSN.*
+
+Design-time only; no AWS calls; `aws_profile` stays `<none>`.
+**GATE: RATIFIED 2026-09-23 ("ratify as recommended" — design/hld-v2-data-prep.md §6; was PENDING HUMAN)** (provisional batch, A2-a). R3 ratified
+each axis as drafted: capability class per need, service per need,
+approach/model, cost ceiling. Notes on the ratified amendments: §8.
+**Fixed input C3-a:** Glue Data Quality, Comprehend, Textract, Transcribe,
+Lambda. **No** SageMaker, **no** Rekognition.
+This addendum records *why*, the feasibility envelope, and the losers; it
+does not reopen C3-a.
+**Stakes:** high. The data feeds an insurer's payout decision, and the new
+inputs (voice, police reports) are PII-dense.
+**Constitution:** the workspace AI constitution is `<none>`, so no model-access
+or residency rule pre-eliminates an option. `us-east-1` stays pinned
+(ledger).
+
+### 1. Decision-readiness (v2)
+
+| Input | State |
+|---|---|
+| Capability wanted | Validate structured intake batches; get entities, key phrases, sentiment and PII from narratives; OCR + key fields from police reports and repair estimates; transcribe FNOL calls with PII redaction; loss-run table → text; format all of it for Claude; improve DQ from model disagreement |
+| Data available | **Synthetic only** (spec §3): CSV batches, narratives, one-page document PNGs (stdlib PDF → `sips`), 16 kHz WAV calls (`say`), a loss-run CSV. No labeled training set for any custom model. |
+| Latency / throughput | Back-office **batch**; minutes per batch acceptable. SLO **`needs-input`**. |
+| Volume / shape | PoC: 16 rows, ≤ 11 processed claims, ≤ 3 calls, ≤ 8 images. Production volume and CAT burst: **`needs-input`**. |
+| Budget ceiling | PoC: the existing **$10/month** account budget (`../build/DEPLOY-LEDGER.md:17`) covers v1 + v2. Production: **`needs-input`**. |
+| Compliance / residency | PII-dense. Transcribe redaction is configured for `en-US`; Comprehend PII detection for English. Residency: **`needs-input`** (us-east-1 pinned). AI-services content opt-out: **R8c-a**, owner action pending (§8). |
+
+`needs-input` items block *production sizing* (Textract TPS quota,
+Transcribe concurrency, batch size). They do not block the service choices,
+which are driven by capability, integrity and privacy.
+
+### 2. Capability classification (per need)
+
+| Need | Class | Live contenders |
+|---|---|---|
+| N1 Batch structural validation | **Not AI** — data engineering (rule evaluation over a table) | Glue DQ · Lambda-only rules · Deequ / Great Expectations |
+| N2 Narrative NLP (entities, phrases, sentiment, PII, language) | **Managed NLP service** | Comprehend · FM (Claude) doing NLP in the extraction call · Bedrock Guardrails sensitive-info filter (PII only) |
+| N3 Document OCR + key fields | **Managed perception** | Textract (AnalyzeDocument QUERIES / AnalyzeExpense) · Claude vision alone (image blocks) · Bedrock Data Automation |
+| N4 Call transcription + PII redaction | **Managed speech** | Transcribe standard batch + ContentRedaction · Transcribe Call Analytics |
+| N5 Loss-run table → text | **Not AI** — deterministic template | Lambda template · FM summarization · SageMaker Processing (**excluded, C3-a**) |
+| N6 Formatting for Claude + dialog | **Generative FM interface** (unchanged v1 branch) | Converse image blocks · Converse `document` blocks (PDF) |
+| N7 Themes across a batch | **Aggregation of N2 output** | Key-phrase / entity aggregation · Comprehend topic modeling (async) · FM clustering |
+| N8 Feedback proposals | **Not AI** — deterministic pattern + replay | Bounded proposal set · FM-generated rules (**rejected: unbounded**) |
+
+The customization ladder (`cases/aws-ai/ch10.md:47-61`) **stays at the
+prompt rung**. Custom Comprehend entity recognition, Textract adapters and
+Transcribe custom language models each need **labeled training data we do not
+have**. That is the same standalone knockout as fine-tuning in §2. Structured
+IDs (policy number, VIN) are handled by the deterministic canonicalizer
+instead.
+
+### 3. Service-selection matrices (contested needs)
+
+Rows = v2 driving characteristics (+ operational burden, data gravity).
+● strong / ◐ mixed / ○ weak. All $ are **[re-verify]**.
+
+**N2 — narrative NLP**
+
+| Characteristic | **Comprehend** (sync Detect*) | Claude (NLP inside the extraction call) | Guardrails sensitive-info filter (PII only) |
+|---|---|---|---|
+| Data integrity | ● fixed types + calibrated scores; deterministic enough to reconcile | ◐ flexible domain entities (VIN, peril), but no calibrated confidence; output varies run to run | n/a (PII only) |
+| Privacy | ● `DetectPiiEntities` returns **offsets + types**, so redaction uses typed placeholders *before* persistence | ○ the FM sees the raw PII first — the step we are trying to precede | ◐ masks at the FM boundary (already on in v1); can run standalone via ApplyGuardrail; less offset detail **[re-verify]** |
+| Auditability | ● per-entity score and offsets recorded | ◐ prompt/response logged; no per-field score | ◐ intervention record |
+| Reliability | ◐ 5 KB sentiment cap forces chunking (P-h); throttling under fan-out | ◐ one more FM call; throttling shared with extraction | ● |
+| Testability | ● Stubber per API | ● Stubber | ● |
+| Observability | ● per-type counts | ◐ | ◐ |
+| Cost | ● per 100-char unit, cheap at narrative sizes **[re-verify]** | ○ tokens × every claim, plus a reasoning tax | ◐ per text unit **[re-verify]** |
+| Operational burden | ● serverless | ● | ● |
+
+→ **Comprehend** for NLP signals and PII detection. Claude keeps the
+five-field extraction (v1). The Guardrail stays as **defense in depth** at
+the FM boundary.
+The loser was sunk by **privacy**: NLP inside the FM means the model sees
+raw PII before anything can redact it.
+
+**N3 — documents (police report, repair estimate)**
+
+| Characteristic | **Textract AnalyzeDocument QUERIES** (+ images to Claude) | Claude vision only | Bedrock Data Automation (blueprints) | Textract AnalyzeExpense (estimates) |
+|---|---|---|---|---|
+| Data integrity | ● per-answer **confidence** gates reconciliation (U5); lines give deterministic OCR | ◐ holistic reading; no confidence, so it cannot gate reconciliation | ● blueprint fields + confidence | ● invoice-native TOTAL / line items |
+| Privacy | ◐ OCR text persisted → must pass Redact Sensitive Data | ◐ no OCR text persisted, but the image goes to the FM | ◐ | ◐ |
+| Auditability | ● answer + confidence + page | ○ "the model said so" | ● | ● |
+| Reliability | ◐ sync API; low default TPS in some regions → throttle risk **[re-verify quotas]** | ◐ shares FM throttle | ◐ async jobs | ◐ |
+| Testability | ● Stubber | ● | ◐ job shapes | ● |
+| Cost | ◐ Queries are priced above plain text detection **[re-verify]** | ● image tokens only (~w×h/750 per image for Claude **[re-verify]**) | ◐ per page/asset **[re-verify]** | ◐ **[re-verify]** |
+| Scope fit (C3-a) | ● named service | ● (v1 ADR 0006 path) | ○ **not a named service** (deferred, D-D) | ● named service |
+
+→ **Textract AnalyzeDocument QUERIES for both document types, AND images to
+Claude.** They are complementary, not redundant:
+- Textract supplies confidence-gated facts for deterministic reconciliation
+  (integrity, audit).
+- Claude reads the page holistically for extraction.
+
+Knobs:
+- *Upgrade:* use **AnalyzeExpense** for repair estimates with line items
+  (a second parser; deferred until estimates are real invoices).
+- *Cost lever* → now a rule (**M6**): an image goes to the FM only when OCR
+  confidence is insufficient **and** no PII was found in that document;
+  otherwise the blocking flag `image_withheld:pii`. This narrows "images to
+  Claude" above and lowers image-token cost (§8).
+- *Alternative:* Converse `document` blocks (PDF ≤ 4.5 MB, ≤ 5 per request —
+  P-c) instead of PNG image blocks. Rejected for now because Textract and
+  Claude should read the *same* artifact (lineage).
+
+### 4. Other needs — pick and the characteristic that sank each loser
+
+| Need | Pick | Losers → sinking characteristic |
+|---|---|---|
+| N1 Batch validation | **Glue DQ (DQDL) as the batch gate + Lambda row gate**, one rule catalog (SD-1) | *Lambda-only* → **observability** (no DQ result history, no managed ruleset evaluation, no published DQ metrics). *Great Expectations / PyDeequ* → **testability / R1** (a new pip dependency or Spark ops). *Crawler per batch* → **integrity** (it infers types from dirty data) + ~1–2 min latency. *Glue DQ rule recommendations* → keep as an **optional one-time bootstrap** that profiles the synthetic batch, never on the hot path. |
+| N4 Calls | **Transcribe standard batch + ContentRedaction (redacted output only)** | *Call Analytics* → **cost** for the PoC **[re-verify]**; it is the upgrade path (native turn sentiment, issue detection) that would replace Comprehend-on-turns. *Claude* → no audio input on Converse (Nova Sonic is speech-to-speech, not batch transcription) **[re-verify]**. *Whisper on SageMaker* → excluded, C3-a (idle-endpoint trap). |
+| N5 Loss runs → text | **Deterministic Lambda template** | *FM summary* → **integrity**: a hallucinated count or amount in an SIU-relevant summary is a defect. Numbers come from code, prose from templates. *SageMaker Processing* → excluded, C3-a (ml.m5.xlarge for kilobytes). |
+| N6 Formatting | **Converse** (v1 ADR 0001 / 0011): text sections + image blocks (≤ 20 × ≤ 3.75 MB, user role — P-c); `adjuster_dialog` multi-turn | *Legacy `invoke_model` completions* → correctness (named antipattern). Knob: **Bedrock prompt caching** on the repeated bundle context in multi-turn dialog **[re-verify model support]**. |
+| N7 Themes | **Aggregate Comprehend key phrases / entity types** | *Topic modeling* → **cost + feasibility** (async job; a 16-row corpus is far below useful size). *FM clustering* → **auditability** (non-reproducible themes). |
+| N8 Proposals | **Bounded proposal set + deterministic replay** (C4-a) | *FM-generated rules / regex* → **auditability + integrity** (unbounded change surface). |
+
+### 5. Approach and model (v2)
+
+- **FM usage stays two-legged** (v1): extraction on a capable model, summary
+  on a cheaper one (examples in §4 of the v1 brief; **resolve ids with
+  `list_inference_profiles`**, never hard-code them).
+- New FM uses:
+  - multimodal extraction over the bundle (same extraction model, now with
+    image blocks);
+  - `adjuster_dialog` (the cheaper model is enough; prompt-caching knob).
+- **Deterministic-first:** N1, N5, N7 and N8 use no FM at all. The FM is
+  reserved for judgment over conflicting or unstructured evidence.
+- **Service API choices** (examples to re-verify; the API surfaces were
+  verified in botocore this session — spec P-h, P-i, P-k):
+  - Comprehend `DetectPiiEntities`, `DetectEntities`, `DetectKeyPhrases`,
+    `BatchDetectSentiment`, `DetectDominantLanguage`;
+  - Textract `AnalyzeDocument(FeatureTypes=["QUERIES"])`;
+  - Transcribe `StartTranscriptionJob(ContentRedaction=…)`;
+  - Glue `StartDataQualityRulesetEvaluationRun` with `pushDownPredicate`.
+
+### 6. Feasibility envelope (PoC; every figure **[re-verify]** at DP-24 before upload — spec AC-Z10)
+
+Per smoke run (≤ 11 processed claims, 3 calls ≤ 60 s, ≤ 8 images, 2 batches):
+
+| Service | Order of magnitude | Driver |
+|---|---|---|
+| Glue DQ | cents per run | ~2 G.1X workers × a few minutes incl. Spark start-up; per-second billing with a minimum **[re-verify]** |
+| Comprehend | ~1 cent per claim | ≈ 5 APIs × tens of 100-char units, 3-unit minimum per request **[re-verify]** |
+| Textract Queries | ~1–2 cents per page | 8 pages **[re-verify]** |
+| Transcribe | ~2–3 cents per minute | 3 minutes **[re-verify]** |
+| Bedrock | ~2–4 cents per claim | 3–6 k input tokens + ~650 tokens per page image, plus the summary **[re-verify]** |
+| Lambda / SFN / S3 / EventBridge | fractions of a cent | a few hundred state transitions |
+| CloudWatch custom metrics (EMF) | cents for the smoke, **cardinality-driven** | Billed per unique name × dimension set (prorated) **[re-verify]**. The ≤ 2-dimension rule with no `claim_id` (spec AC-Y1) is the cost control. |
+
+**Total ≈ $1–2 per full smoke, including margin.** That is well inside the
+$10 budget, and the budget alarm exists. Production $/claim (excluding the FM)
+is dominated by Textract pages and Transcribe minutes; including the FM, image
+tokens dominate. This is sized once volume is stated (`needs-input`).
+
+Latency: the batch gate adds ~1–3 min (Spark start-up). A claim with a call
+takes about its audio duration plus queueing **[re-verify]**; a claim without
+one takes seconds. Fine for batch; an interactive FNOL SLO would need
+revisiting.
+
+**AI-specific risks handed to arch-risk:**
+1. **Throttling under Map fan-out.** Textract's default TPS is the tightest
+   quota **[re-verify per region]**. Comprehend is shared across narratives
+   and turns.
+2. **Detector recall.** PII the detectors miss would be persisted. Keep
+   defense in depth (Comprehend + Transcribe redaction + Guardrail).
+3. **ASR errors** on accents or noisy calls. That is why the transcript is
+   **context, not a reconciliation source** (deliberate).
+4. **The FM "resolves" conflicts silently** when the bundle carries
+   disagreeing values. Reconciliation flags force review.
+5. **Model / id deprecation** — carried over from v1.
+
+### 7. Least-worst picks, per axis (ratified as drafted, R3)
+
+| Axis | Recommendation |
+|---|---|
+| Capability class | **Managed perception + NLP services + deterministic code**. The FM only for multimodal extraction, summary and dialog. |
+| Services | Glue DQ · Comprehend · Textract (QUERIES) · Transcribe (standard + redaction) · Lambda · Bedrock Converse (v1) |
+| Approach | Prompt rung (no custom models: no labels); deterministic-first; confidence-gated reconciliation; defense-in-depth PII |
+| Cost ceiling | PoC: the existing $10/month budget (v1 + v2). Production: **`needs-input`** |
+
+**ADR candidates (arch-decide)** — now recorded in ADRs 0016–0022, Accepted
+2026-09-23:
+1. The v2 service set and "deterministic-first, FM-last" principle (the
+   service half of ADR 0016).
+2. Batch DQ engine: Glue DQ + Lambda row gate + single rule catalog vs
+   Lambda-only.
+3. Document path: Textract QUERIES **and** images to Claude vs Claude vision
+   only vs BDA.
+4. PII minimization point: typed redaction before persistence (Comprehend) vs
+   the Guardrail at the FM boundary only.
+5. Transcription tier: standard + redaction vs Call Analytics.
+
+Advance → **arch-style** (quantum / sync-async), then **arch-decide**.
+
+### 8. Notes on the ratified amendments (2026-09-23)
+
+Folded from `../design/hld-v2-fold-map.md`. No axis in §7 changes.
+
+- **R8c-a (M7): AI-services content opt-out.** Opt out of content use for
+  **all** AWS AI services through an AWS Organizations AI-services opt-out
+  policy. AWS's supported list includes Comprehend, Textract, Transcribe and
+  Glue. **Bedrock is not on it**, because Bedrock does not use content for
+  service improvement. Both facts were checked against the AWS Organizations
+  docs on 2026-09-23 (ADR 0020) **[re-verify]**. The owner performs the
+  opt-out: **owner action pending** until verified with
+  `aws organizations describe-effective-policy --policy-type AISERVICES_OPT_OUT_POLICY --target-id <account>`
+  (`../build/DEPLOY-LEDGER.md` "Stage A"). Until then: synthetic data only.
+- **H-F14-a: images are not guardrail-checked.** Claim-derived text travels in
+  Converse `guardContent`; images travel as plain `image` blocks. That loses
+  nothing today: the guardrail's prompt-attack filter is TEXT-only and its
+  harmful-content filters are off (verified with `get-guardrail`,
+  2026-09-23). Integrity against image-borne prompt injection comes from
+  **M1** (the pre-routing check against canonical values) + routing on the
+  canonical amount + deterministic routing. The Guardrail's "defense in
+  depth" (N2; §6 risk 2) therefore covers text, not images. Whether the
+  prompt-attack filter supports images at all is **[re-verify]**.
+- **M6 lowers image-token cost.** An image reaches the FM only when OCR
+  confidence is insufficient and no PII was found in that document (the N3
+  cost lever). Image tokens dominate $/claim once the FM is included (§6).
+- **M14 adds Amazon SQS** (the trigger dead-letter queue), a new AWS service.
+  It adds no AI service, so C3-a stands. Under the approval criteria
+  (**R7q-a**, `../adrs/approval-criteria.md`), adding a service is trigger 3,
+  so ADR 0016 is on the go-live review list: a named security / privacy
+  reviewer signs it off before any real claim data.

@@ -23,6 +23,7 @@ Env (all optional; defaults match DEPLOY.md §1):
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 from typing import Any, Callable
@@ -36,6 +37,10 @@ from claim_processor.prompts import PromptTemplateManager
 from claim_processor.rag import PolicyRetriever
 from claim_processor.store import S3DocumentStore
 from claim_processor.validator import ContentValidator
+
+# F16: Lambda's root logger sits at WARNING, which silently drops every
+# INFO-level EMF record — no metrics, no alarms (ADR 0015 / AC-Q1).
+logging.getLogger("claim_processor").setLevel(logging.INFO)
 
 _DEFAULT_POLICY_DIR = Path(__file__).resolve().parent.parent / "samples" / "policies"
 

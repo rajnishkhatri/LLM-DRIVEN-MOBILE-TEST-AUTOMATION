@@ -224,6 +224,26 @@ whose output lands in `$.hitl` for `Record` to apply. 293 offline tests OK.
 | Known noise | each parked claim sends TWO "needs review" emails (pending record + token file both match the `pending-review/` rule) |
 | Leftovers | token files are not deleted on resume (lab-acceptable; clear at teardown) |
 
+## Stage 12 — F16 + the ADR 0015 alarms  ✅ 2026-09-26 (repo fix + owner-run deploy)
+
+**Finding F16** (commit `176d422`): `emit_metric` logs at INFO but nothing ever
+raised the package logger above root's WARNING default — every EMF record died
+in-process, the `ClaimProcessor` namespace was empty, the metrics plane was
+silently off since Stage 5. `lambda_entry` now sets the `claim_processor`
+logger to INFO at import. 295 offline tests OK.
+
+| Item | Value |
+|---|---|
+| Code refresh | all 8 functions → CodeSha256 `kpO8lggKSmz+XUOz+qhwJjQA9TYJvO/vRopM8Rgdvqs=` |
+| Metrics proof | `claims/metrics-test-1.txt` run → `LatencyMs {ModelId=…sonnet-4-5…, Outcome=ok}` appeared in namespace `ClaimProcessor` (EMF auto-extraction, no PutMetricData) |
+| Topic | `claim-processor-remediation` + owner email sub (F10 remediation Lambda subscribes here later) |
+| Alarm `claim-processor-ModelErrorRate` | metric math: `100*(throttled+timed_out+invalid)/(errors+ok calls)` on the extract model, zero-FILLed, ≥ 50% / 5 min — same threshold as the breaker's `open_threshold`; guardrail interventions deliberately excluded (walls working ≠ model failing); no traffic → division by zero → INSUFFICIENT_DATA (honest) |
+| Alarm `claim-processor-LatencyP99` | p99 `LatencyMs[sonnet, ok]` > 20 s / 5 min |
+| Alarm `claim-processor-CostPerClaim` | avg `CostUsd[sonnet]` > $0.10 / 5 min — inert (INSUFFICIENT_DATA) until `flags.cost_per_1k_tokens_usd` > 0, as DEPLOY.md §2 documents |
+| Wiring | ALARM + OK + INSUFFICIENT_DATA actions all → the remediation topic (recovery transitions drive the future breaker close, AC-N4) |
+| Wire proof | `ModelErrorRate` INSUFFICIENT_DATA → OK on the metrics-test traffic → SNS email |
+| Standing cost | first non-zero idle cost since the NAT teardown: 3 alarms ≈ $0.60/mo (metric-math alarm bills per metric analyzed) |
+
 ## Teardown checklist (do at the end)
 - [ ] Remove EventBridge targets + rules `claim-uploaded`, `pipeline-failed`, `claim-needs-review`; delete role `claim-processor-events-role`
 - [ ] Delete state machine, Lambdas, alarms, SNS topic `claim-processor-notifications` (+ email sub), AppConfig app, guardrail

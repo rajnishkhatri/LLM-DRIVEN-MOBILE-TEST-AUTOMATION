@@ -114,3 +114,21 @@ Append-only. Newest last. Index: [`index.md`](index.md).
 - 2026-09-24 — **LLD FINAL.** The owner signed off
   `../design/lld-v2-data-prep.md` ("LLD signed off"). Next: the spec
   revision with sdd-spec, from `../design/spec-v2-handover.md`.
+- 2026-09-24 — **v2 spec revision APPROVED (`SPEC-OK`).** The owner approved
+  the revised `../specs/claim-processor-data-prep.spec.md`: 88 EARS criteria
+  (S9–Z37) derived from the FINAL LLD by reference (EA-a), failure paths
+  first, the 59 pre-LLD draft ACs dispositioned (CL2-a). Session framing:
+  LY-b (spec file + tasks file, two gates), WV-a waves, PW-a (parallel build
+  in file-disjoint git worktrees, merged back behind the offline gate), DW-a
+  (manual deploy with a v1-depth walkthrough); clarify CL1-a – CL5-a. No ADR
+  changed. Next: the tasks file → `TASKS-OK`, then sdd-implement in a fresh
+  session.
+- 2026-09-24 — **v2 tasks APPROVED (`TASKS-OK`; LY-b kept).** The owner
+  approved `../plans/claim-processor-data-prep.tasks.md`: 46 tasks
+  (DP-30 – DP-75) in six waves, the PW-a worktree/merge protocol (merge gate
+  = `build/tools/pre-commit.sh`, CL4-a), three `[owner]` tasks, the DW-a
+  walkthrough (DP-71), and Wave 5 as the owner's manual deploy. Coverage:
+  88/88 criteria both ways, 49/49 G rows (TST-03 as backstop); Stage-4
+  analyze passed; baselines green (288 OK / 1 skipped; skill-sync exit 0).
+  sdd-spec Stages 2–4 are complete. Next: sdd-implement in a fresh session,
+  Wave 0 first.

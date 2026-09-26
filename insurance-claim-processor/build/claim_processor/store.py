@@ -30,6 +30,23 @@ def get_pending_review(
     return json.loads(store.get_text(bucket, pending_review_key(claim_key)))
 
 
+def pending_token_key(claim_key: str) -> str:
+    """Task token beside the parked claim — what the reviewer reads to resume (F2)."""
+    return f"pending-review/{claim_key}.token.json"
+
+
+def put_pending_token(
+    store: DocumentStore, bucket: str, claim_key: str, payload: dict[str, Any]
+) -> None:
+    store.put_json(bucket, pending_token_key(claim_key), payload)
+
+
+def get_pending_token(
+    store: DocumentStore, bucket: str, claim_key: str
+) -> dict[str, Any]:
+    return json.loads(store.get_text(bucket, pending_token_key(claim_key)))
+
+
 class LocalDocumentStore:
     """Filesystem stand-in so the PoC runs with no AWS account."""
 

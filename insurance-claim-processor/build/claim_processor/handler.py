@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from claim_processor.models import ValidationResult
 from claim_processor.pipeline import ClaimPipeline, _merge_guardrail
 from claim_processor.review import apply_decision
+from claim_processor.store import pending_token_key, put_pending_token
 
 
 class MissingPipelineError(TypeError):
@@ -113,6 +115,36 @@ def retrieve_summarize(
     merged["validation"] = _validation_dict(validation)
     merged["route"] = pipe.route(result)
     return merged
+
+
+def await_review(
+    event: dict[str, Any],
+    context: Any = None,
+    *,
+    pipeline: ClaimPipeline | None = None,
+) -> dict[str, Any]:
+    """AwaitReview (waitForTaskToken, F2): persist the task token beside the
+    parked claim so a reviewer can resume the execution with SendTaskSuccess.
+    The return value is discarded — `$.hitl` is filled by the reviewer's
+    task output, not by this function.
+    """
+    pipe = _require_pipeline(pipeline)
+    token = event.get("token")
+    if not token:
+        raise KeyError("token")  # the ASL passes $$.Task.Token; without it the claim can never resume
+    bucket, key = event["bucket"], event["key"]
+    put_pending_token(
+        pipe.store,
+        bucket,
+        key,
+        {
+            "task_token": token,
+            "bucket": bucket,
+            "claim_key": key,
+            "parked_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    return {"parked": True, "token_key": pending_token_key(key)}
 
 
 def record(

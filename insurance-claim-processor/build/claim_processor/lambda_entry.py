@@ -127,6 +127,7 @@ understand_extract = _entry(handler.understand_extract)
 degraded_extract = _entry(handler.degraded_extract)
 validate = _entry(handler.validate)
 retrieve_summarize = _entry(handler.retrieve_summarize)
+await_review = _entry(handler.await_review)
 record = _entry(handler.record)
 expire_review = _entry(handler.expire_review)
 

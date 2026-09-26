@@ -7,7 +7,7 @@ tags: [system-design-patterns, communication, webhooks, callbacks, integration]
 
 # Webhooks and callbacks
 
-**See also:** [request–response](RequestResponse.md) · [pub/sub & queues](PubSubQueues.md) · [WebSocket](WebSockets.md) · [SSE](ServerSentEvents.md) · [retry](RetryBackoff.md) · [idempotency](Idempotency.md) · [timeouts](TimeoutsDeadlines.md) · [API gateway](ApiGateway.md) · [event-driven dataflow (DDIA)](../data-intensive-design/event-driven-dataflow.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/a5-webhooks-external-research.md)
+**See also:** [request–response](RequestResponse.md) · [pub/sub & queues](PubSubQueues.md) · [WebSocket](WebSocket.md) · [SSE](ServerSentEvents.md) · [retry](RetryBackoff.md) · [idempotency](Idempotency.md) · [timeouts](TimeoutsDeadlines.md) · [API gateway](ApiGateway.md) · [event-driven dataflow (DDIA)](../data-intensive-design/event-driven-dataflow.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/a5-webhooks-external-research.md)
 
 A webhook is an event pushed **across a trust boundary** as a plain HTTP POST: the producer owns delivery and retries, the receiver owns an internet-facing endpoint and everything that implies. It is [pub/sub](PubSubQueues.md) with HTTP as the broker — ack becomes a status code, the DLQ becomes the producer's redelivery backlog, and authentication becomes cryptography because the caller is someone else's system. Quality attributes: **integration reach** (any HTTPS endpoint is a subscriber) and **latency** versus polling. Costs: at-least-once and unordered by contract, a public attack surface, and two parties who must each hold up their half.
 
@@ -17,7 +17,7 @@ A webhook is an event pushed **across a trust boundary** as a plain HTTP POST: t
 
 **Fowler 2017** (Event Notification vs Event-Carried State Transfer) is the thin-vs-snapshot split: thin events carry ids and force an [A1 GET](RequestResponse.md); snapshots carry state and are larger on every delivery. Stripe now ships both, chosen per destination.
 
-**AWS Architecture Blog (Gerring 2021)** places the three async shapes: poll the created resource, webhook (server-to-server), [WebSocket](WebSockets.md) (browser). Nygard's Integration Points apply per destination: every callback has its own timeout and retry.
+**AWS Architecture Blog (Gerring 2021)** places the three async shapes: poll the created resource, webhook (server-to-server), [WebSocket](WebSocket.md) (browser). Nygard's Integration Points apply per destination: every callback has its own timeout and retry.
 
 ## Wire semantics
 
@@ -181,7 +181,7 @@ Fetched 2026-09-13. Library *tolerance constants* from published docs / source.
 
 | Situation | Prefer |
 |---|---|
-| Browser or mobile client, bidirectional, sub-second | [WebSocket](WebSockets.md). Slack's own alternative is Socket Mode. |
+| Browser or mobile client, bidirectional, sub-second | [WebSocket](WebSocket.md). Slack's own alternative is Socket Mode. |
 | Browser, one-way stream | [SSE](ServerSentEvents.md) |
 | High-volume *internal* fan-out, ordering, competing consumers, DLQ | [Broker](PubSubQueues.md) / [event-driven dataflow](../data-intensive-design/event-driven-dataflow.md) |
 | Client cannot host a public HTTPS endpoint | Poll the [A1](RequestResponse.md) resource, or a bus (Stripe EventBridge, Shopify Pub/Sub) |

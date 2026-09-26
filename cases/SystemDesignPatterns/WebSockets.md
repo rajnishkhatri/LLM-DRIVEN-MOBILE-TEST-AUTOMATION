@@ -1,13 +1,18 @@
 ---
 type: reference
 title: 'WebSocket communication'
-description: 'Full-duplex messaging over one long-lived connection: RFC 6455 mechanics (masking rationale, control frames, the close-code map), h2/h3 status and nginx’s refusal, the 20-to-30-second heartbeat rule, stateless scaling with pub/sub backplanes, verified managed quotas (API Gateway 10 min/2 h/32 KB/128 KB), bufferedAmount backpressure, deflate memory costs, browser auth patterns, and when a socket is the wrong tool.'
-tags: [system-design-patterns, communication, websocket, realtime]
+description: >-
+  First-pass A3, superseded by WebSocket.md. Kept for the first-pass research
+  trail (RFC 6455 mechanics, nginx h2/h3 refusal, 20–30 s heartbeat, managed
+  quotas).
+tags: [system-design-patterns, communication, websocket, realtime, superseded]
 ---
 
 # WebSocket communication
 
-**See also:** [server-sent events](ServerSentEvents.md) · [timeouts](TimeoutsDeadlines.md) · [load balancing](LoadBalancing.md) · [pub/sub & queues](PubSubQueues.md) · [idempotency](Idempotency.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/websocket-external-research.md)
+**Status:** First-pass card. Canonical Concept: [WebSocket](WebSocket.md) (catalog A3). Prefer that page.
+
+**See also:** [WebSocket (canonical A3)](WebSocket.md) · [server-sent events](ServerSentEvents.md) · [timeouts](TimeoutsDeadlines.md) · [load balancing](LoadBalancing.md) · [pub/sub & queues](PubSubQueues.md) · [idempotency](Idempotency.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/websocket-external-research.md)
 
 A WebSocket turns one HTTP request into a **full-duplex, long-lived connection**: after the 101 upgrade, both sides send frames whenever they like. That buys true bidirectional push at minimal per-message cost, and it buys every long-lived-connection problem at once — heartbeats, reconnect logic, sticky load, proxy hostility, and a browser API with no headers. Quality attributes: **interactivity** (client-to-server and server-to-client without polling) and per-message **efficiency**. Costs: statefulness in a fleet designed for stateless requests, and an ecosystem — caches, gateways, [balancers](LoadBalancing.md) — built for the request-response shape you just left.
 

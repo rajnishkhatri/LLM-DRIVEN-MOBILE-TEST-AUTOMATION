@@ -15,5 +15,9 @@ breadth_read_tool  = "explore subagent"
 
 # Per-target root override: mobile-test-automation artifacts publish under
 # docs/architecture/ (same layout: worksheets/<slug>/, etc.).
+# claim-document-processor is a flattened self-contained kata: homes
+# (worksheets/, components/, adrs/, risk/) sit directly under the root,
+# with no extra slug directory.
 [roots]
 mobile-test-automation = "docs/architecture/"
+claim-document-processor = "insurance-claim-processor/"

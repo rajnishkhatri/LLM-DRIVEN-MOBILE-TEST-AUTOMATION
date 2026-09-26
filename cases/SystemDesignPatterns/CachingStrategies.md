@@ -7,9 +7,9 @@ tags: [system-design-patterns, scaling, caching]
 
 # Caching strategies
 
-**See also:** [scaling strategies](ScalingStrategies.md) · [graceful degradation](GracefulDegradation.md) · [circuit breaker](CircuitBreaker.md) · CDN & edge (catalog **B8** — HTTP cache keys, edge `stale-while-revalidate`, dynamic acceleration; not this card) · [home timeline](../data-intensive-design/home-timeline-case-study.md) · [performance](../data-intensive-design/performance.md) · [NFR references](../data-intensive-design/nfr-references.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b3-caching-external-research.md)
+**See also:** [scaling strategies](ScalingStrategies.md) · [graceful degradation](GracefulDegradation.md) · [circuit breaker](CircuitBreaker.md) · [CDN and edge (B8)](CdnEdge.md) — HTTP cache keys, edge `stale-while-revalidate`, dynamic acceleration; not this card · [home timeline](../data-intensive-design/home-timeline-case-study.md) · [performance](../data-intensive-design/performance.md) · [NFR references](../data-intensive-design/nfr-references.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b3-caching-external-research.md)
 
-This card owns the cache that sits **next to an origin** (database, service, or computed view): who loads it, how entries die, and how a popular key that expires or is evicted can stampede the origin. [B1](ScalingStrategies.md) adds *compute* capacity; this card reduces *origin* work. [B8] owns the HTTP/CDN key space. [C11](GracefulDegradation.md) owns *deliberately* serving stale while the origin is unhealthy. [C1](CircuitBreaker.md) owns the cache-down → origin flood loop.
+This card owns the cache that sits **next to an origin** (database, service, or computed view): who loads it, how entries die, and how a popular key that expires or is evicted can stampede the origin. [B1](ScalingStrategies.md) adds *compute* capacity; this card reduces *origin* work. [B8](CdnEdge.md) owns the HTTP/CDN key space. [C11](GracefulDegradation.md) owns *deliberately* serving stale while the origin is unhealthy. [C1](CircuitBreaker.md) owns the cache-down → origin flood loop.
 
 Quality attributes: **latency** (a hit skips the origin RTT), **capacity** of the origin (miss rate × client QPS), and a **freshness** contract. The costs are extra state, a new consistency window, a stampede surface, and — if the origin cannot take a flush — a hard dependency dressed as an optimization.
 
@@ -205,7 +205,7 @@ Azure Cache-Aside "not suitable" plus this pass:
 | Lock / lease / XFetch on hot keys | Extra writes, waiter latency, or wasted early recomputes |
 | Capacity cache (90% hit) | A flush is a **10×** origin event; the cache is a hard dependency |
 
-[B1](ScalingStrategies.md) decides **how to add capacity**. This card decides **how not to spend it on the origin**. [C1](CircuitBreaker.md) decides **whether to call** the origin on a miss. [C11](GracefulDegradation.md) decides **what the user gets** when the cache or the origin is unhealthy. B8 decides the **HTTP edge**. Coordinate all four; do not treat "put Redis in front" as a complete scaling strategy.
+[B1](ScalingStrategies.md) decides **how to add capacity**. This card decides **how not to spend it on the origin**. [C1](CircuitBreaker.md) decides **whether to call** the origin on a miss. [C11](GracefulDegradation.md) decides **what the user gets** when the cache or the origin is unhealthy. [B8](CdnEdge.md) decides the **HTTP edge**. Coordinate all four; do not treat "put Redis in front" as a complete scaling strategy.
 
 ## Sources
 

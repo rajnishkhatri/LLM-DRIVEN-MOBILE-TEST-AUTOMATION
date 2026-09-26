@@ -1,0 +1,107 @@
+{
+  "skill_name": "sdp-lifecycle",
+  "note": "Family-level V1 eval set for the sdp-* tactical-patterns clinic (wave 1: sdp-lifecycle router + sdp-resilience, 7 cards). The with_skill run starts at the sdp-lifecycle router and follows its routing; the baseline answers from general knowledge. Two kinds of expectation live here: GUARDS that pin a spec acceptance criterion and are expected to pass in both configurations (eval 0 #1-#2 = the T2b in-bucket killing-test, spec AC-8; eval 4 = arch-style handoff, AC-1; eval 5 = sdp<->sdd disambiguation, AC-5), and DISCRIMINATORS that measure the clinic's discipline (trade-offs and the confirming metric before prescribing; card-grounded, card-NAMED recommendations; the combination, not a silver bullet). Tightened 2026-09-14 after benchmark iteration 2 (owner decision c1): grounding expectations now require the card to be named by catalog id, because answers reproduced card content without naming the card and that ambiguity caused 5 of 6 grader disputes; eval 1 #3 accepts timeout+fallback as the lighter alternative (retrying into a minutes-long outage is the RetryBackoff card's anti-pattern); eval 4 #2 credits the owner-kept chain-into-arch-style behavior (name or load arch-style, then proceed via its method) and fails answering the style question from general knowledge; eval 7 restores the Bulkhead (C8) name-lookup case now that the card exists. Second tightening 2026-09-14 after benchmark iteration 3 (owner decision N1: apply F1-F3, no re-run): eval 0 #2 now lists all seven owned ids, tests necessity of a sibling-bucket card rather than every mention, admits C3/B3/B7 as onward pointers and is trivially satisfied by an answer naming no card (iteration 3 had failed baselines 0/3 for mentioning Saga / probe design / alerting); eval 3 #2 passes a labelled placeholder plus a stated derivation and fails only an unexplained constant (the prompt supplies no latency/SLO figure); eval 4 #2 requires arch-style to be NAMED in the answer, since loading a skill is invisible to an answer-only grader (iteration 3: all three with-skill runs loaded it, one named it).",
+  "evals": [
+    {
+      "id": 0,
+      "name": "trigger-in-bucket-t2b",
+      "target_skill": "sdp-resilience",
+      "prompt": "Our checkout service started falling over yesterday afternoon. When the payments provider gets slow, our p99 climbs and then the whole service's thread pool fills up and we start timing out on everything — even health checks. What do I actually do here?",
+      "expected_output": "Routes into the resilience clinic; identifies a cascading-failure / resource-exhaustion pattern; recommends the timeout + circuit-breaker + bulkhead combination with the confirming metric named first; names the cards it uses by id (TimeoutsDeadlines C7, CircuitBreaker C1, Bulkhead C8, LoadShedding C10); every card it names by id is an owned resilience card (C1 C2 C7 C8 C9 C10 C11); it needs no card from a sibling bucket.",
+      "expectations": [
+        "GUARD (AC-8): Routes to sdp-resilience (the symptom is diagnosed as an availability/overload failure, not sent to a messaging/data/traffic/coordination category)",
+        "GUARD (AC-8, T2b in-bucket): The answer requires no card from a sibling bucket (messaging / data / traffic / coordination) — every catalog card it names by id is one of the seven owned resilience cards (C1 C2 C7 C8 C9 C10 C11); the cross-linked FailoverHealth C3 / CachingStrategies B3 / OutboxCdc B7 may be named as onward pointers; generic ops advice that cites no card (alerting, restarts, scaling, probe wiring, an 'async retry' aside) does not count against it; an answer that names no catalog card at all satisfies this trivially",
+        "Names the combination (timeout defines fast-failure for the breaker; bulkhead isolates the pool) rather than a single silver-bullet pattern",
+        "Asks for or names the confirming signal (is the provider erroring or just slow? the p99 / saturation metric) before prescribing",
+        "Names the cards it draws on by catalog id (e.g. TimeoutsDeadlines C7, CircuitBreaker C1, Bulkhead C8) so the recommendation is addressable — not just the pattern names"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "trade-offs-before-recommending",
+      "target_skill": "sdp-resilience",
+      "prompt": "I keep reading that I should wrap our calls to the inventory service in a circuit breaker. Should I? It goes down maybe once a month for a few minutes.",
+      "expected_output": "Surfaces the trade-off and the confirming metric before answering: a breaker helps only if failures are fast-and-detectable and there is a fallback to fail into; for rare brief outages a timeout plus a fallback (or a bounded retry) may be the lighter fix. Names the circuit-breaker card by id (CircuitBreaker C1) and uses its content. Not a bare 'yes, add one'.",
+      "expectations": [
+        "Does NOT give a bare 'yes, add a circuit breaker' — surfaces the trade-off first (constitution: trade-offs on every decision)",
+        "Names the confirming question/metric (are failures fast errors or slow hangs? what's the raw error rate?) before recommending",
+        "Considers a lighter alternative to a breaker for a rare, brief outage — e.g. a timeout with a fallback, or a timeout with a bounded retry — rather than treating the breaker as mandatory",
+        "Grounds the recommendation in the circuit-breaker card and names it by id (CircuitBreaker C1), using card-specific content (its failure-counting rule, verified defaults, or cited sources) rather than generic advice"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "name-lookup-bypass-e2",
+      "target_skill": "sdp-resilience",
+      "prompt": "Can you explain how the circuit breaker pattern actually works — the states and what the knobs do?",
+      "expected_output": "Name-lookup bypass: goes straight to the circuit-breaker card and names it (CircuitBreaker C1) — the three states (closed/open/half-open) and transitions, the failureThreshold / resetTimeout / successThreshold knobs with the registry-verified defaults, and still names the key trade-off / when not to.",
+      "expectations": [
+        "Answers from the circuit-breaker card and names it by id (CircuitBreaker C1): the three states and the transitions between them, with card-specific detail (the failureThreshold / resetTimeout / successThreshold knobs or the registry-verified library defaults) rather than a textbook-generic state machine",
+        "Explains the actual knobs (failure threshold, open/cool-down duration, half-open probe count)",
+        "Still surfaces at least one trade-off or 'when not to' rather than a pure definition"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "code-diff-bypass-e4",
+      "target_skill": "sdp-resilience",
+      "prompt": "Here's our HTTP client for the pricing API:\n\n```python\nimport requests\ndef get_price(sku):\n    r = requests.get(f'https://pricing.internal/v1/price/{sku}')\n    return r.json()['price']\n```\n\nWe had an incident where this hung for ~90s and took down the request threads. What's wrong and how do I fix it?",
+      "expected_output": "Code/diff bypass: identifies the missing timeout as the primary defect (requests with no timeout blocks forever), names the timeouts/deadlines card (TimeoutsDeadlines C7), recommends a concrete connect + read timeout with its derivation stated (caller's deadline/SLO or the dependency's measured latency percentile; a labelled placeholder is fine since the prompt gives no numbers), and flags the follow-on (bounded retry only if idempotent, a breaker if the dependency fails fast).",
+      "expectations": [
+        "Identifies the MISSING TIMEOUT as the primary defect (a requests call with no timeout can block indefinitely)",
+        "Names the timeouts/deadlines card by id (TimeoutsDeadlines C7) and gives a concrete connect + read timeout together with how its value must be derived (the caller's deadline/SLO or the dependency's measured latency percentile, e.g. Brooker's p99.9 method) — a starting value explicitly labelled as a placeholder pending that measurement PASSES; a bare constant with no derivation stated FAILS",
+        "Does not stop at the timeout — notes the neighbours (bounded retry only if idempotent, breaker if it fails fast) as the combination",
+        "Reads the actual code (names the get_price / requests.get call) rather than answering generically"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "arch-style-handoff-boundary",
+      "target_skill": "sdp-lifecycle",
+      "prompt": "We're rebuilding our monolith. Should we go microservices or keep it a modular monolith? How many services would you split it into?",
+      "expected_output": "Recognizes this as an architecture-STYLE / quantum question that is out of scope for the tactical clinic and routes it to arch-style — names the arch-style skill in the answer (chain-in via its method is fine once named, per the owner's decision); does NOT answer the style question from general knowledge as the sdp agent and does NOT prescribe a tactical resilience pattern as the answer.",
+      "expectations": [
+        "GUARD (AC-1): Recognizes this as an architecture-style / quantum question, not a tactical-pattern question",
+        "Routes the question to arch-style BY NAME: the answer text names the `arch-style` skill (or its style-selection reference) as the owner of this question rather than answering as the sdp agent — proceeding via arch-style's method with trade-offs stated is acceptable once it is named; following the method without naming arch-style does not satisfy this (loading a skill is invisible to the reader), and answering from general knowledge fails",
+        "GUARD (AC-1): Does NOT prescribe a tactical resilience pattern (circuit breaker, bulkhead, etc.) as the answer to a style question"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "sdp-vs-sdd-disambiguation",
+      "target_skill": "none",
+      "prompt": "Let's run the SDD lifecycle on this — I want to spec out the new notifications feature and break it into tasks.",
+      "expected_output": "Does NOT invoke the sdp-* clinic; recognizes this as SDD-lifecycle work (spec/plan/tasks) and defers cleanly to the sdd-* family. Guards the one-character prefix collision.",
+      "expectations": [
+        "GUARD (AC-5): Does NOT treat this as an sdp-* tactical-patterns request",
+        "GUARD (AC-5): Recognizes it as SDD-lifecycle work (spec / plan / tasks) belonging to the sdd-* family",
+        "GUARD (AC-5): Does not produce resilience-pattern advice for a spec/planning request — a bare scope note that sdp-* exists is fine; mapping named patterns onto the feature's failure modes is advice and fails"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "router-where-to-start",
+      "target_skill": "sdp-lifecycle",
+      "prompt": "Our service keeps falling over under load and I honestly don't know where to start — retries? timeouts? something else? Walk me through how to think about it.",
+      "expected_output": "Routes into the clinic loop (diagnose the symptom -> confirm the metric -> select the combination -> apply -> verify) rather than jumping to a single named pattern or to code; frames diagnosis before prescription and ends with how you would know the change worked.",
+      "expectations": [
+        "Starts by diagnosing the symptom (what is actually failing under load) before naming a pattern",
+        "Lays out the clinic loop — diagnose -> select -> apply -> verify (or equivalent) — including an explicit verify step (how you would know the change worked or regressed), rather than a single silver-bullet pattern",
+        "Emphasizes confirming the metric / signal before tuning, consistent with the clinic's trade-offs-first rule"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "bulkhead-name-lookup-e2",
+      "target_skill": "sdp-resilience",
+      "prompt": "What's the bulkhead pattern, and how do I size one? We're on a thread-per-request Java service.",
+      "expected_output": "Name-lookup bypass to the Bulkhead card (Bulkhead C8): isolation by thread pool vs semaphore (and connection pools) with the trade-off between them; sizing from Little's law (concurrency ≈ arrival rate × hold time) plus headroom, tied to measured latency; the bulkhead's own failure modes (idle reserved capacity, deadlock when a handler holds one pool's slot while waiting on another, too-small pools rejecting healthy traffic); and the neighbours as a combination (a timeout bounds the hold time; breaker or load shedding once the pool saturates).",
+      "expectations": [
+        "Answers from the Bulkhead card and names it by id (Bulkhead C8): explains isolation by thread pool vs semaphore (and connection-pool isolation) with the trade-off between the two",
+        "Gives a sizing method, not a guess: Little's law (concurrency ≈ arrival rate × hold time) with headroom, tied to the call's measured latency",
+        "Surfaces at least one trade-off or failure mode of bulkheads (idle reserved capacity; deadlock when a handler holds one pool's slot while waiting on another; too-small pools rejecting healthy traffic)",
+        "Names the neighbouring patterns as a combination (a timeout bounds the hold time the pool must absorb; breaker or load shedding once the pool is saturated) rather than presenting the bulkhead alone"
+      ]
+    }
+  ]
+}

@@ -1,13 +1,17 @@
 ---
 type: reference
 title: 'API contracts and versioning'
-description: 'Evolve interfaces without breaking consumers: the AIP-180 breaking-change canon across source, wire, and semantic planes; four versioning strategies with real precedents (URI majors, GitHub calendar headers, Stripe pinned rolling releases, GraphQL versionless); RFC 9745 Deprecation and RFC 8594 Sunset; the tolerant reader; contract tests and schema-diff CI gates; and usage-measured removal.'
-tags: [system-design-patterns, communication, api-versioning, contracts, deprecation]
+description: >-
+  First-pass A6, superseded by ApiContracts.md. Kept for the first-pass
+  research trail (AIP-180, URI/header/Stripe/GraphQL strategies, RFC 9745/8594).
+tags: [system-design-patterns, communication, api-versioning, contracts, deprecation, superseded]
 ---
 
 # API contracts and versioning
 
-**See also:** [request–response](RequestResponse.md) · [API gateway](ApiGateway.md) · [encoding & evolution (DDIA)](../data-intensive-design/encoding-overview.md) · [protobuf evolution](../data-intensive-design/protobuf-schema-evolution.md) · [avro evolution](../data-intensive-design/avro-schema-evolution.md) · [graphql (DDIA)](../data-intensive-design/graphql.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/api-versioning-external-research.md)
+**Status:** First-pass card. Canonical Concept: [API contracts (REST, gRPC, GraphQL)](ApiContracts.md) (catalog A6). Prefer that page.
+
+**See also:** [API contracts (canonical A6)](ApiContracts.md) · [request–response](RequestResponse.md) · [API gateway](ApiGateway.md) · [encoding & evolution (DDIA)](../data-intensive-design/encoding-overview.md) · [protobuf evolution](../data-intensive-design/protobuf-schema-evolution.md) · [avro evolution](../data-intensive-design/avro-schema-evolution.md) · [graphql (DDIA)](../data-intensive-design/graphql.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/api-versioning-external-research.md)
 
 An API is a promise to code you cannot redeploy. Wire-format evolution (field tags, schema resolution) is the [encoding layer's](../data-intensive-design/encoding-overview.md) problem; this Concept owns the **contract layer**: what counts as breaking, how versions are named and selected, how deprecation is signaled and measured, and which CI gates catch the break before a consumer does. Quality attributes: **evolvability** without flag days, **trust** (consumers upgrade on their schedule). Costs: every strategy is a standing tax — parallel versions, compatibility gates, deprecation bookkeeping — paid for as long as the API lives.
 

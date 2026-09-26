@@ -7,7 +7,7 @@ tags: [system-design-patterns, resilience, load-shedding, backpressure]
 
 # Load shedding and backpressure
 
-**See also:** [rate limiting](RateLimiting.md) · [graceful degradation](GracefulDegradation.md) · [circuit breaker](CircuitBreaker.md) · [retry, backoff, and retry budgets](RetryBackoff.md) · [bulkhead](Bulkhead.md) · [timeouts](TimeoutsDeadlines.md) · [failover](Failover.md) · [publisher–subscriber](PubSubQueues.md) · [performance](../data-intensive-design/performance.md) · [NFR references](../data-intensive-design/nfr-references.md) · [catalog research (2026-09-13)](../../docs/research/sysdesign/c10-load-shedding-external-research.md)
+**See also:** [rate limiting](RateLimiting.md) · [graceful degradation](GracefulDegradation.md) · [circuit breaker](CircuitBreaker.md) · [retry, backoff, and retry budgets](RetryBackoff.md) · [bulkhead](Bulkhead.md) · [timeouts](TimeoutsDeadlines.md) · [failover](FailoverHealth.md) · [publisher–subscriber](PubSubQueues.md) · [performance](../data-intensive-design/performance.md) · [NFR references](../data-intensive-design/nfr-references.md) · [catalog research (2026-09-13)](../../docs/research/sysdesign/c10-load-shedding-external-research.md)
 
 When offered load exceeds what a server can finish *usefully*, it has three honest moves: **shed** (drop some work, cheaply and by priority), **push back** (make producers slow down), or **degrade** (do less *per accepted request* — [C11](GracefulDegradation.md)). Everything else is a queue, and a queue only converts overload into latency, memory, and a later bigger failure.
 
@@ -144,7 +144,7 @@ Envoy: `http.<prefix>.admission_control.{rq_rejected,rq_success,rq_failure}`; `h
 | LIFO vs FIFO | LIFO starves the oldest (pagination / `end()`) | FIFO finishes abandoned work | Adaptive LIFO only when the queue *forms* |
 | Priority / partition | Everything is critical = nothing is | Idle partitions waste capacity | Guarantee 1.0 to user-initiated / `CRITICAL`; 0.0 (excess) to prefetch / `BULK` |
 | Admission `sr_threshold` / reject cap | Sheds on noise; estimate cannot recover | Never engages; overload leaks | Envoy proto 95% / **80%** cap |
-| Health-check exemption | Missed ping shrinks capacity | Unhealthy hosts keep taking work ([C3](Failover.md)) | Filters *after* the healthcheck filter |
+| Health-check exemption | Missed ping shrinks capacity | Unhealthy hosts keep taking work ([C3](FailoverHealth.md)) | Filters *after* the healthcheck filter |
 | CPU shed vs autoscale | Shed eats the scale-out signal | Metastable zone entered first | Shed *above* the scale target (Netflix 60/80 vs 45) |
 
 Load-test **past** the plateau. If goodput *falls*, the reject path is too expensive — fix logging/socket work before tightening thresholds. Return **503 + `Retry-After`** (delay-seconds) on capacity sheds; 429 only for [C4](RateLimiting.md) quota.

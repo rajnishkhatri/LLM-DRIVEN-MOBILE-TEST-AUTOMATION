@@ -7,7 +7,7 @@ tags: [system-design-patterns, communication, rest, grpc, http]
 
 # Request–response (REST / gRPC sync)
 
-**See also:** [REST, RPC, and service dataflow (DDIA)](../data-intensive-design/rest-rpc-dataflow.md) · [timeouts](TimeoutsDeadlines.md) · [retry](RetryBackoff.md) · [idempotency](Idempotency.md) · [load balancing](LoadBalancing.md) · [circuit breaker](CircuitBreaker.md) · [pub/sub & queues](PubSubQueues.md) · [WebSocket](WebSockets.md) · [SSE](ServerSentEvents.md) · [webhooks](Webhooks.md) · [API versioning](ApiVersioning.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/a1-request-response-external-research.md)
+**See also:** [REST, RPC, and service dataflow (DDIA)](../data-intensive-design/rest-rpc-dataflow.md) · [timeouts](TimeoutsDeadlines.md) · [retry](RetryBackoff.md) · [idempotency](Idempotency.md) · [load balancing](LoadBalancing.md) · [circuit breaker](CircuitBreaker.md) · [pub/sub & queues](PubSubQueues.md) · [WebSocket](WebSocket.md) · [SSE](ServerSentEvents.md) · [webhooks](Webhooks.md) · [API versioning](ApiContracts.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/a1-request-response-external-research.md)
 
 Request–response is the synchronous exchange: one caller, one callee, one reply (or a classified failure) that the caller waits for. That covers REST over any HTTP version and **gRPC unary**. Every other communication pattern in this group is a deviation — a broker, a long-lived push socket, a callback. Quality attributes: **simplicity** (no broker; correlation is the connection or stream) and **consistency** (the answer reflects the state the caller just caused). Costs: caller and callee coupled in time; every idle, route, and deadline timer on the path is part of the contract; a timeout leaves the outcome unknown.
 
@@ -18,9 +18,9 @@ What stays on a sibling, so it is not re-derived here:
 | Sibling | What stays there |
 |---|---|
 | [Pub/sub](PubSubQueues.md) | Brokers, competing consumers, async fan-out, long work |
-| [WebSocket](WebSockets.md) / [SSE](ServerSentEvents.md) | Long-lived push, heartbeats, resume cursors, sticky sessions |
+| [WebSocket](WebSocket.md) / [SSE](ServerSentEvents.md) | Long-lived push, heartbeats, resume cursors, sticky sessions |
 | [Webhooks](Webhooks.md) | Inverted request–response; the receiver is the idempotent one |
-| [API versioning](ApiVersioning.md) | OpenAPI / protobuf / GraphQL evolution |
+| [API versioning](ApiContracts.md) | OpenAPI / protobuf / GraphQL evolution |
 | [Load balancing](LoadBalancing.md) | Algorithms (least-conn, Maglev, consistent hash), panic/ejection |
 | [API gateway](ApiGateway.md) | Product placement, BFF, aggregation |
 | [Timeouts](TimeoutsDeadlines.md) | Timeout *policy* and deadline-propagation playbooks |
@@ -118,7 +118,7 @@ A unary or REST handler that itself issues *N* synchronous downstream calls hold
 
 A 15 s Envoy route timeout and a 2 s gRPC deadline are *different clocks* — the tighter one wins, and the looser one hides nothing. [Timeouts](TimeoutsDeadlines.md) owns the policy; this Concept owns the fact that REST-over-HTTP has **no standard remaining-budget header**. The two timer *classes* (between-byte vs end-to-end) that make `proxy_read_timeout` misleading live there too.
 
-**Reconnect is not session resume.** HTTP request–response has no session to resume ([WebSocket](WebSockets.md) and [SSE](ServerSentEvents.md) do). After GOAWAY or idle close the client opens a new connection and retries only what RFC 9110 / gRPC retry rules allow. gRPC channel state (`connected` / `idle`) and how you close a channel are language-dependent.
+**Reconnect is not session resume.** HTTP request–response has no session to resume ([WebSocket](WebSocket.md) and [SSE](ServerSentEvents.md) do). After GOAWAY or idle close the client opens a new connection and retries only what RFC 9110 / gRPC retry rules allow. gRPC channel state (`connected` / `idle`) and how you close a channel are language-dependent.
 
 ## Proxy and load-balancer clocks
 
@@ -183,9 +183,9 @@ gRPC retry at the *protocol* (not [C2](RetryBackoff.md) policy): only calls that
 |---|---|---|
 | Caller should not wait (minutes of work, human-time batch, report generation) | Every hop's idle/route timeout will lie; you hold a connection for business time | [Pub/sub](PubSubQueues.md), durable workflow |
 | Many independent consumers need the same event | Sync fan-out is *N* RPCs and *N* failure domains | [Pub/sub](PubSubQueues.md) |
-| Server wants to push after the caller has gone | No connection left; polling is a bad A1 | [Webhooks](Webhooks.md), [SSE](ServerSentEvents.md), [WebSocket](WebSockets.md) |
-| Interactive bidirectional stream (editor, game, agent tool loop) | Unary/REST is one shot; streaming gRPC is not this pattern either | [WebSocket](WebSockets.md), or gRPC bidi (out of A1) |
-| Client is a browser tab that must stay updated | Request–response requires polling; proxies buffer or time out long polls | [SSE](ServerSentEvents.md) (one-way) or [WebSocket](WebSockets.md) (two-way) |
+| Server wants to push after the caller has gone | No connection left; polling is a bad A1 | [Webhooks](Webhooks.md), [SSE](ServerSentEvents.md), [WebSocket](WebSocket.md) |
+| Interactive bidirectional stream (editor, game, agent tool loop) | Unary/REST is one shot; streaming gRPC is not this pattern either | [WebSocket](WebSocket.md), or gRPC bidi (out of A1) |
+| Client is a browser tab that must stay updated | Request–response requires polling; proxies buffer or time out long polls | [SSE](ServerSentEvents.md) (one-way) or [WebSocket](WebSocket.md) (two-way) |
 | Cross-org "fire and forget" integration | You cannot keep their HTTP request open; they cannot keep yours | [Webhooks](Webhooks.md) |
 | Work is naturally idempotent *and* delayed | The useful contract is "deliver at least once with a key", not "wait for 200" | [Pub/sub](PubSubQueues.md) + [idempotency](Idempotency.md) |
 | You only needed a function call in-process | Network RPC is not a local call ([rest-rpc-dataflow](../data-intensive-design/rest-rpc-dataflow.md)) | in-process |

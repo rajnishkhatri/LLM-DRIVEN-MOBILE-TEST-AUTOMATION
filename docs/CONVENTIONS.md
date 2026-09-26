@@ -63,6 +63,8 @@ before inventing new ones):
 | Coding-rules case studies (OKF bundle) | `cases/coding-rules/` |
 | AWS system-design case studies (OKF bundle) | `cases/aws/` |
 | AWS AI-agent case studies (OKF bundle) | `cases/aws-ai/` |
+| AWS C01 — GenAI notes (OKF bundle) | `cases/aws-c01/` |
+| AWS skill-task walkthroughs (OKF bundle) | `cases/aws-skill/` |
 | Claude Architect certification notes (OKF bundle) | `cases/claude-certification/` |
 | Claude Architect — platform design (nested topic bundle) | `cases/claude-certification/platform-design/` |
 | Claude Architect — enterprise integration & production (nested topic bundle) | `cases/claude-certification/enterprise-integration-production/` |

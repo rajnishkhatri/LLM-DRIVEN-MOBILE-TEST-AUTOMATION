@@ -12,7 +12,7 @@ tags: [system-design-patterns, api-gateway, bff, edge]
 
 # API gateway and backend-for-frontend
 
-**See also:** [rate limiting](RateLimiting.md) · [timeouts](TimeoutsDeadlines.md) · [circuit breaker](CircuitBreaker.md) · [load balancing](LoadBalancing.md) · [API contracts and versioning](ApiVersioning.md) · [retry, backoff, and retry budgets](RetryBackoff.md) · [cloud patterns: gateway, mesh, BFF, strangler](../aws/ch08.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/c6-api-gateway-external-research.md)
+**See also:** [rate limiting](RateLimiting.md) · [timeouts](TimeoutsDeadlines.md) · [circuit breaker](CircuitBreaker.md) · [load balancing](LoadBalancing.md) · [API contracts and versioning](ApiContracts.md) · [retry, backoff, and retry budgets](RetryBackoff.md) · [cloud patterns: gateway, mesh, BFF, strangler](../aws/ch08.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/c6-api-gateway-external-research.md)
 
 An API gateway is a **north–south edge façade**: a reverse proxy with API-management semantics — TLS, authn, routing, optional aggregation, protocol translation, and the cross-cutting offloads Azure names (certs, throttling, a logging floor) — so clients and services do not each reimplement them. A **BFF** is the same hop, one per user experience, owned by the UI team. A **service mesh** applies per-request controls **east–west**; a [load balancer](LoadBalancing.md) only spreads. Quality attributes: **security** (one enforced front door), **client simplicity** (fewer round trips, per-client shaping), **evolvability** (backends re-partition behind a stable URL). Costs: one more highly available hop, a bottleneck-and-SPOF candidate, and a standing temptation to put business logic where it does not belong.
 
@@ -47,7 +47,7 @@ The same hop can be owned three ways. That is a topology decision, not a differe
 | **Gateway + mesh** | Split | NS at gateway, EW in mesh | Usual production: C4 / JWT / WAF at the edge; C7 remaining-time + C1 outlier + C2 retry **in-mesh or in-process**. |
 | **Strangler façade** | Migration | Same URL, path or weight flip | The gateway is the usual physical seam. Incremental cutover, shadow, dual-write, rollback, and ACL field-mapping belong to **B4** (Concept pending; see [ch08](../aws/ch08.md)). Do not put the anticorruption layer in the gateway. |
 
-A single thin façade in front of per-experience BFFs is a legal combination: the façade holds the public URL and edge policy; each BFF owns payload shape. Header or URI version match at that façade is [contract selection](ApiVersioning.md), not a gateway pattern. Weighted host selection among healthy backends is [load balancing](LoadBalancing.md).
+A single thin façade in front of per-experience BFFs is a legal combination: the façade holds the public URL and edge policy; each BFF owns payload shape. Header or URI version match at that façade is [contract selection](ApiContracts.md), not a gateway pattern. Weighted host selection among healthy backends is [load balancing](LoadBalancing.md).
 
 ## What the hop is for (and is not)
 
@@ -205,7 +205,7 @@ The gateway owns the **edge**. Per-object authorization and domain composition s
 
 ## Sources
 
-Verified 2026-09-13; full URLs, per-claim provenance, and items deliberately left out are in the [catalog research note](../../docs/research/sysdesign/c6-api-gateway-external-research.md). First-pass GraphQL / Gateway API / JWT / SoundCloud-Uber tables it links: [api-gateway-external-research.md](../../docs/research/sysdesign/api-gateway-external-research.md). Workspace one-liners: [aws/ch08.md](../aws/ch08.md). Sibling facts cited forward, not re-derived: [breaker](CircuitBreaker.md), [retry](RetryBackoff.md), [timeouts](TimeoutsDeadlines.md), [rate limiting](RateLimiting.md), [load balancing](LoadBalancing.md), [versioning](ApiVersioning.md).
+Verified 2026-09-13; full URLs, per-claim provenance, and items deliberately left out are in the [catalog research note](../../docs/research/sysdesign/c6-api-gateway-external-research.md). First-pass GraphQL / Gateway API / JWT / SoundCloud-Uber tables it links: [api-gateway-external-research.md](../../docs/research/sysdesign/api-gateway-external-research.md). Workspace one-liners: [aws/ch08.md](../aws/ch08.md). Sibling facts cited forward, not re-derived: [breaker](CircuitBreaker.md), [retry](RetryBackoff.md), [timeouts](TimeoutsDeadlines.md), [rate limiting](RateLimiting.md), [load balancing](LoadBalancing.md), [versioning](ApiContracts.md).
 
 - Canon: Richardson microservices.io API-gateway/BFF; Newman, *BFF* (2015-11-18); Azure gateway routing / aggregation (2026-06-02) / offloading; ThoughtWorks Radar blip (Hold, 2015–2018).
 - Platforms: AWS API Gateway quotas + REL05-BP05 + 2024-06 timeout announcement + REST-vs-HTTP + 2025-11 REST↔ALB; Kong Service schema + proxying (60 s / 5 retries / no 5xx); Apigee endpoint properties + limits (updated 2026-09-11); Envoy Gateway HTTP timeouts (v1.9.1), retry (`numRetries` 2), circuit breakers (1024); Gateway API GEP-1731; Spring Cloud Gateway timeouts / Retry / CircuitBreaker / configprops; Azure APIM `forward-request` (300 s header wait) + retry policy.

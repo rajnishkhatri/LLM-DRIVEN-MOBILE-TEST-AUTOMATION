@@ -217,7 +217,7 @@ Measured (14 days, production-shaped, not sandbox): 80 tenants, p99 concurrent *
 
 ## When not to use
 
-A rate limiter is the **wrong tool** for: in-process function calls; strict licence metering on an approximate edge (Armor’s own warning); already-overloaded servers (use [C10](LoadShedding.md)); health probes ([C3](Failover.md)) — do not share the tenant bucket with `/healthz`; pure concurrency ([bulkhead](Bulkhead.md) / Polly `AddConcurrencyLimiter`); retry amplification (budget [C2](RetryBackoff.md)); a dependency that is *down* ([breaker](CircuitBreaker.md)).
+A rate limiter is the **wrong tool** for: in-process function calls; strict licence metering on an approximate edge (Armor’s own warning); already-overloaded servers (use [C10](LoadShedding.md)); health probes ([C3](FailoverHealth.md)) — do not share the tenant bucket with `/healthz`; pure concurrency ([bulkhead](Bulkhead.md) / Polly `AddConcurrencyLimiter`); retry amplification (budget [C2](RetryBackoff.md)); a dependency that is *down* ([breaker](CircuitBreaker.md)).
 
 A **tight** limit is the wrong tool for: the first request after a deploy (cold TLS); multi-region callers measured against one-region histograms; anything whose legitimate burst *is* the product (webhooks, game day, market open).
 

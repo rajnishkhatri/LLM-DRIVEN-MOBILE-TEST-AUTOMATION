@@ -7,7 +7,7 @@ tags: [system-design-patterns, communication, websocket, realtime]
 
 # WebSocket
 
-**See also:** [server-sent events](ServerSentEvents.md) · [load balancing](LoadBalancing.md) · [timeouts](TimeoutsDeadlines.md) · [retry, backoff, and retry budgets](RetryBackoff.md) · [pub/sub & queues](PubSubQueues.md) · [request–response](RequestResponse.md) · [API gateway](ApiGateway.md) · [failover](Failover.md) · [chat design (ch19)](../aws/ch19.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/a3-websocket-external-research.md)
+**See also:** [server-sent events](ServerSentEvents.md) · [load balancing](LoadBalancing.md) · [timeouts](TimeoutsDeadlines.md) · [retry, backoff, and retry budgets](RetryBackoff.md) · [pub/sub & queues](PubSubQueues.md) · [request–response](RequestResponse.md) · [API gateway](ApiGateway.md) · [failover](FailoverHealth.md) · [chat design (ch19)](../aws/ch19.md) · [first-pass card](WebSockets.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/a3-websocket-external-research.md)
 
 A WebSocket is an **independent TCP protocol** whose only debt to HTTP is the opening handshake: one Upgrade (or HTTP/2–3 Extended CONNECT) becomes a **full-duplex, long-lived** frame channel. Both peers send whenever they like. That buys bidirectional interactivity at per-message cost; it also buys every long-lived-connection problem at once — heartbeats under hop idle timers, reconnect with **no protocol resume**, a broadcast path to sockets that no longer live on one box, and affinity that fights [scale-out](LoadBalancing.md). Quality attributes: **interactivity** and session **latency**. Costs: process state in a fleet designed for stateless requests, and an ecosystem (caches, gateways, CDNs) built for the request–response shape you just left.
 
@@ -88,7 +88,7 @@ A socket is one long-lived TCP (or one h2/h3 stream) **plus** server process sta
 
 | Shape | What it buys | What it costs |
 |---|---|---|
-| **Sticky + in-process map** | Cheap local broadcast | Dies with the instance; [failover](Failover.md) is “client reconnects” |
+| **Sticky + in-process map** | Cheap local broadcast | Dies with the instance; [failover](FailoverHealth.md) is “client reconnects” |
 | **Registry** (user → `{node, connectionId}`) | Directed send | Stale ids; `$disconnect` miss → TTL the row; the [ch19](../aws/ch19.md) chat shape |
 | **Pub/sub backplane** | Publisher does not know subscribers | At-most-once; a down subscriber misses forever |
 

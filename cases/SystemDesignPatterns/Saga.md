@@ -7,7 +7,7 @@ tags: [system-design-patterns, consistency, saga]
 
 # Saga
 
-**See also:** [retry, backoff, and retry budgets](RetryBackoff.md) · [idempotency](Idempotency.md) · [timeouts](TimeoutsDeadlines.md) · [circuit breaker](CircuitBreaker.md) · [distributed transactions (2PC / XA)](../data-intensive-design/distributed-transactions.md) · [durable workflows](../data-intensive-design/durable-workflows.md) · [lost updates](../data-intensive-design/lost-updates.md) · [read committed](../data-intensive-design/read-committed.md) · [event sourcing and CQRS (E12, later)](../data-intensive-design/event-sourcing-cqrs.md) · [choreography vs orchestration](../aws/ch08.md) · [pub/sub and queues](PubSubQueues.md) · [catalog of record](../../docs/research/sysdesign/system-design-patterns-catalog.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b5-saga-external-research.md)
+**See also:** [retry, backoff, and retry budgets](RetryBackoff.md) · [idempotency](Idempotency.md) · [timeouts](TimeoutsDeadlines.md) · [circuit breaker](CircuitBreaker.md) · [transactional outbox and CDC (B7)](OutboxCdc.md) · [distributed transactions (2PC / XA)](../data-intensive-design/distributed-transactions.md) · [durable workflows](../data-intensive-design/durable-workflows.md) · [lost updates](../data-intensive-design/lost-updates.md) · [read committed](../data-intensive-design/read-committed.md) · [CQRS and event sourcing (E12)](CqrsEventSourcing.md) · [choreography vs orchestration](../aws/ch08.md) · [pub/sub and queues](PubSubQueues.md) · [catalog of record](../../docs/research/sysdesign/system-design-patterns-catalog.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b5-saga-external-research.md)
 
 The Saga pattern is a **long-running business transaction** that spans services without a distributed lock. Each step `Ti` is a real local commit in its own database (or at a third-party API). The guarantee is either `T1,…,Tn` **or** `T1,…,Tj, Cj,…,C1`. `Ci` is a **semantic undo** of `Ti` — not a restore of the bytes that existed when `Ti` began, because other work may have run in between.
 
@@ -15,12 +15,12 @@ A checkout that reserves credit, reserves inventory, and captures a card cannot 
 
 Quality attributes in play: **consistency** (eventual, across service boundaries), **availability** of the participants (locks drop at each local commit), and **recoverability** of the business operation. The costs are an isolation hole the size of the whole saga, a compensate path that is rarely exercised, and a new durability requirement: the **execution log** is the atomicity mechanism. Forget "we already reserved inventory" and you double-reserve or skip compensate.
 
-Outbox / CDC (catalog **B7**, later) is how the first local write *starts* the saga. This card owns the sequence, the undos, and the log.
+[Outbox / CDC (B7)](OutboxCdc.md) is how the first local write *starts* the saga. This card owns the sequence, the undos, and the log.
 
 ## Lineage and vocabulary
 
 - **García-Molina & Salem, *Sagas*, SIGMOD 1987.** A long-lived transaction that holds locks for hours or days blocks shorter work and raises deadlock and abort rates. Split it into real local transactions that **may interleave**. `Ci` decrements a reserved seat; it must **not** write back the old count. There is **no notify/abort** of transactions that already saw `Ti`. That is the isolation hole.
-- **Richardson, *Pattern: Saga*** (microservices.io) and the 2017 QCon model. Database-per-Service transactions become local commits plus messages. **Choreography** = participants exchange domain events. **Orchestration** = a persistent orchestrator sends commands and processes replies. No automatic rollback; the model is **ACD**. Steps are **compensatable → pivot → retryable**. Each step must atomically update its DB and publish (outbox, or an event-sourced log — [E12](../data-intensive-design/event-sourcing-cqrs.md), later).
+- **Richardson, *Pattern: Saga*** (microservices.io) and the 2017 QCon model. Database-per-Service transactions become local commits plus messages. **Choreography** = participants exchange domain events. **Orchestration** = a persistent orchestrator sends commands and processes replies. No automatic rollback; the model is **ACD**. Steps are **compensatable → pivot → retryable**. Each step must atomically update its DB and publish (outbox, or an event-sourced log — [E12](CqrsEventSourcing.md)).
 - **Azure Architecture Center *Saga*** (`ms.date` 2025-02-25) plus *Compensating Transaction*. Same two styles; same three anomalies and six countermeasures; compensations are application-specific, eventually consistent, resumable, and idempotent. Retry transients **before** compensating. Prefer an alternative path (another hotel) over cancelling; pause for a human on high-impact choices.
 - **AWS Prescriptive Guidance.** *Continuation* (retry / forward) on platform failure; *compensation* (backward) on application failure. Choreography names the **dual-write** hole and the outbox as the fix. Orchestration is the Step Functions sample: order → inventory → payment with reverse `Revert*` actions.
 - **Workspace (cite, do not rewrite).** [ch08.md](../aws/ch08.md) has the choreography / orchestration / hybrid comparison and a one-paragraph saga. 2PC and XA stay in [distributed-transactions.md](../data-intensive-design/distributed-transactions.md). Engine history, replay, and versioning stay in [durable-workflows.md](../data-intensive-design/durable-workflows.md).
@@ -67,7 +67,7 @@ Locks drop at each local commit. The window is the *whole saga*, not a single st
 2. **Commutative updates.** Debit/credit so compensate is `+N` after `-N`.
 3. **Pessimistic view.** Reorder so the risky write is retryable (never compensated).
 4. **Reread values.** Before a later write, re-read; abort or restart if changed.
-5. **Version files.** Append-only ops so create-then-cancel equals cancel-then-create (the 2017 slides note this "sounds like event sourcing" — [E12](../data-intensive-design/event-sourcing-cqrs.md), not this card).
+5. **Version files.** Append-only ops so create-then-cancel equals cancel-then-create (the 2017 slides note this "sounds like event sourcing" — [E12](CqrsEventSourcing.md), not this card).
 6. **Risk-based concurrency.** Low-risk → saga; high-risk funds on one ledger → one DB or *database-internal* 2PC, not XA ([distributed-transactions.md](../data-intensive-design/distributed-transactions.md)).
 
 ## Execution log
@@ -76,7 +76,7 @@ The log *is* atomicity. Three durable shapes; pick one and do not dual-write aro
 
 | Approach | What is durable | If missing |
 |---|---|---|
-| **Outbox / CDC (B7, later)** | Local write + next message in **one** commit; a relay publishes | Crash between `COMMIT` and `producer.send` → saga never starts, or starts twice. |
+| **[Outbox / CDC (B7)](OutboxCdc.md)** | Local write + next message in **one** commit; a relay publishes | Crash between `COMMIT` and `producer.send` → saga never starts, or starts twice. |
 | **Orchestrator journal** | Each forward step **and** its compensate (Azure's Cosmos example) | Crash after `Ti` commits, before the journal → `Ti` is invisible to compensate (**orphan `Ti`**). |
 | **Engine history** | Temporal Event History / Step Functions execution history / Durable History table; replay skips completed RPCs | History-quota kill; non-deterministic workflow code; version skew — [durable-workflows.md](../data-intensive-design/durable-workflows.md). |
 
@@ -139,7 +139,7 @@ Temporal withholds `ActivityTaskStarted` until the activity completes or exhaust
 | Layer | Coordinates | Compensate / rollback |
 |---|---|---|
 | HTTP edge | Accept command; 202 + saga id (Richardson option 2) | Client polls; no 2PC. |
-| Outbox in the first service (B7, later) | Durable *start* | Relay; at-least-once to the bus or orchestrator. |
+| Outbox in the first service ([B7](OutboxCdc.md)) | Durable *start* | Relay; at-least-once to the bus or orchestrator. |
 | Choreography bus ([A2](PubSubQueues.md)) | Next `Ti` / `Ci` | Compensation events; DLQ → human (Azure Choreography). |
 | Orchestrator / engine | Sequence, timeouts, retries, reverse `Ci` | Catch → compensate; journal / history is SoT. |
 | Participant | Local ACID + idempotent handler | Semantic lock; local `Ci`. |

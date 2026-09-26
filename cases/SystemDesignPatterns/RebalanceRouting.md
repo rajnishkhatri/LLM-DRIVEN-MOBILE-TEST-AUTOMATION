@@ -7,7 +7,7 @@ tags: [system-design-patterns, partitioning, rebalancing, request-routing, B2e]
 
 # Rebalance and request routing
 
-**See also:** [rebalancing (DDIA)](../data-intensive-design/rebalancing.md) · [request routing (DDIA)](../data-intensive-design/request-routing.md) · [sharding overview](../data-intensive-design/sharding-overview.md) · [partitioning](Partitioning.md) · [single-leader](SingleLeaderReplication.md) · [leaderless](LeaderlessReplication.md) · [load balancing](LoadBalancing.md) · [failover](Failover.md) · [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) · [circuit breaker](CircuitBreaker.md) · [scaling strategies](ScalingStrategies.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b2-partition-replicate-external-research.md)
+**See also:** [rebalancing (DDIA)](../data-intensive-design/rebalancing.md) · [request routing (DDIA)](../data-intensive-design/request-routing.md) · [sharding overview](../data-intensive-design/sharding-overview.md) · [partitioning](Partitioning.md) · [single-leader](SingleLeaderReplication.md) · [leaderless](LeaderlessReplication.md) · [load balancing](LoadBalancing.md) · [failover](FailoverHealth.md) · [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) · [circuit breaker](CircuitBreaker.md) · [scaling strategies](ScalingStrategies.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b2-partition-replicate-external-research.md)
 
 This card owns **how the key → node map moves**, and **who looks it up**. [Rebalancing](../data-intensive-design/rebalancing.md) already names the danger: automation plus false death detection cascades. [Request routing](../data-intensive-design/request-routing.md) already names the three placements (any-node forward, routing tier, smart client). This card adds product thresholds, the gossip-vs-consensus fork for the *map*, and the cutover window. [Load balancing](LoadBalancing.md) (C5) is **stateless** placement of interchangeable instances — L4/L7, consistent-hash *proxies*, sticky sessions. A shard can serve a key only on a replica that owns it. Cells (catalog E13) wrap these units; they are not themselves a shard.
 
@@ -64,7 +64,7 @@ The hard questions are already in [request routing](../data-intensive-design/req
 
 | Map mechanism | Split-brain | Cost | Use when |
 |---|---|---|---|
-| **Consensus** (etcd, ZooKeeper, MongoDB config servers, Kafka KRaft, TiDB/Yugabyte/Scylla built-in Raft) | Protected. Two coordinators with contradictory maps is the failure [failover](Failover.md) and [fencing](../data-intensive-design/quorums-and-fencing.md) exist to stop. | A consensus cluster to operate. etcd timing lives on [single-leader](SingleLeaderReplication.md) — do not run one etcd across a 350 ms RTT. | The data plane can still be leaderless; the **control plane should not be**. |
+| **Consensus** (etcd, ZooKeeper, MongoDB config servers, Kafka KRaft, TiDB/Yugabyte/Scylla built-in Raft) | Protected. Two coordinators with contradictory maps is the failure [failover](FailoverHealth.md) and [fencing](../data-intensive-design/quorums-and-fencing.md) exist to stop. | A consensus cluster to operate. etcd timing lives on [single-leader](SingleLeaderReplication.md) — do not run one etcd across a 350 ms RTT. | The data plane can still be leaderless; the **control plane should not be**. |
 | **Gossip** (Cassandra, Riak) | Possible — different parts of the cluster disagree which node owns a shard. | Cheaper; no extra store. | Only if the store already lives with weak consistency. |
 
 HBase and SolrCloud use ZooKeeper; Kubernetes uses etcd for instance placement (not your shard map unless you built that). MongoDB is similar with its own config servers and `mongos` as the routing tier.
@@ -108,7 +108,7 @@ MongoDB will migrate when shard data differs by **384 MB** at the default 128 MB
 | Calendar event (Cyber Monday, ticket drop) | Pre-split and pre-move; optionally pause the balancer during the peak | Automation reacts *after* the cluster is on fire. |
 | 100 MB celebrity chunk | Do **not** migrate it. Write-shard the key ([partitioning](Partitioning.md)). | Migration relocates the heat. |
 | Jumbo / 1 TB chunk (auto-split off) | Manual split if the key allows; otherwise live with it and cap `chunkSize` for *future* moves | `chunkSize` no longer forces a split. |
-| Node looks dead | Disable balancer; confirm death ([failover](Failover.md)); *then* decommission | False death + auto-move is the cascade. |
+| Node looks dead | Disable balancer; confirm death ([failover](FailoverHealth.md)); *then* decommission | False death + auto-move is the cascade. |
 | Adding a node | Commit the take of a fair share; watch migration I/O against peak WAL / compaction | A commit step is slower than autoscale and prevents rebalancing *onto* an overloaded node that looks dead. |
 
 Smaller `chunkSize` → more frequent I/O; larger → jumbo risk. Pick from measured range sizes, not from a blog "128 is fine."
@@ -120,7 +120,7 @@ Smaller `chunkSize` → more frequent I/O; larger → jumbo risk. Pick from meas
 - **Cutover.** Migrate one range under live write. Count in-flight errors on the old owner vs the new. Measure smart-client map age; Dynamo's paper figure is a **10 s** refresh — treat that as a *window*, not a default to copy.
 - **Jumbo.** With auto-split off (Mongo ≥ 6.0.3), grow a chunk past 128 MB. Confirm it still serves and that `chunkSize` only caps the *next* migration, not the existing chunk.
 - **Decommission.** Drain a Cassandra / Kafka node. Writes must stay at RF / min-ISR on the destination *before* the source leaves. Hints covering the drain are not "the destination is in the quorum."
-- **Gossip vs consensus.** Two coordinators, contradictory maps, is a [failover](Failover.md) / [fencing](../data-intensive-design/quorums-and-fencing.md) drill. Do it on a store that claims a single owner; do not do it as a surprise on Monday.
+- **Gossip vs consensus.** Two coordinators, contradictory maps, is a [failover](FailoverHealth.md) / [fencing](../data-intensive-design/quorums-and-fencing.md) drill. Do it on a store that claims a single owner; do not do it as a surprise on Monday.
 
 ## Alternatives that beat a balancer
 
@@ -184,7 +184,7 @@ Writes must continue during a move. Near maximum write throughput, the split may
 |---|---|
 | [Partitioning](Partitioning.md) | What the slice *is* (key, range size, heat). |
 | [Load balancing](LoadBalancing.md) | L4/L7 of interchangeable instances; consistent-hash *proxies*. |
-| [Failover](Failover.md) | Death detection that must not trigger a data move by itself. |
+| [Failover](FailoverHealth.md) | Death detection that must not trigger a data move by itself. |
 | [Quorums and fencing](../data-intensive-design/quorums-and-fencing.md) | Two coordinators, two owners of shard S. |
 | [Single-leader](SingleLeaderReplication.md) | Preferred-replica / leaseholder moves (leadership, not bytes). |
 | Catalog E13 | Cell topology; this card's units sit inside a cell. |

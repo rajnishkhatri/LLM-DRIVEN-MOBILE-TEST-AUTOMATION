@@ -192,7 +192,7 @@ Default web apps keep almost no client state and call the server for every read 
 | [Detecting concurrent writes](../data-intensive-design/detecting-concurrent-writes.md) | Happens-before; version vectors. |
 | [Single-leader](SingleLeaderReplication.md) | The hybrid uniqueness shard; sync multi-leader in disguise. |
 | [Leaderless](LeaderlessReplication.md) | Any-coordinator writes; no topology to rewire. |
-| [Failover](Failover.md) | Region failover when you *did* pin a home leader. |
+| [Failover](FailoverHealth.md) | Region failover when you *did* pin a home leader. |
 | [Unreliable clocks](../data-intensive-design/unreliable-clocks.md) | Why LWW is not an event order. |
 
 ## Sources

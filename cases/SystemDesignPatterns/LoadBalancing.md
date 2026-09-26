@@ -7,9 +7,9 @@ tags: [system-design-patterns, availability, load-balancing, consistent-hashing]
 
 # Load balancing techniques
 
-**See also:** [failover and health checks](Failover.md) · [API gateway](ApiGateway.md) · [WebSockets](WebSockets.md) · [request routing (DDIA)](../data-intensive-design/request-routing.md) · [circuit breaker](CircuitBreaker.md) · [retry, backoff, and retry budgets](RetryBackoff.md) · [catalog research (2026-09-13)](../../docs/research/sysdesign/c5-load-balancing-external-research.md)
+**See also:** [failover and health checks](FailoverHealth.md) · [API gateway](ApiGateway.md) · [WebSockets](WebSocket.md) · [request routing (DDIA)](../data-intensive-design/request-routing.md) · [circuit breaker](CircuitBreaker.md) · [retry, backoff, and retry budgets](RetryBackoff.md) · [catalog research (2026-09-13)](../../docs/research/sysdesign/c5-load-balancing-external-research.md)
 
-Load balancing is **placement**. Once [health checks](Failover.md) have named a live set, pick one host for this *connection*, *request*, or *stream*. Discovery is already owned elsewhere ([REST/RPC dataflow](../data-intensive-design/rest-rpc-dataflow.md)); this note owns the pick. A [gateway](ApiGateway.md) in front is product routing, not a substitute for per-call spreading. Key → shard → node for a partitioned store is [request routing](../data-intensive-design/request-routing.md) (B2): a stateless replica may sit behind any peer; a shard can serve a key only on a replica that owns it.
+Load balancing is **placement**. Once [health checks](FailoverHealth.md) have named a live set, pick one host for this *connection*, *request*, or *stream*. Discovery is already owned elsewhere ([REST/RPC dataflow](../data-intensive-design/rest-rpc-dataflow.md)); this note owns the pick. A [gateway](ApiGateway.md) in front is product routing, not a substitute for per-call spreading. Key → shard → node for a partitioned store is [request routing](../data-intensive-design/request-routing.md) (B2): a stateless replica may sit behind any peer; a shard can serve a key only on a replica that owns it.
 
 Quality attributes: **scalability** (spread work), **availability** of the *caller* (route around a bad host without failing the request), and **tail latency** (avoid the unlucky replica). Costs: an extra hop or a fatter client, stale-signal herds, and affinity that fights scale-out.
 
@@ -95,7 +95,7 @@ Sticky is **not** an algorithm. It freezes the first pick.
 | Envoy stateful-session | Cookie or header host pin | `strict: false` fallback vs `strict: true` **503** |
 | K8s `sessionAffinity: ClientIP` | Client IP; timeout **10800 s** | `None` |
 
-ALB `weighted_random` **cannot** combine with stickiness or slow start; `least_outstanding_requests` **cannot** combine with slow start. After scale-out, cookies keep load on the *old* targets until expiry. WebSocket: the TCP connection *is* the affinity — [A3](WebSockets.md) owns heartbeats and resume; do not treat WS sticky as a general HTTP design. Prefer a shared session store (A3 backplane) or an [idempotency key](Idempotency.md) over process-local stickiness.
+ALB `weighted_random` **cannot** combine with stickiness or slow start; `least_outstanding_requests` **cannot** combine with slow start. After scale-out, cookies keep load on the *old* targets until expiry. WebSocket: the TCP connection *is* the affinity — [A3](WebSocket.md) owns heartbeats and resume; do not treat WS sticky as a general HTTP design. Prefer a shared session store (A3 backplane) or an [idempotency key](Idempotency.md) over process-local stickiness.
 
 ## Panic, fail-open, and outlier as C1
 

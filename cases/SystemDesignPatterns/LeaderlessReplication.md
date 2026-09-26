@@ -7,9 +7,9 @@ tags: [system-design-patterns, replication, leaderless, quorum, B2d]
 
 # Leaderless replication
 
-**See also:** [replication overview](../data-intensive-design/replication-overview.md) · [leaderless (DDIA)](../data-intensive-design/leaderless-replication.md) · [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) · [conflict resolution](../data-intensive-design/conflict-resolution.md) · [detecting concurrent writes](../data-intensive-design/detecting-concurrent-writes.md) · [single-leader](SingleLeaderReplication.md) · [multi-leader](MultiLeaderReplication.md) · [partitioning](Partitioning.md) · [rebalance & request routing](RebalanceRouting.md) · [failover](Failover.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b2-partition-replicate-external-research.md)
+**See also:** [replication overview](../data-intensive-design/replication-overview.md) · [leaderless (DDIA)](../data-intensive-design/leaderless-replication.md) · [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) · [conflict resolution](../data-intensive-design/conflict-resolution.md) · [detecting concurrent writes](../data-intensive-design/detecting-concurrent-writes.md) · [single-leader](SingleLeaderReplication.md) · [multi-leader](MultiLeaderReplication.md) · [partitioning](Partitioning.md) · [rebalance & request routing](RebalanceRouting.md) · [failover](FailoverHealth.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b2-partition-replicate-external-research.md)
 
-This card owns **quorum math as an operational control**, not a linearizability proof. The shape — any replica accepts writes; the coordinator does **not** impose a write order; reads also fan out — already lives in [leaderless replication](../data-intensive-design/leaderless-replication.md). Majority-as-death and fencing tokens stay on [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) and [failover](Failover.md). Dynamo (2007, leaderless) and DynamoDB (2012+, single-leader Multi-Paxos per partition) are **different systems**.
+This card owns **quorum math as an operational control**, not a linearizability proof. The shape — any replica accepts writes; the coordinator does **not** impose a write order; reads also fan out — already lives in [leaderless replication](../data-intensive-design/leaderless-replication.md). Majority-as-death and fencing tokens stay on [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) and [failover](FailoverHealth.md). Dynamo (2007, leaderless) and DynamoDB (2012+, single-leader Multi-Paxos per partition) are **different systems**.
 
 Quality attributes: **write availability** while a node is down (nothing to fail over), **durability** as a *probability* set by `(n, w, r)` and repair. Costs: stale reads even when `w + r > n`, clock-skew LWW, and a repair/tombstone contract that resurrects deletes if you miss it.
 
@@ -192,7 +192,7 @@ Leaderless decides **how many copies you wait for**. It does not decide **an ord
 | Sibling | What they take |
 |---|---|
 | [Quorums and fencing](../data-intensive-design/quorums-and-fencing.md) | Majority-as-death; fencing tokens — not `w + r > n`. |
-| [Failover](Failover.md) | Health / RTO when you *do* have a leader (you do not, here). |
+| [Failover](FailoverHealth.md) | Health / RTO when you *do* have a leader (you do not, here). |
 | [Conflict resolution](../data-intensive-design/conflict-resolution.md) | LWW vs siblings vs CRDT. |
 | [Rebalance](RebalanceRouting.md) | Membership that must not reshuffle on transient failure; repair vs move. |
 | [Single-leader](SingleLeaderReplication.md) | DynamoDB; any ledger / uniqueness path. |

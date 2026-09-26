@@ -7,9 +7,9 @@ tags: [system-design-patterns, communication, sse, streaming]
 
 # Server-sent events
 
-**See also:** [WebSocket](WebSockets.md) · [request–response](RequestResponse.md) · [timeouts](TimeoutsDeadlines.md) · [pub/sub & queues](PubSubQueues.md) · [load balancing](LoadBalancing.md) · [retry](RetryBackoff.md) · [webhooks](Webhooks.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/a4-sse-external-research.md)
+**See also:** [WebSocket](WebSocket.md) · [request–response](RequestResponse.md) · [timeouts](TimeoutsDeadlines.md) · [pub/sub & queues](PubSubQueues.md) · [load balancing](LoadBalancing.md) · [retry](RetryBackoff.md) · [webhooks](Webhooks.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/a4-sse-external-research.md)
 
-Server-sent events are server push as an ordinary HTTP response that does not end: `Content-Type: text/event-stream`, then UTF-8 lines. Because it is *just HTTP*, auth cookies, routing, load balancers, and tracing keep working; because the browser client has reconnection and a resume cursor **built in**, SSE ships with the reliability plumbing [WebSocket](WebSockets.md) makes you write. The constraint is honest: one direction, text only. Quality attributes: **simplicity** (no Upgrade, no new protocol) and **resumability** (`Last-Event-ID`). Costs: unidirectional; UTF-8 only; one file-descriptor per subscriber; and the buffering and idle-timer hazards of any long-lived response.
+Server-sent events are server push as an ordinary HTTP response that does not end: `Content-Type: text/event-stream`, then UTF-8 lines. Because it is *just HTTP*, auth cookies, routing, load balancers, and tracing keep working; because the browser client has reconnection and a resume cursor **built in**, SSE ships with the reliability plumbing [WebSocket](WebSocket.md) makes you write. The constraint is honest: one direction, text only. Quality attributes: **simplicity** (no Upgrade, no new protocol) and **resumability** (`Last-Event-ID`). Costs: unidirectional; UTF-8 only; one file-descriptor per subscriber; and the buffering and idle-timer hazards of any long-lived response.
 
 ## Lineage
 
@@ -86,8 +86,8 @@ Resume is a **two-sided** contract. The client's half is automatic: remember `id
 - If events were never given `id`s, the client cannot ask for a cursor. Reconnect is a new subscription.
 - If the server ignores the header, the client sees a gap or a full replay and does not know which.
 - Empty `id:` **clears** the cursor on purpose — use it when the stream's identity changes, not by accident.
-- Done right, delivery is **at-least-once with dedupe-by-id possible**. That is more than [WebSocket](WebSockets.md) (no protocol resume) and less than a [queue](PubSubQueues.md) (no durability once the retention window closes).
-- Resume across replicas needs a **replayable log**, not fire-and-forget pub/sub. Sticky sessions are a substitute when the event buffer is process-local — they hide the bug until a deploy drains the instance ([load balancing](LoadBalancing.md)). The placement choice is the same one [WebSocket](WebSockets.md) makes for connection state: registry local, routing global, nodes replaceable — except SSE's cursor makes the *log* the registry.
+- Done right, delivery is **at-least-once with dedupe-by-id possible**. That is more than [WebSocket](WebSocket.md) (no protocol resume) and less than a [queue](PubSubQueues.md) (no durability once the retention window closes).
+- Resume across replicas needs a **replayable log**, not fire-and-forget pub/sub. Sticky sessions are a substitute when the event buffer is process-local — they hide the bug until a deploy drains the instance ([load balancing](LoadBalancing.md)). The placement choice is the same one [WebSocket](WebSocket.md) makes for connection state: registry local, routing global, nodes replaceable — except SSE's cursor makes the *log* the registry.
 - Do not treat `Last-Event-ID` as secret-bearing or as an ACL. It is an arbitrary UTF-8 cursor the client will echo; WHATWG/Fetch issues (#689, #568) exist because a planted id becomes a request header on the next GET.
 
 ## The client API and its escape hatch
@@ -130,7 +130,7 @@ Also send `Cache-Control: no-cache`: WHATWG's request cache mode is `no-store`, 
 
 ## SSE vs WebSocket vs long-polling
 
-| | **SSE** (`EventSource`) | [WebSocket](WebSockets.md) | HTTP long-polling (RFC 6202) |
+| | **SSE** (`EventSource`) | [WebSocket](WebSocket.md) | HTTP long-polling (RFC 6202) |
 |---|---|---|---|
 | Direction | Server → client on one HTTP response. Client→server is a *different* [request](RequestResponse.md). | Bidirectional frames after Upgrade / extended CONNECT. | Each cycle is request/response. Server holds until an event or a timeout; client opens the next immediately. |
 | Binary | UTF-8 text. Binary must be encoded inside `data`. | Native binary and text frames. | HTTP body; any representation. |
@@ -176,7 +176,7 @@ Fetched 2026-09-13. `EventSource` has no library trip-threshold analogue. The op
 
 ## When not to use SSE
 
-- The client must **send** messages on the same connection → [WebSocket](WebSockets.md) (or WebTransport). Extra POSTs can fake duplex but lose ordering and head-of-line coupling.
+- The client must **send** messages on the same connection → [WebSocket](WebSocket.md) (or WebTransport). Extra POSTs can fake duplex but lose ordering and head-of-line coupling.
 - Native **binary** frames or a compact binary protocol → WebSocket.
 - The browser must send **`Authorization`** (or any non-cookie header) and you will not implement `fetch()` streaming plus your own reconnect → do not use `EventSource`.
 - Server-to-server push with retries, signatures, and at-least-once delivery → [webhooks](Webhooks.md), not a held HTTP stream.
@@ -195,7 +195,7 @@ Fetched 2026-09-13. `EventSource` has no library trip-threshold analogue. The op
 | No protocol upgrade to allow-list | Buffering and idle (and *total*) timers must be engineered away hop by hop |
 | Least new protocol of the three push shapes | GET-only `EventSource`; header-rich APIs own their own reconnect |
 
-SSE is the right default for feeds, progress, and one-way text streams. The moment the client must *talk back* on the same channel, it is a [WebSocket](WebSockets.md). The moment missed events must survive an absent consumer, it is a [queue](PubSubQueues.md). The moment the path cannot be talked out of buffering, it is long-polling.
+SSE is the right default for feeds, progress, and one-way text streams. The moment the client must *talk back* on the same channel, it is a [WebSocket](WebSocket.md). The moment missed events must survive an absent consumer, it is a [queue](PubSubQueues.md). The moment the path cannot be talked out of buffering, it is long-polling.
 
 ## Sources
 

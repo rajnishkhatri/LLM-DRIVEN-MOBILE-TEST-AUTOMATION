@@ -28,6 +28,17 @@ source = ".cursor/skills"
 members = ["aws-ai-lifecycle", "aws-ai-assess", "aws-ai-design", "aws-ai-build", "aws-ai-deploy", "aws-ai-validate"]
 projections = [".claude/skills"]
 
+# sdp — system-design tactical-patterns clinic; arch-* sibling covering the
+# intra-service pattern mechanics arch-* does not (breaker/retry/timeout/...).
+# Cursor is the source of truth, Claude is the projection (same shape as arch/aws-ai).
+# Wave 1: router sdp-lifecycle + category sdp-resilience (7 cards, thin slice = 3).
+# Spec docs/sdd/specs/sdp-resilience.spec.md; ADR docs/architecture/adrs/tooling/sdp/0001.
+[[family]]
+id = "sdp"
+source = ".cursor/skills"
+members = ["sdp-lifecycle", "sdp-resilience"]
+projections = [".claude/skills"]
+
 [[family]]
 id = "role-agents"
 source = "tooling/sdd-roles/kernel/corpus/catalog-projections/claude-code/agents"

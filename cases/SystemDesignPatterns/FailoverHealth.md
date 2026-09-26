@@ -7,7 +7,7 @@ tags: [system-design-patterns, availability, failover, health-checks]
 
 # Failover mechanisms and health checks
 
-**See also:** [circuit breaker](CircuitBreaker.md) · [retry, backoff, and retry budgets](RetryBackoff.md) · [load balancing](LoadBalancing.md) · [timeouts and deadline propagation](TimeoutsDeadlines.md) · [graceful degradation](GracefulDegradation.md) · [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/c3-failover-health-external-research.md)
+**See also:** [circuit breaker](CircuitBreaker.md) · [retry, backoff, and retry budgets](RetryBackoff.md) · [load balancing](LoadBalancing.md) · [timeouts and deadline propagation](TimeoutsDeadlines.md) · [graceful degradation](GracefulDegradation.md) · [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) · [first-pass card](Failover.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/c3-failover-health-external-research.md)
 
 The [circuit breaker](CircuitBreaker.md) decides **whether to call**. [Retries](RetryBackoff.md) decide **whether to try again**. Both assume a destination still exists. This pattern owns the complementary question: **when is that destination declared dead, taken out of rotation, and replaced?** Failover is detect-then-move — a health check names unhealth; a routing or promotion action points traffic at a survivor. Automatic where the blast radius is one host; deliberate where it is a region.
 

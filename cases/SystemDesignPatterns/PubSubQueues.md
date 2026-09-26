@@ -7,7 +7,7 @@ tags: [system-design-patterns, communication, pubsub, queues, kafka, messaging]
 
 # Publisher–subscriber, queues, and streams
 
-**See also:** [event-driven dataflow (DDIA)](../data-intensive-design/event-driven-dataflow.md) · [exactly-once processing](../data-intensive-design/distributed-transactions.md#exactly-once-message-processing) · [idempotency](Idempotency.md) · [load shedding & backpressure](LoadShedding.md) · [request–response](RequestResponse.md) · [webhooks](Webhooks.md) · [transactional outbox](../aws/ch08.md) · [event sourcing](../data-intensive-design/event-sourcing-cqrs.md) · [replication logs](../data-intensive-design/replication-logs.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/a2-pubsub-queues-external-research.md)
+**See also:** [event-driven dataflow (DDIA)](../data-intensive-design/event-driven-dataflow.md) · [exactly-once processing](../data-intensive-design/distributed-transactions.md#exactly-once-message-processing) · [idempotency](Idempotency.md) · [load shedding & backpressure](LoadShedding.md) · [request–response](RequestResponse.md) · [webhooks](Webhooks.md) · [transactional outbox and CDC (B7)](OutboxCdc.md) · [CQRS and event sourcing (E12)](CqrsEventSourcing.md) · [replication logs](../data-intensive-design/replication-logs.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/a2-pubsub-queues-external-research.md)
 
 Messaging decouples senders from receivers in **time** (the broker holds work while consumers are away) and **cardinality** (one event, many independent readers). The [event-driven dataflow](../data-intensive-design/event-driven-dataflow.md) note already states the broker's job — buffer, redeliver, hide addresses, fan-out, decouple — and the queue-versus-topic table. This card does not re-derive that. It owns the **mechanisms**: competing consumers, fan-out, ordering scopes, dead-letter channels, consume models, reconnect, and the proxy/LB surface. The event-driven *style* — topologies, quanta, when-to-use as an architecture — is **E4**, not this page.
 
@@ -163,7 +163,7 @@ Read the table as a design space, not a recommendation. Kafka 4.3.1 was current 
 - The publisher needs a **synchronous** result — pub/sub "introduces latency through the broker."
 - **Global total order** across all messages — partitions/sessions/groups restore order only by *reducing* parallelism.
 - A **single atomic transaction** across publisher and consumers — eventually consistent; use a local transaction + [outbox](../aws/ch08.md), or a saga, not a broker ack.
-- You need **replay / event sourcing** — a delete-on-consume queue is the wrong primitive; use a log ([E12](../data-intensive-design/event-sourcing-cqrs.md)), not SQS or RabbitMQ classic.
+- You need **replay / event sourcing** — a delete-on-consume queue is the wrong primitive; use a log ([E12](CqrsEventSourcing.md)), not SQS or RabbitMQ classic.
 - In-process calls, or a platform that already buses the same event (don't double-publish).
 - FIFO + DLQ when order *is* the product (SQS explicit warning).
 

@@ -22,3 +22,8 @@ deploy_home           = ".aws-ai/deploy/"       # CDK apps + cdk synth output
 validate_home         = ".aws-ai/validate/"     # test/eval/harness reports
 diagram_notation      = "mermaid"
 breadth_read_tool     = "explore subagent"
+
+# Per-target root override. claim-document-processor is flattened: assess/,
+# design/, build/, validate/ live directly under the root (no extra slug).
+[roots]
+claim-document-processor = "insurance-claim-processor/"

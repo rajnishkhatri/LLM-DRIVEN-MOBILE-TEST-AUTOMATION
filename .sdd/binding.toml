@@ -25,3 +25,12 @@ test_waiver_token  = "<none>"
 breadth_read_tool  = "explore subagent"
 methodology_source = "<none>"
 gate_catalog       = "<none>"
+
+# Per-target root override (mirrors .arch / .aws-ai bindings). Added 2026-09-21
+# for the LLD workstream. claim-document-processor is a flattened self-contained
+# kata: sdd homes (specs/, plans/) sit directly under the root; adrs/ is already
+# there (arch-decide). Effective gate for the kata = its offline unittest suite
+# (insurance-claim-processor/build/: python3 -m unittest discover -s tests);
+# constitution as above.
+[roots]
+claim-document-processor = "insurance-claim-processor/"

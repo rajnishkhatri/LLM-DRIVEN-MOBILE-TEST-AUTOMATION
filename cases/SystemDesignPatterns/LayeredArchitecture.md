@@ -12,7 +12,7 @@ tags: [system-design-patterns, architecture, layered]
 
 # Layered architecture
 
-**See also:** [monolithic architecture (E1)](MonolithicArchitecture.md) · [hexagonal / ports-and-adapters (E8)](Hexagonal.md) · [modular monolith (E10)](ModularMonolith.md) · [package by component](../coding-rules/package.md) · [clean architecture](../coding-rules/clean-architecture.md) · [style-selection matrix](../../.cursor/skills/arch-style/references/style-selection.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/e3-layered-external-research.md)
+**See also:** [monolithic architecture (E1)](Monolith.md) · [hexagonal / ports-and-adapters (E8)](Hexagonal.md) · [modular monolith (E10)](ModularMonolith.md) · [package by component](../coding-rules/package.md) · [clean architecture](../coding-rules/clean-architecture.md) · [style-selection matrix](../../.cursor/skills/arch-style/references/style-selection.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/e3-layered-external-research.md)
 
 Layered architecture is a **monolith-family** style that partitions a system into horizontal bands of *technically similar* work. The usual four (Richards 2015; [style-selection](../../.cursor/skills/arch-style/references/style-selection.md)): **presentation** (UI / inbound protocol), **business** (calculate, authorize, decide), **persistence** (DAOs / SQL / mappers), **database** (the store). Dependencies compile **top → bottom**. Three- and five-layer stacks are the same style; collapsing business into persistence (SQL in the business objects) is the three-layer variant, not a different one.
 

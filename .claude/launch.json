@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8123", "--bind", "127.0.0.1", "-d", "docs"],
       "port": 8123
+    },
+    {
+      "name": "explainers-static",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8437", "--bind", "127.0.0.1", "-d", "docs/architecture/explainers"],
+      "port": 8437
     }
   ]
 }

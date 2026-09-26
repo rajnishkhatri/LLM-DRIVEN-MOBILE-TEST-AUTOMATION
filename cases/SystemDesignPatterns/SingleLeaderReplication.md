@@ -7,9 +7,9 @@ tags: [system-design-patterns, replication, single-leader, B2b]
 
 # Single-leader replication
 
-**See also:** [replication overview](../data-intensive-design/replication-overview.md) · [single-leader (DDIA)](../data-intensive-design/single-leader-replication.md) · [replication logs](../data-intensive-design/replication-logs.md) · [replication lag](../data-intensive-design/replication-lag.md) · [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) · [partitioning](Partitioning.md) · [multi-leader](MultiLeaderReplication.md) · [leaderless](LeaderlessReplication.md) · [failover and health checks](Failover.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b2-partition-replicate-external-research.md)
+**See also:** [replication overview](../data-intensive-design/replication-overview.md) · [single-leader (DDIA)](../data-intensive-design/single-leader-replication.md) · [replication logs](../data-intensive-design/replication-logs.md) · [replication lag](../data-intensive-design/replication-lag.md) · [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) · [partitioning](Partitioning.md) · [multi-leader](MultiLeaderReplication.md) · [leaderless](LeaderlessReplication.md) · [failover and health checks](FailoverHealth.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b2-partition-replicate-external-research.md)
 
-This card owns **what a commit means** when one replica accepts writes and the others follow. The shape — leader writes locally, ships a [log](../data-intensive-design/replication-logs.md), followers apply in the same order — already lives in [single-leader replication](../data-intensive-design/single-leader-replication.md). Two implementations share that shape and not the *commit* meaning: **streaming / WAL shipping** (Postgres) can lose a client-visible write on failover; **Raft / Multi-Paxos** (etcd, Cockroach, DynamoDB, Kafka ISR+KRaft) commits only after a majority persists. [Failover](Failover.md) owns election timeouts as an availability mechanism, health checks, RTO/RPO. This card records the knobs that *feed* that card.
+This card owns **what a commit means** when one replica accepts writes and the others follow. The shape — leader writes locally, ships a [log](../data-intensive-design/replication-logs.md), followers apply in the same order — already lives in [single-leader replication](../data-intensive-design/single-leader-replication.md). Two implementations share that shape and not the *commit* meaning: **streaming / WAL shipping** (Postgres) can lose a client-visible write on failover; **Raft / Multi-Paxos** (etcd, Cockroach, DynamoDB, Kafka ISR+KRaft) commits only after a majority persists. [Failover](FailoverHealth.md) owns election timeouts as an availability mechanism, health checks, RTO/RPO. This card records the knobs that *feed* that card.
 
 Quality attributes: **durability** of an acknowledged write, **write availability** (one writer; sync replicas can stall it), **read scale** on async followers. Costs: a single writer per shard, [lag](../data-intensive-design/replication-lag.md) on async reads, and a failover that is either lossy (streaming) or majority-bound (consensus).
 
@@ -20,7 +20,7 @@ If the store is [sharded](Partitioning.md), each shard is its own replica set. D
 - **Kleppmann / this tree.** Leader-based = primary-backup. Sync buys a second up-to-date copy and stalls writes if that copy is down. Async buys write availability and can lose unreplicated writes after the client saw success. Production "sync" is usually **semisync**: one follower sync, the rest async. Sync to *every* follower is the failure mode already named in the case.
 - **Ongaro & Ousterhout, USENIX ATC 2014 *Raft*.** Single-leader consensus with randomized election timeout (paper example **150–300 ms**) so split votes are rare. Invariant: `broadcastTime ≪ electionTimeout ≪ MTBF`. Used by etcd, CockroachDB, TiDB, Kafka KRaft, YugabyteDB.
 - **PostgreSQL 17 docs (fetched 2026-09-13).** Streaming physical replication is **async unless `synchronous_standby_names` is non-empty**. `synchronous_commit` default `on` then means "local flush"; with standbys named it means "standby durable flush".
-- **Elhemali et al., ATC 2022 *Amazon DynamoDB*.** Per-partition **Multi-Paxos** group; only the lease-holding leader serves writes and strongly consistent reads; any replica serves eventually consistent reads. A typical group is **three storage replicas across AZs**; the paper adds *log replicas* (Paxos acceptors without the B-tree) to restore a write quorum faster than cloning a full replica. The new leader will not serve writes or consistent reads until the previous lease expires — fencing, owned by [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) and [failover](Failover.md).
+- **Elhemali et al., ATC 2022 *Amazon DynamoDB*.** Per-partition **Multi-Paxos** group; only the lease-holding leader serves writes and strongly consistent reads; any replica serves eventually consistent reads. A typical group is **three storage replicas across AZs**; the paper adds *log replicas* (Paxos acceptors without the B-tree) to restore a write quorum faster than cloning a full replica. The new leader will not serve writes or consistent reads until the previous lease expires — fencing, owned by [quorums and fencing](../data-intensive-design/quorums-and-fencing.md) and [failover](FailoverHealth.md).
 - **Kafka 4.3.** Single-leader *per partition*. Broker defaults (`default.replication.factor = 1`, `min.insync.replicas = 1`) are **dev-safe and prod-wrong**.
 
 **Replica family ≠ consensus.** Single-leader *streaming* can lose acknowledged writes on failover. Single-leader *Raft/Paxos* cannot, short of losing a majority. Do not treat them as one durability class.
@@ -46,7 +46,7 @@ The *producer* `acks` default in 4.x clients was **not** re-verified per languag
 
 **New followers.** A naive file copy sees different parts of the database at different times. The zero-downtime path is already in the [DDIA case](../data-intensive-design/single-leader-replication.md): consistent snapshot → copy → catch up from the named log position (Postgres LSN; MySQL binlog / GTID). Archive the replication log plus periodic snapshots to an object store — that is backup/DR *and* steps 1–2 of a new follower. Operational add: `wal_keep_size=0` without a slot or archive means a 2-hour blip is a full base-backup, not a resume.
 
-**Follower failure vs leader failure.** Catch-up recovery is conceptually simple and operationally a load spike: high write throughput or a long outage means a large backlog on both sides. The leader may drop WAL it has already shipped to every *live* follower; a slot that holds it forever fills the disk. Leader failure — detect, choose, reconfigure — is [failover](Failover.md). This card only names the durability you had *before* the election: async streaming can lose the client-visible write; Raft/ISR+min-ISR cannot, short of losing a majority / falling below min-ISR.
+**Follower failure vs leader failure.** Catch-up recovery is conceptually simple and operationally a load spike: high write throughput or a long outage means a large backlog on both sides. The leader may drop WAL it has already shipped to every *live* follower; a slot that holds it forever fills the disk. Leader failure — detect, choose, reconfigure — is [failover](FailoverHealth.md). This card only names the durability you had *before* the election: async streaming can lose the client-visible write; Raft/ISR+min-ISR cannot, short of losing a majority / falling below min-ISR.
 
 ## Streaming vs Raft — pick the commit meaning
 
@@ -68,7 +68,7 @@ The *producer* `acks` default in 4.x clients was **not** re-verified per languag
 | Catch-up | replication slot or archive; `wal_keep_size` **0** | replica fetch; ISR shrink | (v3 snapshot policy not separately verified) | autoadmin + log replicas | automatic split/merge/rebalance |
 | Read-on-replica | `hot_standby=on`; feedback **off**; cancel after **30 s** | consume any ISR (after min-ISR) | linearizable by default (Raft) | eventually consistent = any replica | leaseholder serves |
 
-MongoDB replica-set election timeout and Cockroach follower-read staleness were **not** fetched — do not invent them. Patroni / pg_auto_failover fencing is [failover](Failover.md).
+MongoDB replica-set election timeout and Cockroach follower-read staleness were **not** fetched — do not invent them. Patroni / pg_auto_failover fencing is [failover](FailoverHealth.md).
 
 ## Observability
 
@@ -91,7 +91,7 @@ Defaults are *safe for a laptop*. Production values come from RTT, item size, an
 
 Measure intra-AZ RTT and cross-region RTT with ICMP *and* a WAL-sized payload — etcd's "use ping" under-reads disk.
 
-| Deploy | `synchronous_standby_names` | `synchronous_commit` | What a COMMIT means | Failover ([C3](Failover.md)) |
+| Deploy | `synchronous_standby_names` | `synchronous_commit` | What a COMMIT means | Failover ([C3](FailoverHealth.md)) |
 |---|---|---|---|---|
 | Laptop / CI | empty | `on` (default) | local flush only | local flush happened; *replica* data may be gone |
 | One-AZ HA | `FIRST 1 (az1)` | `on` | primary + 1 standby durable | promote the sync standby; RPO ≈ 0 for that pair |
@@ -100,7 +100,7 @@ Measure intra-AZ RTT and cross-region RTT with ICMP *and* a WAL-sized payload �
 
 Always create a **replication slot** (or archive). `wal_keep_size=0` plus a 2-hour network blip is a full base-backup. Cap the slot with `max_slot_wal_keep_size` once you know peak WAL/hour × max-acceptable disconnect, or a stuck slot fills the disk and takes the primary down — the failure mode of "unlimited" (`-1`). Turn `hot_standby_feedback` on only after you measure primary bloat; the 30 s cancel is the other side of that trade-off.
 
-`max_wal_senders` **10** and `max_replication_slots` **10** are enough for a laptop and tight for a fleet that also runs logical decoding / CDC (catalog B7). Count senders *before* you attach the fifth standby. `wal_sender_timeout` / `wal_receiver_timeout` **60 s** is the failure-detection feed into [failover](Failover.md) — it is not an election timeout; a 60 s silent primary is a minute of unknown RPO on async. `wal_receiver_status_interval` **10 s** is why `pg_stat_replication` can look stale for ten seconds while the standby is fine.
+`max_wal_senders` **10** and `max_replication_slots` **10** are enough for a laptop and tight for a fleet that also runs logical decoding / CDC (catalog B7). Count senders *before* you attach the fifth standby. `wal_sender_timeout` / `wal_receiver_timeout` **60 s** is the failure-detection feed into [failover](FailoverHealth.md) — it is not an election timeout; a 60 s silent primary is a minute of unknown RPO on async. `wal_receiver_status_interval` **10 s** is why `pg_stat_replication` can look stale for ten seconds while the standby is fine.
 
 Semisync reminder: making *every* follower synchronous is impracticable — any one outage halts writes. Production "sync" is **one** named standby (or a majority via Raft) and the rest async. `remote_apply` on that one standby is how you buy read-your-writes *on that standby* without making every replica a commit waiter.
 
@@ -125,7 +125,7 @@ Start from the documented production triple: **RF=3, min.insync.replicas=2, acks
 
 - Broker defaults (`RF=1`, `min.ISR=1`, `num.partitions=1`) acknowledge a write on **one** disk. That is not HA.
 - One broker down: ISR=2 ≥ 2, writes live. Two brokers down: ISR=1 < 2, writes stop. That *is* the design.
-- Enabling unclean election restores writes and **drops** the messages that only lived on the dead ISR — [failover](Failover.md)'s availability/durability fork. Record it in an ADR; it is not a Tuesday default.
+- Enabling unclean election restores writes and **drops** the messages that only lived on the dead ISR — [failover](FailoverHealth.md)'s availability/durability fork. Record it in an ADR; it is not a Tuesday default.
 - Consumers: messages are not visible until they are on all in-sync replicas *and* the min-ISR condition holds. A dashboard that shows produce-success and consume-lag as if they were independent is lying during an ISR shrink.
 
 DynamoDB operational remainder: any replica may start an election; the winner holds a **lease** and will not serve writes or consistent reads until the previous lease expires. Log replicas restore a write quorum faster than cloning a full storage replica. That is fencing + catch-up, not a second writer — do not describe it as [multi-leader](MultiLeaderReplication.md).
@@ -134,7 +134,7 @@ DynamoDB operational remainder: any replica may start an election; the winner ho
 
 - **Name COMMIT in a test.** Kill the async standby, commit, kill the primary, promote. If the client-visible row is gone, your SLO was lying. Repeat with `FIRST 1` / `acks=all`+min-ISR 2 and confirm the opposite.
 - **Slot fill.** Pause a standby, write WAL until `max_slot_wal_keep_size` would have mattered. Default `-1` takes the primary down — that is the drill, not a surprise.
-- **Raft false-elect.** Inject disk latency above the heartbeat (etcd: other processes' IO). Confirm leader changes. The fix is dedicated disk / `ionice`, not a larger election timeout that lengthens [failover](Failover.md).
+- **Raft false-elect.** Inject disk latency above the heartbeat (etcd: other processes' IO). Confirm leader changes. The fix is dedicated disk / `ionice`, not a larger election timeout that lengthens [failover](FailoverHealth.md).
 - **ISR shrink.** Stop one Kafka broker at RF=3, min-ISR=2: produces live. Stop a second: produces fail with `NotEnoughReplicas*`. Enabling unclean election is a *separate* tested decision.
 - **Half-open analogy.** A [breaker](CircuitBreaker.md) over the leader endpoint must be per shard. A blended error rate across shards never trips or takes the healthy two-thirds offline (Brooker / Azure resource differentiation).
 
@@ -177,7 +177,7 @@ Catch-up recovery after a follower outage is conceptually simple and operational
 | Kafka ISR + `acks=all` + min-ISR 2 | Two brokers down stops writes — that is the design, not a bug |
 | Async followers for read scale | Unbounded lag; session guarantees are product work |
 
-The leader decides **who may write**. Sync vs majority decides **what COMMIT means**. [Failover](Failover.md) decides **who writes next**. Do not treat "we have a standby" as a durability strategy.
+The leader decides **who may write**. Sync vs majority decides **what COMMIT means**. [Failover](FailoverHealth.md) decides **who writes next**. Do not treat "we have a standby" as a durability strategy.
 
 Fully asynchronous is widely used when there are many followers or they are far away: the leader keeps writing if every follower is behind, and unreplicated writes are **lost** even after the client saw success. That weakening is a product decision, not an accident of defaults. Name it in the SLO, or name a sync/majority path for the rows that cannot take it. Session stickiness for read-your-writes, monotonic reads, and consistent prefix are the operational substitutes for a bound that eventual consistency will not give you.
 
@@ -185,7 +185,7 @@ Fully asynchronous is widely used when there are many followers or they are far 
 
 | Sibling | What they take |
 |---|---|
-| [Failover](Failover.md) | Detect, elect, reconfigure; RTO/RPO; split-brain as a failure mode. |
+| [Failover](FailoverHealth.md) | Detect, elect, reconfigure; RTO/RPO; split-brain as a failure mode. |
 | [Quorums and fencing](../data-intensive-design/quorums-and-fencing.md) | Lease tokens; majority-as-death. |
 | [Partitioning](Partitioning.md) | Which shard this leader owns. |
 | [Multi-leader](MultiLeaderReplication.md) / [leaderless](LeaderlessReplication.md) | When one writer is the wrong family. |

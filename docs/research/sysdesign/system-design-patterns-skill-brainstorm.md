@@ -2,10 +2,10 @@
 type: analysis
 title: 'SDD Stage 1 — Brainstorm: system-design-patterns skill family'
 description: >-
-  Premise audit, content-inventory delta, seven directions, and a validated
-  lead for a new skill family that turns the cases/SystemDesignPatterns OKF
-  bundle into system-design skills for coding agents (Cursor + Claude now,
-  Copilot later), standalone first and joinable to arch-*, aws-ai-*, sdd-* later.
+  Premise audit, content-inventory delta, seven directions, and a historical
+  lead for a new skill family. Live Stage-1 gate is the sibling MECE handover
+  (job-cut vs catalog-cut). Concepts in cases/SystemDesignPatterns/; agents
+  Cursor + Claude now, Copilot later; standalone first, joinable later.
 tags: [sdd, brainstorm, system-design-patterns, skills, arch, skill-sync]
 ---
 
@@ -13,7 +13,7 @@ tags: [sdd, brainstorm, system-design-patterns, skills, arch, skill-sync]
 
 **Stage:** SDD Stage 1 (brainstorm / ideation)
 **Binding:** `.sdd/binding.toml` — constitution `.cursor/rules/architecture-principles.mdc`; spec home `docs/sdd/specs/`; `test_gate = <none>`; `check_gate` = `python3 tooling/skill-sync/skill_sync.py check` (repo root only)
-**Status:** PARTIALLY GATED 2026-09-13 — owner answered the scope half: catalog confirmed and extended per group (superseding §3; see the [catalog of record](system-design-patterns-catalog.md)), group-appropriate depth bars, one group per research cycle, styles live in the bundle. The direction ids (G1, G2, G4, G5, G6) stay open until the catalog research completes (owner R5).
+**Status:** GATE CLOSED 2026-09-13 — Stage-1 direction accepted. Slate `S1 · T2b · E1+E2+E4 · P1→P2 (Z-spec) · V1+V3+V5 · N-b (sdp-*) · J1` (live gate + §13 consumer dimension + §14 record in [system-design-patterns-skill-mece-handover.md](system-design-patterns-skill-mece-handover.md)). Advance → sdd-spec via [system-design-patterns-skill-spec-handover.md](system-design-patterns-skill-spec-handover.md). §8–§9 historical; G3 moot.
 **Home:** `docs/research/sysdesign/system-design-patterns-skill-brainstorm.md`
 **Owner framing confirmed 2026-09-13:** C1 broader system-design catalog (patterns to be recommended here and confirmed); C2 the deepened [Circuit breaker](../../../cases/SystemDesignPatterns/CircuitBreaker.md) is the depth bar for every pattern; C3 a **new sibling family** that works independently first and supports arch-* / aws-ai-* / sdd-* later; C4 Copilot is a later projection; C5 finish the Circuit breaker deepening in parallel.
 
@@ -165,3 +165,54 @@ Pick by id; a bare "yes" is not multi-option consent.
 - **G6 Joins.** `G6-a` confirm: no arch-*/aws-ai/sdd joins in this iteration; only leave the seams (router boundary statements, ADR-candidate output shape) · `G6-b` include one join now (say which).
 
 Advance → **sdd-spec** with the chosen ids + validated hypotheses H1–H4, carrying H5 and the evals-format probe as spec-time tasks.
+
+---
+
+## 9. Refresh 2026-09-13 — directions re-audited against delivered content
+
+> **Historical.** The live gate is [the MECE handover](system-design-patterns-skill-mece-handover.md) (§10). Do not pose G0–G6 from this section as current.
+
+Trigger: catalog research closed (owner R5 hold lifted); owner chose **"refresh, then gate"** over jumping straight to §8. The seven directions in §5 and the lead in §6 were written when the plan was twelve patterns in waves; the tree now holds **47 canonical Concepts** (34 tactical A/B/C/D + 13 style E) plus 3 superseded first-pass cards, all OKF-lint-green, with the skill-sync check gate at 6 families / 0 drifted. This section records what that changes; §8's options are superseded by **§9's refreshed gate** below.
+
+### 9.1 Content delta (measured)
+
+| Axis | When directions were written | Now (2026-09-13, file-measured) | Effect on the gate |
+|---|---|---|---|
+| Catalogued patterns | 12 (P01–P12), waves 2/3 proposed | 43 topics, **all** written as Concepts | **G3 moot**; wave planning obsolete |
+| Tactical cards (A/B/C/D) | 0 | **34 canonical** | thin slice can start now; synthesis, not research, is the bottleneck |
+| Style cards (E) | 0 — "out of scope (arch-style)" (§0) | **13 canonical, each already citing `arch-style`/`arch-decide`/`arch-characteristics`** | new scope question **G0** |
+| Card template | "freeze from P01" (one) | **two measured shapes**: operational (Config/Observability/Tuning/Calibration) and decision (quantum-count/Decision-mechanics/Migration) | a D4 generator needs two schemas → hand-distill first still right |
+| D4 generator / D7 IR | "defer until ≥8 patterns" | 47 Concepts exist | **D4 promoted** to fast-follow; **D7 still deferred** (Copilot is C4) |
+| Velocity (H7) | 1 pattern / research cycle, calendar-bound | research done | calendar cost ≈ 0; remaining cost is distillation |
+| Narrative layer | none | **5 per-group HTML explainers** (~4,390 lines) | under-used signal: teaching layer / D5 symptom source |
+| Gates | OKF green; skill-sync 6/0 | OKF exit 0 (2 known non-bundle warns); skill-sync exit 0 (6/0/0) | unchanged; registration is still one manifest entry (H1) |
+
+### 9.2 Re-audit of the seven directions
+
+- **D1 stage family** — still not recommended (four skills over one shared body of knowledge; no per-stage gate exists here, unlike aws-ai's credential gate).
+- **D2 category family — recommended, and strengthened.** Categories now map to the **delivered groups A/B/C/D**; the content is already grouped exactly this way (index.md sections and the five per-group explainers). ~34 cards / 4 category skills ≈ 8–9 cards each = clean progressive disclosure.
+- **D3 single skill** — still not recommended (a 34-card trigger surface; P12 `needs-probe`).
+- **D4 generator — promoted** from "someday (≥8 patterns)" to **fast-follow** once the first category proves the card template; needs two schemas (tactical + style).
+- **D5 symptom-first clinic — recommended** as the protocol every SKILL.md embeds (name-lookup bypass retained); the five explainers are a ready source of symptom framings.
+- **D6 fitness pack** — unchanged: start as recipes in each card's "verify" section; promote to code only where the workspace names a stack.
+- **D7 pattern IR** — still deferred; its only driver is the Copilot projection (C4-deferred).
+
+Net: the §6 composite **D2 + D5 + D4-lite** still leads, now with categories = A/B/C/D, scope = tactical (G0), and the D4 generator moved up to fast-follow.
+
+### 9.3 Refreshed human gate (superseded §8; itself superseded by the MECE handover)
+
+- **G0 Family scope (new).** `G0-a` family = the **34 tactical patterns (A/B/C/D)**; the 13 style Concepts stay in the bundle (R4) and wire into `arch-style`, not new skill content — **recommended** (they already cite arch-*). · `G0-b` family also owns styles as a 5th category skill. · `G0-c` tactical now, styles decided later.
+- **G1 Direction.** `G1-a` **D2 + D5 + D4-lite**, categories = the delivered groups (**recommended**) · `G1-b` D1 stage family · `G1-c` D3 single skill · `G1-d` other.
+- **G2 Naming prefix.** `G2-a` `sysdesign-*`, router `sysdesign-patterns` (**recommended**) · `G2-b` `sdp-*` · `G2-c` `patterns-*` · `G2-d` other.
+- **G3 Catalog wave.** **Moot** — every topic is already a Concept.
+- **G4 Content pipeline now.** `G4-a` hand-distilled cards against a per-group template, D4 generator as a fast-follow after category 1 (**recommended**) · `G4-b` build the generator first · `G4-c` IR first.
+- **G5 Quality gate.** `G5-a` adopt the `evals.json` precedent — trigger + answer set per category skill, started at the thin slice (**recommended, do-regardless**) · `G5-b` defer to end of wave 1.
+- **G6 Joins.** `G6-a` seams only for the family this iteration; the styles→`arch-style` wiring proceeds as a separate track (**recommended**) · `G6-b` include one join now.
+
+Advance → **sdd-spec** with the chosen ids + validated hypotheses H1–H4 (H5 and the evals-format probe carried as spec-time tasks).
+
+---
+
+## 10. Superseded as live gate — see the MECE handover
+
+2026-09-13 critical pass: D1–D7 are not MECE; §9 equated original D2 (job-shaped categories) with catalog groups A/B/C/D; several “validated” claims were convenience. The live pyramid, corrected cuts, honest hypothesis tree, and replacement gate (Q1–Q7) live in [system-design-patterns-skill-mece-handover.md](system-design-patterns-skill-mece-handover.md). A brainstorm agent landing here should read that file next and pose **Q1 (T2a vs T2b)** before §9’s G0–G6.

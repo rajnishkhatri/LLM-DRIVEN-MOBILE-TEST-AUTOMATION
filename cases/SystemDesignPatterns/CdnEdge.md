@@ -7,9 +7,9 @@ tags: [system-design-patterns, performance, cdn]
 
 # CDN and edge
 
-**See also:** [caching (B3 research)](../../docs/research/sysdesign/b3-caching-external-research.md) · [load balancing](LoadBalancing.md) · [failover and health checks](FailoverHealth.md) · [graceful degradation](GracefulDegradation.md) · [circuit breaker](CircuitBreaker.md) · [performance](../data-intensive-design/performance.md) · [home-timeline case study](../data-intensive-design/home-timeline-case-study.md) · [CloudFront as an AWS entry point](../aws/ch09.md) · [Origin Shield in a video sketch](../aws/ch20.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b8-cdn-edge-external-research.md)
+**See also:** [caching strategies (B3)](CachingStrategies.md) · [load balancing](LoadBalancing.md) · [failover and health checks](FailoverHealth.md) · [graceful degradation](GracefulDegradation.md) · [circuit breaker](CircuitBreaker.md) · [performance](../data-intensive-design/performance.md) · [home-timeline case study](../data-intensive-design/home-timeline-case-study.md) · [CloudFront as an AWS entry point](../aws/ch09.md) · [Origin Shield in a video sketch](../aws/ch20.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/b8-cdn-edge-external-research.md)
 
-A CDN point of presence (POP) stores an HTTP **response** keyed by a **cache key** derived from the request. A later request that hashes to the same key is a **hit** and never reaches the origin. A miss, or a revalidation, goes origin-ward — optionally through a mid-tier **shield** that collapses duplicate misses. That is the opposite of an application cache ([B3](../../docs/research/sysdesign/b3-caching-external-research.md)): the caller is an anonymous or cookied HTTP client, the store is shared and multi-tenant, and invalidation is a *fleet* problem (every POP, every variant).
+A CDN point of presence (POP) stores an HTTP **response** keyed by a **cache key** derived from the request. A later request that hashes to the same key is a **hit** and never reaches the origin. A miss, or a revalidation, goes origin-ward — optionally through a mid-tier **shield** that collapses duplicate misses. That is the opposite of an application cache ([B3](CachingStrategies.md)): the caller is an anonymous or cookied HTTP client, the store is shared and multi-tenant, and invalidation is a *fleet* problem (every POP, every variant).
 
 Quality attributes: **performance** (bytes closer to the client), **scalability** of the origin (`origin_qps ≈ client_qps × (1 − hit_rate)`, then collapsed by the shield), and **availability** of the *caller* when `stale-if-error` is on. Costs: another fleet of independent stores to fill and purge, key-design as a correctness problem, and a capacity-cache flush that becomes a thundering herd on the origin.
 
@@ -30,7 +30,7 @@ Quality attributes: **performance** (bytes closer to the client), **scalability*
 
 CloudFront states the dynamic case: persistent connections save the TCP + TLS handshake; keep-alive default **5 s** (1–300 s); connection timeout **10 s**, **3** attempts; response timeout **30 s** (1–120 s). Origin Shield treats PUT/POST/PATCH/DELETE and GET/HEAD with TTL < **3600 s** (or caching disabled) as dynamic — Shield is then *always* an extra hop. Cloudflare Argo Smart Routing minimizes origin TTFB by avoiding congested paths; it does **not** create a cache hit. Tiered Cache is the shield cousin.
 
-WebSocket / SSE are usually uncacheable; you wanted [A3](WebSockets.md) / [A4](ServerSentEvents.md) plus an idle timeout (CloudFront WebSocket origin idle **10 min**), not a cache policy.
+WebSocket / SSE are usually uncacheable; you wanted [A3](WebSocket.md) / [A4](ServerSentEvents.md) plus an idle timeout (CloudFront WebSocket origin idle **10 min**), not a cache policy.
 
 ## Cache-key design (the variance problem)
 
@@ -223,7 +223,7 @@ Origin-QPS napkin (B3 identity, now with a shield). 17 000 rps static at 99% edg
 | Versioned URLs retire purge | Old hashes occupy cache; HTML must change in lockstep |
 | Edge compute normalizes keys / transforms once at shield | Unique `Authorization` in the key, or transform-at-every-POP, undoes the cache |
 
-The application cache ([B3](../../docs/research/sysdesign/b3-caching-external-research.md)) decides **what the origin remembers**. This card decides **what the public path remembers**, and for how long. [C5](LoadBalancing.md) places the origin request that still happens. [C3](FailoverHealth.md) decides when that origin is dead. [C11](GracefulDegradation.md) decides whether stale bytes are an acceptable answer. [C1](CircuitBreaker.md) is what you pair with a shield flush so the refill does not take the origin down.
+The application cache ([B3](CachingStrategies.md)) decides **what the origin remembers**. This card decides **what the public path remembers**, and for how long. [C5](LoadBalancing.md) places the origin request that still happens. [C3](FailoverHealth.md) decides when that origin is dead. [C11](GracefulDegradation.md) decides whether stale bytes are an acceptable answer. [C1](CircuitBreaker.md) is what you pair with a shield flush so the refill does not take the origin down.
 
 ## Sources
 
@@ -231,4 +231,4 @@ Verified 2026-09-13; the full URL list, per-claim provenance, and the items deli
 
 - Canon: RFC 9111 (STD 98, June 2022); RFC 5861 (May 2010, Informational).
 - Vendors (fetched 2026-09-13): CloudFront cache policy, expiration, Origin Shield, invalidation, signed URLs, origin timeouts; Fastly `vcl_hash`, freshness, stale, shielding, purging; Cloudflare cache keys, default behavior, revalidation, Tiered Cache, Argo, token auth; Akamai Property Manager caching, Fast Purge, Auth Token 2.0.
-- Adjacent in this tree: [B3 research](../../docs/research/sysdesign/b3-caching-external-research.md); [CircuitBreaker.md](CircuitBreaker.md); [GracefulDegradation.md](GracefulDegradation.md); [aws/ch09.md](../aws/ch09.md); [aws/ch20.md](../aws/ch20.md).
+- Adjacent in this tree: [CachingStrategies.md](CachingStrategies.md); [CircuitBreaker.md](CircuitBreaker.md); [GracefulDegradation.md](GracefulDegradation.md); [aws/ch09.md](../aws/ch09.md); [aws/ch20.md](../aws/ch20.md).

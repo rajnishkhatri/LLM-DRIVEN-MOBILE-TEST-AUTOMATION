@@ -1,13 +1,17 @@
 ---
 type: reference
 title: 'Failover and health checks'
-description: 'Detect unhealth and move traffic to a survivor: probe taxonomy from liveness to anomaly detection, verified K8s/Envoy/Route 53 defaults, RTO/RPO and the four DR strategies, DNS TTL and database failover timings, static stability and the data-plane rule, the fail-open/fail-closed matrix, and the GitHub 2018 split-brain post-mortem.'
-tags: [system-design-patterns, availability, failover, health-checks, dr]
+description: >-
+  First-pass C3, superseded by FailoverHealth.md. Kept for the first-pass
+  research trail (probe taxonomy, DR strategies, GitHub 2018 split-brain).
+tags: [system-design-patterns, availability, failover, health-checks, dr, superseded]
 ---
 
 # Failover and health checks
 
-**See also:** [circuit breaker](CircuitBreaker.md) · [load balancing](LoadBalancing.md) · [graceful degradation](GracefulDegradation.md) · [quorums and fencing (DDIA)](../data-intensive-design/quorums-and-fencing.md) · [replication (DDIA)](../data-intensive-design/replication-overview.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/failover-degradation-external-research.md)
+**Status:** First-pass card. Canonical Concept: [Failover mechanisms and health checks](FailoverHealth.md) (catalog C3). Prefer that page.
+
+**See also:** [Failover mechanisms (canonical C3)](FailoverHealth.md) · [circuit breaker](CircuitBreaker.md) · [load balancing](LoadBalancing.md) · [graceful degradation](GracefulDegradation.md) · [quorums and fencing (DDIA)](../data-intensive-design/quorums-and-fencing.md) · [replication (DDIA)](../data-intensive-design/replication-overview.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/failover-degradation-external-research.md)
 
 Failover is the pattern pair: **detect** that a replica, zone, or site is unhealthy, then **move traffic** to a survivor — automatically where the blast radius is small, deliberately where it is not. Health checks are the detection half, and they are harder than they look: the classic incident is a server failing *fast* with blank pages while passing every responsiveness probe, thereby attracting *more* traffic (the black-hole effect). Quality attributes: **availability** and **recoverability** (RTO), bounded **data loss** (RPO). Costs: standby capacity, detection latency vs false-positive trade-offs, and the worst failure mode in distributed systems — split-brain.
 

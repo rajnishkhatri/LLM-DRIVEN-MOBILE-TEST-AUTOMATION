@@ -14,9 +14,9 @@ tags: [system-design-patterns, architecture, monolith]
 
 # Monolithic architecture
 
-**See also:** [microservices (E2, later)](Microservices.md) · [modular monolith (E10)](ModularMonolith.md) · [layered architecture (E3)](Layered.md) · [scaling strategies](ScalingStrategies.md) · [distributed vs single-node](../data-intensive-design/distributed-vs-single-node.md) · [maintainability](../data-intensive-design/maintainability.md) · [boundaries as deployment mode](../coding-rules/boundaries-anatomy.md) · [independence](../coding-rules/independence.md) · [style-selection facts](../../.cursor/skills/arch-style/references/style-selection.md) · [ADR 0005](../../docs/architecture/adrs/application/mobile-test-automation/0005-adopt-plain-modular-monolith-partitioned-by-cluster.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/e1-monolith-external-research.md)
+**See also:** [microservices (E2)](Microservices.md) · [modular monolith (E10)](ModularMonolith.md) · [layered architecture (E3)](LayeredArchitecture.md) · [scaling strategies](ScalingStrategies.md) · [distributed vs single-node](../data-intensive-design/distributed-vs-single-node.md) · [maintainability](../data-intensive-design/maintainability.md) · [boundaries as deployment mode](../coding-rules/boundaries-anatomy.md) · [independence](../coding-rules/independence.md) · [style-selection facts](../../.cursor/skills/arch-style/references/style-selection.md) · [ADR 0005](../../docs/architecture/adrs/application/mobile-test-automation/0005-adopt-plain-modular-monolith-partitioned-by-cluster.md) · [external research note (2026-09-13)](../../docs/research/sysdesign/e1-monolith-external-research.md)
 
-A monolith is a **deployment decision**: the server-side application as one logical executable — one process image, one release train, one primary architecture quantum. Internally it may be folders, N layers ([E3](Layered.md)), domain modules ([E10](ModularMonolith.md)), pipes, a microkernel, or a hexagon. Those are *partitioning* choices. This card records the family: **one independently deployable unit**. Cloned replicas behind a load balancer are still one quantum (same bits, same schema). A container does not split it.
+A monolith is a **deployment decision**: the server-side application as one logical executable — one process image, one release train, one primary architecture quantum. Internally it may be folders, N layers ([E3](LayeredArchitecture.md)), domain modules ([E10](ModularMonolith.md)), pipes, a microkernel, or a hexagon. Those are *partitioning* choices. This card records the family: **one independently deployable unit**. Cloned replicas behind a load balancer are still one quantum (same bits, same schema). A container does not split it.
 
 It is **not** a Big Ball of Mud, and it is **not** [E10](ModularMonolith.md). A BBOM is a failure of internal structure (Foote & Yoder). A modular monolith is the same deployable *with* domain modules, published interfaces, and enforced seams — E10's card; do not read E10's recovered stars as this family's scorecard. The book has **no** star row labelled "Monolithic architecture."
 
@@ -29,7 +29,7 @@ This card owns the *family* as a quantum decision. It must point at E10 and stop
 | **[E10 Modular monolith](ModularMonolith.md)** | Domain modules + published interfaces + enforced seams on one deployable. Ch11 ratings and too-big signs live there. E1's disciplined in-family destination. |
 | **[E2 Microservices](Microservices.md)** | Fine-grained, DB-per-service, most quanta of any style. A *destination* after prerequisites and a named fracture — later. |
 | **E6 SOA / service-based** | Coarse services (book: usually ≤12, often one DB). First distributed hop; ADR 0005's named target. |
-| **[E3 Layered](Layered.md)** | Common *internal* technical partition. Quanta 1; ratings `—`. |
+| **[E3 Layered](LayeredArchitecture.md)** | Common *internal* technical partition. Quanta 1; ratings `—`. |
 | **E7 / E8** | Other internal shapes that still deploy as one quantum. |
 | **B4 Strangler fig** | *Mechanism* to leave a live system. E1 decides whether / toward which style. |
 | **E4 / A2 / B7** | Event-driven style and its mechanisms. An internal queue does not make a monolith E4. |
@@ -87,7 +87,7 @@ From [style-selection.md](../../.cursor/skills/arch-style/references/style-selec
 
 | Style (monolith family) | Quanta | Prose-recovered ratings | Who owns the row |
 |---|---|---|---|
-| Layered (ch10) | **1** | **—** (file truncated; do not invent) | [E3](Layered.md) |
+| Layered (ch10) | **1** | **—** (file truncated; do not invent) | [E3](LayeredArchitecture.md) |
 | Modular monolith (ch11) | **1** | cost/simplicity/modularity HI; deploy/test 2★; scale/elasticity 1★; FT **unsupported** | **[E10](ModularMonolith.md)** |
 | Pipeline (ch12) | **1** | cost/simplicity/modularity HI; deploy/test "average"; scale/elasticity 1★; FT unsupported | sibling style |
 | Microkernel (ch13) | **1** | simplicity/cost HI; test/deploy/reliability/modularity/evolvability/responsiveness 3★; scale/elasticity/FT LO | sibling style |
@@ -138,7 +138,7 @@ Thoughtworks Radar named **Microservice Envy**. Inverse Conway is in Fowler's no
 - **Multiple counteracting characteristic sets** that fail the coupling test. Then E6 / E2 / E4 — and **re-check after choosing sync**; sync merges quanta.
 - **A named part must scale, fail, reside, or release independently** and is not coupled by a shared store or a synchronous call. Microsoft's e-commerce shape: browse / basket / pay / admin have uneven load, so cloning scales cold parts with hot ones — extract *that* module (B4), do not clone forever.
 - **Fault isolation is a top characteristic.** Recovered family rows: FT unsupported (E10) or LO (microkernel). Isolation is a reason to leave.
-- **Change is technically shaped *and* you need independent deploy of those slices.** Not E10 either (`Modular-monolith-arch.md:229-239` via style-selection). Technical partitioning inside one deployable is [E3](Layered.md) / pipeline / microkernel — still this family, still one quantum.
+- **Change is technically shaped *and* you need independent deploy of those slices.** Not E10 either (`Modular-monolith-arch.md:229-239` via style-selection). Technical partitioning inside one deployable is [E3](LayeredArchitecture.md) / pipeline / microkernel — still this family, still one quantum.
 - **Several stream-aligned teams blocked on one train *and* fracture planes known.** Inverse Conway, then B4 toward E6/E2 — not more folders.
 
 Fowler's MicroservicePremium drivers (large teams, multi-tenancy, many interaction models, independently evolving functions, scale, sheer size) are the *kind* of pressure that can justify leaving — they are not a checklist that flips the style on sight. CD-impossible and irreplaceable-parts are explicitly **not** essential. Facebook and Etsy stayed on one deployable and still shipped continuously. The test remains the coupling test plus a named fracture, not a head-count threshold (none of 20 / 50 / 150 appears on a fetched primary).

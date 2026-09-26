@@ -209,6 +209,21 @@ review-parked claims email the owner.
 | Scar — email unsubscribe | SNS email subs die to one-click unsubscribe links (Gmail); killed twice during testing. Re-subscribe + confirm revives (same sub id). Armor = `confirm-subscription --authenticate-on-unsubscribe on` with the emailed token — not applied (token spent); redo if it recurs |
 | Artifacts | pattern/target/policy JSONs in session scratchpad `phase2/` |
 
+## Stage 11 — F2: the HITL Lambdas  ✅ 2026-09-26 (repo fix + owner-run deploy)
+
+Review-bound claims can now resume: `await_review` (new handler, commit
+`93658ad`) persists the task token as `pending-review/<key>.token.json`
+beside the parked claim; the reviewer reads it and calls `SendTaskSuccess`,
+whose output lands in `$.hitl` for `Record` to apply. 293 offline tests OK.
+
+| Item | Value |
+|---|---|
+| Functions created | `claim-processor-await-review` (handler `claim_processor.lambda_entry.await_review`), `claim-processor-expire-review` (handler existed, function didn't) — python3.12 / arm64 / 512 MB / 60 s / role `claim-processor-step-lambda`, env = `lambda-env.json` |
+| Code refresh | all 8 functions on one zip, CodeSha256 `Y+/fGiFLxEan5uvwl+6wsbdVGauK8ZK9Qg2WhrDBcpo=` |
+| Smoke (full circle w/ Stage 10) | `home-tx-water.txt` ($12,500 > $10k) → `claims/hitl-test-1.txt` → EventBridge auto-start → parked at `AwaitReview` (pending record + token file written, review emails sent) → `send-task-success` `{"decision":"approve","reviewer_id":"rajnish"}` → **SUCCEEDED**; `results/claims/hitl-test-1.txt.json` carries `review{approve, rajnish, field_changes: []}` |
+| Known noise | each parked claim sends TWO "needs review" emails (pending record + token file both match the `pending-review/` rule) |
+| Leftovers | token files are not deleted on resume (lab-acceptable; clear at teardown) |
+
 ## Teardown checklist (do at the end)
 - [ ] Remove EventBridge targets + rules `claim-uploaded`, `pipeline-failed`, `claim-needs-review`; delete role `claim-processor-events-role`
 - [ ] Delete state machine, Lambdas, alarms, SNS topic `claim-processor-notifications` (+ email sub), AppConfig app, guardrail

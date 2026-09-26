@@ -1,0 +1,385 @@
+<title>The Bedrock Building</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders:opsz,wght@10..72,500;10..72,700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#F6F7F4;
+    --surface:#FFFFFF;
+    --ink:#1C2833;
+    --muted:#5A6B7A;
+    --line:#C6D0D9;
+    --line-soft:#DCE3E9;
+    --accent:#245AA6;
+    --accent-soft:#E3ECF7;
+    --allow:#2E7D4F;
+    --deny:#B3402E;
+    --cost:#96690F;
+    --cost-soft:#F5EBD6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0F1720;
+      --surface:#161f2b;
+      --ink:#DDE6EE;
+      --muted:#8FA1B3;
+      --line:#33465A;
+      --line-soft:#243342;
+      --accent:#6FA8E8;
+      --accent-soft:#1C2C40;
+      --allow:#5FBF8A;
+      --deny:#E07A5F;
+      --cost:#D9A94A;
+      --cost-soft:#2C2513;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0F1720;
+    --surface:#161f2b;
+    --ink:#DDE6EE;
+    --muted:#8FA1B3;
+    --line:#33465A;
+    --line-soft:#243342;
+    --accent:#6FA8E8;
+    --accent-soft:#1C2C40;
+    --allow:#5FBF8A;
+    --deny:#E07A5F;
+    --cost:#D9A94A;
+    --cost-soft:#2C2513;
+    color-scheme: dark;
+  }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    font-size:15px;
+    line-height:1.55;
+    padding-inline:20px;
+    padding-block:0 64px;
+  }
+  .wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+  a{color:var(--accent)}
+  h1,h2{font-family:"Big Shoulders","IBM Plex Sans",sans-serif;text-wrap:balance;margin:0}
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 6px;
+  }
+  header{padding-top:48px}
+  header h1{font-size:clamp(44px,9vw,76px);font-weight:700;line-height:.95;letter-spacing:.01em;text-transform:uppercase}
+  header .sub{max-width:60ch;color:var(--muted);margin:14px 0 0}
+  .meta{
+    display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:18px;
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);
+    border-top:1px solid var(--line);padding-top:12px;
+  }
+  section h2{font-size:clamp(26px,4.5vw,34px);font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin-bottom:4px}
+  .lede{color:var(--muted);max-width:64ch;margin:6px 0 20px}
+  code, .mono{font-family:"IBM Plex Mono",monospace;font-size:.85em}
+  .id{color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:11px;word-break:break-all}
+
+  /* blueprint drawing */
+  .drawing{border:1px solid var(--line);background:var(--surface);overflow-x:auto}
+  .drawing svg{display:block;min-width:640px;width:100%;height:auto}
+
+  /* translation map */
+  .map{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+  .row{
+    display:grid;grid-template-columns:150px 170px 1fr;gap:6px 18px;
+    padding:12px 0;border-bottom:1px solid var(--line-soft);align-items:baseline;
+  }
+  .row .aws{font-weight:600}
+  .row .metaphor{font-family:"Big Shoulders",sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.03em;color:var(--accent)}
+  .row .what{color:var(--muted)}
+  .row .what b{color:var(--ink);font-weight:600}
+  @media (max-width:620px){
+    .row{grid-template-columns:1fr 1fr}
+    .row .what{grid-column:1 / -1}
+  }
+
+  /* two gates */
+  .gates{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:620px){.gates{grid-template-columns:1fr}}
+  .gate{border:1px solid var(--line);background:var(--surface);padding:18px 18px 16px}
+  .gate h3{font-family:"Big Shoulders",sans-serif;font-size:22px;font-weight:700;text-transform:uppercase;margin:0 0 2px;letter-spacing:.03em}
+  .gate .q{color:var(--accent);font-weight:600;margin:0 0 10px}
+  .chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;font-family:"IBM Plex Mono",monospace;font-size:12px}
+  .chain span{border:1px solid var(--line);padding:3px 8px;background:var(--paper)}
+  .chain i{font-style:normal;color:var(--muted)}
+  .fail{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;margin:0}
+  .fail b{color:var(--deny)}
+  .gate-note{grid-column:1 / -1;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);padding:10px 14px}
+
+  /* guards table */
+  .guards{overflow-x:auto;border:1px solid var(--line);background:var(--surface)}
+  table{border-collapse:collapse;width:100%;min-width:540px}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top;font-size:14px}
+  thead th{font-family:"Big Shoulders",sans-serif;font-size:18px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line)}
+  thead th:nth-child(2){color:var(--accent)}
+  tbody th{font-weight:500;color:var(--muted);font-size:13px;white-space:nowrap}
+  tr:last-child td, tr:last-child th{border-bottom:none}
+  .yes{color:var(--allow);font-weight:600}
+  .no{color:var(--deny);font-weight:600}
+
+  /* badge anatomy */
+  .badge{border:1px solid var(--line);background:var(--surface);padding:20px}
+  .badge-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+  @media (max-width:620px){.badge-grid{grid-template-columns:1fr}}
+  .badge-part{border-left:3px solid var(--accent);padding-left:14px}
+  .badge-part h4{margin:0 0 4px;font-size:15px}
+  .badge-part p{margin:0;color:var(--muted);font-size:13.5px}
+  .badge-part .mono{display:block;margin-top:6px;font-size:11.5px;color:var(--accent)}
+  .deputy{margin:18px 0 0;padding:12px 14px;background:var(--accent-soft);font-size:13.5px}
+  .deputy b{font-weight:600}
+
+  /* lanes */
+  .lanes{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  @media (max-width:620px){.lanes{grid-template-columns:1fr}}
+  .lane{border:1px solid var(--line);background:var(--surface);padding:16px 16px 14px;display:flex;flex-direction:column;gap:6px}
+  .lane .metaphor{font-family:"Big Shoulders",sans-serif;font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .lane .svc{font-weight:600;color:var(--accent);font-size:13px}
+  .lane p{margin:0;color:var(--muted);font-size:13.5px;flex:1}
+  .lane .id{margin-top:4px}
+
+  /* scars */
+  .scars{counter-reset:scar;display:flex;flex-direction:column;border-top:1px solid var(--line)}
+  .scar{display:grid;grid-template-columns:56px 1fr;gap:18px;padding:16px 0;border-bottom:1px solid var(--line-soft)}
+  .scar::before{
+    counter-increment:scar;content:counter(scar,decimal-leading-zero);
+    font-family:"Big Shoulders",sans-serif;font-size:34px;font-weight:700;color:var(--deny);line-height:1;
+  }
+  .scar h4{margin:0 0 3px;font-size:15px}
+  .scar p{margin:0;color:var(--muted);font-size:13.5px}
+
+  /* cost */
+  .cost{border:1px solid var(--cost);background:var(--cost-soft);padding:18px 20px}
+  .cost h2{color:var(--cost)}
+  .meter{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 10px;font-variant-numeric:tabular-nums}
+  .meter .item{border:1px solid var(--cost);padding:8px 12px;font-family:"IBM Plex Mono",monospace;font-size:13px;background:var(--surface)}
+  .meter .item b{font-size:16px}
+  .cost p{margin:6px 0 0;font-size:13.5px;color:var(--muted)}
+  .cost p b{color:var(--ink)}
+
+  footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px;max-width:70ch}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Mental map · built by hand · 2026-09-25</p>
+  <h1>The Bedrock<br>Building</h1>
+  <p class="sub">Everything you deployed is one office building. If you can walk the building in your head, you can reconstruct every AWS concept — and every resource ID below is one you created yourself.</p>
+  <div class="meta">
+    <span>acct 324177727513</span><span>us-east-1</span><span>vpc-096ee6e7b3a9ceff0</span><span>10.0.0.0/16</span>
+  </div>
+</header>
+
+<section>
+  <p class="eyebrow">The floor plan</p>
+  <h2>One building, two towers</h2>
+  <p class="lede">Two towers are Availability Zones — separate data centers, same floor plan, so a fire in one leaves the other standing. Traffic always follows the exit signs (route tables).</p>
+  <div class="drawing">
+    <svg viewBox="0 0 760 588" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace">
+      <!-- internet -->
+      <text x="380" y="26" text-anchor="middle" fill="var(--muted)" font-size="13" letter-spacing="3">I N T E R N E T</text>
+      <line x1="290" y1="38" x2="290" y2="74" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="470" y1="74" x2="470" y2="38" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+      <text x="380" y="60" text-anchor="middle" fill="var(--muted)" font-size="10">in + out</text>
+      <defs>
+        <marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,0 L6,3.5 L0,7" fill="none" stroke="var(--muted)" stroke-width="1.2"/>
+        </marker>
+        <marker id="arrA" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,0 L6,3.5 L0,7" fill="none" stroke="var(--accent)" stroke-width="1.2"/>
+        </marker>
+      </defs>
+
+      <!-- IGW front door -->
+      <rect x="280" y="76" width="200" height="34" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="380" y="90" text-anchor="middle" fill="var(--ink)" font-size="11" font-weight="600">FRONT DOOR · Internet Gateway</text>
+      <text x="380" y="103" text-anchor="middle" fill="var(--muted)" font-size="9">igw-00ecbe7953a6bd5d9 · two-way</text>
+
+      <!-- VPC boundary -->
+      <rect x="24" y="122" width="712" height="392" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="8 5"/>
+      <text x="36" y="142" fill="var(--accent)" font-size="11" font-weight="600">THE BUILDING · VPC 10.0.0.0/16</text>
+      <text x="36" y="155" fill="var(--muted)" font-size="9">vpc-096ee6e7b3a9ceff0</text>
+
+      <!-- AZ divider -->
+      <line x1="380" y1="168" x2="380" y2="500" stroke="var(--line)" stroke-dasharray="3 5"/>
+      <text x="200" y="180" text-anchor="middle" fill="var(--muted)" font-size="10">TOWER A · us-east-1a</text>
+      <text x="558" y="180" text-anchor="middle" fill="var(--muted)" font-size="10">TOWER B · us-east-1b</text>
+
+      <!-- public floor -->
+      <rect x="44" y="190" width="672" height="108" fill="none" stroke="var(--line)"/>
+      <text x="56" y="209" fill="var(--ink)" font-size="11" font-weight="600">PUBLIC FLOOR — street access</text>
+      <text x="56" y="222" fill="var(--muted)" font-size="9">exit sign: 0.0.0.0/0 → front door (igw)</text>
+      <!-- NAT -->
+      <rect x="90" y="234" width="220" height="52" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="200" y="255" text-anchor="middle" fill="var(--ink)" font-size="11" font-weight="600">MAIL ROOM · NAT Gateway</text>
+      <text x="200" y="270" text-anchor="middle" fill="var(--muted)" font-size="9">out-only · returns as 44.215.251.195</text>
+      <line x1="200" y1="234" x2="200" y2="128" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arrA)" opacity="0"/>
+      <path d="M 200 234 L 200 145 L 288 96" fill="none" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#arrA)"/>
+      <text x="452" y="252" fill="var(--muted)" font-size="9">subnet-00600922725d341a4 (1a)</text>
+      <text x="452" y="266" fill="var(--muted)" font-size="9">subnet-0e3d5a9d91a53f529 (1b)</text>
+
+      <!-- private floor -->
+      <rect x="44" y="318" width="672" height="180" fill="none" stroke="var(--line)"/>
+      <text x="56" y="337" fill="var(--ink)" font-size="11" font-weight="600">PRIVATE FLOOR — interior, no street door</text>
+      <text x="56" y="350" fill="var(--muted)" font-size="9">exit sign: 0.0.0.0/0 → mail room (nat)</text>
+
+      <!-- workload -->
+      <rect x="66" y="366" width="230" height="76" fill="var(--surface)" stroke="var(--ink)"/>
+      <text x="181" y="386" text-anchor="middle" fill="var(--ink)" font-size="11" font-weight="600">FUTURE LAMBDAS</text>
+      <text x="181" y="401" text-anchor="middle" fill="var(--muted)" font-size="9">bodyguard: bedrock-workload-sg</text>
+      <text x="181" y="414" text-anchor="middle" fill="var(--muted)" font-size="9">(no inbound · 443-only out)</text>
+      <text x="181" y="429" text-anchor="middle" fill="var(--muted)" font-size="9">badge: bedrock-workload-role</text>
+
+      <!-- windows -->
+      <rect x="356" y="366" width="168" height="52" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="440" y="386" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="600">WINDOW · bedrock-runtime</text>
+      <text x="440" y="400" text-anchor="middle" fill="var(--muted)" font-size="8.5">vpce-03f001d12ed13f11d</text>
+      <rect x="548" y="366" width="150" height="52" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="623" y="386" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="600">WINDOW · logs</text>
+      <text x="623" y="400" text-anchor="middle" fill="var(--muted)" font-size="8.5">vpce-0d37c6cbc02327ba8</text>
+      <rect x="356" y="434" width="342" height="46" fill="none" stroke="var(--accent)" stroke-dasharray="4 3"/>
+      <text x="527" y="453" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="600">HALLWAY TO WAREHOUSE · S3 gateway endpoint (free)</text>
+      <text x="527" y="467" text-anchor="middle" fill="var(--muted)" font-size="8.5">vpce-0b92cfdf0bb77ab38 · a route, not a box</text>
+
+      <!-- arrows workload->windows -->
+      <line x1="296" y1="392" x2="352" y2="392" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#arrA)"/>
+      <path d="M 296 404 L 330 404 L 330 457 L 352 457" fill="none" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#arrA)"/>
+      <text x="322" y="384" text-anchor="middle" fill="var(--muted)" font-size="8.5">:443</text>
+
+      <!-- guard note -->
+      <text x="380" y="533" text-anchor="middle" fill="var(--muted)" font-size="10">every window is guarded by bedrock-vpce-sg — HTTPS 443, callers from 10.0.0.0/16 only</text>
+      <text x="380" y="560" text-anchor="middle" fill="var(--ink)" font-size="10.5" font-weight="600">watching everything: CloudTrail camera · Flow Logs ledger · invocation transcripts · throttle smoke detector</text>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">The translation table</p>
+  <h2>AWS term ↔ building part</h2>
+  <p class="lede">Fourteen concepts. Recall the building part first; the AWS behavior follows from it.</p>
+  <div class="map">
+    <div class="row"><span class="aws">VPC</span><span class="metaphor">The building</span><span class="what">Your rented, isolated network. 65,536 room numbers (<b>10.0.0.0/16</b>); nothing gets in without a door you installed.</span></div>
+    <div class="row"><span class="aws">Subnet</span><span class="metaphor">A floor</span><span class="what">4 floors across 2 towers (AZs), /20 each. Public floors face the street; private floors are interior.</span></div>
+    <div class="row"><span class="aws">Route table</span><span class="metaphor">Exit signs</span><span class="what">What makes a floor "public" is only its sign: <b>internet traffic → front door</b> vs <b>→ mail room</b>. Change the sign, change the floor's nature.</span></div>
+    <div class="row"><span class="aws">Internet Gateway</span><span class="metaphor">Front door</span><span class="what">Two-way street access. Only public floors point at it.</span></div>
+    <div class="row"><span class="aws">NAT Gateway</span><span class="metaphor">Mail room</span><span class="what">One-way: inside can send out and get replies; strangers can't walk in. All outgoing mail carries one return address (44.215.251.195). <b>$32/mo.</b></span></div>
+    <div class="row"><span class="aws">Interface endpoint</span><span class="metaphor">Service window</span><span class="what">An AWS service's counter installed on your private floor (an ENI with a private IP). Private DNS makes the normal hostname resolve to it — <b>zero code changes</b>. <b>$29/mo</b> for two.</span></div>
+    <div class="row"><span class="aws">Gateway endpoint</span><span class="metaphor">Private hallway</span><span class="what">Route-table shortcut to S3/DynamoDB only. Free — always take it when offered.</span></div>
+    <div class="row"><span class="aws">Security group</span><span class="metaphor">Bodyguard</span><span class="what">Clips to one thing, travels with it. <b>Stateful</b> (remembers conversations), allow-only, deny-by-default.</span></div>
+    <div class="row"><span class="aws">Network ACL</span><span class="metaphor">Stairwell guard</span><span class="what">Checks everyone crossing the floor boundary. <b>Stateless</b> (forgets replies), numbered rules, the only one who can shout "deny." We left the default alone — on purpose.</span></div>
+    <div class="row"><span class="aws">IAM role</span><span class="metaphor">Work badge</span><span class="what">Not a person — no passwords lying around. Trust policy says <b>who may wear it</b>; permission policy says <b>which doors it opens</b>. AWS issues short-lived keys to the wearer.</span></div>
+    <div class="row"><span class="aws">CloudTrail</span><span class="metaphor">Security camera</span><span class="what">Records <b>who called which API</b>, from where, and whether it worked. Multi-region so no blind spots.</span></div>
+    <div class="row"><span class="aws">VPC Flow Logs</span><span class="metaphor">Traffic ledger</span><span class="what">Every connection attempt: source, destination, port, ACCEPT or REJECT. Metadata only, never contents. REJECT lines turn mystery timeouts into 5-minute fixes.</span></div>
+    <div class="row"><span class="aws">Invocation logging</span><span class="metaphor">Transcripts</span><span class="what">Full prompts and responses per model call. <b>Contains user data</b> — guard who can read it.</span></div>
+    <div class="row"><span class="aws">Alarm + SNS</span><span class="metaphor">Smoke detector + megaphone</span><span class="what">Throttles ≥ 1 in a 5-min window → topic → your inbox. Missing data = healthy silence (<span class="mono">notBreaching</span>).</span></div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">The core model</p>
+  <h2>Two gates every call must pass</h2>
+  <p class="lede">Every Bedrock invocation answers two independent questions. Both must say yes — and each fails differently, which is how you diagnose.</p>
+  <div class="gates">
+    <div class="gate">
+      <h3>Gate 1 · Network</h3>
+      <p class="q">"Can this traffic physically get there?"</p>
+      <div class="chain"><span>route table</span><i>→</i><span>NACL</span><i>→</i><span>security group</span><i>→</i><span>endpoint</span></div>
+      <p class="fail">Fails as a <b>timeout</b> — the packet just dies somewhere. Check Flow Logs for REJECT lines.</p>
+    </div>
+    <div class="gate">
+      <h3>Gate 2 · Identity</h3>
+      <p class="q">"Is this caller allowed to ask?"</p>
+      <div class="chain"><span>trust policy</span><i>→</i><span>least-privilege policy</span><i>→</i><span>exact ARNs</span></div>
+      <p class="fail">Fails as <b>AccessDenied</b> — loud and named. Check CloudTrail for the denied event.</p>
+    </div>
+    <div class="gate-note">Perfect IAM + broken network = silent timeout.&ensp;Perfect network + broken IAM = AccessDenied.&ensp;You met both in the claim-processor deploy.</div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">Easy to confuse</p>
+  <h2>Bodyguard vs stairwell guard</h2>
+  <div class="guards">
+    <table>
+      <thead><tr><th></th><th>Security group</th><th>Network ACL</th></tr></thead>
+      <tbody>
+        <tr><th>Protects</th><td>one thing (an ENI: Lambda, endpoint)</td><td>a whole subnet's boundary</td></tr>
+        <tr><th>Memory</th><td><span class="yes">Stateful</span> — reply auto-allowed</td><td><span class="no">Stateless</span> — reply needs its own rule</td></tr>
+        <tr><th>Can deny?</th><td><span class="no">No</span> — allow rules only</td><td><span class="yes">Yes</span> — the emergency IP ban</td></tr>
+        <tr><th>Evaluation</th><td>all rules considered</td><td>numbered, first match wins</td></tr>
+        <tr><th>Our use</th><td>the real enforcement: empty-inbound workload SG, 443-only egress</td><td>default (allow all), left alone — coarse brake held in reserve</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">Identity</p>
+  <h2>Anatomy of a badge</h2>
+  <div class="badge">
+    <p style="margin:0" class="lede">Every role you made is the same two documents. Example: <b>bedrock-workload-role</b>.</p>
+    <div class="badge-grid">
+      <div class="badge-part">
+        <h4>Trust policy — who may wear it</h4>
+        <p>Only the Lambda service can assume this role.</p>
+        <span class="mono">Principal: lambda.amazonaws.com</span>
+      </div>
+      <div class="badge-part">
+        <h4>Permissions — which doors it opens</h4>
+        <p>Two actions, one model, exact ARNs. No <code>bedrock:*</code>, ever.</p>
+        <span class="mono">InvokeModel + stream · Haiku 3.5 only</span>
+      </div>
+      <div class="badge-part">
+        <h4>The two-ARN rule</h4>
+        <p>A cross-region profile (<code>us.*</code>) needs the profile ARN <em>and</em> the foundation-model ARNs in every region it can route to.</p>
+      </div>
+      <div class="badge-part">
+        <h4>Managed vs inline</h4>
+        <p>Shared and generic → attached managed policy (<code>AWSLambdaVPCAccessExecutionRole</code>). Role-specific → inline, dies with the role (<code>bedrock-invoke</code>).</p>
+      </div>
+    </div>
+    <p class="deputy"><b>Confused-deputy guard:</b> <code>bedrock.amazonaws.com</code> is everyone's principal — it's the shared service, not your copy. The <code>Condition</code> pinning <code>aws:SourceAccount</code> to 324177727513 means Bedrock can wear your logging badge only while working <em>for you</em>. Add it whenever the trusted principal is a shared AWS service.</p>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">Observability</p>
+  <h2>Four watchers, four questions</h2>
+  <div class="lanes">
+    <div class="lane"><span class="metaphor">Security camera</span><span class="svc">CloudTrail · account-audit-trail</span><p>Who called which API, when, from where? The audit trail — durable in S3, multi-region, tamper-evident digests.</p></div>
+    <div class="lane"><span class="metaphor">Traffic ledger</span><span class="svc">VPC Flow Logs</span><p>What actually flowed? ACCEPT/REJECT per connection. Your debugging x-ray for the network gate.</p><span class="id">/vpc/flow-logs/bedrock-network · 30d</span></div>
+    <div class="lane"><span class="metaphor">Transcripts</span><span class="svc">Bedrock invocation logging</span><p>What did the model see and say? Full bodies + token counts. Sensitive — user data lives here.</p><span class="id">/bedrock/invocation-logs · 30d</span></div>
+    <div class="lane"><span class="metaphor">Smoke detector</span><span class="svc">CloudWatch alarm → SNS</span><p>Is it going wrong right now? Any throttle in 5 minutes fires bedrock-alerts to your inbox. Recording is passive; alarms act.</p><span class="id">bedrock-throttles · AWS/Bedrock · Sum ≥ 1</span></div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">Scars</p>
+  <h2>Four rules you paid for</h2>
+  <div class="scars">
+    <div class="scar"><div><h4>One character can be a firewall</h4><p><code>0.0.0.0/16</code> is a dead reserved range, <code>0.0.0.0/0</code> is the whole internet, <code>10.0.0.0/16</code> is your building. Each is one typo from the others; only one is right.</p></div></div>
+    <div class="scar"><div><h4>Trust nothing you didn't read back</h4><p>The console silently skipped attaching a managed policy. Every create gets a <code>describe</code>/<code>list</code> right after — that habit caught every single error today.</p></div></div>
+    <div class="scar"><div><h4>Placeholders don't fill themselves</h4><p><code>vpc-xxxx</code> and <code>YOUR_EMAIL_HERE</code> both shipped verbatim. Set it once — <code>export VPC_ID=...</code> — and never paste an ID twice.</p></div></div>
+    <div class="scar"><div><h4>APIs default what you don't say</h4><p>Invocation logging quietly set <code>videoDataDeliveryEnabled: true</code> because we didn't mention it. Read back what you wrote (rule 2, again).</p></div></div>
+  </div>
+</section>
+
+<section class="cost">
+  <p class="eyebrow" style="color:var(--cost)">The meter is running</p>
+  <h2>~$61 / month while this lives</h2>
+  <div class="meter">
+    <span class="item">NAT mail room <b>$32</b></span>
+    <span class="item">2 service windows <b>$29</b></span>
+    <span class="item">everything else <b>≈ $0</b></span>
+  </div>
+  <p>VPC, subnets, exit signs, guards, badges, camera (management events), and the alarm are all free. <b>Teardown order: billing items first</b> — NAT gateway (+ release its elastic IP), then the two interface endpoints; the rest is pennies or free.</p>
+</section>
+
+<footer>
+  Built one step at a time in the console and CLI, verified after every step, on 2026-09-25 · profile <span class="mono">claim-processor</span> · The payoff test, whenever you're ready: one small Lambda on the private floor, wearing the badge, calling Haiku through the window — then watch the same call appear on all four watchers.
+</footer>
+
+</div>

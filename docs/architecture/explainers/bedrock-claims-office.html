@@ -1,0 +1,214 @@
+<title>The Claims Office</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  --paper:#f4f2ec; --ink:#1e3a5f; --line:#a8b8cc; --dim:#5b6b80;
+  --accent:#c8571b; --card:#ffffff; --grid:rgba(30,58,95,.06);
+  --good:#1d7a4f; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --disp:'Big Shoulders Display','IBM Plex Sans',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0e1c30; --ink:#c9d8ec; --line:#3a5578; --dim:#8aa0bc;
+    --accent:#f08a4b; --card:#152742; --grid:rgba(201,216,236,.05);
+    --good:#5cc794; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0e1c30; --ink:#c9d8ec; --line:#3a5578; --dim:#8aa0bc;
+  --accent:#f08a4b; --card:#152742; --grid:rgba(201,216,236,.05);
+  --good:#5cc794; color-scheme:dark;
+}
+body{
+  background:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.6;
+  padding-inline:16px; padding-block:0 48px; margin:0;
+}
+.sheet{max-width:880px; margin:0 auto;}
+.eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin:36px 0 6px;}
+h1{font-family:var(--disp); font-weight:700; font-size:clamp(40px,7vw,64px); line-height:.95; margin:0 0 6px; text-transform:uppercase; letter-spacing:.01em; text-wrap:balance;}
+.sub{color:var(--dim); max-width:62ch; margin:0 0 8px;}
+h2{font-family:var(--disp); font-weight:700; font-size:26px; text-transform:uppercase; letter-spacing:.04em; margin:44px 0 4px; text-wrap:balance;}
+h2 .no{color:var(--accent); font-family:var(--mono); font-size:15px; vertical-align:middle; margin-right:8px;}
+.lede{color:var(--dim); font-size:14.5px; max-width:66ch; margin:0 0 16px;}
+.plan{border:1.5px solid var(--ink); background:var(--card); border-radius:4px; padding:10px; overflow-x:auto;}
+.plan svg{display:block; min-width:680px; width:100%; height:auto;}
+table{border-collapse:collapse; width:100%; font-size:14px;}
+.twrap{overflow-x:auto; border:1.5px solid var(--ink); border-radius:4px; background:var(--card);}
+th{font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; text-align:left; color:var(--dim); border-bottom:1.5px solid var(--ink); padding:10px 12px; white-space:nowrap;}
+td{padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+td.m{font-family:var(--mono); font-size:12.5px; white-space:nowrap;}
+td.meta{font-weight:600;}
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px;}
+.card{border:1.5px solid var(--ink); background:var(--card); border-radius:4px; padding:14px 16px;}
+.card h3{font-family:var(--mono); font-size:12px; letter-spacing:.1em; text-transform:uppercase; margin:0 0 8px; color:var(--accent);}
+.card p{margin:0; font-size:14px;}
+.card .big{font-family:var(--disp); font-size:30px; font-weight:700; line-height:1; display:block; margin-bottom:6px;}
+.scar{border-left:3px solid var(--accent); border-radius:0; padding:10px 14px; background:var(--card); margin:0 0 10px;}
+.scar b{font-family:var(--mono); font-size:12.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent); display:block; margin-bottom:2px;}
+.scar p{margin:0; font-size:14px;}
+code{font-family:var(--mono); font-size:.86em; background:var(--card); border:1px solid var(--line); border-radius:3px; padding:1px 5px;}
+.foot{font-family:var(--mono); font-size:12px; color:var(--dim); border-top:1.5px solid var(--ink); margin-top:48px; padding-top:12px;}
+.loop{display:flex; flex-wrap:wrap; gap:0 8px; align-items:center; font-family:var(--mono); font-size:13px; margin:10px 0 6px;}
+.loop span.step{border:1.5px solid var(--ink); background:var(--card); border-radius:3px; padding:5px 10px; margin:4px 0;}
+.loop span.arr{color:var(--accent); font-weight:700;}
+.tag{font-family:var(--mono); font-size:11px; border:1px solid var(--line); border-radius:3px; padding:1px 6px; color:var(--dim); white-space:nowrap;}
+</style>
+<div class="sheet">
+<p class="eyebrow">Bedrock Agents Lab · acct 324177727513 · us-east-1 · sheet 2 of 2 · 2026-09-25</p>
+<h1>The Claims Office</h1>
+<p class="sub">Companion sheet to <em>The Bedrock Building</em>. That one was the walls and wiring; this is the staff working inside them — one supervisor, two specialists, a security checkpoint, an approval window, and a filing room. Every label below is a real resource you built and tested today.</p>
+
+<h2><span class="no">01</span>Floor plan</h2>
+<p class="lede">A customer's message walks this floor left to right, top to bottom. Solid rooms are agents; the dashed rooms are things agents call. Every door it passes through is one trace event you saw.</p>
+<div class="plan">
+<svg viewBox="0 0 760 620" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace" role="img" aria-label="Floor plan of the multi-agent claims office">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 1 L9 5 L1 9" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+    </marker>
+  </defs>
+
+  <!-- customer -->
+  <g>
+    <circle cx="380" cy="34" r="14" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <path d="M362 62 q18 -18 36 0" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="404" y="40" font-size="12" fill="var(--ink)">customer · sessionId = the conversation</text>
+  </g>
+  <line x1="380" y1="66" x2="380" y2="92" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <!-- metal detector -->
+  <rect x="255" y="96" width="250" height="52" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+  <text x="380" y="117" font-size="12.5" fill="var(--accent)" text-anchor="middle" font-weight="600">METAL DETECTOR · guardrail</text>
+  <text x="380" y="136" font-size="11" fill="var(--dim)" text-anchor="middle">b6vx1252x1kw v1 · screens IN and OUT</text>
+  <line x1="380" y1="148" x2="380" y2="176" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <!-- front desk -->
+  <rect x="205" y="180" width="350" height="86" fill="none" stroke="var(--ink)" stroke-width="1.8"/>
+  <text x="380" y="203" font-size="13" fill="var(--ink)" text-anchor="middle" font-weight="600">FRONT DESK · claim-support-supervisor</text>
+  <text x="380" y="222" font-size="11" fill="var(--dim)" text-anchor="middle">QCEPK9V7AP · SUPERVISOR_ROUTER · Haiku 4.5</text>
+  <rect x="255" y="232" width="250" height="24" fill="none" stroke="var(--line)" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="380" y="248" font-size="10.5" fill="var(--dim)" text-anchor="middle">card index: reads both department cards, picks one desk</text>
+
+  <!-- routes to extensions -->
+  <path d="M290 266 L290 300" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M470 266 L470 300" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <!-- extensions (aliases) -->
+  <rect x="195" y="304" width="190" height="46" fill="none" stroke="var(--dim)" stroke-width="1.3"/>
+  <text x="290" y="323" font-size="11.5" fill="var(--ink)" text-anchor="middle" font-weight="600">ext. v1 · XNORPAWSU8</text>
+  <text x="290" y="340" font-size="10.5" fill="var(--dim)" text-anchor="middle">rings frozen version 3</text>
+  <rect x="375" y="304" width="190" height="46" fill="none" stroke="var(--dim)" stroke-width="1.3"/>
+  <text x="470" y="323" font-size="11.5" fill="var(--ink)" text-anchor="middle" font-weight="600">ext. v1 · SK51F9TY7L</text>
+  <text x="470" y="340" font-size="10.5" fill="var(--dim)" text-anchor="middle">rings frozen version 8</text>
+
+  <line x1="290" y1="350" x2="290" y2="382" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="470" y1="350" x2="470" y2="382" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <!-- desk 1: tier-1 -->
+  <rect x="145" y="386" width="290" height="96" fill="none" stroke="var(--ink)" stroke-width="1.8"/>
+  <text x="290" y="409" font-size="13" fill="var(--ink)" text-anchor="middle" font-weight="600">DESK 1 · insurance-claim-agent</text>
+  <text x="290" y="427" font-size="11" fill="var(--dim)" text-anchor="middle">BQEV8XPNI0 · Haiku 4.5 · status &amp; documents</text>
+  <text x="290" y="447" font-size="10.5" fill="var(--dim)" text-anchor="middle">tool: claim-lookup__get_claim_status</text>
+  <text x="290" y="466" font-size="10.5" fill="var(--good)" text-anchor="middle">answers with real S3 data since step 6</text>
+
+  <!-- desk 2: specialist -->
+  <rect x="455" y="386" width="290" height="96" fill="none" stroke="var(--ink)" stroke-width="1.8"/>
+  <text x="600" y="409" font-size="13" fill="var(--ink)" text-anchor="middle" font-weight="600">DESK 2 · claims-specialist-agent</text>
+  <text x="600" y="427" font-size="11" fill="var(--dim)" text-anchor="middle">TFPJB4NAXR · Sonnet 4.5 · amounts &amp; disputes</text>
+  <text x="600" y="447" font-size="10.5" fill="var(--dim)" text-anchor="middle">tool: human-review__flag_for_human_review</text>
+  <text x="600" y="466" font-size="10.5" fill="var(--good)" text-anchor="middle">corner office: 3× pay grade, deeper reasoning</text>
+
+  <!-- filing room -->
+  <line x1="230" y1="482" x2="230" y2="514" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+  <rect x="115" y="518" width="230" height="76" fill="none" stroke="var(--dim)" stroke-width="1.3" stroke-dasharray="6 4"/>
+  <text x="230" y="539" font-size="11.5" fill="var(--ink)" text-anchor="middle" font-weight="600">FILING ROOM · Lambda clerk</text>
+  <text x="230" y="556" font-size="10.5" fill="var(--dim)" text-anchor="middle">claim-lookup · python3.12 · 706 B</text>
+  <text x="230" y="573" font-size="10.5" fill="var(--dim)" text-anchor="middle">archive: s3://…poc-rk…/agent-lab/claims/</text>
+
+  <!-- approval window -->
+  <line x1="620" y1="482" x2="620" y2="514" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#ar)"/>
+  <rect x="505" y="518" width="230" height="76" fill="none" stroke="var(--dim)" stroke-width="1.3" stroke-dasharray="6 4"/>
+  <text x="620" y="539" font-size="11.5" fill="var(--ink)" text-anchor="middle" font-weight="600">APPROVAL WINDOW · human</text>
+  <text x="620" y="556" font-size="10.5" fill="var(--dim)" text-anchor="middle">RETURN_CONTROL: loop freezes,</text>
+  <text x="620" y="573" font-size="10.5" fill="var(--dim)" text-anchor="middle">a person types the verdict (HR-1001)</text>
+
+  <!-- badge rack -->
+  <rect x="20" y="180" width="150" height="86" fill="none" stroke="var(--dim)" stroke-width="1.3" stroke-dasharray="6 4"/>
+  <text x="95" y="203" font-size="11.5" fill="var(--ink)" text-anchor="middle" font-weight="600">BADGE RACK</text>
+  <text x="95" y="221" font-size="10.5" fill="var(--dim)" text-anchor="middle">IAM role …_claim</text>
+  <text x="95" y="238" font-size="10.5" fill="var(--dim)" text-anchor="middle">one badge,</text>
+  <text x="95" y="254" font-size="10.5" fill="var(--dim)" text-anchor="middle">three wearers</text>
+</svg>
+</div>
+
+<h2><span class="no">02</span>Translation table</h2>
+<p class="lede">Metaphor on the left, the thing that bills and logs on the right.</p>
+<div class="twrap"><table>
+<tr><th>In the office</th><th>In AWS</th><th>Real ID</th></tr>
+<tr><td class="meta">The office itself</td><td>Bedrock Agents = hosted ReAct loops + your instructions</td><td class="m">orchestrationType: DEFAULT</td></tr>
+<tr><td class="meta">Front desk</td><td>Supervisor agent, router mode — a cheap classifier, not a thinker</td><td class="m">QCEPK9V7AP</td></tr>
+<tr><td class="meta">Department cards</td><td>Collaboration instructions — verbatim text becomes the routing table</td><td class="m">claim-support / claims-specialist</td></tr>
+<tr><td class="meta">Desk 1 (status &amp; docs)</td><td>Tier-1 agent on Haiku 4.5</td><td class="m">BQEV8XPNI0</td></tr>
+<tr><td class="meta">Desk 2 (corner office)</td><td>Specialist agent on Sonnet 4.5 — 3× the rate, hired for hard cases</td><td class="m">TFPJB4NAXR</td></tr>
+<tr><td class="meta">Phone extensions</td><td>Aliases — a stable number that re-points to frozen versions (releases)</td><td class="m">XNORPAWSU8→v3 · SK51F9TY7L→v8</td></tr>
+<tr><td class="meta">Metal detector</td><td>Guardrail — checks input <em>and</em> output, outside the model</td><td class="m">b6vx1252x1kw v1</td></tr>
+<tr><td class="meta">Caller's notepad</td><td>Session memory = the transcript replayed every turn (you re-pay for it)</td><td class="m">sessionId · TTL 600s</td></tr>
+<tr><td class="meta">Filing room clerk</td><td>Action group → Lambda → S3 (tool with real execution)</td><td class="m">claim-lookup · YNBM0Q9H4O</td></tr>
+<tr><td class="meta">Approval window</td><td>Action group with RETURN_CONTROL — the human is the executor</td><td class="m">human-review · M4WUJXQF32</td></tr>
+<tr><td class="meta">Work badge</td><td>Shared IAM role: invoke 2 models, call 2 agents, apply 1 guardrail</td><td class="m">…RoleForAgents_claim</td></tr>
+<tr><td class="meta">Doorbell rule</td><td>Lambda resource policy: only Bedrock, only wearing agent BQEV8XPNI0</td><td class="m">SourceArn condition</td></tr>
+</table></div>
+
+<h2><span class="no">03</span>The worker's routine</h2>
+<p class="lede">Under the hood every agent runs the same loop — ReAct: <strong>Reason → Act → Observe</strong>, repeat until done. You can count the laps in the trace IDs.</p>
+<div class="loop">
+  <span class="step">guardrail-pre <span class="tag">205 ms</span></span><span class="arr">→</span>
+  <span class="step">reason <span class="tag">"exactly what I need"</span></span><span class="arr">→</span>
+  <span class="step">act: tool_use <span class="tag">lap -0</span></span><span class="arr">→</span>
+  <span class="step">Lambda + S3 <span class="tag">952 ms</span></span><span class="arr">→</span>
+  <span class="step">observe JSON</span><span class="arr">→</span>
+  <span class="step">compose <span class="tag">lap -1</span></span><span class="arr">→</span>
+  <span class="step">guardrail-post <span class="tag">203 ms</span></span>
+</div>
+<p class="lede">Steps 1–4 had no tools, so every request was a one-lap loop: think, answer, done. The S3 lookup was the first two-lap request (<code>traceId …-0</code>, <code>…-1</code>). Multi-agent collaboration is the same loop where the tools are <em>other loops</em>; the router mode is a shortcut that skips the loop entirely — one 12-token classification, then a transfer.</p>
+
+<h2><span class="no">04</span>Fence vs. wall</h2>
+<p class="lede">Two ways to say no, proven side by side in your traces.</p>
+<div class="twrap"><table>
+<tr><th></th><th>Fence — instructions</th><th>Wall — guardrail</th></tr>
+<tr><td class="meta">Lives</td><td>Inside the prompt</td><td>Outside the model</td></tr>
+<tr><td class="meta">On attack</td><td>Model must argue itself out (Step 1: 5 s of reasoning to refuse "approve my claim")</td><td>No hearing: jailbreak blocked in 214 ms, model never invoked, zero tokens billed</td></tr>
+<tr><td class="meta">Can be talked past</td><td>Sometimes — it's persuasion</td><td>No — it's policy</td></tr>
+<tr><td class="meta">Best at</td><td>Tone, workflow, escalation habits</td><td>Denied topics, prompt attacks, PII masking</td></tr>
+</table></div>
+<p class="lede">The SSN test showed the third behavior: not block, but <strong>mask</strong> — <code>123-45-6789</code> became <code>{US_SOCIAL_SECURITY_NUMBER}</code> before the model, the transcript, or the logs ever saw it.</p>
+
+<h2><span class="no">05</span>Press a button twice</h2>
+<p class="lede">Today's biggest transferable lesson: know which family a command belongs to <em>before</em> leaning on the retry habit.</p>
+<div class="cards">
+  <div class="card"><h3>Refuses</h3><p><span class="big">409</span><code>create-agent</code>, <code>create-function</code>, <code>add-permission</code> — duplicate press bounces off with a Conflict error. Safe and loud.</p></div>
+  <div class="card"><h3>Overwrites</h3><p><span class="big">=</span><code>put-role-policy</code>, <code>update-agent</code> — each press replaces the whole thing. Safe but silent; re-send <em>every</em> field or lose it.</p></div>
+  <div class="card"><h3>Appends</h3><p><span class="big">+1</span><code>create-guardrail-version</code>, <code>update-agent-alias</code> — every press mints a new snapshot. Today's orphan pile: guardrail v2, agent versions 2–7.</p></div>
+</div>
+
+<h2><span class="no">06</span>Scars of the day</h2>
+<div class="scar"><b>The reader was stale, not the paper</b><p>After swapping IAM policies, Bedrock kept refusing a model the role plainly allowed — even Haiku, which had worked all day. IAM propagation lag. The retry, unchanged, succeeded a minute later.</p></div>
+<div class="scar"><b>S3 wears a 403 disguise</b><p>A missing key returned <code>AccessDenied</code>, not "not found" — without <code>ListBucket</code>, S3 refuses to admit which keys exist. One prefix-scoped grant turned the lie into an honest <code>NoSuchKey</code>.</p></div>
+<div class="scar"><b>The echo always says PREPARING</b><p><code>prepare-agent</code>'s response is an acknowledgment, not a status. Re-running it to check restarts the compile. Only <code>get-agent</code> tells the truth.</p></div>
+<div class="scar"><b>A release pin pins everything</b><p>The specialists' aliases kept serving their pre-guardrail snapshots after the wall went up. Patching security meant cutting a new version and re-pointing — deploys, not edits.</p></div>
+
+<h2><span class="no">07</span>The meter</h2>
+<div class="cards">
+  <div class="card"><h3>Idle cost</h3><p><span class="big">$0</span>Agents, guardrails, aliases, action groups, Lambda, S3 objects — all pay-per-use. Nothing added today bills while it sleeps.</p></div>
+  <div class="card"><h3>Routing economics</h3><p><span class="big">12</span>output tokens to route a message (Haiku). The answer costs 100–500. Cheap model decides, expensive model answers — that's the whole trick.</p></div>
+  <div class="card"><h3>Model spread</h3><p><span class="big">3×</span>Haiku ≈ $1/$5, Sonnet ≈ $3/$15 per Mtok. If 80% of traffic is tier-1 chatter, per-desk models roughly halve the bill.</p></div>
+  <div class="card"><h3>Memory tax</h3><p><span class="big">+</span>Sessions replay the whole transcript each turn (311 → 439 → 1,287 input tokens as the day went on). Tools add their schemas on top. Long chats get dearer per message.</p></div>
+</div>
+
+<p class="foot">SHEET 2 · THE CLAIMS OFFICE · six capabilities, all trace-proven: memory · multi-agent · guardrails · model routing · HITL · tools — built 2026-09-25, owner-run, verify-after-every-create</p>
+</div>

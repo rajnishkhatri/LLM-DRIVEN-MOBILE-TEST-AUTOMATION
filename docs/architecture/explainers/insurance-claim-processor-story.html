@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Workflow the Model Never Controls</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* ---- three-block theme wiring (FR-10) ----
+     block 1: full light palette on bare :root
+     block 2: dark palette under prefers-color-scheme, guarded :root:not([data-theme="light"])
+     block 3: dark palette again under :root[data-theme="dark"] so an explicit toggle wins both ways */
+  :root {
+    --paper:      #F5F1E7;
+    --paper-2:    #EEE8DA;
+    --paper-edge: #E2DAC6;
+    --ink:        #1B2A2B;
+    --ink-soft:   #4A5A59;
+    --ink-faint:  #7A8683;
+
+    --det:        #1F6F6B;   /* deterministic envelope lane */
+    --det-wash:   #DCECE9;
+    --llm:        #B0742A;   /* model lane */
+    --llm-wash:   #F1E3CE;
+    --human:      #495C77;   /* human decision */
+
+    --pass:       #2E7D5B;
+    --fail:       #A6402F;
+    --rule:       #D8CFBB;
+    --shadow: 0 1px 2px rgba(27,42,43,.06), 0 8px 24px rgba(27,42,43,.06);
+
+    --measure: 66ch;
+    --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "Menlo", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #14201F;
+      --paper-2:    #1B2B29;
+      --paper-edge: #263A37;
+      --ink:        #E7EBE7;
+      --ink-soft:   #AEBCB8;
+      --ink-faint:  #7E908B;
+      --det:        #6FC9C0;
+      --det-wash:   #17332F;
+      --llm:        #E0A65A;
+      --llm-wash:   #33280F;
+      --human:      #8BA3C4;
+      --pass:       #6BC79A;
+      --fail:       #E48374;
+      --rule:       #2A3D39;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #14201F;
+    --paper-2:    #1B2B29;
+    --paper-edge: #263A37;
+    --ink:        #E7EBE7;
+    --ink-soft:   #AEBCB8;
+    --ink-faint:  #7E908B;
+    --det:        #6FC9C0;
+    --det-wash:   #17332F;
+    --llm:        #E0A65A;
+    --llm-wash:   #33280F;
+    --human:      #8BA3C4;
+    --pass:       #6BC79A;
+    --fail:       #E48374;
+    --rule:       #2A3D39;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  @media (max-width: 640px) { body { font-size: 17px; } }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+  .measure { max-width: var(--measure); margin-left: auto; margin-right: auto; }
+
+  /* ---------- masthead ---------- */
+  header.mast { max-width: 1000px; margin: 0 auto; padding: 64px 24px 28px; }
+  @media (max-width: 640px) { header.mast { padding-top: 40px; } }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--det); margin: 0 0 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow::before { content:""; width: 34px; height: 2px; background: var(--det); display:inline-block; }
+  h1 {
+    font-family: var(--serif); font-weight: 700; line-height: 1.05;
+    font-size: clamp(2.4rem, 6vw, 4.1rem); margin: 0 0 .35em; letter-spacing: -.01em;
+    text-wrap: balance; color: var(--ink);
+  }
+  .dek {
+    font-family: var(--serif); font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    line-height: 1.4; color: var(--ink-soft); max-width: 44ch; text-wrap: balance;
+    font-style: italic; margin: 0 0 22px;
+  }
+  .seam {
+    max-width: 72ch; font-size: .98rem; color: var(--ink-soft);
+    border-left: 3px solid var(--human); background: color-mix(in srgb, var(--paper-2) 70%, transparent);
+    border-radius: 0 8px 8px 0; padding: 12px 18px; margin: 0 0 24px;
+  }
+  .seam b { color: var(--ink); }
+  .byline {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    letter-spacing: .04em; border-top: 1px solid var(--rule);
+    padding-top: 14px; display:flex; gap: 12px 26px; flex-wrap: wrap;
+  }
+  .byline b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- sticky legend: the only sticky element ---------- */
+  .key {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    padding: 8px 24px;
+  }
+  .key-inner {
+    max-width: 1000px; margin: 0 auto; display: flex; gap: 6px 20px;
+    flex-wrap: wrap; align-items: center;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .02em;
+  }
+  .key-inner .klabel { color: var(--ink-faint); text-transform: uppercase; letter-spacing:.12em; }
+  @media (max-width: 640px) {
+    .key { padding: 6px 16px; }
+    .key-inner { font-size: 10px; gap: 3px 10px; }
+  }
+  .chip { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); white-space: nowrap; }
+  .sw { width: 13px; height: 13px; border-radius: 3px; flex: none; }
+  .sw.lane-llm { background: var(--llm-wash); border: 1px solid var(--llm); }
+  .sw.lane-det { background: var(--det-wash); border: 1px solid var(--det); }
+  .sw.lane-human { background: color-mix(in srgb, var(--human) 16%, transparent); border: 1px solid var(--human); }
+  .sw.sw-status { background: transparent; border: 1.5px dashed var(--human); }
+
+  /* ---------- body typography ---------- */
+  main { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  p { margin: 0 0 1.15em; }
+  h2 {
+    font-family: var(--serif); font-weight: 700; letter-spacing: -.01em;
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem); line-height: 1.12;
+    margin: 2.4em 0 .15em; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: .5em; color: var(--det); font-weight: 500;
+    letter-spacing: .1em; vertical-align: middle; margin-right: .8em;
+    border: 1px solid var(--det); border-radius: 3px; padding: .18em .5em;
+  }
+  h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.16rem;
+    margin: 1.9em 0 .3em; color: var(--ink); letter-spacing: -.005em;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 1.2em;
+  }
+  .lede { font-size: 1.28rem; line-height: 1.5; color: var(--ink); font-family: var(--serif); }
+  .lede b { color: var(--det); }
+  a { color: var(--det); text-underline-offset: 2px; }
+  strong { color: var(--ink); font-weight: 700; }
+  code {
+    font-family: var(--mono); font-size: .84em;
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 4px; padding: .08em .38em; color: var(--ink);
+    overflow-wrap: break-word;
+  }
+  ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--det); }
+
+  .cite {
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);
+    display: block; margin-top: 6px; line-height: 1.5;
+  }
+
+  /* ---------- honesty chips ---------- */
+  .unverified {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .04em;
+    color: var(--ink-faint); border-bottom: 1px dashed var(--ink-faint);
+    text-transform: uppercase; margin: 0 .2em;
+  }
+  .status {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .04em;
+    color: var(--human); border: 1.5px dashed var(--human); border-radius: 4px;
+    padding: .05em .45em; text-transform: uppercase; margin: 0 .2em;
+    display: inline-block;
+  }
+
+  /* ---------- envelope beat ---------- */
+  .envelope-beat {
+    border-left: 3px solid var(--det); background: var(--det-wash);
+    border-radius: 0 10px 10px 0; padding: 16px 22px 14px; margin: 2.2em 0 .5em;
+  }
+  .envelope-beat .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--det); display: block;
+    margin-bottom: 6px; font-weight: 700;
+  }
+  .envelope-beat p { margin: 0; font-size: .98rem; }
+  .backref { font-family: var(--mono); font-size: 11.5px; }
+
+  /* ---------- text-explainer beat (the hybrid rule's prose slot) ---------- */
+  .why-beat {
+    border-left: 3px solid var(--llm); background: color-mix(in srgb, var(--llm-wash) 55%, transparent);
+    border-radius: 0 10px 10px 0; padding: 14px 20px 12px; margin: 1.6em 0;
+  }
+  .why-beat .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--llm); display: block;
+    margin-bottom: 6px; font-weight: 700;
+  }
+  .why-beat p { margin: 0 0 .6em; font-size: .98rem; }
+  .why-beat p:last-child { margin-bottom: 0; }
+
+  /* ---------- figures ---------- */
+  figure { margin: 2.4em 0; padding: 0; }
+  figure svg { display: block; width: 100%; height: auto; min-width: 620px; }
+  .fig-card {
+    background: var(--paper-2); border: 1px solid var(--paper-edge);
+    border-radius: 12px; padding: 22px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-faint);
+    margin-top: 12px; line-height: 1.5; letter-spacing: .01em; max-width: 74ch;
+  }
+  figcaption b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- icon key strip ---------- */
+  .iconkey { margin: 0 0 1.2em; }
+  .iconkey .fig-card { padding: 14px 18px; }
+  .iconkey svg { min-width: 860px; }
+
+  /* ---------- decision cards ---------- */
+  .decision-card {
+    border: 1px solid var(--paper-edge); background: var(--paper-2);
+    border-radius: 12px; padding: 20px 24px 16px; margin: 1.8em 0;
+    box-shadow: var(--shadow);
+  }
+  .decision-card h3 { margin-top: 0; }
+  .decision-card h3 .dnum {
+    font-family: var(--mono); font-size: .72em; color: var(--human);
+    border: 1px solid var(--human); border-radius: 3px; padding: .1em .4em;
+    margin-right: .6em; vertical-align: .08em; font-weight: 500;
+  }
+  .decision-card .dq { font-size: .98rem; color: var(--ink-soft); margin-bottom: 1em; }
+  .default-line {
+    border-top: 1px solid var(--rule); margin-top: 14px; padding-top: 12px;
+    font-size: .95rem;
+  }
+  .default-line b { color: var(--det); }
+  .adr-ref { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); }
+
+  /* ---------- tables ---------- */
+  .table-wrap {
+    overflow-x: auto; border-radius: 10px; box-shadow: var(--shadow);
+    margin: 1.4em 0; border: 1px solid var(--paper-edge);
+  }
+  table {
+    border-collapse: collapse; width: 100%; min-width: 560px;
+    background: var(--paper-2); font-size: .92rem;
+  }
+  caption {
+    font-family: var(--mono); font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: .1em; text-align: left; color: var(--ink-faint);
+    padding: 10px 14px 6px; background: var(--paper-2);
+  }
+  th {
+    font-family: var(--mono); font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: .06em; text-align: left; color: var(--ink-soft);
+    padding: 9px 14px; background: color-mix(in srgb, var(--det-wash) 45%, var(--paper-2));
+    border-bottom: 1px solid var(--paper-edge);
+  }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--paper-edge); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .lane-pill {
+    font-family: var(--mono); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: .06em; border-radius: 999px; padding: .18em .6em;
+    white-space: nowrap; font-weight: 600;
+  }
+  .lane-pill.det { background: var(--det-wash); color: var(--det); border: 1px solid var(--det); }
+  .lane-pill.llm { background: var(--llm-wash); color: var(--llm); border: 1px solid var(--llm); }
+  .lane-pill.human { background: color-mix(in srgb, var(--human) 14%, transparent); color: var(--human); border: 1px solid var(--human); }
+
+  /* ---------- part dividers ---------- */
+  .rule-orn {
+    display: flex; align-items: center; gap: 16px; margin: 3.2em 0 0;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .rule-orn::before, .rule-orn::after {
+    content: ""; height: 1px; background: var(--rule); flex: 1;
+  }
+
+  /* ---------- footer ---------- */
+  footer {
+    max-width: 1000px; margin: 60px auto 0; padding: 24px 24px 80px;
+    border-top: 1px solid var(--rule); font-family: var(--mono);
+    font-size: 12.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+  footer b { color: var(--ink-soft); }
+  footer p { margin: 0 0 1em; max-width: 90ch; }
+  footer ul { padding-left: 1.2em; }
+
+  /* ---------- hash-target clearance + keyboard focus ---------- */
+  h2, .decision-card, .part, #scorecard { scroll-margin-top: 110px; }
+  a:focus-visible {
+    outline: 2px solid var(--det); outline-offset: 2px; border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== AWS-glyph symbol library (simplified original geometry, C2).
+     Category hex lives ONLY inside this defs block; every placement is a
+     <use> with an adjacent visible label. ====== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- storage green -->
+    <symbol id="sym-s3" viewBox="0 0 40 40">
+      <rect x="1" y="1" width="38" height="38" rx="8" fill="#7AA116"/>
+      <path d="M11 12 L29 12 L26.5 30 Q20 33.5 13.5 30 Z" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <ellipse cx="20" cy="12" rx="9" ry="3.2" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <circle cx="20" cy="22" r="2.4" fill="#FFFFFF"/>
+    </symbol>
+    <!-- compute orange -->
+    <symbol id="sym-lambda" viewBox="0 0 40 40">
+      <rect x="1" y="1" width="38" height="38" rx="8" fill="#ED7100"/>
+      <path d="M13 10 L18.5 10 L27 30 L21.5 30 Z" fill="#FFFFFF"/>
+      <path d="M17.5 20.5 L13 30 L18 30 L20.2 25.4 Z" fill="#FFFFFF"/>
+    </symbol>
+    <!-- app-integration rose -->
+    <symbol id="sym-sfn" viewBox="0 0 40 40">
+      <rect x="1" y="1" width="38" height="38" rx="8" fill="#E7157B"/>
+      <rect x="8" y="8" width="10" height="8" rx="2" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <rect x="22" y="24" width="10" height="8" rx="2" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <path d="M13 16 L13 28 L21 28" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <path d="M27 24 L27 12 L19 12" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+    </symbol>
+    <!-- ML green -->
+    <symbol id="sym-bedrock" viewBox="0 0 40 40">
+      <rect x="1" y="1" width="38" height="38" rx="8" fill="#01A88D"/>
+      <rect x="10" y="10" width="20" height="20" rx="4" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <circle cx="16" cy="17" r="1.8" fill="#FFFFFF"/>
+      <circle cx="24" cy="17" r="1.8" fill="#FFFFFF"/>
+      <path d="M15 24 Q20 27 25 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      <line x1="20" y1="4" x2="20" y2="10" stroke="#FFFFFF" stroke-width="2"/>
+    </symbol>
+    <symbol id="sym-guardrail" viewBox="0 0 40 40">
+      <rect x="1" y="1" width="38" height="38" rx="8" fill="#01A88D"/>
+      <path d="M20 7 L31 11 L31 20 Q31 29 20 33 Q9 29 9 20 L9 11 Z" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <path d="M15 20 L19 24 L26 15" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <!-- security red -->
+    <symbol id="sym-iam" viewBox="0 0 40 40">
+      <rect x="1" y="1" width="38" height="38" rx="8" fill="#DD344C"/>
+      <circle cx="15" cy="15" r="6" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <path d="M19.5 19.5 L31 31 M27 27 L31 23 M23.5 23.5 L27 20" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="sym-kms" viewBox="0 0 40 40">
+      <rect x="1" y="1" width="38" height="38" rx="8" fill="#DD344C"/>
+      <rect x="11" y="18" width="18" height="14" rx="3" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <path d="M14 18 L14 14 Q14 8 20 8 Q26 8 26 14 L26 18" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <circle cx="20" cy="25" r="2.2" fill="#FFFFFF"/>
+    </symbol>
+    <!-- management rose -->
+    <symbol id="sym-appconfig" viewBox="0 0 40 40">
+      <rect x="1" y="1" width="38" height="38" rx="8" fill="#E7157B"/>
+      <line x1="9" y1="13" x2="31" y2="13" stroke="#FFFFFF" stroke-width="2"/>
+      <line x1="9" y1="20" x2="31" y2="20" stroke="#FFFFFF" stroke-width="2"/>
+      <line x1="9" y1="27" x2="31" y2="27" stroke="#FFFFFF" stroke-width="2"/>
+      <circle cx="15" cy="13" r="3" fill="#E7157B" stroke="#FFFFFF" stroke-width="2"/>
+      <circle cx="25" cy="20" r="3" fill="#E7157B" stroke="#FFFFFF" stroke-width="2"/>
+      <circle cx="18" cy="27" r="3" fill="#E7157B" stroke="#FFFFFF" stroke-width="2"/>
+    </symbol>
+    <symbol id="sym-cloudwatch" viewBox="0 0 40 40">
+      <rect x="1" y="1" width="38" height="38" rx="8" fill="#E7157B"/>
+      <path d="M9 26 A11.5 11.5 0 0 1 31 26" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      <line x1="20" y1="26" x2="27" y2="17" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="20" cy="26" r="2.2" fill="#FFFFFF"/>
+      <line x1="8" y1="31" x2="32" y2="31" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="sym-sns" viewBox="0 0 40 40">
+      <rect x="1" y="1" width="38" height="38" rx="8" fill="#E7157B"/>
+      <path d="M14 26 L14 17 Q14 10 20 10 Q26 10 26 17 L26 26 L29 29 L11 29 Z" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M17.5 31.5 Q20 33.5 22.5 31.5" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <!-- neutral glyphs: currentColor, themed by context -->
+    <symbol id="sym-doc" viewBox="0 0 40 40">
+      <path d="M10 4 L25 4 L32 11 L32 36 L10 36 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M25 4 L25 11 L32 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <line x1="14" y1="17" x2="28" y2="17" stroke="currentColor" stroke-width="2"/>
+      <line x1="14" y1="23" x2="28" y2="23" stroke="currentColor" stroke-width="2"/>
+      <line x1="14" y1="29" x2="23" y2="29" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+    <symbol id="sym-person" viewBox="0 0 40 40">
+      <circle cx="20" cy="13" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M7 36 Q7 24 20 24 Q33 24 33 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="sym-token" viewBox="0 0 40 40">
+      <path d="M6 14 L28 14 L34 20 L28 26 L6 26 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="28" cy="20" r="2" fill="currentColor"/>
+      <line x1="11" y1="20" x2="22" y2="20" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2.4"/>
+    </symbol>
+    <symbol id="sym-gate" viewBox="0 0 40 40">
+      <path d="M20 4 L36 20 L20 36 L4 20 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <line x1="20" y1="13" x2="20" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="20" cy="27" r="1.6" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="mast">
+  <p class="eyebrow">Engineering &amp; Product · AWS AI on the claim desk · 2026-09</p>
+  <h1>The Workflow the Model Never Controls</h1>
+  <p class="dek">An insurance claim processor on AWS, told in pictures — where the model reads and writes, and the code decides everything else.</p>
+  <div class="seam">
+    <b>How this page relates to the source artifacts.</b> The design document, the fifteen ADRs, and the deploy walkthrough under <code>insurance-claim-processor/</code> are the sources of record. This page is the synthesis you read first: the whole system in fifteen figures, with short plain-English explainers only where a picture cannot carry the <i>why</i>.
+  </div>
+  <p class="byline">
+    <span><b>Audience</b> architects &amp; senior engineers</span>
+    <span><b>Reading time</b> ~30 min (figures alone: ~8)</span>
+    <span><b>As of</b> 2026-09-23</span>
+    <span><b>Status</b> partially deployed — see the footer's what's-live line</span>
+  </p>
+</header>
+
+<div class="key" aria-label="How to read this page">
+  <div class="key-inner">
+    <span class="klabel">Lanes:</span>
+    <span class="chip"><span class="sw lane-llm"></span>model decides</span>
+    <span class="chip"><span class="sw lane-det"></span>code decides</span>
+    <span class="chip"><span class="sw lane-human"></span>human decides</span>
+    <span class="klabel">Chips:</span>
+    <span class="chip"><span class="unverified">unverified</span>&nbsp;— tune per domain</span>
+    <span class="chip"><span class="sw sw-status"></span>designed — not yet deployed</span>
+  </div>
+</div>
+
+<main>
+  <figure class="iconkey" data-fig="F0">
+    <div class="fig-card">
+      <svg viewBox="0 0 940 96" role="img" aria-label="Icon key: the AWS service glyphs used in every figure on this page — S3, Lambda, Step Functions, Bedrock, Guardrails, IAM, KMS, AppConfig, CloudWatch, SNS — plus the neutral glyphs for a document, a person, a task token, and a decision gate.">
+        <text x="10" y="18" font-family="var(--mono)" font-size="12" fill="var(--ink-faint)" letter-spacing="2">THE ICONS — EVERY FIGURE USES THESE</text>
+        <g>
+          <use href="#sym-s3" x="14" y="30" width="32" height="32"/>
+          <text x="30" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">S3</text>
+          <use href="#sym-lambda" x="76" y="30" width="32" height="32"/>
+          <text x="92" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">Lambda</text>
+          <use href="#sym-sfn" x="146" y="30" width="32" height="32"/>
+          <text x="162" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">Step Fn</text>
+          <use href="#sym-bedrock" x="216" y="30" width="32" height="32"/>
+          <text x="232" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">Bedrock</text>
+          <use href="#sym-guardrail" x="288" y="30" width="32" height="32"/>
+          <text x="304" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">Guardrail</text>
+          <use href="#sym-iam" x="362" y="30" width="32" height="32"/>
+          <text x="378" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">IAM</text>
+          <use href="#sym-kms" x="428" y="30" width="32" height="32"/>
+          <text x="444" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">KMS</text>
+          <use href="#sym-appconfig" x="494" y="30" width="32" height="32"/>
+          <text x="510" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">AppConfig</text>
+          <use href="#sym-cloudwatch" x="572" y="30" width="32" height="32"/>
+          <text x="588" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">CloudWatch</text>
+          <use href="#sym-sns" x="656" y="30" width="32" height="32"/>
+          <text x="672" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">SNS</text>
+          <g color="var(--ink-soft)">
+            <use href="#sym-doc" x="722" y="30" width="32" height="32"/>
+          </g>
+          <text x="738" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">claim doc</text>
+          <g color="var(--human)">
+            <use href="#sym-person" x="790" y="30" width="32" height="32"/>
+          </g>
+          <text x="806" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">person</text>
+          <g color="var(--human)">
+            <use href="#sym-token" x="848" y="30" width="32" height="32"/>
+          </g>
+          <text x="864" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">token</text>
+          <g color="var(--fail)">
+            <use href="#sym-gate" x="898" y="30" width="32" height="32"/>
+          </g>
+          <text x="914" y="84" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">gate</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><b>The vocabulary, once.</b> AWS service glyphs are simplified originals in the services' category colors; neutral glyphs take the page's lane colors. Every later figure reuses exactly these.
+    <span class="cite">Icon set drawn for this page · services per insurance-claim-processor/design/solution-design.md, as of 2026-09-23</span></figcaption>
+  </figure>
+
+  <section class="part" id="part-1">
+    <div class="measure">
+      <div class="rule-orn">Part I · One claim, two doors</div>
+      <h2><span class="num">I</span>One claim, two doors</h2>
+      <p class="lede">An insurance claim arrives as a messy document: a scanned form, a photo, a typed page. What must come out the other side is a decision with receipts. This system allows exactly <b>two ways out</b> — and a model is never one of them.</p>
+
+      <figure data-fig="F1" data-steps="yes">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 360" role="img" aria-label="A claim document lands in S3, the processor reads it with a model's help, and every claim leaves through one of two doors: the rules auto-approve it, or a person reviews it. There is no third door.">
+            <defs>
+              <marker id="f1-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F1 · TWO DOORS</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">A claim goes in. Either the rules approve it, or a person does.</text>
+
+            <!-- model lane -->
+            <rect x="20" y="66" width="620" height="86" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="88" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE</text>
+            <rect x="330" y="94" width="220" height="46" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="440" y="113" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink)">a model helps read the document</text>
+            <text x="440" y="130" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">it proposes; it never approves</text>
+
+            <!-- envelope lane -->
+            <rect x="20" y="170" width="620" height="150" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="308" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · CODE</text>
+
+            <g color="var(--ink-soft)">
+              <use href="#sym-doc" x="46" y="204" width="34" height="34"/>
+            </g>
+            <text x="63" y="258" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">claim doc</text>
+            <rect x="118" y="196" width="104" height="86" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-s3" x="146" y="204" width="30" height="30"/>
+            <text x="170" y="252" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">S3</text>
+            <text x="170" y="268" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">system of record</text>
+            <rect x="266" y="196" width="180" height="86" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="356" y="228" text-anchor="middle" font-family="var(--sans)" font-size="13" fill="var(--ink)">the fixed workflow</text>
+            <text x="356" y="246" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">extract &#183; check &#183; ground</text>
+            <text x="356" y="262" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">(Part III)</text>
+            <g color="var(--det)">
+              <use href="#sym-gate" x="486" y="218" width="42" height="42"/>
+            </g>
+            <text x="507" y="280" text-anchor="middle" font-family="var(--sans)" font-size="12" fill="var(--ink)">route</text>
+
+            <!-- doors -->
+            <rect x="676" y="88" width="240" height="100" rx="10" fill="var(--paper)" stroke="var(--pass)" stroke-width="2"/>
+            <text x="796" y="120" text-anchor="middle" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--pass)">Door 1 &#183; rules approve</text>
+            <text x="796" y="142" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">schema-valid &#183; grounded &#183; no PII</text>
+            <text x="796" y="158" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">&#8804; payout threshold</text>
+            <rect x="676" y="212" width="240" height="100" rx="10" fill="var(--paper)" stroke="var(--human)" stroke-width="2"/>
+            <g color="var(--human)">
+              <use href="#sym-person" x="696" y="240" width="34" height="34"/>
+            </g>
+            <text x="742" y="248" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--human)">Door 2 &#183; a person</text>
+            <text x="742" y="268" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">everything else waits for</text>
+            <text x="742" y="284" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">human review (Part IV)</text>
+
+            <!-- arrows -->
+            <line x1="84" y1="226" x2="113" y2="230" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+            <line x1="222" y1="239" x2="261" y2="239" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+            <line x1="380" y1="191" x2="410" y2="145" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#f1-arrow)"/>
+            <line x1="446" y1="239" x2="481" y2="239" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+            <line x1="530" y1="228" x2="671" y2="146" stroke="var(--pass)" stroke-width="1.8" marker-end="url(#f1-arrow)"/>
+            <line x1="530" y1="248" x2="671" y2="258" stroke="var(--human)" stroke-width="1.8" marker-end="url(#f1-arrow)"/>
+
+            <!-- steps -->
+            <g class="step"><circle cx="98" cy="212" r="10" fill="var(--det)"/><text x="98" y="216" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">1</text></g>
+            <g class="step"><circle cx="240" cy="222" r="10" fill="var(--det)"/><text x="240" y="226" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">2</text></g>
+            <g class="step"><circle cx="404" cy="176" r="10" fill="var(--llm)"/><text x="404" y="180" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">3</text></g>
+            <g class="step"><circle cx="463" cy="222" r="10" fill="var(--det)"/><text x="463" y="226" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">4</text></g>
+          </svg>
+        </div>
+        <figcaption><b>No third door.</b> ① the document is stored first, untouched · ② a fixed workflow processes it · ③ a model helps read, never decides · ④ code routes every claim to auto-approve or to a person. The whole page unpacks these four moves.
+        <span class="cite">insurance-claim-processor/design/solution-design.md §1 + §1a, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <div class="why-beat">
+        <span class="tag">Why not an agent? · the reasoning a picture can&#8217;t carry</span>
+        <p>The default answer in this workspace&#8217;s own sources is that a single agent with good tools beats a badly designed multi-agent system. This design goes one step further: <strong>it is not an agent at all.</strong> An agent earns its keep when one of three walls appears — the context no longer fits one conversation, steps genuinely need to run in parallel, or the task needs expertise that will not fit one prompt. None of the three applies to &#8220;extract five fields, check them, cite the policy.&#8221;</p>
+        <p>The path is fixed and auditable, so letting a model choose the order would only spend latency to <em>lose</em> a property regulators ask for.</p>
+      </div>
+
+      <figure data-fig="F2">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 330" role="img" aria-label="Comparison: on the left, an agent architecture where the model chooses the next step, crossed out. On the right, the chosen design: code owns a fixed path and the model only fills in steps.">
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F2 · WHO OWNS THE PATH (comparative — not an architecture)</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">An agent picks its own path &#8212; not here. Our code owns the path.</text>
+
+            <!-- rejected: agent -->
+            <rect x="30" y="70" width="420" height="220" rx="10" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+            <text x="50" y="98" font-family="var(--mono)" font-size="12" fill="var(--ink-soft)" letter-spacing="1">REJECTED &#183; the model decides what happens next</text>
+            <use href="#sym-bedrock" x="216" y="116" width="36" height="36"/>
+            <text x="234" y="170" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">Bedrock agent</text>
+            <rect x="56" y="216" width="96" height="40" rx="6" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>
+            <text x="104" y="240" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">extract?</text>
+            <rect x="192" y="216" width="96" height="40" rx="6" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>
+            <text x="240" y="240" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">summarize?</text>
+            <rect x="328" y="216" width="96" height="40" rx="6" fill="none" stroke="var(--ink-faint)" stroke-width="1.2"/>
+            <text x="376" y="240" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">retrieve?</text>
+            <line x1="216" y1="152" x2="116" y2="212" stroke="var(--ink-faint)" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <line x1="234" y1="156" x2="238" y2="212" stroke="var(--ink-faint)" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <line x1="252" y1="152" x2="366" y2="212" stroke="var(--ink-faint)" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <text x="240" y="196" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-faint)">order chosen at run time</text>
+            <line x1="60" y1="278" x2="420" y2="86" stroke="var(--fail)" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+            <text x="50" y="278" font-family="var(--mono)" font-size="10.5" fill="var(--fail)">auditability suffers &#183; extra latency &#183; nothing needed it</text>
+
+            <!-- chosen: fixed workflow -->
+            <rect x="490" y="70" width="420" height="220" rx="10" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="510" y="98" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1">CHOSEN &#183; the code decides; the model fills in</text>
+            <use href="#sym-sfn" x="524" y="120" width="34" height="34"/>
+            <text x="541" y="172" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">Step Fn</text>
+            <rect x="590" y="120" width="88" height="38" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="634" y="143" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">extract</text>
+            <rect x="700" y="120" width="88" height="38" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="744" y="143" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">validate</text>
+            <rect x="810" y="120" width="88" height="38" rx="6" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="854" y="143" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">summarize</text>
+            <line x1="678" y1="139" x2="696" y2="139" stroke="var(--det)" stroke-width="1.5"/>
+            <line x1="788" y1="139" x2="806" y2="139" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="694" y="196" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">same order, every claim, forever</text>
+            <rect x="590" y="216" width="308" height="46" rx="6" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="744" y="236" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">the model&#8217;s only job: fill in two boxes well</text>
+            <text x="744" y="252" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">amber = probabilistic; the arrows never are</text>
+            <text x="510" y="278" font-family="var(--mono)" font-size="10.5" fill="var(--det)">execution history = the audit record, for free</text>
+          </svg>
+        </div>
+        <figcaption><b>The contrast is the content.</b> Left: a model choosing its own next step — crossed out, because auditability is the driving characteristic. Right: the chosen shape — a fixed path where the model&#8217;s creativity is confined to the two boxes it is good at.
+        <span class="cite">insurance-claim-processor/design/solution-design.md §1, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <div class="why-beat">
+        <span class="tag">The alternatives, and why each loses</span>
+        <div class="table-wrap"><table>
+          <caption>from the design doc&#8217;s own scoring</caption>
+          <thead><tr><th>Option</th><th>Why it loses here</th></tr></thead>
+          <tbody>
+            <tr><td>Single agent with tools</td><td>Model chooses the order; auditability suffers; extra latency</td></tr>
+            <tr><td>Supervisor multi-agent</td><td>The named antipattern <em>accidental multi-agent</em> — triples latency for nothing</td></tr>
+            <tr><td>Bedrock Flows</td><td>Fine for model hops; does not own S3 ingest, the validator, or failure queues</td></tr>
+            <tr><td>One Lambda for everything</td><td>Cannot hold a multi-day human wait; its audit story is whatever logging someone remembered to write</td></tr>
+            <tr><td>Step Functions Express</td><td>No execution history — defeats the audit requirement outright</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>Before any AI runs, the envelope owns: the packet in S3 as the system of record, the fixed path, the result contract with full provenance, and the rule that only two doors exist — rules approve, or a person does.</p>
+        <p class="backref">Decisions this Part motivates &#8594; <a href="#d-host">D1 workflow host</a> · <a href="#d-hitl">D2 human mechanism</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-2">
+    <div class="measure">
+      <div class="rule-orn">Part II · What it must be good at</div>
+      <h2><span class="num">II</span>What it must be good at</h2>
+      <p class="lede">Seven qualities were derived and measured; three drive every decision on this page: <b>get the fields right, leak no personal data, and be able to replay any decision.</b> The figure pins each one to the parts of the system that carry it.</p>
+
+      <figure data-fig="F3">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 430" role="img" aria-label="The three driving characteristics — data integrity, privacy, auditability — pinned to the nine logical components: land, understand, extract, validate, retrieve, summarize, record, plus the shared render-prompt and invoke-model helpers.">
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F3 · CHARACTERISTICS &#215; COMPONENTS (map — not a runtime flow)</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">Three things this system must be, pinned to the parts that make it.</text>
+
+            <!-- the three pillars -->
+            <rect x="60" y="72" width="250" height="74" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="2"/>
+            <text x="185" y="100" text-anchor="middle" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--det)">1 &#183; Data integrity</text>
+            <text x="185" y="120" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">fields match the document;</text>
+            <text x="185" y="134" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">summaries cite the policy</text>
+            <rect x="344" y="72" width="250" height="74" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="2"/>
+            <text x="469" y="100" text-anchor="middle" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--det)">2 &#183; Privacy</text>
+            <text x="469" y="120" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">PII minimized in prompts, logs,</text>
+            <text x="469" y="134" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">and generated text</text>
+            <rect x="628" y="72" width="250" height="74" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="2"/>
+            <text x="753" y="100" text-anchor="middle" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--det)">3 &#183; Auditability</text>
+            <text x="753" y="120" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">every output replayable:</text>
+            <text x="753" y="134" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">model id &#183; prompt &#183; chunks</text>
+
+            <!-- pins: pillar -> component; the dot marks the pinned component -->
+            <line x1="140" y1="146" x2="332" y2="214" stroke="var(--det)" stroke-width="1.5"/>
+            <circle cx="332" cy="214" r="3.5" fill="var(--det)"/>
+            <line x1="185" y1="146" x2="457" y2="214" stroke="var(--det)" stroke-width="1.5" opacity="0.7"/>
+            <circle cx="457" cy="214" r="3.5" fill="var(--det)"/>
+            <line x1="255" y1="146" x2="847" y2="214" stroke="var(--det)" stroke-width="1.5" opacity="0.55"/>
+            <circle cx="847" cy="214" r="3.5" fill="var(--det)"/>
+            <line x1="410" y1="146" x2="207" y2="214" stroke="var(--human)" stroke-width="1.5"/>
+            <circle cx="207" cy="214" r="3.5" fill="var(--human)"/>
+            <line x1="469" y1="146" x2="469" y2="214" stroke="var(--human)" stroke-width="1.5"/>
+            <circle cx="469" cy="214" r="3.5" fill="var(--human)"/>
+            <line x1="715" y1="146" x2="398" y2="294" stroke="var(--llm)" stroke-width="1.5" opacity="0.8"/>
+            <circle cx="398" cy="294" r="3.5" fill="var(--llm)"/>
+            <line x1="775" y1="146" x2="650" y2="294" stroke="var(--llm)" stroke-width="1.5" opacity="0.8"/>
+            <circle cx="650" cy="294" r="3.5" fill="var(--llm)"/>
+
+            <!-- the pipeline components -->
+            <g font-family="var(--mono)" font-size="10.5">
+              <rect x="34" y="220" width="96" height="56" rx="7" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+              <text x="82" y="244" text-anchor="middle" fill="var(--ink)">Land</text>
+              <text x="82" y="260" text-anchor="middle" fill="var(--ink-faint)">packet &#8594; S3</text>
+              <rect x="152" y="220" width="110" height="56" rx="7" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+              <text x="207" y="244" text-anchor="middle" fill="var(--ink)">Understand</text>
+              <text x="207" y="260" text-anchor="middle" fill="var(--ink-faint)">bytes &#8594; content</text>
+              <rect x="284" y="220" width="96" height="56" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+              <text x="332" y="244" text-anchor="middle" fill="var(--ink)">Extract</text>
+              <text x="332" y="260" text-anchor="middle" fill="var(--ink-faint)">5-field JSON</text>
+              <rect x="392" y="220" width="130" height="56" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+              <text x="457" y="244" text-anchor="middle" fill="var(--ink)">Validate</text>
+              <text x="457" y="260" text-anchor="middle" fill="var(--ink-faint)">pass / flag / reject</text>
+              <rect x="534" y="220" width="100" height="56" rx="7" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+              <text x="584" y="244" text-anchor="middle" fill="var(--ink)">Retrieve</text>
+              <text x="584" y="260" text-anchor="middle" fill="var(--ink-faint)">policy chunks</text>
+              <rect x="656" y="220" width="110" height="56" rx="7" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+              <text x="711" y="244" text-anchor="middle" fill="var(--ink)">Summarize</text>
+              <text x="711" y="260" text-anchor="middle" fill="var(--ink-faint)">cited summary</text>
+              <rect x="788" y="220" width="118" height="56" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+              <text x="847" y="244" text-anchor="middle" fill="var(--ink)">Record</text>
+              <text x="847" y="260" text-anchor="middle" fill="var(--ink-faint)">provenance tuple</text>
+            </g>
+            <!-- shared helpers -->
+            <g font-family="var(--mono)" font-size="10.5">
+              <rect x="284" y="300" width="228" height="52" rx="7" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5" stroke-dasharray="5 3"/>
+              <text x="398" y="322" text-anchor="middle" fill="var(--ink)">Render Prompt (versioned templates)</text>
+              <text x="398" y="338" text-anchor="middle" fill="var(--ink-faint)">shared by every model step</text>
+              <rect x="534" y="300" width="232" height="52" rx="7" fill="var(--paper)" stroke="var(--paper-edge)" stroke-width="1.5" stroke-dasharray="5 3"/>
+              <text x="650" y="322" text-anchor="middle" fill="var(--ink)">Invoke Model (records resolved id)</text>
+              <text x="650" y="338" text-anchor="middle" fill="var(--ink-faint)">timeouts + bounded retries live here</text>
+            </g>
+            <text x="34" y="390" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">solid-teal borders = where a driving characteristic is enforced &#183; dashed = shared helpers</text>
+            <text x="34" y="408" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">pin colors: integrity teal &#183; privacy slate &#183; audit amber &#183; the dot marks the pinned component</text>
+          </svg>
+        </div>
+        <figcaption><b>Qualities are owned, not admired.</b> Integrity pins to Extract, Validate, and Record; privacy pins to Understand and Validate; auditability pins to the two shared helpers that version every prompt and record every resolved model id.
+        <span class="cite">insurance-claim-processor/worksheets/characteristics-worksheet.md + components/logical-components.md, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <div class="why-beat">
+        <span class="tag">The tensions &#183; why &#8220;all seven, equally&#8221; is not a plan</span>
+        <p>Privacy fights auditability: redacting PII from logs fights replaying the exact prompt — resolved by storing the encrypted full prompt in the audit object and logging only template ids and hashes. Integrity fights cost: a frontier model on every page wins accuracy and burns tokens — resolved by routing (a capable model extracts, a cheaper one summarizes). And configurability is worthless to an auditor unless the <em>resolved</em> model id is recorded on every result — which is why the Invoke helper writes it down.</p>
+      </div>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>The envelope owns the definitions: integrity measured as field-match plus the worst-case error on the amount, privacy as guardrail hits plus log-shape tests, auditability as the complete provenance tuple. A characteristic that cannot be measured cannot gate anything.</p>
+        <p class="backref">Decisions this Part motivates &#8594; <a href="#d-config">D7 config plane</a> · <a href="#d-guardrail">D3 guardrail placement</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-3">
+    <div class="measure">
+      <div class="rule-orn">Part III · The pipeline</div>
+      <h2><span class="num">III</span>The pipeline</h2>
+      <p class="lede">Here is the whole machine in one picture. Follow the numbers: the model appears exactly twice, and both times its words pass through a guardrail before the code will touch them.</p>
+
+      <figure data-fig="F4" data-steps="yes">
+        <div class="fig-card">
+          <svg viewBox="0 0 960 540" role="img" aria-label="The pipeline: a claim packet lands in S3, Step Functions drives Lambda steps in a fixed order — understand and extract, validate, retrieve policy, summarize, route, record — with Bedrock called twice through a guardrail, and results written back to S3. Flagged claims exit to a human.">
+            <defs>
+              <marker id="f4-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F4 · THE PIPELINE</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">One claim&#8217;s journey: S3 in, Step Functions drives, Bedrock reads and writes, S3 out.</text>
+
+            <!-- model lane -->
+            <rect x="20" y="66" width="920" height="130" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="88" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE · THE ONLY TWO AMBER STEPS</text>
+            <!-- M1 extract -->
+            <rect x="200" y="100" width="190" height="80" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <use href="#sym-bedrock" x="212" y="112" width="28" height="28"/>
+            <text x="248" y="124" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">Bedrock</text>
+            <text x="212" y="158" font-family="var(--sans)" font-size="12.5" fill="var(--ink)">reads the document,</text>
+            <text x="212" y="174" font-family="var(--sans)" font-size="12.5" fill="var(--ink)">extracts five facts</text>
+            <!-- M2 summarize -->
+            <rect x="536" y="100" width="190" height="80" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <use href="#sym-bedrock" x="548" y="112" width="28" height="28"/>
+            <text x="584" y="124" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">Bedrock</text>
+            <text x="548" y="158" font-family="var(--sans)" font-size="12.5" fill="var(--ink)">writes a summary</text>
+            <text x="548" y="174" font-family="var(--sans)" font-size="12.5" fill="var(--ink)">that cites the policy</text>
+
+            <!-- guardrail bands: both the request (solid) and the reply (dashed) cross them -->
+            <rect x="246" y="198" width="176" height="34" rx="9" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.2"/>
+            <use href="#sym-guardrail" x="277" y="204" width="22" height="22"/>
+            <text x="324" y="212" font-family="var(--mono)" font-size="9.5" fill="var(--ink)">guardrail</text>
+            <text x="324" y="225" font-family="var(--mono)" font-size="9" fill="var(--ink-soft)">screens in + out</text>
+            <rect x="582" y="198" width="176" height="34" rx="9" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.2"/>
+            <use href="#sym-guardrail" x="614" y="204" width="22" height="22"/>
+            <text x="660" y="212" font-family="var(--mono)" font-size="9.5" fill="var(--ink)">guardrail</text>
+            <text x="660" y="225" font-family="var(--mono)" font-size="9" fill="var(--ink-soft)">screens in + out</text>
+
+            <!-- envelope lane -->
+            <rect x="20" y="250" width="920" height="240" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="478" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · THE CODE OWNS THE PATH — EVERY BOX, EVERY ARROW</text>
+
+            <!-- E1 S3 in -->
+            <rect x="34" y="286" width="104" height="88" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-s3" x="62" y="296" width="30" height="30"/>
+            <text x="86" y="344" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">S3</text>
+            <text x="86" y="360" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">claims/&lt;key&gt;</text>
+            <!-- E2 understand+extract -->
+            <rect x="166" y="286" width="140" height="88" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="176" y="294" width="24" height="24"/>
+            <text x="206" y="311" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">Lambda</text>
+            <text x="176" y="340" font-family="var(--sans)" font-size="12" fill="var(--ink)">understand +</text>
+            <text x="176" y="356" font-family="var(--sans)" font-size="12" fill="var(--ink)">extract</text>
+            <!-- E3 validate -->
+            <rect x="334" y="286" width="128" height="88" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="344" y="294" width="24" height="24"/>
+            <text x="374" y="311" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">Lambda</text>
+            <text x="344" y="340" font-family="var(--sans)" font-size="12" fill="var(--ink)">validate the</text>
+            <text x="344" y="356" font-family="var(--sans)" font-size="12" fill="var(--ink)">five fields</text>
+            <!-- E4 retrieve+summarize -->
+            <rect x="490" y="286" width="146" height="88" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="500" y="294" width="24" height="24"/>
+            <text x="530" y="311" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">Lambda</text>
+            <text x="500" y="340" font-family="var(--sans)" font-size="12" fill="var(--ink)">retrieve policy,</text>
+            <text x="500" y="356" font-family="var(--sans)" font-size="12" fill="var(--ink)">summarize</text>
+            <!-- E5 route -->
+            <g color="var(--det)">
+              <use href="#sym-gate" x="664" y="300" width="44" height="44"/>
+            </g>
+            <text x="686" y="366" text-anchor="middle" font-family="var(--sans)" font-size="12" fill="var(--ink)">route</text>
+            <!-- E6 record -->
+            <rect x="742" y="286" width="104" height="88" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="752" y="294" width="24" height="24"/>
+            <text x="782" y="311" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">Lambda</text>
+            <text x="752" y="340" font-family="var(--sans)" font-size="12" fill="var(--ink)">record</text>
+            <!-- E7 S3 out -->
+            <rect x="866" y="286" width="76" height="88" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-s3" x="888" y="296" width="30" height="30"/>
+            <text x="904" y="344" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">S3</text>
+            <text x="904" y="360" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">results/</text>
+
+            <!-- SFN driver bar -->
+            <rect x="166" y="416" width="680" height="46" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-sfn" x="176" y="424" width="28" height="28"/>
+            <text x="212" y="438" font-family="var(--mono)" font-size="11" fill="var(--ink)">Step Functions (Standard)</text>
+            <text x="212" y="454" font-family="var(--sans)" font-size="11.5" fill="var(--ink-soft)">drives every arrow above in a fixed order; its execution history is the audit trail</text>
+
+            <!-- flow arrows + steps -->
+            <line x1="138" y1="330" x2="161" y2="330" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <line x1="306" y1="330" x2="329" y2="330" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <line x1="462" y1="330" x2="485" y2="330" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <line x1="636" y1="330" x2="660" y2="325" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <line x1="712" y1="322" x2="737" y2="322" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <line x1="846" y1="330" x2="861" y2="330" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <!-- model call arrows -->
+            <line x1="252" y1="281" x2="278" y2="185" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <line x1="320" y1="185" x2="300" y2="240" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#f4-arrow)"/>
+            <line x1="588" y1="281" x2="614" y2="185" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <line x1="656" y1="185" x2="636" y2="240" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#f4-arrow)"/>
+            <!-- human exit -->
+            <g color="var(--human)">
+              <use href="#sym-person" x="700" y="240" width="30" height="30"/>
+            </g>
+            <line x1="700" y1="308" x2="712" y2="278" stroke="var(--human)" stroke-width="1.5" marker-end="url(#f4-arrow)"/>
+            <text x="736" y="262" font-family="var(--mono)" font-size="10.5" fill="var(--human)">flagged &#8594; Part IV</text>
+
+            <!-- step numbers -->
+            <g class="step"><circle cx="150" cy="312" r="10" fill="var(--det)"/><text x="150" y="316" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">1</text></g>
+            <g class="step"><circle cx="236" cy="270" r="10" fill="var(--llm)"/><text x="236" y="274" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">2</text></g>
+            <g class="step"><circle cx="318" cy="312" r="10" fill="var(--det)"/><text x="318" y="316" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">3</text></g>
+            <g class="step"><circle cx="474" cy="312" r="10" fill="var(--det)"/><text x="474" y="316" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">4</text></g>
+            <g class="step"><circle cx="572" cy="270" r="10" fill="var(--llm)"/><text x="572" y="274" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">5</text></g>
+            <g class="step"><circle cx="648" cy="312" r="10" fill="var(--det)"/><text x="648" y="316" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">6</text></g>
+            <g class="step"><circle cx="854" cy="312" r="10" fill="var(--det)"/><text x="854" y="316" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">7</text></g>
+          </svg>
+        </div>
+        <figcaption><b>Seven numbered moves, two of them amber.</b> ① the packet lands · ② the model reads and extracts · ③ code checks the schema · ④ policy chunks are retrieved · ⑤ the model writes a cited summary · ⑥ code routes clean vs flagged · ⑦ the result lands beside the packet. Both amber moves cross the guardrail band twice — the prompt going in and the words coming out; the flagged exit is Part IV.
+        <span class="cite">insurance-claim-processor/design/solution-design.md §1 (topology) + §7 (sequence), as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <p>Three facts complete what the picture cannot show. The component logic lives in one reusable Python package — the Step Functions states are thin wrappers around it, so the same code that passed the offline tests is what runs in every Lambda. Processing is synchronous inside a claim, because each step needs the previous step&#8217;s output; the only asynchronous wait in the whole machine is the human one. And every result carries its execution&#8217;s identifier, so any recorded decision can be replayed against the exact history that produced it.
+      <span class="cite">insurance-claim-processor/design/solution-design.md §TL;DR + §7 · worksheets/style-decision.md, as of 2026-09-23</span></p>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>Every hop that decides anything is teal: landing, validating, retrieving, routing, recording. The model only ever fills in two amber steps — read the document, write the summary — and both are wrapped by the guardrail before their words touch the record.</p>
+        <p class="backref">Decisions this Part motivates &#8594; <a href="#d-host">D1 workflow host</a> · <a href="#d-docunderstand">D6 who reads the document</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-4">
+    <div class="measure">
+      <div class="rule-orn">Part IV · The human gate</div>
+      <h2><span class="num">IV</span>The human gate</h2>
+      <p class="lede">Routing is not a judgment call — it is four rules, each one a reason a machine should not be trusted alone. All four drain into the <b>same</b> place: a person.</p>
+
+      <figure data-fig="F5" data-steps="yes">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 420" role="img" aria-label="The routing funnel: the model's output passes four red gates — missing fields, no policy citation, PII in the summary, amount above the payout threshold. Tripping any gate routes the claim to human review; passing all four auto-approves it.">
+            <defs>
+              <marker id="f5-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F5 · THE FOUR GATES</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">Four red gates. Every one of them leads to the same human.</text>
+
+            <!-- model lane -->
+            <rect x="20" y="66" width="640" height="80" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="88" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE · WHAT IS BEING JUDGED</text>
+            <rect x="200" y="94" width="300" height="44" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="350" y="113" text-anchor="middle" font-family="var(--sans)" font-size="12.5" fill="var(--ink)">the model&#8217;s draft: five fields + cited summary</text>
+            <text x="350" y="129" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">a proposal, not a decision</text>
+
+            <!-- envelope lane -->
+            <rect x="20" y="162" width="640" height="230" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="380" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · FOUR RULES, WRITTEN IN CODE</text>
+
+            <line x1="350" y1="138" x2="350" y2="170" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f5-arrow)"/>
+
+            <!-- gates -->
+            <g color="var(--fail)">
+              <use href="#sym-gate" x="52" y="186" width="40" height="40"/>
+              <use href="#sym-gate" x="208" y="186" width="40" height="40"/>
+              <use href="#sym-gate" x="364" y="186" width="40" height="40"/>
+              <use href="#sym-gate" x="520" y="186" width="40" height="40"/>
+            </g>
+            <g class="step"><circle cx="52" cy="186" r="9" fill="var(--fail)"/><text x="52" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--paper)">1</text></g>
+            <g class="step"><circle cx="208" cy="186" r="9" fill="var(--fail)"/><text x="208" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--paper)">2</text></g>
+            <g class="step"><circle cx="364" cy="186" r="9" fill="var(--fail)"/><text x="364" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--paper)">3</text></g>
+            <g class="step"><circle cx="520" cy="186" r="9" fill="var(--fail)"/><text x="520" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--paper)">4</text></g>
+            <text x="72" y="248" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">a required field is</text>
+            <text x="72" y="263" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">empty or invalid</text>
+            <text x="228" y="248" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">no policy citation</text>
+            <text x="228" y="263" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">ungrounded = true</text>
+            <text x="384" y="248" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">PII leaked into</text>
+            <text x="384" y="263" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">the summary</text>
+            <text x="540" y="248" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">amount over</text>
+            <text class="unverified" x="540" y="263" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">$10,000</text>
+            <line x1="516" y1="266" x2="564" y2="266" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="3 2"/>
+            <text x="540" y="279" text-anchor="middle" font-family="var(--mono)" font-size="9.5" fill="var(--ink-faint)">default — tune per domain</text>
+
+            <!-- drain to human -->
+            <path d="M72 288 Q72 330 250 336 L681 336" fill="none" stroke="var(--human)" stroke-width="1.8" marker-end="url(#f5-arrow)"/>
+            <path d="M228 288 Q228 322 380 330" fill="none" stroke="var(--human)" stroke-width="1.8"/>
+            <path d="M384 288 Q384 318 500 328" fill="none" stroke="var(--human)" stroke-width="1.8"/>
+            <path d="M540 288 Q540 314 610 330" fill="none" stroke="var(--human)" stroke-width="1.8"/>
+            <text x="380" y="356" font-family="var(--mono)" font-size="10.5" fill="var(--human)">any gate trips &#8594; human review</text>
+
+            <!-- human box -->
+            <rect x="686" y="286" width="236" height="100" rx="10" fill="var(--paper)" stroke="var(--human)" stroke-width="2"/>
+            <g color="var(--human)">
+              <use href="#sym-person" x="702" y="312" width="36" height="36"/>
+            </g>
+            <text x="748" y="322" font-family="var(--sans)" font-size="13.5" font-weight="700" fill="var(--human)">human review</text>
+            <text x="748" y="342" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">the one gate that can</text>
+            <text x="748" y="357" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">say yes to a flagged claim</text>
+
+            <!-- clean path -->
+            <rect x="686" y="176" width="236" height="86" rx="10" fill="var(--paper)" stroke="var(--pass)" stroke-width="2"/>
+            <text x="804" y="208" text-anchor="middle" font-family="var(--sans)" font-size="13.5" font-weight="700" fill="var(--pass)">auto-approve</text>
+            <text x="804" y="228" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">all four gates passed &#8212;</text>
+            <text x="804" y="243" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">recorded without a person</text>
+            <line x1="580" y1="206" x2="681" y2="206" stroke="var(--pass)" stroke-width="1.8" marker-end="url(#f5-arrow)"/>
+            <text x="596" y="196" font-family="var(--mono)" font-size="10.5" fill="var(--pass)">clean</text>
+          </svg>
+        </div>
+        <figcaption><b>The funnel has one drain.</b> Gates ①&#8211;④: missing fields, missing citation, leaked PII, big payout. Any trip &#8594; the slate box. PII is the strictest: it can never be auto-approved past. The <span class="unverified">$10,000</span> threshold is a default, not doctrine.
+        <span class="cite">insurance-claim-processor/design/solution-design.md §1a (escalation policy), as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <figure data-fig="F6" data-steps="yes">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 430" role="img" aria-label="The durable wait: when a claim is flagged, the pending record and task token are written to S3, the state machine pauses for up to seven days, a person inspects the record and resumes the workflow with the token, and the decision is recorded. The token-persistence handler is designed but not yet deployed.">
+            <defs>
+              <marker id="f6-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F6 · THE DURABLE WAIT</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">The workflow waits &#8212; up to 7 days &#8212; until a person answers with the token.</text>
+
+            <!-- human lane (top, slate) -->
+            <rect x="20" y="66" width="920" height="110" rx="10" fill="var(--paper-2)" stroke="var(--human)" stroke-width="1" opacity="0.9"/>
+            <text x="36" y="88" font-family="var(--mono)" font-size="12" fill="var(--human)" letter-spacing="1.5">HUMAN LANE · THE REVIEWER</text>
+            <rect x="80" y="96" width="300" height="60" rx="8" fill="var(--llm-wash)" stroke="var(--llm)" stroke-width="1.5"/>
+            <text x="96" y="114" font-family="var(--mono)" font-size="10" fill="var(--llm)">MODEL LANE, PAUSED</text>
+            <text x="96" y="132" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">what&#8217;s being judged: the model&#8217;s draft</text>
+            <text x="96" y="148" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">five fields + summary, inside the pending record</text>
+            <g color="var(--human)">
+              <use href="#sym-person" x="470" y="98" width="34" height="34"/>
+            </g>
+            <text x="487" y="152" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">reviewer</text>
+            <rect x="560" y="96" width="240" height="60" rx="8" fill="var(--paper)" stroke="var(--human)" stroke-width="1.5"/>
+            <text x="680" y="120" text-anchor="middle" font-family="var(--sans)" font-size="12" fill="var(--ink)">decide: approve / correct / reject</text>
+            <text x="680" y="140" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">+ reviewer_id &#183; via CLI today</text>
+
+            <!-- envelope lane -->
+            <rect x="20" y="192" width="920" height="200" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="380" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · STEP FUNCTIONS HOLDS THE CLOCK</text>
+
+            <!-- flagged in -->
+            <g color="var(--fail)">
+              <use href="#sym-gate" x="40" y="222" width="36" height="36"/>
+            </g>
+            <text x="58" y="278" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">flagged</text>
+            <!-- write pending -->
+            <rect x="112" y="216" width="164" height="92" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-s3" x="122" y="224" width="24" height="24"/>
+            <text x="152" y="241" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">S3</text>
+            <text x="122" y="268" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">write pending-review/</text>
+            <text x="122" y="284" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">record + task token</text>
+            <rect x="118" y="292" width="152" height="20" rx="6" fill="none" stroke="var(--human)" stroke-width="1.3" stroke-dasharray="4 3" class="status-svg"/>
+            <text x="194" y="306" text-anchor="middle" font-family="var(--mono)" font-size="9" fill="var(--human)">DESIGNED — NOT YET DEPLOYED</text>
+            <!-- wait state -->
+            <rect x="316" y="216" width="190" height="92" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-sfn" x="326" y="224" width="24" height="24"/>
+            <text x="356" y="241" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">waitForTaskToken</text>
+            <text x="326" y="268" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">the execution pauses.</text>
+            <text x="326" y="284" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">no compute burns.</text>
+            <path d="M472 296 A 14 14 0 1 1 486 282" fill="none" stroke="var(--ink-soft)" stroke-width="1.6"/>
+            <line x1="480" y1="289" x2="486" y2="283" stroke="var(--ink-soft)" stroke-width="1.6"/>
+            <text x="452" y="302" text-anchor="end" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">7-day heartbeat</text>
+            <!-- token resume -->
+            <g color="var(--human)">
+              <use href="#sym-token" x="560" y="230" width="36" height="36"/>
+            </g>
+            <text x="578" y="286" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">single-use</text>
+            <rect x="628" y="216" width="170" height="92" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="638" y="243" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">SendTaskSuccess</text>
+            <text x="638" y="268" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">the decision resumes</text>
+            <text x="638" y="284" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">the exact execution</text>
+            <!-- record -->
+            <rect x="826" y="216" width="106" height="92" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-s3" x="836" y="224" width="24" height="24"/>
+            <text x="866" y="241" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">results/</text>
+            <text x="836" y="268" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">recorded with</text>
+            <text x="836" y="284" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">review details</text>
+
+            <!-- arrows -->
+            <line x1="80" y1="248" x2="107" y2="252" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f6-arrow)"/>
+            <line x1="276" y1="258" x2="311" y2="258" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f6-arrow)"/>
+            <line x1="200" y1="212" x2="470" y2="140" stroke="var(--human)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#f6-arrow)"/>
+            <text x="278" y="172" font-family="var(--mono)" font-size="10" fill="var(--human)">reads the pending record</text>
+            <line x1="680" y1="160" x2="600" y2="228" stroke="var(--human)" stroke-width="1.5" marker-end="url(#f6-arrow)"/>
+            <line x1="598" y1="262" x2="623" y2="262" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f6-arrow)"/>
+            <line x1="798" y1="262" x2="821" y2="262" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f6-arrow)"/>
+
+            <!-- steps -->
+            <g class="step"><circle cx="96" cy="234" r="10" fill="var(--det)"/><text x="96" y="238" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">1</text></g>
+            <g class="step"><circle cx="296" cy="240" r="10" fill="var(--det)"/><text x="296" y="244" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">2</text></g>
+            <g class="step"><circle cx="330" cy="176" r="10" fill="var(--human)"/><text x="330" y="180" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">3</text></g>
+            <g class="step"><circle cx="628" cy="192" r="10" fill="var(--human)"/><text x="628" y="196" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">4</text></g>
+            <g class="step"><circle cx="810" cy="244" r="10" fill="var(--det)"/><text x="810" y="248" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">5</text></g>
+          </svg>
+        </div>
+        <figcaption><b>A pause, not a poll.</b> ① flagged &#8594; ② record + token parked in S3, execution pauses &#8594; ③ the reviewer reads the pending record &#8594; ④ their decision resumes the exact execution via the single-use token &#8594; ⑤ recorded with the review attached. <span class="status">designed — not yet deployed</span>: the token-persisting handler is open finding F2; flagged claims currently park at the wait state.
+        <span class="cite">insurance-claim-processor/design/solution-design.md §1a + adrs/0005-hitl-manual-token-resume.md + build/DEPLOY-WALKTHROUGH.md finding F2, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <div class="why-beat">
+        <span class="tag">Two design choices a picture can&#8217;t argue for</span>
+        <p><strong>The reviewer&#8217;s verdict is a first-class record.</strong> Approve, correct, or reject — with the reviewer&#8217;s id, timestamp, and every field they changed. Model output and human correction are recorded <em>distinctly</em>, so an auditor can always see which one produced the number that got paid.</p>
+        <p><strong>The token is single-use on purpose.</strong> A retried resume cannot double-record a decision, and an expired one (past the 7-day heartbeat) marks the claim <code>review-expired</code> and escalates rather than silently approving. The CLI resume of today and a review UI or Amazon A2I tomorrow use the same call — the production promote is additive, not a rewrite.</p>
+      </div>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>The envelope owns the gate: the four escalation rules are code, the wait is a durable state-machine token, the timeout is a timer, and the reviewer&#8217;s decision lands in the same provenance tuple as the model&#8217;s output.</p>
+        <p class="backref">Decisions this Part motivates &#8594; <a href="#d-hitl">D2 human mechanism</a> · <a href="#d-host">D1 workflow host</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-5">
+    <div class="measure">
+      <div class="rule-orn">Part V · The safety and trust envelope</div>
+      <h2><span class="num">V</span>The safety and trust envelope</h2>
+      <p class="lede">Nothing here trusts a single layer. The model&#8217;s words pass through <b>two nets</b> — one managed, one owned — and every identity in the system holds a key that opens only its own doors.</p>
+
+      <figure data-fig="F7" data-steps="yes">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 440" role="img" aria-label="Two safety nets: every prompt passes the Bedrock guardrail's input checks, the model answers, the output passes the guardrail again, and then the application's own validator checks schema, citations, and residual PII — anything residual routes to human review.">
+            <defs>
+              <marker id="f7-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F7 · TWO SAFETY NETS</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">Two safety nets: one wraps the model, one wraps the result.</text>
+
+            <!-- model lane -->
+            <rect x="20" y="66" width="920" height="150" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="88" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE</text>
+            <rect x="392" y="106" width="176" height="84" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <use href="#sym-bedrock" x="404" y="116" width="28" height="28"/>
+            <text x="440" y="130" font-family="var(--mono)" font-size="11" fill="var(--ink)">Bedrock</text>
+            <text x="404" y="162" font-family="var(--sans)" font-size="12" fill="var(--ink)">the model answers</text>
+            <text x="404" y="178" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">extract or summarize</text>
+
+            <!-- net 1: guardrail input/output -->
+            <rect x="176" y="100" width="150" height="96" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-guardrail" x="186" y="108" width="26" height="26"/>
+            <text x="218" y="124" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">NET 1 &#183; in</text>
+            <text x="186" y="152" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">mask PII in the prompt</text>
+            <text x="186" y="168" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">block prompt attacks</text>
+            <rect x="634" y="100" width="168" height="96" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-guardrail" x="644" y="108" width="26" height="26"/>
+            <text x="676" y="124" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">NET 1 &#183; out</text>
+            <text x="644" y="152" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">mask PII in the answer</text>
+            <text x="644" y="168" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">grounding check
+            </text>
+            <rect x="640" y="174" width="156" height="17" rx="5" fill="none" stroke="var(--human)" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <text x="718" y="186" text-anchor="middle" font-family="var(--mono)" font-size="8.5" fill="var(--human)">DESIGNED — NOT YET WIRED (finding F5)</text>
+
+            <!-- envelope lane -->
+            <rect x="20" y="232" width="920" height="170" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="390" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · THE NET YOU OWN</text>
+
+            <rect x="40" y="258" width="150" height="80" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="50" y="266" width="24" height="24"/>
+            <text x="80" y="283" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">Lambda</text>
+            <text x="50" y="310" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">builds the prompt</text>
+            <text x="50" y="326" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">versioned template</text>
+
+            <rect x="360" y="258" width="240" height="96" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="2"/>
+            <text x="376" y="284" font-family="var(--mono)" font-size="11" fill="var(--ink)">NET 2 &#183; ContentValidator (ours)</text>
+            <text x="376" y="306" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">schema must hold &#183; citation required</text>
+            <text x="376" y="322" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">residual PII hunted a second time</text>
+            <text x="376" y="342" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">treats net 1 as fallible, because it is</text>
+
+            <g color="var(--human)">
+              <use href="#sym-person" x="700" y="272" width="34" height="34"/>
+            </g>
+            <text x="717" y="326" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--human)">anything residual</text>
+            <text x="717" y="340" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--human)">&#8594; human review</text>
+            <rect x="800" y="264" width="120" height="80" rx="8" fill="var(--paper)" stroke="var(--pass)" stroke-width="1.5"/>
+            <text x="860" y="296" text-anchor="middle" font-family="var(--sans)" font-size="12" fill="var(--pass)">clean result</text>
+            <text x="860" y="314" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">continues to route</text>
+
+            <!-- arrows -->
+            <line x1="115" y1="253" x2="200" y2="200" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f7-arrow)"/>
+            <line x1="326" y1="148" x2="387" y2="148" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f7-arrow)"/>
+            <line x1="568" y1="148" x2="629" y2="148" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f7-arrow)"/>
+            <line x1="718" y1="196" x2="520" y2="253" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f7-arrow)"/>
+            <line x1="600" y1="296" x2="694" y2="290" stroke="var(--human)" stroke-width="1.6" marker-end="url(#f7-arrow)"/>
+            <line x1="600" y1="312" x2="795" y2="308" stroke="var(--pass)" stroke-width="1.6" marker-end="url(#f7-arrow)"/>
+
+            <!-- steps -->
+            <g class="step"><circle cx="150" cy="230" r="10" fill="var(--det)"/><text x="150" y="234" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">1</text></g>
+            <g class="step"><circle cx="356" cy="130" r="10" fill="var(--det)"/><text x="356" y="134" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">2</text></g>
+            <g class="step"><circle cx="598" cy="130" r="10" fill="var(--llm)"/><text x="598" y="134" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">3</text></g>
+            <g class="step"><circle cx="640" cy="222" r="10" fill="var(--det)"/><text x="640" y="226" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">4</text></g>
+            <g class="step"><circle cx="348" cy="270" r="10" fill="var(--det)"/><text x="348" y="274" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">5</text></g>
+          </svg>
+        </div>
+        <figcaption><b>Defense in depth, literally drawn.</b> ① code builds a versioned prompt &#8594; ② guardrail scrubs what goes in &#8594; ③ the model answers &#8594; ④ guardrail scrubs what comes out &#8594; ⑤ our validator re-checks everything and routes residuals to a person. The contextual-grounding check exists in the guardrail config but the code does not send it a grounding source yet.
+        <span class="cite">insurance-claim-processor/design/solution-design.md §4 + adrs/0008-guardrails-on-converse-day-one.md + build/DEPLOY-LEDGER.md Stage 2, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <figure data-fig="F8">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 470" role="img" aria-label="Three IAM roles and exactly what each may touch: the Step Functions execution role may only invoke the step Lambdas; the step-Lambda role may invoke Bedrock on both ARN shapes, apply the guardrail, read claims and write results in S3, and decrypt through KMS only via S3; the operator role may only resume the workflow token and read pending reviews.">
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F8 · THREE KEYS, MINIMUM DOORS</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">Three keys. Each opens only the doors its job needs.</text>
+
+            <!-- amber sliver: the model as a resource -->
+            <rect x="640" y="66" width="300" height="120" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="656" y="86" font-family="var(--mono)" font-size="11" fill="var(--llm)" letter-spacing="1.5">MODEL LANE · A RESOURCE</text>
+            <rect x="672" y="96" width="112" height="76" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <use href="#sym-bedrock" x="682" y="104" width="26" height="26"/>
+            <text x="714" y="120" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">Bedrock</text>
+            <text x="682" y="146" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">foundation-model/*</text>
+            <text x="682" y="160" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">inference-profile/*</text>
+            <rect x="808" y="96" width="112" height="76" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <use href="#sym-guardrail" x="818" y="104" width="26" height="26"/>
+            <text x="850" y="120" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">Guardrail</text>
+            <text x="818" y="146" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">ApplyGuardrail</text>
+            <text x="818" y="160" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">one ARN only</text>
+
+            <!-- envelope resources -->
+            <rect x="20" y="66" width="600" height="120" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="86" font-family="var(--mono)" font-size="11" fill="var(--det)" letter-spacing="1.5">ENVELOPE RESOURCES</text>
+            <rect x="40" y="96" width="120" height="76" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="50" y="104" width="26" height="26"/>
+            <text x="82" y="120" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">6 Lambdas</text>
+            <text x="50" y="146" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">the step code</text>
+            <rect x="180" y="96" width="140" height="76" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-s3" x="190" y="104" width="26" height="26"/>
+            <text x="222" y="120" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">S3 bucket</text>
+            <text x="190" y="146" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">claims/ &#183; results/</text>
+            <text x="190" y="160" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">pending-review/</text>
+            <rect x="340" y="96" width="120" height="76" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-kms" x="350" y="104" width="26" height="26"/>
+            <text x="382" y="120" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">KMS</text>
+            <text x="350" y="146" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">decrypt only</text>
+            <text x="350" y="160" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">via S3 (ViaService)</text>
+            <rect x="480" y="96" width="120" height="76" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-sfn" x="490" y="104" width="26" height="26"/>
+            <text x="522" y="120" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">workflow</text>
+            <text x="490" y="146" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">SendTaskSuccess</text>
+            <text x="490" y="160" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">/ SendTaskFailure</text>
+
+            <!-- connectors run as an orthogonal bus in the band between the resources and the keys,
+                 and down the left gutter — never through the label text -->
+            <g fill="none" opacity="0.55">
+              <path d="M56 220 L56 213 L96 213 L96 174" stroke="var(--det)" stroke-width="1.6"/>
+              <path d="M40 296 L28 296 L28 208 L236 208 L236 174" stroke="var(--det)" stroke-width="1.6"/>
+              <path d="M40 302 L22 302 L22 203 L386 203 L386 174" stroke="var(--det)" stroke-width="1.6"/>
+              <path d="M40 308 L16 308 L16 193 L716 193 L716 174" stroke="var(--llm)" stroke-width="1.6"/>
+              <path d="M40 314 L10 314 L10 188 L850 188 L850 174" stroke="var(--llm)" stroke-width="1.6"/>
+              <path d="M40 380 L34 380 L34 198 L530 198 L530 174" stroke="var(--human)" stroke-width="1.6"/>
+            </g>
+            <!-- roles -->
+            <g>
+              <use href="#sym-iam" x="40" y="222" width="32" height="32"/>
+              <text x="82" y="238" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">key 1 &#183; sfn-exec role</text>
+              <text x="82" y="256" font-family="var(--sans)" font-size="11.5" fill="var(--ink-soft)">may invoke the six Lambdas. nothing else.</text>
+            </g>
+            <g>
+              <use href="#sym-iam" x="40" y="292" width="32" height="32"/>
+              <text x="82" y="308" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">key 2 &#183; step-lambda role (one, shared)</text>
+              <text x="82" y="326" font-family="var(--sans)" font-size="11.5" fill="var(--ink-soft)">invoke the model (both ARN shapes) &#183; apply the one guardrail &#183;</text>
+              <text x="82" y="342" font-family="var(--sans)" font-size="11.5" fill="var(--ink-soft)">read claims/ &#183; write results/ + pending-review/ &#183; decrypt via S3 only</text>
+            </g>
+            <g>
+              <use href="#sym-iam" x="40" y="372" width="32" height="32"/>
+              <text x="82" y="388" font-family="var(--mono)" font-size="11.5" fill="var(--ink)">key 3 &#183; operator role</text>
+              <text x="82" y="406" font-family="var(--sans)" font-size="11.5" fill="var(--ink-soft)">resume the review token &#183; read pending-review/. cannot invoke the model.</text>
+              <rect x="82" y="416" width="176" height="18" rx="5" fill="none" stroke="var(--human)" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="170" y="429" text-anchor="middle" font-family="var(--mono)" font-size="8.5" fill="var(--human)">DESIGNED — DEFERRED WITH HITL</text>
+            </g>
+            <text x="36" y="456" font-family="var(--mono)" font-size="11" fill="var(--ink-faint)">no AmazonBedrockFullAccess anywhere &#183; no bucket-wide s3:* &#183; no role can widen its own doors</text>
+          </svg>
+        </div>
+        <figcaption><b>Least privilege you can point at.</b> Each key&#8217;s lines are its entire world: the workflow can only start code, the code can only process claims, the operator can only answer them. Amber lines are the only two that reach the model.
+        <span class="cite">insurance-claim-processor/design/solution-design.md §5 + adrs/0009-least-privilege-iam-single-processing-role.md + build/DEPLOY-LEDGER.md Stage 4, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <div class="why-beat">
+        <span class="tag">Two traps a picture can&#8217;t explain</span>
+        <p><strong>The two-ARN trap.</strong> Invoking a current Claude model on Bedrock goes through an <em>inference profile</em>, but permission checks resolve against both the profile ARN and the underlying foundation-model ARN. Grant only one shape and the call fails at runtime with a confusing denial. Key 2 therefore grants both — and the model-id segment is a pattern, never a pinned constant, because model choice is runtime configuration (Part VII).</p>
+        <p><strong>A guardrail is not an authorizer.</strong> Net 1 filters <em>text</em>. It cannot stop a payout write, because it never sees a tool decision. The day this system gains a &#8220;file to core system&#8221; action, that action gets a real authorization layer (Cedar / Verified Permissions) — a different control at a different layer, deliberately not built before the tool exists.</p>
+      </div>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>The envelope owns identity and text boundaries: three narrow roles, decryption only through S3, a guardrail on every model call, and a validator that treats the guardrail as fallible. No role can both invoke the model and rewrite its own permissions.</p>
+        <p class="backref">Decisions this Part motivates &#8594; <a href="#d-guardrail">D3 guardrail placement</a> · <a href="#d-iam">D4 IAM shape</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-6">
+    <div class="measure">
+      <div class="rule-orn">Part VI · Grounding</div>
+      <h2><span class="num">VI</span>Grounding</h2>
+      <p class="lede">A summary is only worth recording if it can point at the policy line it stands on. The rule has two halves: <b>cite it, or say you couldn&#8217;t</b> — and when the system doesn&#8217;t know which state&#8217;s policy applies, it retrieves <b>nothing</b> rather than guessing.</p>
+
+      <figure data-fig="F9" data-steps="yes">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 440" role="img" aria-label="Grounding: claim facts pass a jurisdiction filter. If the state and line of business are known, matching policy chunks are retrieved and the model writes a summary citing their ids. If unknown, nothing is retrieved, the summary is marked ungrounded, and the claim still gets recorded — flagged for human review.">
+            <defs>
+              <marker id="f9-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F9 · CITE IT OR SAY SO</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">Cite the policy or say so: no citation means flagged, never guessed.</text>
+
+            <!-- model lane -->
+            <rect x="560" y="66" width="380" height="140" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="576" y="88" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE</text>
+            <rect x="592" y="100" width="320" height="90" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <use href="#sym-bedrock" x="604" y="110" width="28" height="28"/>
+            <text x="640" y="124" font-family="var(--mono)" font-size="11" fill="var(--ink)">Bedrock</text>
+            <text x="604" y="156" font-family="var(--sans)" font-size="12" fill="var(--ink)">writes the summary from facts + chunks,</text>
+            <text x="604" y="172" font-family="var(--sans)" font-size="12" fill="var(--ink)">naming each chunk id it used</text>
+
+            <!-- envelope lane -->
+            <rect x="20" y="66" width="520" height="330" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="384" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · THE KNOWLEDGE BOUNDARY</text>
+
+            <g color="var(--ink-soft)">
+              <use href="#sym-doc" x="44" y="106" width="32" height="32"/>
+            </g>
+            <text x="60" y="158" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">claim facts</text>
+            <g color="var(--det)">
+              <use href="#sym-gate" x="130" y="102" width="40" height="40"/>
+            </g>
+            <text x="150" y="164" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">state + line of</text>
+            <text x="150" y="179" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">business known?</text>
+
+            <!-- yes path -->
+            <rect x="250" y="86" width="270" height="110" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <g color="var(--ink-soft)">
+              <use href="#sym-doc" x="262" y="98" width="26" height="26"/>
+            </g>
+            <text x="296" y="114" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">policy corpus</text>
+            <text x="262" y="144" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">retrieve only chunks tagged with</text>
+            <text x="262" y="160" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">this state + this line of business</text>
+            <text x="262" y="182" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">every chunk keeps its id — the citation</text>
+
+            <!-- no path -->
+            <rect x="250" y="236" width="270" height="120" rx="8" fill="var(--paper)" stroke="var(--fail)" stroke-width="1.5"/>
+            <text x="266" y="262" font-family="var(--mono)" font-size="11" fill="var(--fail)">unknown &#8594; fail closed</text>
+            <text x="266" y="286" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">retrieve NOTHING. never a random</text>
+            <text x="266" y="302" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">state&#8217;s policy. mark the summary</text>
+            <text x="266" y="322" font-family="var(--mono)" font-size="11" fill="var(--fail)">ungrounded = true</text>
+            <text x="266" y="342" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">extraction still recorded &#183; claim &#8594; review</text>
+
+            <!-- result -->
+            <rect x="560" y="236" width="380" height="120" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="576" y="262" font-family="var(--mono)" font-size="11" fill="var(--ink)">the recorded result</text>
+            <rect x="576" y="276" width="130" height="24" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.2"/>
+            <text x="641" y="292" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">cites: auto-florida</text>
+            <rect x="716" y="276" width="90" height="24" rx="12" fill="var(--det-wash)" stroke="var(--det)" stroke-width="1.2"/>
+            <text x="761" y="292" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--det)">chunk #12</text>
+            <text x="576" y="330" font-family="var(--sans)" font-size="11.5" fill="var(--ink-soft)">or, honestly: &#8220;ungrounded — no matching policy&#8221;</text>
+
+            <!-- arrows -->
+            <line x1="80" y1="122" x2="124" y2="122" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f9-arrow)"/>
+            <line x1="174" y1="116" x2="245" y2="116" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f9-arrow)"/>
+            <text x="188" y="106" font-family="var(--mono)" font-size="10.5" fill="var(--pass)">known</text>
+            <line x1="150" y1="186" x2="248" y2="270" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f9-arrow)"/>
+            <text x="150" y="228" font-family="var(--mono)" font-size="10.5" fill="var(--fail)">unknown</text>
+            <line x1="524" y1="128" x2="587" y2="140" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f9-arrow)"/>
+            <line x1="752" y1="194" x2="752" y2="231" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f9-arrow)"/>
+            <line x1="524" y1="296" x2="555" y2="296" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f9-arrow)"/>
+
+            <!-- steps -->
+            <g class="step"><circle cx="102" cy="104" r="10" fill="var(--det)"/><text x="102" y="108" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">1</text></g>
+            <g class="step"><circle cx="210" cy="98" r="10" fill="var(--det)"/><text x="210" y="102" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">2</text></g>
+            <g class="step"><circle cx="556" cy="112" r="10" fill="var(--llm)"/><text x="556" y="116" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">3</text></g>
+            <g class="step"><circle cx="736" cy="214" r="10" fill="var(--det)"/><text x="736" y="218" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">4</text></g>
+            <g class="step"><circle cx="196" cy="252" r="10" fill="var(--fail)"/><text x="196" y="256" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">5</text></g>
+          </svg>
+        </div>
+        <figcaption><b>The honest branch is a feature.</b> ① facts arrive &#8594; ② the filter decides what may be retrieved &#8594; ③ the model writes only from what was retrieved &#8594; ④ citations land on the record &#8594; ⑤ the unknown case retrieves nothing and says so. Durable extraction is the core function; the summary is additive.
+        <span class="cite">insurance-claim-processor/design/solution-design.md §2 + validate/eval-report.md + risk/resilience-clinic.md C11, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <div class="why-beat">
+        <span class="tag">The day the wrong state&#8217;s policy showed up</span>
+        <p>This rule was not designed on a whiteboard — it was earned in the offline eval. The first retrieval run had no metadata filter, and the Texas water-damage claim came back citing a <em>Florida auto</em> clause alongside the right one. The fix is the figure above: filter on state and line of business, and when they cannot be inferred, fail closed. In production those tags are stamped at ingest, not guessed from the query.</p>
+      </div>
+
+      <p>Three quieter decisions round out the knowledge boundary. Retrieval uses the API that returns raw chunks (<code>retrieve</code>) rather than the one that answers for you (<code>retrieve_and_generate</code>) — because this system owns its prompt, its citations, and its validator. There is <strong>no memory across claims</strong>: each document is a session of one, because shared conversation memory would blur one claimant into another. And the PoC&#8217;s in-process keyword retrieval has a named successor <span class="status">designed — not yet deployed</span>: a Bedrock Knowledge Base on S3 Vectors, carrying the <em>same</em> metadata filters the eval proved load-bearing, with a contextual-grounding threshold around <span class="unverified">0.70</span> to be re-verified against real traffic.
+      <span class="cite">insurance-claim-processor/design/solution-design.md §2 + adrs/0007-rag-knowledge-base-s3-vectors.md, as of 2026-09-23</span></p>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>The envelope owns the knowledge boundary: which chunks may be retrieved (state and line-of-business filters, fail closed), whether a summary counts as grounded, and the rule that an unsupported answer is flagged, never invented.</p>
+        <p class="backref">Decisions this Part motivates &#8594; <a href="#d-rag">D5 knowledge store</a> · <a href="#d-docunderstand">D6 who reads the document</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-7">
+    <div class="measure">
+      <div class="rule-orn">Part VII · When the model has a bad day</div>
+      <h2><span class="num">VII</span>When the model has a bad day</h2>
+      <p class="lede">Models throttle, drift, and get replaced. The production-hardening increment added <b>seven layers</b> between a bad model day and a wrong decision — and one rule that no layer may break: <b>nothing degraded approves itself.</b></p>
+
+      <figure data-fig="F10">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 560" role="img" aria-label="The seven-layer resilience stack: AppConfig holds model choice, an adapter isolates model families, feature flags control rollout, a measured circuit breaker guards the workflow, a flag-gated ensemble votes on extraction, a degradation ladder falls back to rules and humans, and CloudWatch metrics drive reversible remediation. The ensemble flag and the alarm-driven remediation are designed but not yet live.">
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F10 · THE RESILIENCE STACK</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">Seven layers between a bad model day and a wrong decision.</text>
+
+            <!-- model lane: the hazard -->
+            <rect x="20" y="66" width="250" height="470" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="88" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE</text>
+            <rect x="40" y="104" width="210" height="140" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <use href="#sym-bedrock" x="52" y="116" width="30" height="30"/>
+            <text x="90" y="132" font-family="var(--mono)" font-size="11" fill="var(--ink)">the model</text>
+            <text x="52" y="166" font-family="var(--sans)" font-size="12" fill="var(--ink)">can throttle,</text>
+            <text x="52" y="184" font-family="var(--sans)" font-size="12" fill="var(--ink)">hang, drift,</text>
+            <text x="52" y="202" font-family="var(--sans)" font-size="12" fill="var(--ink)">be retired, or ship</text>
+            <text x="52" y="220" font-family="var(--sans)" font-size="12" fill="var(--ink)">a worse successor</text>
+            <text x="40" y="280" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">every layer on the right</text>
+            <text x="40" y="296" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">exists so that none of</text>
+            <text x="40" y="312" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">this reaches a claim</text>
+            <text x="40" y="352" font-family="var(--mono)" font-size="11" fill="var(--fail)">the invariant:</text>
+            <text x="40" y="370" font-family="var(--sans)" font-size="12" fill="var(--ink)">ensemble split, degraded</text>
+            <text x="40" y="388" font-family="var(--sans)" font-size="12" fill="var(--ink)">tier, rejected config, and</text>
+            <text x="40" y="406" font-family="var(--sans)" font-size="12" fill="var(--ink)">breaker-open ALL route</text>
+            <text x="40" y="424" font-family="var(--sans)" font-size="12" fill="var(--ink)">to human review</text>
+
+            <!-- envelope lane: the stack -->
+            <rect x="290" y="66" width="650" height="470" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="306" y="88" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE · SEVEN LAYERS, CODE-OWNED</text>
+
+            <g font-family="var(--sans)" font-size="12">
+              <rect x="310" y="100" width="610" height="52" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+              <use href="#sym-appconfig" x="320" y="112" width="28" height="28"/>
+              <text x="358" y="122" font-family="var(--mono)" font-size="11" fill="var(--ink)">1 &#183; AppConfig config plane</text>
+              <text x="358" y="140" fill="var(--ink-soft)">which model, which thresholds — runtime config, never code; env vars only as bootstrap</text>
+
+              <rect x="310" y="160" width="610" height="52" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+              <use href="#sym-lambda" x="320" y="172" width="28" height="28"/>
+              <text x="358" y="182" font-family="var(--mono)" font-size="11" fill="var(--ink)">2 &#183; foundation-model adapter</text>
+              <text x="358" y="200" fill="var(--ink-soft)">one typed interface over the Bedrock families — swapping models never rewrites the pipeline</text>
+
+              <rect x="310" y="220" width="610" height="52" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+              <use href="#sym-appconfig" x="320" y="232" width="28" height="28"/>
+              <text x="358" y="242" font-family="var(--mono)" font-size="11" fill="var(--ink)">3 &#183; feature flags &#183; progressive delivery</text>
+              <text x="358" y="260" fill="var(--ink-soft)">gradual rollout, deterministic A-B by claim key, kill switch, alarm-triggered rollback</text>
+
+              <rect x="310" y="280" width="610" height="52" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+              <use href="#sym-cloudwatch" x="320" y="292" width="28" height="28"/>
+              <text x="358" y="302" font-family="var(--mono)" font-size="11" fill="var(--ink)">4 &#183; circuit breaker, measured</text>
+              <text x="358" y="320" fill="var(--ink-soft)">opens on a real error signal, never on vibes — the workflow&#8217;s first state probes it (F11)</text>
+
+              <rect x="310" y="340" width="610" height="52" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+              <use href="#sym-bedrock" x="320" y="352" width="28" height="28"/>
+              <text x="358" y="362" font-family="var(--mono)" font-size="11" fill="var(--ink)">5 &#183; extraction ensemble</text>
+              <text x="358" y="380" fill="var(--ink-soft)">two models vote field-by-field; any disagreement routes to a person</text>
+              <rect x="762" y="352" width="148" height="17" rx="5" fill="none" stroke="var(--human)" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="836" y="364" text-anchor="middle" font-family="var(--mono)" font-size="8.5" fill="var(--human)">FLAG OFF — NOT EXERCISED</text>
+
+              <rect x="310" y="400" width="610" height="52" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+              <g color="var(--det)"><use href="#sym-gate" x="320" y="412" width="28" height="28"/></g>
+              <text x="358" y="422" font-family="var(--mono)" font-size="11" fill="var(--ink)">6 &#183; graceful-degradation ladder</text>
+              <text x="358" y="440" fill="var(--ink-soft)">capable &#8594; cheaper &#8594; rule-based &#8594; human — degrade the claim, never the execution</text>
+
+              <rect x="310" y="460" width="610" height="52" rx="7" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+              <use href="#sym-sns" x="320" y="472" width="28" height="28"/>
+              <text x="358" y="482" font-family="var(--mono)" font-size="11" fill="var(--ink)">7 &#183; metrics &#8594; alarms &#8594; reversible remediation</text>
+              <text x="358" y="500" fill="var(--ink-soft)">every claim emits metrics; alarms flip flags through the same audited config plane</text>
+              <rect x="726" y="472" width="184" height="17" rx="5" fill="none" stroke="var(--human)" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="818" y="484" text-anchor="middle" font-family="var(--mono)" font-size="8.5" fill="var(--human)">ALARMS + REMEDIATION — NOT DEPLOYED</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><b>Layers 1&#8211;4 are live on real AWS; 5 and 7 are built but dormant.</b> Configuration, adapter, flags, and the breaker probe all ran in the first smoke; the ensemble waits behind its flag and the alarm-driven remediation waits on deploy stages 6&#8211;7.
+        <span class="cite">insurance-claim-processor/design/solution-design.md §8 + specs/claim-processor-model-resilience.spec.md, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <figure data-fig="F11" data-steps="yes">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 420" role="img" aria-label="The breaker path: the workflow's first state probes the breaker flag. Closed means normal model extraction. Open means the degraded rule-based extract runs instead, the result is stamped with its degradation tier, and the claim must go to human review. CloudWatch metrics feed the flag through AppConfig.">
+            <defs>
+              <marker id="f11-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F11 · THE BREAKER PATH</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">When the breaker opens: degrade, keep going, and let a person decide.</text>
+
+            <!-- model lane -->
+            <rect x="20" y="66" width="920" height="96" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="88" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE</text>
+            <rect x="380" y="98" width="200" height="52" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <use href="#sym-bedrock" x="390" y="108" width="24" height="24"/>
+            <text x="420" y="118" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">normal extract</text>
+            <text x="420" y="136" font-family="var(--sans)" font-size="11.5" fill="var(--ink-soft)">the model reads the claim</text>
+
+            <!-- envelope lane -->
+            <rect x="20" y="178" width="920" height="210" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="376" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE</text>
+
+            <rect x="40" y="210" width="150" height="80" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-sfn" x="50" y="218" width="24" height="24"/>
+            <text x="80" y="235" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">first state</text>
+            <text x="50" y="262" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">probe the breaker</text>
+            <text x="50" y="278" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">before any model call</text>
+
+            <g color="var(--det)">
+              <use href="#sym-gate" x="222" y="226" width="40" height="40"/>
+            </g>
+            <text x="242" y="288" text-anchor="middle" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">open?</text>
+
+            <rect x="330" y="210" width="220" height="80" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="340" y="218" width="24" height="24"/>
+            <text x="370" y="235" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">DegradedExtract</text>
+            <text x="340" y="262" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">rule-based extraction — no model,</text>
+            <text x="340" y="278" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">result stamped with its tier</text>
+            <rect x="336" y="294" width="150" height="17" rx="5" fill="none" stroke="var(--human)" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <text x="411" y="306" text-anchor="middle" font-family="var(--mono)" font-size="8.5" fill="var(--human)">OPEN-PATH SMOKE PENDING</text>
+
+            <rect x="596" y="210" width="130" height="80" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="606" y="236" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">validate + route</text>
+            <text x="606" y="260" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">as always —</text>
+            <text x="606" y="276" font-family="var(--sans)" font-size="11.5" fill="var(--ink)">same gates</text>
+
+            <rect x="762" y="204" width="164" height="96" rx="10" fill="var(--paper)" stroke="var(--human)" stroke-width="2"/>
+            <g color="var(--human)">
+              <use href="#sym-person" x="774" y="226" width="32" height="32"/>
+            </g>
+            <text x="816" y="238" font-family="var(--sans)" font-size="12.5" font-weight="700" fill="var(--human)">human review,</text>
+            <text x="816" y="256" font-family="var(--sans)" font-size="12.5" font-weight="700" fill="var(--human)">mandatory</text>
+            <text x="774" y="286" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">a degraded result can</text>
+            <text x="774" y="298" font-family="var(--mono)" font-size="10" fill="var(--ink-soft)">never auto-approve</text>
+
+            <!-- metrics feedback -->
+            <use href="#sym-cloudwatch" x="60" y="322" width="26" height="26"/>
+            <text x="94" y="340" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">metrics from every claim</text>
+            <use href="#sym-appconfig" x="270" y="322" width="26" height="26"/>
+            <text x="304" y="340" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">alarm flips the shared flag &#8594; the probe sees it</text>
+            <line x1="86" y1="335" x2="265" y2="335" stroke="var(--ink-soft)" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#f11-arrow)"/>
+            <path d="M283 318 Q290 300 262 262" fill="none" stroke="var(--ink-soft)" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#f11-arrow)"/>
+
+            <!-- arrows -->
+            <line x1="190" y1="250" x2="217" y2="248" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f11-arrow)"/>
+            <line x1="252" y1="222" x2="420" y2="155" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f11-arrow)"/>
+            <text x="300" y="196" font-family="var(--mono)" font-size="10.5" fill="var(--pass)">closed &#8594; normal</text>
+            <line x1="266" y1="250" x2="325" y2="250" stroke="var(--fail)" stroke-width="1.8" marker-end="url(#f11-arrow)"/>
+            <text x="272" y="240" font-family="var(--mono)" font-size="10.5" fill="var(--fail)">open</text>
+            <line x1="500" y1="155" x2="620" y2="205" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f11-arrow)"/>
+            <line x1="550" y1="250" x2="591" y2="250" stroke="var(--ink-soft)" stroke-width="1.5" marker-end="url(#f11-arrow)"/>
+            <line x1="726" y1="250" x2="757" y2="250" stroke="var(--human)" stroke-width="1.8" marker-end="url(#f11-arrow)"/>
+
+            <!-- steps -->
+            <g class="step"><circle cx="112" cy="204" r="10" fill="var(--det)"/><text x="112" y="208" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">1</text></g>
+            <g class="step"><circle cx="242" cy="218" r="10" fill="var(--det)"/><text x="242" y="222" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">2</text></g>
+            <g class="step"><circle cx="344" cy="204" r="10" fill="var(--det)"/><text x="344" y="208" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">3</text></g>
+            <g class="step"><circle cx="610" cy="204" r="10" fill="var(--det)"/><text x="610" y="208" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">4</text></g>
+            <g class="step"><circle cx="776" cy="198" r="10" fill="var(--human)"/><text x="776" y="202" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">5</text></g>
+          </svg>
+        </div>
+        <figcaption><b>The outage becomes a queue for humans, not a lie.</b> ① probe first &#8594; ② decide on the shared, measured flag &#8594; ③ open means rule-based extraction, honestly stamped &#8594; ④ the same gates as always &#8594; ⑤ mandatory review. The probe ran live in smoke #1 (breaker closed, <code>breaker_open: false</code>); the open path awaits its smoke.
+        <span class="cite">insurance-claim-processor/specs/claim-processor-model-resilience.spec.md §N + §P + build/DEPLOY-LEDGER.md Stage 5, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <div class="why-beat">
+        <span class="tag">Decisions age &#183; two reversals, recorded, not hidden</span>
+        <p><strong>The clinic said &#8220;no breaker yet&#8221; — and was right, then wrong.</strong> The original resilience clinic deferred the circuit breaker because PoC volume could not fill a breaker window honestly; a breaker tripping on slow <em>successes</em> converts a slowdown into an outage. Once CloudWatch metrics existed, the deferral was reversed by a superseding decision (ADR 0012) — the breaker arrived <em>with</em> its measured signal, not before it.</p>
+        <p><strong>The brief said &#8220;cascade only&#8221; — reversed, bounded.</strong> The capability brief chose cascade-on-failure over ensembling. ADR 0013 reversed that for extraction only: a field-level vote between two models, gated behind a flag, with disagreement routed to a person. The same discipline as ADR 0004 superseding 0003: the earlier decision stays on the record, with the reversal&#8217;s reasoning next to it.</p>
+      </div>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>The envelope owns survival: configuration outside the code, models behind an adapter, rollout behind flags, a breaker fed by measured errors, a ladder that degrades instead of failing — and one unmoved rule: nothing degraded approves itself.</p>
+        <p class="backref">Decisions this Part motivates &#8594; <a href="#d-config">D7 config plane</a> · <a href="#d-breaker">D8 breaker</a> · <a href="#d-ensemble">D9 ensemble</a> · <a href="#d-degrade">D10 degradation</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-8">
+    <div class="measure">
+      <div class="rule-orn">Part VIII · Proof</div>
+      <h2><span class="num">VIII</span>Proof</h2>
+      <p class="lede">Nothing here was believed until it ran. First <b>263 offline tests</b> that cannot touch AWS at all; then one explicit gate; then a real account, built by hand in one day — which promptly taught the tests some humility.</p>
+
+      <figure data-fig="F12" data-steps="yes">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 380" role="img" aria-label="The proof ladder: a base of 263 offline tests using stubbed AWS clients and a deterministic fake model, a middle gate — the CLAIM_PROCESSOR_REAL_AWS flag plus a purpose-built deployer identity — and at the top the first real smoke test: an auto-approve claim succeeding end to end in about 12 seconds on 2026-09-22.">
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F12 · THE PROOF LADDER (process — not an architecture)</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">Proved offline first: 263 tests, one gate flag, then real AWS.</text>
+
+            <!-- base -->
+            <rect x="80" y="256" width="780" height="92" rx="10" fill="var(--paper)" stroke="var(--det)" stroke-width="2"/>
+            <text x="104" y="286" font-family="var(--sans)" font-size="14" font-weight="700" fill="var(--det)">263 offline tests — no AWS account required, ever</text>
+            <text x="104" y="308" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">stubbed AWS clients prove the exact request shapes &#183; a deterministic fake model scores retrieval,</text>
+            <text x="104" y="324" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">schema, and degradation &#183; timeouts, retries, and idempotency asserted on the client config</text>
+            <!-- gate -->
+            <rect x="240" y="160" width="460" height="72" rx="10" fill="var(--paper)" stroke="var(--human)" stroke-width="2"/>
+            <text x="264" y="188" font-family="var(--sans)" font-size="13.5" font-weight="700" fill="var(--human)">the gate: nothing real runs by accident</text>
+            <text x="264" y="210" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">CLAIM_PROCESSOR_REAL_AWS=1 &#183; a purpose-built deployer identity &#183; a spending alarm</text>
+            <!-- smoke -->
+            <rect x="330" y="72" width="280" height="66" rx="10" fill="var(--paper)" stroke="var(--pass)" stroke-width="2"/>
+            <text x="470" y="99" text-anchor="middle" font-family="var(--sans)" font-size="13.5" font-weight="700" fill="var(--pass)">smoke #1 &#183; real AWS &#183; SUCCEEDED</text>
+            <text x="470" y="120" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink-soft)">auto-approve, end to end, ~12 s &#183; 2026-09-22</text>
+            <!-- side icons -->
+            <use href="#sym-lambda" x="808" y="176" width="30" height="30"/>
+            <text x="823" y="224" text-anchor="middle" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">same code,</text>
+            <text x="823" y="236" text-anchor="middle" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">every rung</text>
+            <use href="#sym-s3" x="650" y="86" width="30" height="30"/>
+            <text x="665" y="132" text-anchor="middle" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">real result</text>
+            <text x="665" y="144" text-anchor="middle" font-family="var(--mono)" font-size="9.5" fill="var(--ink-soft)">object</text>
+
+            <!-- steps -->
+            <g class="step"><circle cx="80" cy="256" r="11" fill="var(--det)"/><text x="80" y="260" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">1</text></g>
+            <g class="step"><circle cx="240" cy="160" r="11" fill="var(--human)"/><text x="240" y="164" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">2</text></g>
+            <g class="step"><circle cx="330" cy="72" r="11" fill="var(--pass)"/><text x="330" y="76" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">3</text></g>
+          </svg>
+        </div>
+        <figcaption><b>Each rung earns the next.</b> ① the offline suite proves contracts and behavior with zero cloud spend &#8594; ② an explicit flag and a dedicated identity stand between the suite and real money &#8594; ③ the first real execution succeeded end to end, config plane live, result grounded and recorded.
+        <span class="cite">insurance-claim-processor/build/README.md + validate/eval-report.md + build/DEPLOY-LEDGER.md Stage 9, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <figure data-fig="F13" data-steps="yes">
+        <div class="fig-card">
+          <svg viewBox="0 0 960 500" role="img" aria-label="The deploy timeline, stage by stage: identity and budget, S3 bucket, guardrail, AppConfig, IAM roles, six Lambdas, the state machine, and the first smoke test — with the eleven findings pinned where they were discovered, three of them before deploy by a readiness review, and alarms plus remediation still pending.">
+            <defs>
+              <marker id="f13-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F13 · THE DEPLOY, 2026-09-22 (timeline — findings pinned where they bit)</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">The deploy, stage by stage &#8212; and what only the real cloud revealed.</text>
+
+            <!-- review row (pre-deploy findings) -->
+            <rect x="30" y="70" width="900" height="64" rx="8" fill="var(--paper-2)" stroke="var(--paper-edge)" stroke-width="1.5"/>
+            <text x="46" y="92" font-family="var(--mono)" font-size="11" fill="var(--ink)">before any command: a deploy-readiness review of the green suite found the gaps tests cannot see</text>
+            <text x="46" y="112" font-family="var(--mono)" font-size="10.5" fill="var(--fail)">finding F1 &#183; no Lambda entry point &#183; fixed first</text>
+            <text x="400" y="112" font-family="var(--mono)" font-size="10.5" fill="var(--fail)">finding F2 &#183; HITL token never persisted &#183; still open</text>
+            <text x="710" y="112" font-family="var(--mono)" font-size="10.5" fill="var(--fail)">finding F3 &#183; placeholder ids &#183; handled</text>
+
+            <!-- timeline -->
+            <line x1="60" y1="210" x2="930" y2="210" stroke="var(--det)" stroke-width="2.5"/>
+            <g font-family="var(--mono)" font-size="10">
+              <use href="#sym-iam" x="52" y="164" width="28" height="28"/>
+              <circle cx="66" cy="210" r="5" fill="var(--det)"/>
+              <text x="66" y="238" text-anchor="middle" fill="var(--ink)">stage 0</text>
+              <text x="66" y="252" text-anchor="middle" fill="var(--ink-soft)">identity,</text>
+              <text x="66" y="264" text-anchor="middle" fill="var(--ink-soft)">budget</text>
+
+              <use href="#sym-s3" x="160" y="164" width="28" height="28"/>
+              <circle cx="174" cy="210" r="5" fill="var(--det)"/>
+              <text x="174" y="238" text-anchor="middle" fill="var(--ink)">stage 1</text>
+              <text x="174" y="252" text-anchor="middle" fill="var(--ink-soft)">the bucket</text>
+              <text x="174" y="264" text-anchor="middle" fill="var(--ink-soft)">SSE-KMS</text>
+
+              <use href="#sym-guardrail" x="268" y="164" width="28" height="28"/>
+              <circle cx="282" cy="210" r="5" fill="var(--det)"/>
+              <text x="282" y="238" text-anchor="middle" fill="var(--ink)">stage 2</text>
+              <text x="282" y="252" text-anchor="middle" fill="var(--ink-soft)">guardrail</text>
+              <text x="282" y="276" text-anchor="middle" fill="var(--fail)">F4 arn=id &#183; fixed</text>
+              <text x="282" y="290" text-anchor="middle" fill="var(--fail)">F5 grounding inert</text>
+
+              <use href="#sym-appconfig" x="386" y="164" width="28" height="28"/>
+              <circle cx="400" cy="210" r="5" fill="var(--det)"/>
+              <text x="400" y="238" text-anchor="middle" fill="var(--ink)">stage 3</text>
+              <text x="400" y="252" text-anchor="middle" fill="var(--ink-soft)">AppConfig</text>
+              <text x="400" y="264" text-anchor="middle" fill="var(--ink-soft)">read-back proven</text>
+
+              <use href="#sym-iam" x="500" y="164" width="28" height="28"/>
+              <circle cx="514" cy="210" r="5" fill="var(--det)"/>
+              <text x="514" y="238" text-anchor="middle" fill="var(--ink)">stage 4</text>
+              <text x="514" y="252" text-anchor="middle" fill="var(--ink-soft)">3 roles, simulated</text>
+              <text x="514" y="276" text-anchor="middle" fill="var(--fail)">F6 no log perms &#183; fixed</text>
+              <text x="514" y="290" text-anchor="middle" fill="var(--fail)">F7 bad policy key &#183; fixed</text>
+
+              <use href="#sym-lambda" x="618" y="164" width="28" height="28"/>
+              <circle cx="632" cy="210" r="5" fill="var(--det)"/>
+              <text x="632" y="238" text-anchor="middle" fill="var(--ink)">stage 5</text>
+              <text x="632" y="252" text-anchor="middle" fill="var(--ink-soft)">6 Lambdas</text>
+              <text x="632" y="264" text-anchor="middle" fill="var(--ink-soft)">probe: config live</text>
+
+              <use href="#sym-sfn" x="726" y="164" width="28" height="28"/>
+              <circle cx="740" cy="210" r="5" fill="var(--det)"/>
+              <text x="740" y="238" text-anchor="middle" fill="var(--ink)">stage 8</text>
+              <text x="740" y="252" text-anchor="middle" fill="var(--ink-soft)">state machine</text>
+              <text x="740" y="276" text-anchor="middle" fill="var(--fail)">F8 log grants/PII</text>
+              <text x="740" y="290" text-anchor="middle" fill="var(--fail)">F9 non-ASL key &#183; fixed</text>
+
+              <circle cx="856" cy="210" r="9" fill="var(--pass)"/>
+              <path d="M851 210 L855 214 L862 205" fill="none" stroke="var(--paper)" stroke-width="2" stroke-linecap="round"/>
+              <text x="856" y="238" text-anchor="middle" fill="var(--ink)">stage 9</text>
+              <text x="856" y="252" text-anchor="middle" fill="var(--pass)">smoke #1</text>
+              <text x="856" y="264" text-anchor="middle" fill="var(--pass)">SUCCEEDED</text>
+            </g>
+
+            <!-- steps on timeline -->
+            <g class="step"><circle cx="66" cy="186" r="9" fill="var(--det)"/><text x="66" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--paper)">1</text></g>
+            <g class="step"><circle cx="174" cy="186" r="9" fill="var(--det)"/><text x="174" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--paper)">2</text></g>
+            <g class="step"><circle cx="282" cy="186" r="9" fill="var(--det)"/><text x="282" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--paper)">3</text></g>
+            <g class="step"><circle cx="400" cy="186" r="9" fill="var(--det)"/><text x="400" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--paper)">4</text></g>
+            <g class="step"><circle cx="514" cy="186" r="9" fill="var(--det)"/><text x="514" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--paper)">5</text></g>
+            <g class="step"><circle cx="632" cy="186" r="9" fill="var(--det)"/><text x="632" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--paper)">6</text></g>
+            <g class="step"><circle cx="740" cy="186" r="9" fill="var(--det)"/><text x="740" y="190" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--paper)">7</text></g>
+            <g class="step"><circle cx="856" cy="184" r="9" fill="var(--pass)"/><text x="856" y="188" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--paper)">8</text></g>
+
+            <!-- pending block -->
+            <rect x="30" y="330" width="900" height="140" rx="10" fill="var(--paper)" stroke="var(--human)" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <text x="50" y="358" font-family="var(--mono)" font-size="11.5" fill="var(--human)">STILL AHEAD — DESIGNED, NOT YET DEPLOYED</text>
+            <use href="#sym-cloudwatch" x="50" y="374" width="26" height="26"/>
+            <text x="86" y="392" font-family="var(--sans)" font-size="12" fill="var(--ink)">stages 6&#8211;7: alarms &#8594; SNS &#8594; remediation Lambda</text>
+            <text x="86" y="410" font-family="var(--mono)" font-size="10.5" fill="var(--fail)">finding F10 &#183; remediation Lambda not implemented &#183; finding F11 &#183; its role can write config but not read it</text>
+            <use href="#sym-person" x="560" y="374" width="26" height="26" color="var(--human)"/>
+            <text x="596" y="392" font-family="var(--sans)" font-size="12" fill="var(--ink)">HITL smoke (after finding F2) &#183; breaker-open smoke</text>
+            <text x="596" y="410" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">flagged claims currently park at the wait state</text>
+            <text x="50" y="446" font-family="var(--mono)" font-size="10.5" fill="var(--ink-soft)">then teardown: every created ARN is in the ledger, so the checklist writes itself — ending with the deployer&#8217;s own key</text>
+          </svg>
+        </div>
+        <figcaption><b>Eleven findings, honestly placed.</b> Three came from reading (the review row), eight from doing (pinned to their stages). The offline suite was green the entire time — every finding lives in the gap between &#8220;tests pass&#8221; and &#8220;runs on AWS.&#8221;
+        <span class="cite">insurance-claim-processor/build/DEPLOY-WALKTHROUGH.md (stages + findings register) + build/DEPLOY-LEDGER.md, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <figure data-fig="F14" data-steps="yes">
+        <div class="fig-card">
+          <svg viewBox="0 0 960 744" role="img" aria-label="The deployed state machine, end to end: start, breaker probe and check, understand-extract with its degraded rule-based fallback, validate, retrieve-summarize with its ungrounded fallback and timeout fail state, the route choice, the parked HITL chain awaiting its token handler, record, end. Solid states ran in smoke number one; dashed states are deployed but not yet exercised; the slate chain waits on finding F2.">
+            <defs>
+              <marker id="f14-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-soft)"/>
+              </marker>
+            </defs>
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F14 · THE WHOLE MACHINE, AS DEPLOYED (every state, every catch)</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">End to end: one graph, no hidden paths &#8212; every catch lands somewhere you can see.</text>
+
+            <!-- envelope lane -->
+            <rect x="20" y="66" width="920" height="600" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="654" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE &#183; ONE STATE MACHINE OWNS EVERY PATH</text>
+
+            <!-- start -->
+            <rect x="452" y="78" width="56" height="22" rx="11" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="480" y="93" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">start</text>
+
+            <!-- main spine -->
+            <rect x="390" y="112" width="180" height="46" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="398" y="122" width="22" height="22"/>
+            <text x="428" y="130" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">BreakerProbe</text>
+            <text x="428" y="146" font-family="var(--sans)" font-size="10" fill="var(--ink-soft)">reads the breaker flag</text>
+
+            <g color="var(--det)"><use href="#sym-gate" x="446" y="176" width="34" height="34"/></g>
+            <text x="490" y="192" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">BreakerCheck</text>
+            <text x="490" y="207" font-family="var(--sans)" font-size="10" fill="var(--ink-soft)">choice state</text>
+
+            <rect x="384" y="246" width="192" height="66" rx="9" fill="var(--llm-wash)" opacity="0.7"/>
+            <rect x="390" y="252" width="180" height="54" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="398" y="260" width="22" height="22"/>
+            <text x="428" y="270" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">UnderstandExtract</text>
+            <text x="428" y="286" font-family="var(--sans)" font-size="10" fill="var(--ink-soft)">calls Bedrock &#183; guardrailed</text>
+            <text x="398" y="300" font-family="var(--mono)" font-size="8.5" fill="var(--llm)">MODEL STEP</text>
+
+            <rect x="390" y="334" width="180" height="46" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="398" y="344" width="22" height="22"/>
+            <text x="428" y="352" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">Validate</text>
+            <text x="428" y="368" font-family="var(--sans)" font-size="10" fill="var(--ink-soft)">four gates, in code</text>
+
+            <rect x="384" y="402" width="192" height="66" rx="9" fill="var(--llm-wash)" opacity="0.7"/>
+            <rect x="390" y="408" width="180" height="54" rx="8" fill="var(--paper)" stroke="var(--llm)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="398" y="416" width="22" height="22"/>
+            <text x="428" y="426" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">RetrieveSummarize</text>
+            <text x="428" y="442" font-family="var(--sans)" font-size="10" fill="var(--ink-soft)">calls Bedrock &#183; guardrailed</text>
+            <text x="398" y="456" font-family="var(--mono)" font-size="8.5" fill="var(--llm)">MODEL STEP</text>
+
+            <g color="var(--det)"><use href="#sym-gate" x="446" y="490" width="34" height="34"/></g>
+            <text x="490" y="506" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">Route</text>
+            <text x="490" y="521" font-family="var(--sans)" font-size="10" fill="var(--ink-soft)">choice state</text>
+
+            <rect x="390" y="572" width="180" height="46" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <use href="#sym-lambda" x="398" y="582" width="22" height="22"/>
+            <text x="428" y="590" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">Record</text>
+            <text x="428" y="606" font-family="var(--sans)" font-size="10" fill="var(--ink-soft)">provenance tuple &#8594; S3</text>
+
+            <rect x="452" y="676" width="56" height="22" rx="11" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5"/>
+            <text x="480" y="691" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">end</text>
+
+            <!-- left column: degraded / ungrounded fallbacks -->
+            <rect x="110" y="252" width="200" height="54" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <use href="#sym-lambda" x="118" y="260" width="22" height="22"/>
+            <text x="148" y="270" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">DegradedExtract</text>
+            <text x="118" y="294" font-family="var(--sans)" font-size="10" fill="var(--ink-soft)">rule-based extract &#183; no model</text>
+
+            <rect x="110" y="408" width="200" height="54" rx="8" fill="var(--paper)" stroke="var(--det)" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <text x="122" y="428" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">UngroundedFallback</text>
+            <text x="122" y="446" font-family="var(--sans)" font-size="10" fill="var(--ink-soft)">pass state &#183; summary marked</text>
+
+            <!-- right column: fail state + HITL chain -->
+            <rect x="700" y="334" width="220" height="54" rx="8" fill="var(--paper)" stroke="var(--fail)" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <text x="712" y="354" font-family="var(--mono)" font-size="10.5" fill="var(--fail)">ExecutionTimedOut</text>
+            <text x="712" y="372" font-family="var(--sans)" font-size="10" fill="var(--ink-soft)">fail state &#183; nothing half-recorded</text>
+
+            <rect x="700" y="466" width="220" height="40" rx="8" fill="var(--paper)" stroke="var(--human)" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <use href="#sym-lambda" x="708" y="474" width="20" height="20"/>
+            <text x="736" y="484" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">ParkPending</text>
+            <text x="736" y="499" font-family="var(--sans)" font-size="9.5" fill="var(--ink-soft)">write pending-review/</text>
+
+            <rect x="700" y="522" width="220" height="40" rx="8" fill="var(--paper)" stroke="var(--human)" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <use href="#sym-lambda" x="708" y="530" width="20" height="20"/>
+            <text x="736" y="540" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">AwaitReview</text>
+            <text x="736" y="555" font-family="var(--sans)" font-size="9.5" fill="var(--ink-soft)">waitForTaskToken &#183; up to 7 days</text>
+
+            <rect x="700" y="578" width="220" height="40" rx="8" fill="var(--paper)" stroke="var(--human)" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <use href="#sym-lambda" x="708" y="586" width="20" height="20"/>
+            <text x="736" y="596" font-family="var(--mono)" font-size="10.5" fill="var(--ink)">ExpireReview</text>
+            <text x="736" y="611" font-family="var(--sans)" font-size="9.5" fill="var(--ink-soft)">7 days, no answer &#8594; flag it</text>
+
+            <!-- edges -->
+            <g stroke="var(--ink-soft)" stroke-width="1.5" fill="none">
+              <line x1="480" y1="100" x2="480" y2="107" marker-end="url(#f14-arrow)"/>
+              <line x1="480" y1="158" x2="480" y2="171" marker-end="url(#f14-arrow)"/>
+              <line x1="480" y1="212" x2="480" y2="247" marker-end="url(#f14-arrow)"/>
+              <path d="M444 193 L210 193 L210 247" marker-end="url(#f14-arrow)"/>
+              <line x1="480" y1="306" x2="480" y2="329" marker-end="url(#f14-arrow)"/>
+              <path d="M390 279 L315 279" marker-end="url(#f14-arrow)" stroke-dasharray="5 3"/>
+              <path d="M570 279 L810 279 L810 329" marker-end="url(#f14-arrow)" stroke-dasharray="5 3"/>
+              <path d="M210 306 L210 357 L385 357" marker-end="url(#f14-arrow)"/>
+              <line x1="480" y1="380" x2="480" y2="403" marker-end="url(#f14-arrow)"/>
+              <path d="M390 435 L315 435" marker-end="url(#f14-arrow)" stroke-dasharray="5 3"/>
+              <path d="M570 440 L810 440 L810 393" marker-end="url(#f14-arrow)" stroke-dasharray="5 3"/>
+              <path d="M210 462 L210 513 L440 513" marker-end="url(#f14-arrow)"/>
+              <line x1="480" y1="526" x2="480" y2="567" marker-end="url(#f14-arrow)"/>
+              <path d="M516 513 L810 513 L810 461" marker-end="url(#f14-arrow)"/>
+              <line x1="810" y1="506" x2="810" y2="517" marker-end="url(#f14-arrow)"/>
+              <line x1="810" y1="562" x2="810" y2="573" marker-end="url(#f14-arrow)"/>
+              <path d="M700 542 L620 542 L620 590 L575 590" marker-end="url(#f14-arrow)"/>
+              <path d="M700 598 L575 598" marker-end="url(#f14-arrow)"/>
+              <line x1="480" y1="618" x2="480" y2="671" marker-end="url(#f14-arrow)"/>
+              <path d="M920 361 L936 361 L936 687 L512 687" marker-end="url(#f14-arrow)" stroke-dasharray="5 3"/>
+            </g>
+            <!-- edge labels -->
+            <text x="218" y="187" font-family="var(--mono)" font-size="9" fill="var(--ink-soft)">$.breaker_open == true</text>
+            <text x="488" y="240" font-family="var(--mono)" font-size="9" fill="var(--ink-soft)">default</text>
+            <text x="302" y="272" font-family="var(--mono)" font-size="8.5" fill="var(--ink-soft)">catch: throttle</text>
+            <text x="600" y="272" font-family="var(--mono)" font-size="8.5" fill="var(--ink-soft)">catch: timeout</text>
+            <text x="292" y="428" font-family="var(--mono)" font-size="8.5" fill="var(--ink-soft)">catch: ungrounded</text>
+            <text x="600" y="433" font-family="var(--mono)" font-size="8.5" fill="var(--ink-soft)">catch: timeout</text>
+            <text x="488" y="556" font-family="var(--mono)" font-size="9" fill="var(--ink-soft)">$.route == "auto_approve"</text>
+            <text x="600" y="506" font-family="var(--mono)" font-size="9" fill="var(--ink-soft)">default &#8594; review</text>
+            <text x="824" y="571" font-family="var(--mono)" font-size="8.5" fill="var(--ink-soft)">catch: expired</text>
+
+            <!-- step numbers: the smoke #1 path -->
+            <g class="step"><circle cx="390" cy="112" r="10" fill="var(--det)"/><text x="390" y="116" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">1</text></g>
+            <g class="step"><circle cx="446" cy="178" r="10" fill="var(--det)"/><text x="446" y="182" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">2</text></g>
+            <g class="step"><circle cx="390" cy="252" r="10" fill="var(--llm)"/><text x="390" y="256" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">3</text></g>
+            <g class="step"><circle cx="390" cy="334" r="10" fill="var(--det)"/><text x="390" y="338" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">4</text></g>
+            <g class="step"><circle cx="390" cy="408" r="10" fill="var(--llm)"/><text x="390" y="412" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">5</text></g>
+            <g class="step"><circle cx="446" cy="492" r="10" fill="var(--det)"/><text x="446" y="496" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">6</text></g>
+            <g class="step"><circle cx="390" cy="572" r="10" fill="var(--det)"/><text x="390" y="576" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--paper)">7</text></g>
+
+            <text x="36" y="722" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">solid = ran in smoke #1 (2026-09-22) &#183; dashed teal/red = deployed, not yet exercised</text>
+            <text x="36" y="738" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">dashed slate = HITL chain in the machine &#8212; its token handler is deferred (finding F2)</text>
+          </svg>
+        </div>
+        <figcaption><b>The console view, redrawn honestly.</b> Follow ①&#8211;⑦ for the path smoke #1 actually took: probe &#8594; check &#8594; extract &#8594; validate &#8594; summarize &#8594; route &#8594; record. Every other state is deployed and dashed: the degraded and ungrounded fallbacks, the timeout fail state, and the slate HITL chain that waits on finding F2. No catch falls off the page &#8212; each lands on a state you can point at.
+        <span class="cite">insurance-claim-processor/build/DEPLOY-WALKTHROUGH.md (state machine + smoke #1) + build/DEPLOY-LEDGER.md Stage 5, as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <div class="why-beat">
+        <span class="tag">The three findings that would have stopped the show</span>
+        <p><strong>Finding F1 — the suite proved the pipeline, not the hosting.</strong> 263 tests were green, and not one of them noticed there was no Lambda entry point: nothing constructed the pipeline inside AWS. The fix (<code>lambda_entry.py</code>, plus its own tests) landed before the first function was created — found by review, not by luck.</p>
+        <p><strong>Finding F2 — the wait state nobody can answer.</strong> The HITL design is sound, but the handler that persists the task token was never written, so a flagged claim waits on a token that exists only inside Step Functions. It is the one open deploy-blocker, and the reason this page&#8217;s human-gate figures carry a dashed chip.</p>
+        <p><strong>Finding F3 — placeholders are landmines with patient timers.</strong> The committed state-machine definition carried account id <code>000000000000</code> and an AppConfig placeholder. The remedy is a rule, not a patch: render real ids into a gitignored <code>deploy-out/</code>, never commit them, and let the runbook&#8217;s substitution step own the difference.</p>
+      </div>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · before the next escalation</span>
+        <p>The envelope owns the proof ladder: offline tests that cannot touch AWS, one explicit gate flag, a purpose-built deployer identity, and a ledger that records every created ARN — so the teardown list writes itself.</p>
+        <p class="backref">Decisions this Part motivates &#8594; <a href="#d-host">D1 workflow host</a> · <a href="#d-config">D7 config plane</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="part" id="part-9">
+    <div class="measure">
+      <div class="rule-orn">Part IX · The decision map</div>
+      <h2><span class="num">IX</span>The decision map</h2>
+      <p class="lede">Fifteen ADRs stand behind this page; ten of them are decisions you will face on any system like this one. Each dot links to its card — and every single dot sits in the teal lane or on its edge, because that is the thesis.</p>
+
+      <figure data-fig="F15">
+        <div class="fig-card">
+          <svg viewBox="0 0 940 360" role="img" aria-label="Ten decisions plotted on the two-lane map: workflow host, human mechanism, guardrail placement, IAM shape, knowledge store, document understanding, config plane, circuit breaker, ensemble, and degradation ladder. All sit in or on the edge of the deterministic envelope lane.">
+            <text x="20" y="26" font-family="var(--mono)" font-size="13" fill="var(--ink-faint)" letter-spacing="2">F15 · TEN DECISIONS ON THE TWO-LANE MAP (each dot links to its card)</text>
+            <text class="fig-title" x="20" y="48" font-family="var(--sans)" font-size="16" font-weight="700" fill="var(--ink)">Ten decisions, placed where they live: model lane or envelope lane.</text>
+
+            <!-- lanes -->
+            <rect x="20" y="66" width="920" height="90" rx="10" fill="var(--llm-wash)" opacity="0.55"/>
+            <text x="36" y="88" font-family="var(--mono)" font-size="12" fill="var(--llm)" letter-spacing="1.5">MODEL LANE</text>
+            <rect x="20" y="170" width="920" height="160" rx="10" fill="var(--det-wash)" opacity="0.55"/>
+            <text x="36" y="316" font-family="var(--mono)" font-size="12" fill="var(--det)" letter-spacing="1.5">ENVELOPE LANE</text>
+
+            <g font-family="var(--mono)" font-size="10.5">
+              <a href="#d-host"><circle cx="110" cy="215" r="11" fill="var(--det)"/><text x="110" y="219" text-anchor="middle" fill="var(--paper)">1</text><text x="110" y="245" text-anchor="middle" fill="var(--ink)">workflow</text><text x="110" y="258" text-anchor="middle" fill="var(--ink)">host</text></a>
+              <a href="#d-hitl"><circle cx="212" cy="280" r="11" fill="var(--human)"/><text x="212" y="284" text-anchor="middle" fill="var(--paper)">2</text><text x="212" y="306" text-anchor="middle" fill="var(--ink)">human</text><text x="212" y="319" text-anchor="middle" fill="var(--ink)">mechanism</text></a>
+              <a href="#d-guardrail"><circle cx="314" cy="176" r="11" fill="var(--det)"/><text x="314" y="180" text-anchor="middle" fill="var(--paper)">3</text><text x="314" y="204" text-anchor="middle" fill="var(--ink)">guardrail</text><text x="314" y="217" text-anchor="middle" fill="var(--ink)">placement</text></a>
+              <a href="#d-iam"><circle cx="416" cy="250" r="11" fill="var(--det)"/><text x="416" y="254" text-anchor="middle" fill="var(--paper)">4</text><text x="416" y="276" text-anchor="middle" fill="var(--ink)">IAM shape</text></a>
+              <a href="#d-rag"><circle cx="518" cy="215" r="11" fill="var(--det)"/><text x="518" y="219" text-anchor="middle" fill="var(--paper)">5</text><text x="518" y="241" text-anchor="middle" fill="var(--ink)">knowledge</text><text x="518" y="254" text-anchor="middle" fill="var(--ink)">store</text></a>
+              <a href="#d-docunderstand"><circle cx="620" cy="130" r="11" fill="var(--llm)"/><text x="620" y="134" text-anchor="middle" fill="var(--paper)">6</text><text x="620" y="110" text-anchor="middle" fill="var(--ink)">who reads the doc</text></a>
+              <a href="#d-config"><circle cx="700" cy="250" r="11" fill="var(--det)"/><text x="700" y="254" text-anchor="middle" fill="var(--paper)">7</text><text x="700" y="276" text-anchor="middle" fill="var(--ink)">config plane</text></a>
+              <a href="#d-breaker"><circle cx="782" cy="196" r="11" fill="var(--det)"/><text x="782" y="200" text-anchor="middle" fill="var(--paper)">8</text><text x="782" y="222" text-anchor="middle" fill="var(--ink)">breaker</text></a>
+              <a href="#d-ensemble"><circle cx="848" cy="130" r="11" fill="var(--llm)"/><text x="848" y="134" text-anchor="middle" fill="var(--paper)">9</text><text x="848" y="110" text-anchor="middle" fill="var(--ink)">ensemble</text></a>
+              <a href="#d-degrade"><circle cx="880" cy="280" r="11" fill="var(--det)"/><text x="880" y="284" text-anchor="middle" fill="var(--paper)">10</text><text x="880" y="306" text-anchor="middle" fill="var(--ink)">degradation</text></a>
+            </g>
+            <text x="36" y="348" font-family="var(--mono)" font-size="10.5" fill="var(--ink-faint)">amber dots decide what the model does; teal dots decide what the model may never do; the slate dot is the person</text>
+          </svg>
+        </div>
+        <figcaption><b>The map is the argument.</b> Even the two amber decisions — who reads the document, whether models vote — are made by the envelope and only <em>executed</em> by models. Dots link to the cards below.
+        <span class="cite">insurance-claim-processor/adrs/index.md (ADRs 0001&#8211;0015), as of 2026-09-23</span></figcaption>
+      </figure>
+
+      <article class="decision-card" id="d-host">
+        <h3><span class="dnum">D1</span>Workflow host</h3>
+        <p class="dq">Where does a fixed, auditable, sometimes-waiting workflow live?</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>One Lambda</td><td>Simplest — but cannot hold a multi-day human wait; audit = hand-written logs</td></tr>
+            <tr><td>Step Functions Express</td><td>Cheap and fast — but keeps no execution history: fails the audit requirement</td></tr>
+            <tr><td>Step Functions Standard</td><td>Durable waits + regulator-ready execution history; costs per transition</td></tr>
+          </tbody>
+        </table></div>
+        <p class="default-line"><b>Default:</b> Step Functions Standard. <b>Deviate when</b> you can honestly give up both the execution-history audit and the durable wait — then a Lambda is fine. <span class="adr-ref">ADR 0004, superseding ADR 0003&#8217;s &#8220;too much for 3 docs&#8221; — the HITL + audit requirements reopened it.</span></p>
+        <p class="backref">Motivated in <a href="#part-1">Part I</a> · <a href="#part-3">Part III</a> · <a href="#part-8">Part VIII</a></p>
+      </article>
+
+      <article class="decision-card" id="d-hitl">
+        <h3><span class="dnum">D2</span>Human mechanism</h3>
+        <p class="dq">How does a person&#8217;s decision physically re-enter the workflow?</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>Poll a queue/table</td><td>You now own scheduling, retries, and double-decision protection yourself</td></tr>
+            <tr><td>waitForTaskToken</td><td>The workflow pauses free of compute; a single-use token resumes the exact execution</td></tr>
+            <tr><td>Amazon A2I / UI first</td><td>Buys a surface before the contract is proven; the token contract is what both need anyway</td></tr>
+          </tbody>
+        </table></div>
+        <p class="default-line"><b>Default:</b> <code>waitForTaskToken</code> with a CLI resume; promote to a UI or A2I <em>additively</em> — same call, better chrome. <b>Deviate when</b> reviews are high-volume and synchronous, where a queue-based workpool earns its complexity. <span class="adr-ref">ADR 0005.</span></p>
+        <p class="backref">Motivated in <a href="#part-4">Part IV</a></p>
+      </article>
+
+      <article class="decision-card" id="d-guardrail">
+        <h3><span class="dnum">D3</span>Guardrail placement</h3>
+        <p class="dq">Whose PII filter is the control — the platform&#8217;s or yours?</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>App validator only</td><td>You own every regex forever; one missed pattern is a leak</td></tr>
+            <tr><td>Bedrock Guardrails only</td><td>Managed and versioned — but fallible, and it never sees your schema</td></tr>
+            <tr><td>Both, layered</td><td>The managed net filters the model boundary; yours re-checks and routes residuals to review</td></tr>
+          </tbody>
+        </table></div>
+        <p class="default-line"><b>Default:</b> both from day one — guardrail on every model call, validator as defense-in-depth. <b>Deviate</b> never on removing the second net; deviate on the guardrail&#8217;s <em>strictness</em> per domain (harmful-content filters were off here for false positives). <span class="adr-ref">ADR 0008.</span></p>
+        <p class="backref">Motivated in <a href="#part-5">Part V</a></p>
+      </article>
+
+      <article class="decision-card" id="d-iam">
+        <h3><span class="dnum">D4</span>IAM shape</h3>
+        <p class="dq">One processing role or a role per step?</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>One shared step role</td><td>One narrow world to reason about; every step can do what any step can</td></tr>
+            <tr><td>Role per Lambda</td><td>Tighter blast radius; six trust policies to keep honest before the pipeline even splits</td></tr>
+          </tbody>
+        </table></div>
+        <p class="default-line"><b>Default:</b> one narrow shared role now (both Bedrock ARN shapes, prefix-scoped S3, KMS via S3 only), split by trust — model-invoking vs write-capable — when the pipeline splits. <b>Deviate when</b> a step gains a write the others must never have. <span class="adr-ref">ADR 0009.</span></p>
+        <p class="backref">Motivated in <a href="#part-5">Part V</a></p>
+      </article>
+
+      <article class="decision-card" id="d-rag">
+        <h3><span class="dnum">D5</span>Knowledge store</h3>
+        <p class="dq">Where does policy knowledge live, and who assembles the answer?</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>In-process keyword RAG</td><td>Offline-testable, zero infra; retrieval quality is basic</td></tr>
+            <tr><td>Knowledge Base, <code>retrieve</code></td><td>Managed vectors (S3 Vectors, idle-cheap); you keep the prompt, citations, validator</td></tr>
+            <tr><td><code>retrieve_and_generate</code></td><td>One call — but it owns your prompt and provenance, which this system refuses to give up</td></tr>
+          </tbody>
+        </table></div>
+        <p class="default-line"><b>Default:</b> keyword RAG for the PoC, promote to a KB on S3 Vectors with the <em>same</em> fail-closed metadata filters; always <code>retrieve</code>, never <code>retrieve_and_generate</code>. <b>Deviate when</b> hybrid search becomes a measured need — then OpenSearch Serverless. <span class="adr-ref">ADR 0007 + ADR 0002 (RAG, not fine-tune: the gap is knowledge, not behavior).</span></p>
+        <p class="backref">Motivated in <a href="#part-6">Part VI</a></p>
+      </article>
+
+      <article class="decision-card" id="d-docunderstand">
+        <h3><span class="dnum">D6</span>Who reads the document</h3>
+        <p class="dq">Vision model, OCR service, or both?</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>Vision FM direct</td><td>One hop on the existing path; no per-field confidence scores</td></tr>
+            <tr><td>Textract / BDA first</td><td>Per-field confidence &#8594; targeted review, OCR artifact for audit; a second service to run</td></tr>
+          </tbody>
+        </table></div>
+        <p class="default-line"><b>Default:</b> vision model direct for photos and typed text; <b>promote to</b> Textract/BDA when scanned forms, tables, and handwriting arrive — the Understand step is the swap seam, so nothing else moves. <span class="adr-ref">ADR 0006, extended by 0014.</span></p>
+        <p class="backref">Motivated in <a href="#part-3">Part III</a> · <a href="#part-6">Part VI</a></p>
+      </article>
+
+      <article class="decision-card" id="d-config">
+        <h3><span class="dnum">D7</span>Config plane</h3>
+        <p class="dq">Where does model choice live?</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>Constants in code</td><td>A model retirement becomes a code deploy at the worst possible time</td></tr>
+            <tr><td>Env vars</td><td>Better — but no validation, no gradual rollout, no rollback story</td></tr>
+            <tr><td>AppConfig</td><td>Validated, versioned, bake-time rollouts with alarm rollback; one more service to stand up</td></tr>
+          </tbody>
+        </table></div>
+        <p class="default-line"><b>Default:</b> AppConfig for model ids, thresholds, and flags, with env vars only as bootstrap fallback; the resolved id is recorded on every result. <b>Deviate when</b> the system is genuinely throwaway — and record that it was. <span class="adr-ref">ADR 0010 + ADR 0001.</span></p>
+        <p class="backref">Motivated in <a href="#part-2">Part II</a> · <a href="#part-7">Part VII</a></p>
+      </article>
+
+      <article class="decision-card" id="d-breaker">
+        <h3><span class="dnum">D8</span>Circuit breaker</h3>
+        <p class="dq">When do we stop calling the model — and who decides?</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>No breaker</td><td>Retries hammer a failing dependency; a regional blip becomes a token storm</td></tr>
+            <tr><td>Breaker on vibes</td><td>Trips on slow <em>successes</em> and converts a slowdown into an outage</td></tr>
+            <tr><td>Breaker on a measured signal</td><td>Opens only on a real error-rate metric; needs the metrics to exist first</td></tr>
+          </tbody>
+        </table></div>
+        <p class="default-line"><b>Default:</b> no breaker until an error-rate metric exists; then a workflow-level breaker probed as the first state, sharing its flag with the config plane. <b>Deviate</b> never into an unmeasured breaker. <span class="adr-ref">ADR 0012, amending the resilience clinic&#8217;s C1 deferral — the reversal is the doctrine working.</span></p>
+        <p class="backref">Motivated in <a href="#part-7">Part VII</a></p>
+      </article>
+
+      <article class="decision-card" id="d-ensemble">
+        <h3><span class="dnum">D9</span>Ensemble</h3>
+        <p class="dq">One model&#8217;s answer, a cascade, or a vote?</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>Single model</td><td>Cheapest; one model&#8217;s systematic error is invisible</td></tr>
+            <tr><td>Cascade on failure</td><td>Escalates only when the validator objects; agrees-but-wrong slips through</td></tr>
+            <tr><td>Field-level vote</td><td>Catches silent disagreement; doubles extraction cost while the flag is on</td></tr>
+          </tbody>
+        </table></div>
+        <p class="default-line"><b>Default:</b> cascade thinking for cost, but a flag-gated two-model vote on <em>extraction only</em>, where a wrong amount is the expensive failure; any field disagreement routes to a person. <b>Deviate when</b> the eval shows one model&#8217;s field-match is already at target — leave the flag off. <span class="adr-ref">ADR 0013, reversing (bounded) the capability brief&#8217;s cascade-only choice.</span></p>
+        <p class="backref">Motivated in <a href="#part-7">Part VII</a></p>
+      </article>
+
+      <article class="decision-card" id="d-degrade">
+        <h3><span class="dnum">D10</span>Degradation ladder</h3>
+        <p class="dq">What happens when the model path is gone?</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Option</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>Fail the claim</td><td>Honest but brutal: an outage stops the desk</td></tr>
+            <tr><td>Degrade silently</td><td>Keeps flowing — and quietly ships worse decisions as if nothing changed</td></tr>
+            <tr><td>Degrade, stamp, review</td><td>Keeps flowing, marks every degraded result with its tier, and forces the human gate</td></tr>
+          </tbody>
+        </table></div>
+        <p class="default-line"><b>Default:</b> the ladder — capable model &#8594; cheaper model &#8594; rule-based extraction &#8594; human — with the tier stamped into provenance and auto-approve forbidden on every rung below the top. <b>Deviate</b> never into the silent middle row. <span class="adr-ref">ADR 0014, extending ADR 0006 and the clinic&#8217;s C11.</span></p>
+        <p class="backref">Motivated in <a href="#part-6">Part VI</a> · <a href="#part-7">Part VII</a></p>
+      </article>
+
+      <aside class="envelope-beat">
+        <span class="tag">Envelope beat · the close</span>
+        <p>Every dot on this map is an envelope decision. The model never chose its own host, its own permissions, its own knowledge, or its own fallback — and that is the whole story of this system.</p>
+        <p class="backref">Back to the beginning &#8594; <a href="#part-1">Part I</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <section id="scorecard">
+    <div class="measure">
+      <div class="rule-orn">The scorecard</div>
+      <h2><span class="num">§</span>The compressed topics</h2>
+      <p>Six topics ride this page in compressed form — real machinery, summarized in a line, with the card and source that own the detail.</p>
+      <div class="table-wrap"><table>
+        <caption>compressed topics — what &#215; who owns it &#215; where the detail lives</caption>
+        <thead><tr><th>Topic</th><th>In one line</th><th>Lane</th><th>Card</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>Result contract</td><td>Every recorded result carries the full replay set: resolved model ids, prompt versions, chunks, guardrail actions, review details, execution ARN</td><td><span class="lane-pill det">envelope</span></td><td><a href="#d-host">D1</a></td><td>design §7</td></tr>
+          <tr><td>Resilience knobs</td><td>Timeouts (connect 10s / read 300s), SDK-only adaptive retries, idempotent result writes, soft-fail retrieval — live since the PoC</td><td><span class="lane-pill det">envelope</span></td><td><a href="#d-breaker">D8</a></td><td>risk/resilience-clinic.md</td></tr>
+          <tr><td>No memory across claims</td><td>Each document is a session of one; shared conversation memory would blur claimants</td><td><span class="lane-pill det">envelope</span></td><td><a href="#d-rag">D5</a></td><td>design §2</td></tr>
+          <tr><td>Offline eval findings</td><td>Deterministic fake model scored retrieval, schema, and degradation; the unfiltered-RAG integrity defect was caught and fixed here</td><td><span class="lane-pill det">envelope</span></td><td><a href="#d-rag">D5</a></td><td>validate/eval-report.md</td></tr>
+          <tr><td>Style &amp; quanta</td><td>One back-office quantum; modular monolith proven first, promoted onto Step Functions when HITL + audit demanded it</td><td><span class="lane-pill det">envelope</span></td><td><a href="#d-host">D1</a></td><td>worksheets/style-decision.md</td></tr>
+          <tr><td>Remaining work</td><td>HITL handler (finding F2), alarms &#8594; SNS &#8594; remediation (findings F10/F11), breaker-open smoke, then teardown <span class="status">designed — not yet deployed</span></td><td><span class="lane-pill human">human</span></td><td><a href="#d-hitl">D2</a></td><td>build/DEPLOY-WALKTHROUGH.md</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p><b>About.</b> This page is a synthesis of the insurance-claim-processor design workspace — it invents nothing and compresses much. The sources of record, all in this repository: <a href="../../../insurance-claim-processor/design/solution-design.md">design/solution-design.md</a> · <a href="../../../insurance-claim-processor/assess/capability-brief.md">assess/capability-brief.md</a> · <a href="../../../insurance-claim-processor/worksheets/characteristics-worksheet.md">worksheets/characteristics-worksheet.md</a> · <a href="../../../insurance-claim-processor/worksheets/style-decision.md">worksheets/style-decision.md</a> · <a href="../../../insurance-claim-processor/components/logical-components.md">components/logical-components.md</a> · <a href="../../../insurance-claim-processor/adrs/index.md">adrs/ (0001&#8211;0015)</a> · <a href="../../../insurance-claim-processor/specs/claim-processor-real-aws.spec.md">specs (real-AWS</a> + <a href="../../../insurance-claim-processor/specs/claim-processor-model-resilience.spec.md">model-resilience)</a> · <a href="../../../insurance-claim-processor/risk/resilience-clinic.md">risk/resilience-clinic.md</a> · <a href="../../../insurance-claim-processor/validate/architecture-validation.md">validate/architecture-validation.md</a> · <a href="../../../insurance-claim-processor/validate/eval-report.md">validate/eval-report.md</a> · <a href="../../../insurance-claim-processor/build/DEPLOY-WALKTHROUGH.md">build/DEPLOY-WALKTHROUGH.md</a> · <a href="../../../insurance-claim-processor/build/DEPLOY-LEDGER.md">build/DEPLOY-LEDGER.md</a>.</p>
+  <p><b>Honesty note.</b> Two chips carry this page&#8217;s honesty. <span class="unverified">unverified</span> marks a value the sources themselves flag as a default or to-be-re-verified — the <span class="unverified">$10,000</span> payout threshold and the <span class="unverified">0.70</span> grounding threshold — never doctrine. <span class="status">designed — not yet deployed</span> marks machinery that exists in the design and mostly in the code, but has not run on the real account. Nothing on this page presents an undeployed element as live.</p>
+  <p><b>What&#8217;s live, as of 2026-09-23.</b> Deployed and smoke-proven on real AWS (account 324177727513, us-east-1, 2026-09-22): the S3 bucket with three prefixes, the Bedrock guardrail, the AppConfig application with its linear-bake strategy, three IAM roles, six Lambdas, the 13-state Step Functions state machine, and smoke #1 — an auto-approve claim, end to end, in ~12 seconds, with the config plane live and the result grounded. Not yet live: the HITL await/expire handlers (finding F2), alarms &#8594; SNS &#8594; the remediation Lambda (findings F10/F11), the breaker-open smoke, the ensemble flag, the contextual-grounding wire-up (finding F5), the Knowledge Base promote, Textract/BDA, and Cedar.</p>
+  <p><b>Design language.</b> The two-lane grammar (amber model / teal envelope), envelope beats, decision cards, and honesty chips follow this workspace&#8217;s explainer lineage (<a href="aws-ai-architect-story.html">aws-ai-architect-story.html</a>), extended here with a simplified AWS-glyph icon vocabulary drawn once as SVG symbols. SDD provenance: spec + plan + tasks under <a href="../../sdd/specs/claim-processor-story.spec.md">docs/sdd/specs/claim-processor-story.spec.md</a> and <a href="../../sdd/plans/claim-processor-story.plan.md">docs/sdd/plans/</a>. Verifier: <code>verify_claim_processor_story.py</code> beside this file.</p>
+  <p><b>As of</b> 2026-09-23. All facts trace to the repository documents above at that date; the deploy continues in its own thread, and this page states the world as the ledger recorded it.</p>
+</footer>
+
+</body>
+</html>

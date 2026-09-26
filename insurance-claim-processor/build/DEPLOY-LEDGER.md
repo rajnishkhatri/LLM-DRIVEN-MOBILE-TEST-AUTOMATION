@@ -93,7 +93,9 @@ Env: `deploy-out/lambda-env.json`. Runtime python3.12 / arm64 / 512 MB / role `c
 | _(pending)_ HITL flagged claim | after F2 (await-review handler) |
 
 ## Stage 6–7 — Alarms, SNS, remediation
-_(pending — next)_
+_(partially closed by Stage 10: failure + review notifications now reach the
+owner via SNS. Still open: CloudWatch alarms on metrics, F10 remediation
+Lambda.)_
 
 ## Stage 8 — Step Functions  ✅ 2026-09-22 (done BEFORE stages 6–7 so the alarms have traffic)
 
@@ -186,8 +188,30 @@ account as the management account.
 
 Until this row is verified: **synthetic data only** (ADR 0020 M7).
 
+## Stage 10 — Event-driven ingestion + SNS notifications  ✅ 2026-09-26 (owner-run, phase-2 lab)
+
+The pipeline is now push-started and reports back: uploading a claim to
+`claims/` starts the execution (no manual `start-execution`), failures and
+review-parked claims email the owner.
+
+| Item | Value |
+|---|---|
+| Bucket EventBridge notifications | ON (`put-bucket-notification-configuration` `{"EventBridgeConfiguration": {}}`; config was empty before) |
+| Role `claim-processor-events-role` | trust `events.amazonaws.com` + `aws:SourceAccount` guard; inline `start-claim-processor` = `states:StartExecution` on the one state-machine ARN |
+| Rule `claim-uploaded` | `aws.s3` / `Object Created` / bucket + key prefix `claims/` — **the prefix is the event-loop wall**: the pipeline writes `results/` + `pending-review/` into the same bucket, an unfiltered rule would trigger itself forever |
+| Target | state machine + input transformer `{bucket: $.detail.bucket.name, key: $.detail.object.key}` → `{"bucket","key"}` (the handler contract; zero pipeline code changes) |
+| Topic `claim-processor-notifications` | email sub rajnish.khatri@gmail.com; resource policy adds `AllowEventBridgeRulesToPublish` (principal `events.amazonaws.com`, `SNS:Publish`, `aws:SourceArn` pinned to the two rule ARNs) — contrast: the SFN target borrows a **role**, the SNS target is admitted by the topic's **resource policy** |
+| Rule `pipeline-failed` | `aws.states` / Execution Status Change / `FAILED,TIMED_OUT,ABORTED` on this machine → topic, transformer renders a readable sentence |
+| Rule `claim-needs-review` | `aws.s3` / Object Created / prefix `pending-review/` → topic |
+| Proof — ingestion | `s3 cp` → `claims/event-test-1.txt` → UUID-named execution **SUCCEEDED**, `results/claims/event-test-1.txt.json` written; no self-trigger from the results write |
+| Proof — notifications | copy into `pending-review/` → "awaiting human review" email; `fail-test-notify` (bogus key) → FAILED → "ended as FAILED" email; hand `sns publish` → delivered. All three received 2026-09-26 |
+| Finding F15 | `fail-test-notify` failed with **`AccessDenied`, not NoSuchKey**: `claim-processor-step-lambda` has `s3:GetObject` on `claims/*` but **no `ListBucket`** — the S3 403-disguise. Harmless today (both errors route the same), fix alongside F2 if honest misses matter |
+| Scar — email unsubscribe | SNS email subs die to one-click unsubscribe links (Gmail); killed twice during testing. Re-subscribe + confirm revives (same sub id). Armor = `confirm-subscription --authenticate-on-unsubscribe on` with the emailed token — not applied (token spent); redo if it recurs |
+| Artifacts | pattern/target/policy JSONs in session scratchpad `phase2/` |
+
 ## Teardown checklist (do at the end)
-- [ ] Delete state machine, Lambdas, alarms, SNS topic, AppConfig app, guardrail
+- [ ] Remove EventBridge targets + rules `claim-uploaded`, `pipeline-failed`, `claim-needs-review`; delete role `claim-processor-events-role`
+- [ ] Delete state machine, Lambdas, alarms, SNS topic `claim-processor-notifications` (+ email sub), AppConfig app, guardrail
 - [ ] Empty + delete bucket (versioned → delete all versions)
 - [ ] Delete IAM roles
 - [ ] **Delete the deployer's access key** (or the user)

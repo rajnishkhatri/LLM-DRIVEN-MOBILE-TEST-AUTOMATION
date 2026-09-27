@@ -261,6 +261,16 @@ closed in ~10 s. Stages 6–7 are now fully closed.
 | Cycle proof | flags `breaker_open_models`: `[]` → `[sonnet]` (ALARM, config v2, deployment 2) → `[]` (OK via `nf9elvb`, ~10 s) |
 | Uniformity | all **9** functions on CodeSha256 `me4i0+EWtQnqlZWXHtwu+DV8ro6hxvs2QC8uMDXghIE=` |
 
+## Stage 14 — F15: honest misses  ✅ 2026-09-27
+
+`GetObject` without `ListBucket` disguises a missing key as `AccessDenied`
+(the agent lab's Step-6 scar, found live in Stage 10's fail-test). Policy
+`claim-processor-step-lambda` → **v2** (default): adds ListBucket on the
+bucket ARN, `StringLike s3:prefix claims/*` (commits `eee0cdd` + `c53f31a`,
+which teaches the S3 lint that ListBucket lives on the bucket ARN and must be
+prefix-conditioned). Proof: `fail-test-f15` (bogus key) → FAILED with
+`error: NoSuchKey` — the same input failed as `AccessDenied` before.
+
 ## Teardown checklist (do at the end)
 - [ ] Remove EventBridge targets + rules `claim-uploaded`, `pipeline-failed`, `claim-needs-review`; delete role `claim-processor-events-role`
 - [ ] Delete state machine, Lambdas, alarms, SNS topic `claim-processor-notifications` (+ email sub), AppConfig app, guardrail

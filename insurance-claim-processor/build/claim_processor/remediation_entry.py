@@ -11,8 +11,11 @@ no-ops here. Every decision is logged as the AC-Q5 `remediation_record`.
 Lambda handler string: `claim_processor.remediation_entry.lambda_handler`.
 Env: CLAIM_PROCESSOR_APPCONFIG_APP_ID / _ENV_ID / _PROFILE_ID (control-plane
 IDs, not names), CLAIM_PROCESSOR_EXTRACT_MODEL_ID (the breaker target),
-CLAIM_PROCESSOR_REMEDIATION_STRATEGY (default AppConfig.AllAtOnce — a flag
-flip must land now, not bake).
+CLAIM_PROCESSOR_REMEDIATION_STRATEGY — set it to a ZERO-BAKE strategy (F18):
+the predefined AppConfig.AllAtOnce default deploys instantly but bakes 10
+minutes, during which the environment refuses the next deployment
+(ConflictException) — so back-to-back remediations (open then close) lose
+the second flip once SNS's retries exhaust inside the bake window.
 """
 
 from __future__ import annotations

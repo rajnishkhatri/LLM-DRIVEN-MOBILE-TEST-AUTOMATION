@@ -19,6 +19,15 @@
       ]
     },
     {
+      "Sid": "ReadLiveFlagsForReadModifyWrite",
+      "Effect": "Allow",
+      "Action": [
+        "appconfig:StartConfigurationSession",
+        "appconfig:GetLatestConfiguration"
+      ],
+      "Resource": "arn:aws:appconfig:*:*:application/APPCONFIG_APP_ID/environment/*/configuration/*"
+    },
+    {
       "Sid": "StopInFlightDeployment",
       "Effect": "Allow",
       "Action": "appconfig:StopDeployment",

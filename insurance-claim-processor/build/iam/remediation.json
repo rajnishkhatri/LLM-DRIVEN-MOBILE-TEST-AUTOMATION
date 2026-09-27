@@ -5,7 +5,10 @@
       "Sid": "WriteFlagVersion",
       "Effect": "Allow",
       "Action": "appconfig:CreateHostedConfigurationVersion",
-      "Resource": "arn:aws:appconfig:*:*:application/APPCONFIG_APP_ID/configurationprofile/*"
+      "Resource": [
+        "arn:aws:appconfig:*:*:application/APPCONFIG_APP_ID",
+        "arn:aws:appconfig:*:*:application/APPCONFIG_APP_ID/configurationprofile/*"
+      ]
     },
     {
       "Sid": "StartDeploymentForFlagFlipOrRollback",

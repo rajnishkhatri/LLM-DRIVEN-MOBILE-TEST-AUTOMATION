@@ -93,9 +93,8 @@ Env: `deploy-out/lambda-env.json`. Runtime python3.12 / arm64 / 512 MB / role `c
 | _(pending)_ HITL flagged claim | after F2 (await-review handler) |
 
 ## Stage 6–7 — Alarms, SNS, remediation
-_(partially closed by Stage 10: failure + review notifications now reach the
-owner via SNS. Still open: CloudWatch alarms on metrics, F10 remediation
-Lambda.)_
+_(closed across Stages 10–13: notifications in Stage 10, metrics + alarms in
+Stage 12, remediation Lambda + full self-healing cycle in Stage 13.)_
 
 ## Stage 8 — Step Functions  ✅ 2026-09-22 (done BEFORE stages 6–7 so the alarms have traffic)
 
@@ -243,6 +242,24 @@ logger to INFO at import. 295 offline tests OK.
 | Wiring | ALARM + OK + INSUFFICIENT_DATA actions all → the remediation topic (recovery transitions drive the future breaker close, AC-N4) |
 | Wire proof | `ModelErrorRate` INSUFFICIENT_DATA → OK on the metrics-test traffic → SNS email |
 | Standing cost | first non-zero idle cost since the NAT teardown: 3 alarms ≈ $0.60/mo (metric-math alarm bills per metric analyzed) |
+
+## Stage 13 — F10/F11: the remediation Lambda closes the loop  ✅ 2026-09-26/27
+
+The self-healing cycle ran end to end with no human hand on the config:
+synthetic `ALARM` → breaker opened → a claim degraded to the rule-based floor
+and parked → reviewer rejected via task token → synthetic `OK` → breaker
+closed in ~10 s. Stages 6–7 are now fully closed.
+
+| Item | Value |
+|---|---|
+| Code (commit `f2e2cf5`, +`0e97edc`, +`5c8c64b`) | `remediation_entry.lambda_handler`: SNS alarm → `decide_remediation` → read-modify-write AppConfig deployment; breaker open/close + ensemble kill switch applied; `switch_model`/`rollback` recorded-only (need a human); idempotent (already-in-state deploys nothing); ConflictException propagates so SNS retries. 305 offline tests OK |
+| Role `claim-processor-remediation-lambda` | AWSLambdaBasicExecutionRole + inline `appconfig-remediation` (app `3kx1rfd`-scoped, F11 data-plane read included) |
+| Function `claim-processor-remediation` | python3.12/arm64/512MB/60s; env = AppConfig IDs + extract model + strategy `nf9elvb`; subscribed to topic `claim-processor-remediation` (lambda protocol — no confirmation dance); `add-permission` SourceArn-pinned to the topic |
+| **F17** (commit `0e97edc`) | `CreateHostedConfigurationVersion` authorizes against the **application** ARN, not the configurationprofile child the shipped policy named — live AccessDenied proved it; policy now carries both |
+| **F18** (commit `5c8c64b`) | `AppConfig.AllAtOnce` bakes 10 min, during which the env refuses the next deployment — the close flip died in the open flip's bake window (SNS retries exhausted inside it). Fix = zero-bake strategy `remediation-instant` (`nf9elvb`) via `CLAIM_PROCESSOR_REMEDIATION_STRATEGY` |
+| Breaker smoke (AC-N2/P1/P2/P3) | `claims/breaker-test-1.txt` with breaker open → `BreakerCheck` → `DegradedExtract`, record: `degradation_tier: rule_based`, `breaker_state: open`, `empty_fields:claim_amount` (the floor being a floor), forced `human_review`, parked → rejected via token → SUCCEEDED |
+| Cycle proof | flags `breaker_open_models`: `[]` → `[sonnet]` (ALARM, config v2, deployment 2) → `[]` (OK via `nf9elvb`, ~10 s) |
+| Uniformity | all **9** functions on CodeSha256 `me4i0+EWtQnqlZWXHtwu+DV8ro6hxvs2QC8uMDXghIE=` |
 
 ## Teardown checklist (do at the end)
 - [ ] Remove EventBridge targets + rules `claim-uploaded`, `pipeline-failed`, `claim-needs-review`; delete role `claim-processor-events-role`

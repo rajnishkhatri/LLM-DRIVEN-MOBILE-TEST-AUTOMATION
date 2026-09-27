@@ -135,8 +135,22 @@ class IamPolicyLintTests(unittest.TestCase):
                 for statement in _statements(policy):
                     for action in _actions(statement):
                         self.assertNotEqual(action, "s3:*", f"{name} grants bucket-wide s3:*")
-                    if any(a.startswith("s3:") for a in _actions(statement)):
+                    actions = _actions(statement)
+                    if any(a.startswith("s3:") for a in actions):
                         self.assertTrue(_resources(statement), f"{name} S3 statement has no Resource")
+                        # s3:ListBucket is defined on the bucket ARN itself — a
+                        # key-path resource can never match it (F15). The
+                        # bucket-wide ban is then enforced by requiring the
+                        # statement to be ListBucket-only and prefix-conditioned.
+                        if set(actions) == {"s3:ListBucket"}:
+                            prefix_cond = (
+                                (statement.get("Condition") or {}).get("StringLike") or {}
+                            ).get("s3:prefix")
+                            self.assertTrue(
+                                prefix_cond,
+                                f"{name} ListBucket must carry a StringLike s3:prefix condition",
+                            )
+                            continue
                         for resource in _resources(statement):
                             self.assertIsNone(
                                 BUCKET_WIDE_S3_RESOURCE.fullmatch(resource),

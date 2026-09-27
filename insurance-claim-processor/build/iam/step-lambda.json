@@ -28,6 +28,13 @@
       "Resource": "arn:aws:s3:::claim-documents-poc-*/claims/*"
     },
     {
+      "Sid": "ListClaimsPrefixForHonestMisses",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::claim-documents-poc-*",
+      "Condition": {"StringLike": {"s3:prefix": "claims/*"}}
+    },
+    {
       "Sid": "WriteResultsAndPending",
       "Effect": "Allow",
       "Action": "s3:PutObject",

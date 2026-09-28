@@ -1,0 +1,4 @@
+# Strands Agents SDK — code-first agent framework; the agentic loop runs in-process.
+strands-agents
+# AWS SDK — used by our claim-status tool to call the live claim-lookup Lambda.
+boto3

@@ -271,6 +271,25 @@ which teaches the S3 lint that ListBucket lives on the bucket ARN and must be
 prefix-conditioned). Proof: `fail-test-f15` (bogus key) → FAILED with
 `error: NoSuchKey` — the same input failed as `AccessDenied` before.
 
+## Stage 15 — Strands claim-status agent (code-first triage)  ✅ 2026-09-28
+
+First of the AI-architecture comparison chapter: rebuild the lab's managed
+multi-agent shape with a **code-first** framework. Where Bedrock Agents ran the
+agentic loop inside AWS, a Strands agent runs it in-process — *model-driven,
+code-executed*. Local-run only (no deploy), so no standing cost; the only AWS
+calls are Bedrock InvokeModel (Haiku) + S3 GetObject/ListObjects, both under the
+`claim-processor` profile.
+
+| Item | Value |
+|---|---|
+| Module | `insurance-claim-processor/triage/` — `status_agent.py`, `requirements.txt` (`strands-agents` 1.57.1 + `boto3`), `README.md`, `.gitignore` |
+| Agent | `Agent(model=BedrockModel(Haiku 4.5), tools=[get_claim_status])`; Haiku chosen deliberately — status triage is light work, Sonnet would be the wrong tool |
+| Tool | `@tool get_claim_status(claim_id)` — schema auto-built from type hints + docstring; reads the pipeline's **real** `results/claims/<id>.txt.json` (not the lab Lambda's sample data), returns decision (`route`) + validation + claimant/amount + degraded/breaker flags |
+| Honest-miss | missing id → `found=False` + live-listed available ids (the F15 lesson, enforced in tool + prompt, not left to the model) |
+| Happy-path proof | `auto-fl-clean` → "automatically approved, Maria Elena Ruiz, $4,820.50, no flags"; visible `Tool #1: get_claim_status` loop |
+| Honest-miss proof | `tesla-crash-9000` → not found + listed the 5 real ids (`auto-fl-clean`, `breaker-test-1`, `event-test-1`, `hitl-test-1`, `metrics-test-1`) — no fabricated status |
+| Concept banked | managed (lab) vs code-first (Strands): the loop is now yours — breakpointable, loggable, testable, portable (same file runs local / Lambda / AgentCore) |
+
 ## Teardown checklist (do at the end)
 - [ ] Remove EventBridge targets + rules `claim-uploaded`, `pipeline-failed`, `claim-needs-review`; delete role `claim-processor-events-role`
 - [ ] Delete state machine, Lambdas, alarms, SNS topic `claim-processor-notifications` (+ email sub), AppConfig app, guardrail

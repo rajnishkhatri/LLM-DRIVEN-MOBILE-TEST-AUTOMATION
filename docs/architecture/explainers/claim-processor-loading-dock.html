@@ -1,0 +1,210 @@
+<title>The Loading Dock</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  --paper:#f4f2ec; --ink:#1e3a5f; --line:#a8b8cc; --dim:#5b6b80;
+  --accent:#c8571b; --card:#ffffff; --grid:rgba(30,58,95,.06);
+  --good:#1d7a4f; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --disp:'Big Shoulders Display','IBM Plex Sans',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0e1c30; --ink:#c9d8ec; --line:#3a5578; --dim:#8aa0bc;
+    --accent:#f08a4b; --card:#152742; --grid:rgba(201,216,236,.05);
+    --good:#5cc794; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0e1c30; --ink:#c9d8ec; --line:#3a5578; --dim:#8aa0bc;
+  --accent:#f08a4b; --card:#152742; --grid:rgba(201,216,236,.05);
+  --good:#5cc794; color-scheme:dark;
+}
+body{
+  background:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.6;
+  padding-inline:16px; padding-block:0 48px; margin:0;
+}
+.sheet{max-width:880px; margin:0 auto;}
+.eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin:36px 0 6px;}
+h1{font-family:var(--disp); font-weight:700; font-size:clamp(40px,7vw,64px); line-height:.95; margin:0 0 6px; text-transform:uppercase; letter-spacing:.01em; text-wrap:balance;}
+.sub{color:var(--dim); max-width:62ch; margin:0 0 8px;}
+h2{font-family:var(--disp); font-weight:700; font-size:26px; text-transform:uppercase; letter-spacing:.04em; margin:44px 0 4px; text-wrap:balance;}
+h2 .no{color:var(--accent); font-family:var(--mono); font-size:15px; vertical-align:middle; margin-right:8px;}
+.lede{color:var(--dim); font-size:14.5px; max-width:66ch; margin:0 0 16px;}
+.plan{border:1.5px solid var(--ink); background:var(--card); border-radius:4px; padding:10px; overflow-x:auto;}
+.plan svg{display:block; min-width:680px; width:100%; height:auto;}
+table{border-collapse:collapse; width:100%; font-size:14px;}
+.twrap{overflow-x:auto; border:1.5px solid var(--ink); border-radius:4px; background:var(--card);}
+th{font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; text-align:left; color:var(--dim); border-bottom:1.5px solid var(--ink); padding:10px 12px; white-space:nowrap;}
+td{padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+td.m{font-family:var(--mono); font-size:12.5px; white-space:nowrap;}
+td.meta{font-weight:600;}
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px;}
+.card{border:1.5px solid var(--ink); background:var(--card); border-radius:4px; padding:14px 16px;}
+.card h3{font-family:var(--mono); font-size:12px; letter-spacing:.1em; text-transform:uppercase; margin:0 0 8px; color:var(--accent);}
+.card p{margin:0; font-size:14px;}
+.big{display:block; font-family:var(--disp); font-weight:700; font-size:34px; color:var(--accent); line-height:1; margin-bottom:4px;}
+.scar{border-left:3px solid var(--accent); border-radius:0; padding:10px 14px; background:var(--card); margin:0 0 10px;}
+.scar b{font-family:var(--mono); font-size:12.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--accent); display:block; margin-bottom:2px;}
+.scar p{margin:0; font-size:14px;}
+code{font-family:var(--mono); font-size:.86em; background:var(--card); border:1px solid var(--line); border-radius:3px; padding:1px 5px;}
+.foot{font-family:var(--mono); font-size:12px; color:var(--dim); border-top:1.5px solid var(--ink); margin-top:48px; padding-top:12px;}
+.loop{display:flex; flex-wrap:wrap; gap:0 8px; align-items:center; font-family:var(--mono); font-size:13px; margin:10px 0 6px;}
+.loop span.step{border:1.5px solid var(--ink); background:var(--card); border-radius:3px; padding:5px 10px; margin:4px 0;}
+.loop span.arr{color:var(--accent); font-weight:700;}
+.loop span.t{color:var(--good); font-weight:500;}
+</style>
+
+<div class="sheet">
+<p class="eyebrow">insurance-claim-processor · triage · real AWS · acct 324177727513 · sheet 5 · the loading dock</p>
+<h1>The Loading Dock</h1>
+<p class="sub">The front desk ran fine on a laptop. This is the day it moved into a building AWS runs. One command crates the code into an ARM64 container, ships it through a cloud build to a registry, and stands it up as a managed runtime — where your loop keeps running, but the plumbing is somebody else's job.</p>
+
+<h2><span class="no">§01</span>From laptop to managed runtime</h2>
+<p class="lede">Solid arrows are the shipping path. Dashed arrows are identity and signals. Everything inside the dashed frame was created by a single <code>agentcore deploy</code>.</p>
+<div class="plan"><svg viewBox="0 0 960 580" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono,monospace">
+<defs>
+<marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="ma"/></marker>
+<marker id="b" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mb"/></marker>
+</defs>
+<style>
+.bx{fill:none;stroke:var(--ink);stroke-width:1.6}
+.lb{fill:var(--ink);font-size:13px;font-weight:500}
+.sm{fill:var(--dim);font-size:10.5px}
+.ac{fill:var(--accent);font-size:10.5px;font-weight:500}
+.fl{stroke:var(--accent);stroke-width:1.6;fill:none;marker-end:url(#a)}
+.sg{stroke:var(--dim);stroke-width:1.4;fill:none;stroke-dasharray:5 4;marker-end:url(#b)}
+.ma{fill:var(--accent)}
+.mb{fill:var(--dim)}
+</style>
+
+<!-- row 1: laptop -> configure -> deploy -->
+<rect x="20" y="44" width="160" height="60" class="bx" rx="4"/>
+<text x="32" y="68" class="lb">your laptop</text>
+<text x="32" y="86" class="sm">squad.py (unchanged)</text>
+<text x="32" y="99" class="sm">runs as your profile</text>
+
+<rect x="215" y="44" width="175" height="60" class="bx" rx="4"/>
+<text x="227" y="68" class="lb">agentcore configure</text>
+<text x="227" y="86" class="sm">writes Dockerfile + .yaml</text>
+<text x="227" y="99" class="ac">container mode</text>
+
+<rect x="425" y="44" width="150" height="60" class="bx" rx="4"/>
+<text x="437" y="68" class="lb">agentcore deploy</text>
+<text x="437" y="86" class="sm">one command</text>
+
+<path d="M180,74 L215,74" class="fl"/>
+<path d="M390,74 L425,74" class="fl"/>
+
+<!-- cloud band -->
+<rect x="20" y="140" width="920" height="300" fill="none" stroke="var(--line)" stroke-width="1.2" stroke-dasharray="7 5" rx="6"/>
+<text x="36" y="164" class="ac" font-size="12">IN THE CLOUD — one agentcore deploy builds and stands up everything below</text>
+
+<rect x="50" y="188" width="175" height="62" class="bx" rx="4"/>
+<text x="62" y="211" class="lb">CodeBuild</text>
+<text x="62" y="229" class="sm">builds ARM64 image · 27s</text>
+<text x="62" y="242" class="ac">no Docker on your box</text>
+
+<rect x="285" y="188" width="165" height="62" class="bx" rx="4"/>
+<text x="297" y="211" class="lb">ECR</text>
+<text x="297" y="229" class="sm">bedrock-agentcore-</text>
+<text x="297" y="242" class="sm">claim_triage:image</text>
+
+<rect x="510" y="180" width="400" height="86" class="bx" rx="4"/>
+<text x="522" y="203" class="lb">AgentCore Runtime · claim_triage-0kljlK2XE9</text>
+<text x="522" y="221" class="sm">SDK serves POST /invocations · GET /ping</text>
+<text x="522" y="235" class="sm">each session = isolated microVM (up to 8 h)</text>
+<text x="522" y="252" class="ac">your loop, AWS's runtime · memory off · OTel on</text>
+
+<path d="M500,104 C500,150 135,150 135,188" class="fl"/>
+<path d="M225,219 L285,219" class="fl"/>
+<path d="M450,219 L510,219" class="fl"/>
+<text x="452" y="212" class="ac">CreateAgentRuntime</text>
+
+<!-- execution role -->
+<rect x="50" y="300" width="430" height="118" class="bx" rx="4"/>
+<text x="62" y="323" class="lb">execution role (auto-created)</text>
+<text x="62" y="342" class="sm">assume: bedrock-agentcore.amazonaws.com</text>
+<text x="62" y="360" class="sm">auto grants: logs · x-ray · ECR pull ·</text>
+<text x="62" y="373" class="sm">bedrock:InvokeModel (covers the Haiku profile)</text>
+<text x="62" y="397" class="ac">+ S3 read on the claims bucket — added by hand</text>
+<text x="62" y="410" class="ac">the one grant the toolkit could not know (F15 again)</text>
+
+<path d="M600,266 C600,300 470,300 470,320" class="sg"/>
+<text x="500" y="288" class="sm">the agent IS this role in the cloud</text>
+
+<!-- observability -->
+<rect x="510" y="300" width="400" height="62" class="bx" rx="4"/>
+<text x="522" y="323" class="lb">OTel → CloudWatch / X-Ray</text>
+<text x="522" y="341" class="sm">GenAI observability dashboard, no code</text>
+<text x="522" y="355" class="ac">trace-dest PENDING at deploy = F20 (non-fatal)</text>
+<path d="M760,266 L760,300" class="sg"/>
+
+<!-- use it -->
+<rect x="50" y="486" width="200" height="58" class="bx" rx="4"/>
+<text x="62" y="509" class="lb">agentcore invoke</text>
+<text x="62" y="528" class="sm">{"prompt": "where is my claim…"}</text>
+
+<rect x="700" y="486" width="210" height="58" class="bx" rx="4"/>
+<text x="712" y="509" class="lb">routed answer</text>
+<text x="712" y="528" class="sm">{"routed_to":"status", "$4,820.50"}</text>
+
+<path d="M150,486 C150,400 500,340 600,266" class="fl"/>
+<text x="158" y="470" class="sm">message in</text>
+<path d="M830,486 C830,400 830,320 800,266" class="fl"/>
+<text x="812" y="470" class="sm">answer out</text>
+</svg></div>
+
+<h2><span class="no">§02</span>The concepts, one line of truth each</h2>
+<div class="cards">
+<div class="card"><h3>AgentCore Runtime</h3><p>A serverless host built for agents, not generic functions: long sessions, per-session isolation, and the ops plumbing handled. Lambda hosts a function; this hosts an agent.</p></div>
+<div class="card"><h3>The runtime contract</h3><p>Your code has to answer <code>POST /invocations</code> and <code>GET /ping</code>. You don't write that server — the SDK does. You decorate one <code>@app.entrypoint</code> and call <code>app.run()</code>.</p></div>
+<div class="card"><h3>CodeBuild, no Docker</h3><p>The ARM64 image is built in the cloud, so a laptop with no container engine still ships. Here it built in 27 seconds.</p></div>
+<div class="card"><h3>The ARM64 image</h3><p>A generated <code>uv</code>-based Dockerfile bakes <code>requirements.txt</code>, runs as a non-root user, and launches <code>opentelemetry-instrument python -m agentcore_app</code>.</p></div>
+<div class="card"><h3>The execution role</h3><p>In the cloud the agent is not you — it's an IAM role the runtime assumes. <code>make_session()</code> uses your profile locally and falls back to that role in the container. One function, both homes.</p></div>
+<div class="card"><h3>Two-part permissions</h3><p>The auto role nails the plumbing and even <code>bedrock:InvokeModel</code>. The one thing it can't know is your S3 bucket — so you add that grant by hand, prefix-scoped. The app permission is always yours.</p></div>
+<div class="card"><h3>Session isolation</h3><p>Each session runs in its own microVM, up to 8 hours, no cross-session leakage — the thing you'd hand-build on Lambda's 15-minute functions.</p></div>
+<div class="card"><h3>Observability for free</h3><p>OTel traces flow to CloudWatch and X-Ray with a GenAI dashboard, no instrumentation code. The wiring can lag the first deploy (F20).</p></div>
+<div class="card"><h3>Managed vs self-hosted</h3><p>The exact same <code>squad.py</code>: on the laptop it's your process; here it's AWS's runtime. Nothing in the agents changed — only where the loop runs.</p></div>
+<div class="card"><h3>The tool moved</h3><p>The Python starter toolkit we drove is deprecated; AWS's supported CLI is now <code>npm @aws/agentcore</code>. The concepts — CreateAgentRuntime, the role, the ARM64 image — are identical. The CLI is a skin.</p></div>
+</div>
+
+<h2><span class="no">§03</span>The deploy, as it ran</h2>
+<p class="lede">Two commands and one hand-added grant took the squad from the laptop to a live endpoint.</p>
+<div class="loop">
+<span class="step">configure</span><span class="arr">→</span>
+<span class="step">deploy</span><span class="arr">→</span>
+<span class="step">CodeBuild ARM64 <span class="t">27s</span></span><span class="arr">→</span>
+<span class="step">push to ECR</span><span class="arr">→</span>
+<span class="step">CreateAgentRuntime + roles</span><span class="arr">→</span>
+<span class="step">add S3 grant by hand</span><span class="arr">→</span>
+<span class="step">invoke</span><span class="arr">→</span>
+<span class="step">real $4,820.50 <span class="t">hosted</span></span>
+</div>
+<p class="lede">All three intents routed correctly in the runtime — <code>status</code>, <code>new-claim</code>, <code>escalation</code> — the classifier reading intent fresh each turn, not sticking to the last window.</p>
+
+<h2><span class="no">§04</span>Findings</h2>
+<div class="twrap"><table>
+<tr><th>id</th><th>symptom</th><th>cause</th><th>fix</th></tr>
+<tr><td class="m meta">F20</td><td>observability warning at deploy; traces may not export</td><td>the X-Ray trace-segment destination was still <code>PENDING</code> when delivery was enabled — a race, not a misconfig</td><td>nothing to change; it goes <code>ACTIVE</code> in ~10–15 min. Runtime serves fine throughout</td></tr>
+<tr><td class="m meta">note</td><td>the toolkit warns it is unsupported</td><td>AWS moved the CLI to <code>npm @aws/agentcore</code>; the Python starter toolkit is frozen</td><td>kept it — the runtime concepts don't change with the CLI; noted for the next build</td></tr>
+</table></div>
+
+<h2><span class="no">§05</span>Scars</h2>
+<div class="scar"><b>the role knew everything but your bucket</b><p>The auto-created role covered logs, x-ray, ECR pull, even Bedrock invoke — and had zero S3. A generated role can only grant what the tool can infer; the app-specific permission is always the human's to add. Third time this bucket taught the lesson (F15).</p></div>
+<div class="scar"><b>same code, two homes</b><p><code>make_session()</code> is the whole portability trick: use the profile if it exists, else the default chain. No branching leaks into the agents. Write the credential seam once and the same file runs on a laptop and in a managed microVM.</p></div>
+<div class="scar"><b>the tool you learn may already be deprecated</b><p>The toolkit worked end to end and told us, mid-command, that it's no longer the way. Learn the API underneath — CreateAgentRuntime, the execution role, the ARM64 image — because the CLI on top will be replaced before the concepts are.</p></div>
+
+<h2><span class="no">§06</span>What stands</h2>
+<div class="cards">
+<div class="card"><h3>Stage closed</h3><p><span class="big">18</span>the code-first squad, hosted on AWS's managed agent runtime. Deploy chapter done.</p></div>
+<div class="card"><h3>The runtime</h3><p><span class="big">1 endpoint</span>claim_triage-0kljlK2XE9 · three intents routed live · built via CodeBuild in 27s, no Docker.</p></div>
+<div class="card"><h3>Idle cost</h3><p><span class="big">~$0</span>serverless runtime, no idle compute; the image is cents a month. Torn down with one <code>agentcore destroy</code>.</p></div>
+</div>
+
+<p class="foot">sheet 5 · the bedrock building → the claims office → the night shift → the front desk → the loading dock · us-east-1 · drawn 2026-09-28 from the deploy ledger, stage 18</p>
+</div>

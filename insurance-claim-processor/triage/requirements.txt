@@ -1,4 +1,7 @@
 # Strands Agents SDK — code-first agent framework; the agentic loop runs in-process.
 strands-agents
+# Agent Squad — multi-agent orchestrator: a classifier routes each message to the
+# right specialist. [aws] pulls the Bedrock classifier dependencies.
+agent-squad[aws]
 # AWS SDK — used by our claim-status tool to call the live claim-lookup Lambda.
 boto3

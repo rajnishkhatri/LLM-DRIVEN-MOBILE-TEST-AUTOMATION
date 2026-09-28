@@ -290,6 +290,22 @@ calls are Bedrock InvokeModel (Haiku) + S3 GetObject/ListObjects, both under the
 | Honest-miss proof | `tesla-crash-9000` → not found + listed the 5 real ids (`auto-fl-clean`, `breaker-test-1`, `event-test-1`, `hitl-test-1`, `metrics-test-1`) — no fabricated status |
 | Concept banked | managed (lab) vs code-first (Strands): the loop is now yours — breakpointable, loggable, testable, portable (same file runs local / Lambda / AgentCore) |
 
+## Stage 16 — Agent Squad routes three Strands specialists  ✅ 2026-09-28
+
+The orchestration half of the comparison chapter. Agent Squad routes; the
+specialists (built in Strands) answer. Same job as the lab supervisor, but the
+classifier runs in-process and prints its pick. Local-run only, no deploy.
+
+| Item | Value |
+|---|---|
+| Module | `triage/squad.py` — reuses `status_agent`'s tool + prompt (the IP), adds two prompt-only specialists |
+| The seam | `StrandsSpecialist(Agent)` — one adapter whose async `process_request` runs the Strands loop and wraps the reply; any Strands agent becomes an Agent Squad specialist |
+| Classifier | `BedrockClassifier` on Haiku 4.5, pinned to the `claim-processor` profile via `client=` (a bedrock-runtime client from the session) |
+| Specialists | `status` (Strands + `get_claim_status` tool), `new-claim` (prompt), `escalation` (prompt) — routing is driven by their `description=` strings |
+| **F19** | Agent Squad's classifier default sends `temperature=0.0` **and** `topP=0.9`; Claude 4.5 models reject both together (`ValidationException` → every message routed to `No Agent`). Fix = `inference_config={"top_p": None}`, which the classifier's own None-drop filter removes (its source comment names this case). A live-only finding — no offline harness would surface the model-side rule |
+| Route proof | "where is my claim auto-fl-clean?" → `status` → real `auto_approve` / $4,820.50 (tool fired through the squad); "file a new claim" → `new-claim`; "wrongly rejected, talk to a person" → `escalation` |
+| Concept banked | classifier routes on descriptions (description quality = routing quality); managed lab supervisor vs in-process Agent Squad is the third face of the managed-vs-code-first comparison (agent build: Strands; orchestration: Agent Squad; both now contrasted with the Bedrock Agents lab) |
+
 ## Teardown checklist (do at the end)
 - [ ] Remove EventBridge targets + rules `claim-uploaded`, `pipeline-failed`, `claim-needs-review`; delete role `claim-processor-events-role`
 - [ ] Delete state machine, Lambdas, alarms, SNS topic `claim-processor-notifications` (+ email sub), AppConfig app, guardrail

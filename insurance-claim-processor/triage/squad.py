@@ -29,13 +29,12 @@ from agent_squad.classifiers import BedrockClassifier, BedrockClassifierOptions
 from agent_squad.types import ConversationMessage, ParticipantRole
 
 # Reuse the Stage 15 status logic (the tool + its prompt) — the IP, not a copy.
-from status_agent import get_claim_status, SYSTEM_PROMPT as STATUS_PROMPT
+from status_agent import get_claim_status, make_session, SYSTEM_PROMPT as STATUS_PROMPT
 
 REGION = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
-PROFILE = os.environ.get("AWS_PROFILE", "claim-processor")
 MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
-_session = boto3.Session(profile_name=PROFILE, region_name=REGION)
+_session = make_session()
 _bedrock = _session.client("bedrock-runtime")
 
 
@@ -114,15 +113,22 @@ for a in (status, new_claim, escalation):
     orchestrator.add_agent(a)
 
 
-async def ask(message: str, user_id: str = "cust-1", session_id: str = "sess-1") -> None:
+async def route(message: str, user_id: str = "cust-1", session_id: str = "sess-1") -> dict:
+    """Route one message; return {routed_to, answer}. The reusable core — both
+    the CLI below and the AgentCore entrypoint call this."""
     resp = await orchestrator.route_request(message, user_id, session_id)
     picked = getattr(resp.metadata, "agent_name",
                      getattr(resp.metadata, "agent_id", "?"))
     out = resp.output
     text = out.content[0]["text"] if hasattr(out, "content") and out.content else str(out)
+    return {"routed_to": picked, "answer": text}
+
+
+async def ask(message: str, user_id: str = "cust-1", session_id: str = "sess-1") -> None:
+    result = await route(message, user_id, session_id)
     print(f"\n>>> {message}")
-    print(f"[routed to: {picked}]")
-    print(text)
+    print(f"[routed to: {result['routed_to']}]")
+    print(result["answer"])
 
 
 if __name__ == "__main__":

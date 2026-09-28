@@ -3,5 +3,8 @@ strands-agents
 # Agent Squad — multi-agent orchestrator: a classifier routes each message to the
 # right specialist. [aws] pulls the Bedrock classifier dependencies.
 agent-squad[aws]
+# Bedrock AgentCore runtime SDK — turns agentcore_app.py into the runtime's HTTP
+# server (POST /invocations, GET /ping). Runtime dep; ships inside the image.
+bedrock-agentcore
 # AWS SDK — used by our claim-status tool to call the live claim-lookup Lambda.
 boto3

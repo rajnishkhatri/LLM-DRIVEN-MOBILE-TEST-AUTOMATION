@@ -306,9 +306,33 @@ classifier runs in-process and prints its pick. Local-run only, no deploy.
 | Route proof | "where is my claim auto-fl-clean?" → `status` → real `auto_approve` / $4,820.50 (tool fired through the squad); "file a new claim" → `new-claim`; "wrongly rejected, talk to a person" → `escalation` |
 | Concept banked | classifier routes on descriptions (description quality = routing quality); managed lab supervisor vs in-process Agent Squad is the third face of the managed-vs-code-first comparison (agent build: Strands; orchestration: Agent Squad; both now contrasted with the Bedrock Agents lab) |
 
+## Stage 18 — the squad hosted on Bedrock AgentCore Runtime  ✅ 2026-09-28
+
+The deploy capstone: the same `squad.py` now runs in AWS's managed agent runtime
+(code-first agent, managed hosting). One code path, two homes — `make_session()`
+uses the profile locally and the execution role in-container. Chose the whole
+squad + CodeBuild build path (no Docker). Toolkit finding recorded: the Python
+starter toolkit is deprecated (AWS points to the npm `@aws/agentcore` CLI); kept
+it for the lab since the runtime concepts are identical.
+
+| Item | Value |
+|---|---|
+| Entrypoint | `triage/agentcore_app.py` — `@app.entrypoint async def invoke(payload)` → `squad.route`; SDK serves POST /invocations + GET /ping |
+| Credentials change | `make_session()` (status_agent.py) uses the `claim-processor` profile only if present, else the default chain — so the container runs as the execution role. Local routing regression stayed green |
+| Runtime | `arn:aws:bedrock-agentcore:us-east-1:324177727513:runtime/claim_triage-0kljlK2XE9` (endpoint DEFAULT); container, PUBLIC network, memory disabled, OTel on |
+| Build | `agentcore configure -dt container -ni -dm` then `agentcore deploy`; CodeBuild built the ARM64 image in **27 s** (no local Docker); `uv`-based Dockerfile, non-root, `opentelemetry-instrument python -m agentcore_app` |
+| Image | ECR `bedrock-agentcore-claim_triage:20260928-212000-285` |
+| Auto-created | exec role `AmazonBedrockAgentCoreSDKRuntime-us-east-1-cacf5194b7` (+`BedrockAgentCoreRuntimeExecutionPolicy-claim_triage`), CodeBuild role `…SDKCodeBuild-us-east-1-cacf5194b7`, CodeBuild project `bedrock-agentcore-claim_triage-builder`, source bucket `bedrock-agentcore-codebuild-sources-324177727513-us-east-1`, log group `/aws/bedrock-agentcore/runtimes/claim_triage-0kljlK2XE9-DEFAULT` |
+| App grant (by hand) | The auto role covers all plumbing + Bedrock invoke (`arn:aws:bedrock:us-east-1:324177727513:*` includes the Haiku inference-profile) but **zero S3** — toolkit can't know our bucket. Added inline `claim-status-s3-read` (`triage/iam/status-s3-read.json`): GetObject on `results/claims/*` + prefix-conditioned ListBucket — the F15 discipline, in the runtime's role |
+| **F20** | At deploy, the X-Ray trace-segment destination was `PENDING` → observability delivery warning (`ValidationException`, becomes ACTIVE in ~10–15 min). Non-fatal: the runtime serves fine, only OTel trace export is delayed |
+| Live proof | `agentcore invoke '{"prompt":"where is my claim auto-fl-clean?"}'` → `{"routed_to":"status","answer":"…$4,820.50…Maria Elena Ruiz…"}` — classifier + Strands loop + S3 read + Bedrock, all inside the managed runtime |
+| Cost | serverless runtime = no idle compute; ECR image storage a few ¢/mo; CodeBuild billed per build (one run). Near-zero standing |
+| Concept banked | the third face made concrete: managed loop (lab) → self-hosted code-first (Strands/Squad local) → **code-first agent on managed hosting** (AgentCore). Deferred Stage 17 (Lambda-container) not needed — AgentCore gave the hosting lesson directly |
+
 ## Teardown checklist (do at the end)
 - [ ] Remove EventBridge targets + rules `claim-uploaded`, `pipeline-failed`, `claim-needs-review`; delete role `claim-processor-events-role`
 - [ ] Delete state machine, Lambdas, alarms, SNS topic `claim-processor-notifications` (+ email sub), AppConfig app, guardrail
 - [ ] Empty + delete bucket (versioned → delete all versions)
 - [ ] Delete IAM roles
+- [ ] **Triage / AgentCore:** `agentcore destroy` (runtime `claim_triage-0kljlK2XE9`, ECR repo `bedrock-agentcore-claim_triage`, CodeBuild project + auto SDK roles); then delete log group `/aws/bedrock-agentcore/runtimes/claim_triage-0kljlK2XE9-DEFAULT` and source bucket `bedrock-agentcore-codebuild-sources-324177727513-us-east-1` (the `claim-status-s3-read` inline policy goes with its role)
 - [ ] **Delete the deployer's access key** (or the user)

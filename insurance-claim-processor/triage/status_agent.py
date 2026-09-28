@@ -29,12 +29,22 @@ BUCKET = os.environ.get("CLAIM_BUCKET", "claim-documents-poc-rk-20260922")
 RESULTS_PREFIX = "results/claims/"
 MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
-# One boto3 session for both the model handle and the tool, pinned to the
-# claim-processor profile so a local run uses the same identity as the pipeline.
-_session = boto3.Session(
-    profile_name=os.environ.get("AWS_PROFILE", "claim-processor"),
-    region_name=os.environ.get("AWS_DEFAULT_REGION", "us-east-1"),
-)
+def make_session() -> boto3.Session:
+    """Local runs use the claim-processor profile; in a container (AgentCore
+    Runtime, Lambda) that profile is absent, so fall back to the default
+    credential chain — i.e. the execution role. One code path, both homes.
+    """
+    region = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
+    profile = os.environ.get("CLAIM_PROCESSOR_PROFILE", "claim-processor")
+    try:
+        if profile in boto3.Session().available_profiles:
+            return boto3.Session(profile_name=profile, region_name=region)
+    except Exception:
+        pass
+    return boto3.Session(region_name=region)
+
+
+_session = make_session()
 _s3 = _session.client("s3")
 
 

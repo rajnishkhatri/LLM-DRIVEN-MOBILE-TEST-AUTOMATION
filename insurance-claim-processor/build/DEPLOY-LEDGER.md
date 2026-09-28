@@ -334,5 +334,5 @@ it for the lab since the runtime concepts are identical.
 - [ ] Delete state machine, Lambdas, alarms, SNS topic `claim-processor-notifications` (+ email sub), AppConfig app, guardrail
 - [ ] Empty + delete bucket (versioned → delete all versions)
 - [ ] Delete IAM roles
-- [ ] **Triage / AgentCore:** `agentcore destroy` (runtime `claim_triage-0kljlK2XE9`, ECR repo `bedrock-agentcore-claim_triage`, CodeBuild project + auto SDK roles); then delete log group `/aws/bedrock-agentcore/runtimes/claim_triage-0kljlK2XE9-DEFAULT` and source bucket `bedrock-agentcore-codebuild-sources-324177727513-us-east-1` (the `claim-status-s3-read` inline policy goes with its role)
+- [x] **Triage / AgentCore — DONE 2026-09-28.** `agentcore destroy --delete-ecr-repo --force` removed 10 resources (runtime `claim_triage-0kljlK2XE9`, ECR images + repo, CodeBuild project, both build zips, CodeBuild role + exec role — the `claim-status-s3-read` inline policy went with the exec role, no orphan); log group `/aws/bedrock-agentcore/runtimes/claim_triage-0kljlK2XE9-DEFAULT` + source bucket `bedrock-agentcore-codebuild-sources-324177727513-us-east-1` deleted by hand. All five verified gone (RepositoryNotFound / NoSuchEntity / NoSuchBucket / empty runtime + log-group lists)
 - [ ] **Delete the deployer's access key** (or the user)

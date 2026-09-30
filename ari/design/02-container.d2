@@ -1,0 +1,184 @@
+# Inside Ari - gate first, rules before models, receipts on every answer
+# caption: Opened from the Context view: every turn passes the gate, the two-stage router spends a model only on ambiguity, and every answer leaves a provenance record. Module-coloured elements run in the one Ari quantum.
+direction: down
+
+# Canonical reserved-vocabulary D2 classes for C4-flavored diagrams.
+#
+# The IR -> D2 transformer (scripts/ir_to_d2.py) emits this block verbatim at
+# the top of every generated .d2 file, then applies the classes via `class:`.
+# Encoding shape/line semantics as classes is what makes the reserved
+# vocabulary CONSISTENT across all views and un-driftable (diagramskill.md
+# "Enforced consistency"). Do not restyle nodes inline; add or edit a class
+# here so every view moves together.
+#
+# Palette values are the exact hex from the Silicon Sandwiches designer brief
+# (.arch/components/silicon-sandwiches/designer-agent-prompt.md, "Visual
+# system"). Every colour is paired with a SHAPE and/or TEXT difference so the
+# set survives grayscale (rule: colour is never the only channel).
+
+classes: {
+  # Stadium / pill = person (actor). High border-radius makes the pill.
+  actor: {
+    style: {
+      border-radius: 999
+      fill: "#d0e7f9"
+      stroke: "#1a5276"
+      font-color: "#111111"
+    }
+  }
+
+  # Plain rectangle = system / container / component. The system box is the
+  # heaviest element on a Context canvas: 2px stroke.
+  system: {
+    style: {
+      fill: "#fdf2d0"
+      stroke: "#7d6608"
+      stroke-width: 2
+      font-color: "#111111"
+    }
+  }
+
+  # Plain rectangle for containers / components (lighter than the system box).
+  container: {
+    style: {
+      fill: "#ffffff"
+      stroke: "#333333"
+      font-color: "#111111"
+    }
+  }
+
+  # Double-bordered rectangle = external system. Label is prefixed `EXT:` by
+  # the transformer so the convention reads even in grayscale.
+  external: {
+    style: {
+      fill: "#eeeeee"
+      stroke: "#555555"
+      double-border: true
+      font-color: "#111111"
+    }
+  }
+
+  # Orange "evidence gap" family for unresolved production evidence
+  # (provisional vendor, pending contract). Still a rectangle/EXT shape; the
+  # orange only reinforces a tag that is also written in the label text.
+  evidence-gap: {
+    style: {
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      double-border: true
+      font-color: "#111111"
+    }
+  }
+
+  # Cylinder = datastore ONLY. Never use a cylinder for anything else.
+  datastore: {
+    shape: cylinder
+    style: {
+      fill: "#e8daef"
+      stroke: "#6c3483"
+      font-color: "#111111"
+    }
+  }
+
+  # Infrastructure (e.g. load balancer) — white rectangle, dark stroke.
+  infra: {
+    style: {
+      fill: "#ffffff"
+      stroke: "#333333"
+      font-color: "#111111"
+    }
+  }
+
+  # Faded / location-only element: reappears in a deeper view for context, not
+  # as subject. De-emphasised fill + muted text.
+  faded: {
+    style: {
+      fill: "#f8f9f9"
+      stroke: "#aaaaaa"
+      font-color: "#555555"
+    }
+  }
+
+  # Dashed-outline container = a boundary/grouping, never a node.
+  boundary: {
+    style: {
+      stroke-dash: 4
+      fill: transparent
+      font-color: "#111111"
+    }
+  }
+
+  # --- Readability additions (see references/readability.md) ---
+
+  # Dash-bordered rectangle = a runtime PROCESS, not a deployable artifact.
+  # The dash border (a shape channel) carries the meaning, so it survives gray.
+  process: {
+    style: {
+      stroke-dash: 3
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      font-color: "#111111"
+    }
+  }
+
+  # Hexagon = an element deliberately NOT modelled as a component (e.g. a
+  # library an ADR records is not a component). The distinct shape says "this
+  # is not one of the boxes" without a word.
+  not-a-component: {
+    shape: hexagon
+    style: {
+      fill: "#fdebd0"
+      stroke: "#b9770e"
+      font-color: "#111111"
+    }
+  }
+
+  # Module / domain fills — LOCK these and apply the SAME one to a module in
+  # EVERY view that contains it, so a reader tracks the module across the zoom
+  # chain by colour (readability.md §7). Each is paired with the module name in
+  # the label, so the tracking survives grayscale.
+  module-a: { style: { fill: "#fef9e7"; stroke: "#7d6608"; font-color: "#111111" } }
+  module-b: { style: { fill: "#eafaf1"; stroke: "#1e8449"; font-color: "#111111" } }
+  module-c: { style: { fill: "#ebf5fb"; stroke: "#21618c"; font-color: "#111111" } }
+  # module-d = Payments (rose) — Silicon Sandwiches 4th domain; locked for
+  # colour-tracking across Container/Component views (designer brief palette).
+  module-d: { style: { fill: "#fdedec"; stroke: "#943126"; font-color: "#111111" } }
+}
+
+SURF: "[1] EXT: Forecasting · Onboarding · Analytics · Support modules\nAri embedded in each" { class: external }
+GATE: "[2] No identity, no call - fails closed\n[Component]\nentitlement before the model sees data" { class: module-a }
+RTR: "[3] Stage-0 router - deterministic rules\n[Component]\nunambiguous turns routed for ~zero tokens" { class: module-a }
+SQD: "[4] Stage-1 LLM classifier\n[Component]\nonly on ambiguity; never guesses - clarify or ticket" { class: module-a }
+SYN: "[5] Answer synthesis\n[Component]\nevery answer carries its provenance tuple" { class: module-a }
+MP: "[6] The golden set picks the model\n[Component]\nGPT-4o or Claude behind one seam" { class: module-a }
+OA: "[7] Omni adapter - as-the-user queries\n[Component]\nlive state is a tool call, not RAG" { class: module-b }
+CA: "[8] Help-docs adapter (RAG)\n[Component]\ncitations required on every answer" { class: module-b }
+JA: "[9] Ticket adapter - degradation floor\n[Component]\nidempotent create, as-the-user" { class: module-b }
+AP: "[10] Phase-2: approve payment runs, submit forecasts\n[Component]\nhuman approval pinned by a test that already runs" { class: evidence-gap }
+DLOG: "[11] Every answer reconstructable\nroute · sources+versions · model · entitlement, per turn" { class: datastore }
+EVAL: "[12] Eval harness - the release gate\ngolden set; offline, no credentials" { class: process }
+OMNI: "[13] EXT: Omni BI - governed queries\nover positions & forecasts" { class: external }
+CONF: "[14] EXT: Help-center docs\nbank connections, approval limits" { class: external }
+JIRA: "[15] EXT: Support desk\nticket intake & human follow-up" { class: external }
+BR: "[16] EXT: Model inference\nvendor-swappable, eval-gated" { class: external }
+OBS: "[17] EXT: Audit & telemetry\nwho did what; is it healthy" { class: external }
+
+SURF -> GATE: "sends question + signed token to"
+GATE -> RTR: "passes context-stamped turns to"
+RTR -> SQD: "escalates ambiguous turns to"
+SQD -> MP: "classifies intent via"
+RTR -> OA: "routes data questions to"
+RTR -> CA: "routes how-to questions to"
+RTR -> JA: "routes get-unstuck turns to"
+RTR -> AP: "will route phase-2 actions to" { style.stroke-dash: 3 }
+OA -> OMNI: "queries the semantic layer as-the-user in"
+CA -> CONF: "retrieves + cites docs from"
+JA -> JIRA: "24"
+OA -> SYN: "21"
+CA -> SYN: "22"
+JA -> SYN: "23"
+SYN -> MP: "synthesizes the streamed answer via"
+MP -> BR: "invokes the configured model on"
+SYN -> DLOG: "appends the provenance tuple to" { style.stroke-dash: 3 }
+EVAL -> GATE: "replays the golden set through"
+DLOG -> OBS: "ships decision records + metrics to" { style.stroke-dash: 3 }

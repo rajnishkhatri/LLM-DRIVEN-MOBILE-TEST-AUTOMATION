@@ -1,0 +1,6 @@
+{
+  "_note": "Seed for the Jira ticket adapter. Empty to start. Tests point the adapter at a temp copy so the committed seed never mutates. Idempotency is keyed on conversation+turn (C9): by_key maps idempotency_key -> ticket_id.",
+  "next_seq": 1,
+  "tickets": [],
+  "by_key": {}
+}

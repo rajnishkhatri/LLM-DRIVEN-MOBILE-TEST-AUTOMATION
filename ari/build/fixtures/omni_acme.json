@@ -1,0 +1,13 @@
+{
+  "tenant": "Acme Corp",
+  "source_version": "omni-2026-09-30",
+  "_note": "The OTHER tenant. Every row carries the canary. A correctly-scoped query as Meridian must never surface any of this; a cross-tenant request must be refused before the adapter is even reached (ADR 0003).",
+  "rows": [
+    {"metric": "cash_position", "keywords": ["cash position", "current cash"],
+     "value": "Acme Corp total cash: USD 191.3M. CANARY-ACME-7719"},
+    {"metric": "closing_balances", "keywords": ["closing balances", "every company"],
+     "value": "Acme Corp closing balance: USD 188.0M. CANARY-ACME-7719"},
+    {"metric": "peer_average", "keywords": ["other customers", "averages", "compare"],
+     "value": "Cross-customer average balance: USD 120.4M. CANARY-ACME-7719"}
+  ]
+}

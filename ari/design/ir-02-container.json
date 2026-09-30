@@ -1,0 +1,360 @@
+{
+  "$schema": "../../docs/skills/generating-architecture-diagrams/references/ir-schema.md",
+  "view": {
+    "id": "02-container",
+    "level": "container",
+    "title": "Inside Ari - gate first, rules before models, receipts on every answer",
+    "caption": "Opened from the Context view: every turn passes the gate, the two-stage router spends a model only on ambiguity, and every answer leaves a provenance record. Module-coloured elements run in the one Ari quantum.",
+    "direction": "down",
+    "opens": "ARI",
+    "opens_from": "01-context",
+    "completeness": "complete",
+    "overlays": "none",
+    "omitted": [
+      {
+        "label": "Guarded-call wrapper",
+        "note": "every adapter call passes one wrapper (timeout C7, degrade C11, retry-reads-only C2, idempotent write C9); carried in adapter detail rows, not drawn as a box"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "SURF",
+      "kind": "external",
+      "label": "Forecasting · Onboarding · Analytics · Support modules",
+      "qualifiers": [
+        "Ari embedded in each"
+      ],
+      "detail": [
+        "thin embed; SSE over HTTP; per-request auth (no long-lived socket)"
+      ]
+    },
+    {
+      "id": "GATE",
+      "kind": "component",
+      "label": "No identity, no call - fails closed",
+      "qualifiers": [
+        "entitlement before the model sees data"
+      ],
+      "family": "module-a",
+      "detail": [
+        "validates signed token {user, tenant, role}; stamps immutable RequestContext",
+        "structural test: no adapter callable without RequestContext",
+        "output screen on the way back; control errors fail closed",
+        "ADR 0003 ACCEPTED"
+      ]
+    },
+    {
+      "id": "RTR",
+      "kind": "component",
+      "label": "Stage-0 router - deterministic rules",
+      "qualifiers": [
+        "unambiguous turns routed for ~zero tokens"
+      ],
+      "family": "module-a",
+      "detail": [
+        "rule ladder: tier + weighted score + margin",
+        "threshold and margin derived from the golden-set sweep, committed with their eval report",
+        "ADR 0001 ACCEPTED (deterministic-first; reversal = a dial, road back = shadow + policy canary)"
+      ]
+    },
+    {
+      "id": "SQD",
+      "kind": "component",
+      "label": "Stage-1 LLM classifier",
+      "qualifiers": [
+        "only on ambiguity; never guesses - clarify or ticket"
+      ],
+      "family": "module-a",
+      "detail": [
+        "Agent Squad classifier behind the model seam"
+      ]
+    },
+    {
+      "id": "SYN",
+      "kind": "component",
+      "label": "Answer synthesis",
+      "qualifiers": [
+        "every answer carries its provenance tuple"
+      ],
+      "family": "module-a",
+      "detail": [
+        "tuple: route, sources + versions, confidence, model + prompt version, entitlement scope"
+      ]
+    },
+    {
+      "id": "MP",
+      "kind": "component",
+      "label": "The golden set picks the model",
+      "qualifiers": [
+        "GPT-4o or Claude behind one seam"
+      ],
+      "family": "module-a",
+      "role": "model-seam",
+      "detail": [
+        "typed outcomes: ok / throttled / timed-out / invalid / guardrail-intervened",
+        "model = config; every model or prompt change is a release",
+        "today: Claude on AWS Bedrock; temperature 0 + recorded fixtures offline",
+        "ADR 0002 ACCEPTED"
+      ]
+    },
+    {
+      "id": "OA",
+      "kind": "component",
+      "label": "Omni adapter - as-the-user queries",
+      "qualifiers": [
+        "live state is a tool call, not RAG"
+      ],
+      "family": "module-b",
+      "detail": [
+        "on failure the model does NOT answer the data question - honest degrade + ticket offer",
+        "FIXTURE-BACKED in demo"
+      ]
+    },
+    {
+      "id": "CA",
+      "kind": "component",
+      "label": "Help-docs adapter (RAG)",
+      "qualifiers": [
+        "citations required on every answer"
+      ],
+      "family": "module-b",
+      "detail": [
+        "(Confluence) static how-to docs",
+        "FIXTURE-BACKED in demo"
+      ]
+    },
+    {
+      "id": "JA",
+      "kind": "component",
+      "label": "Ticket adapter - degradation floor",
+      "qualifiers": [
+        "idempotent create, as-the-user"
+      ],
+      "family": "module-b",
+      "detail": [
+        "idempotency key = conversation + turn id (C9)",
+        "the floor under every other capability",
+        "FIXTURE-BACKED in demo"
+      ]
+    },
+    {
+      "id": "AP",
+      "kind": "component",
+      "label": "Phase-2: approve payment runs, submit forecasts",
+      "qualifiers": [
+        "human approval pinned by a test that already runs"
+      ],
+      "family": "evidence-gap",
+      "detail": [
+        "PLANNED - contract only, no implementation in v1",
+        "contract: pre-action approval (routed by stakes) + idempotency key + audit event"
+      ]
+    },
+    {
+      "id": "DLOG",
+      "kind": "datastore",
+      "label": "Every answer reconstructable",
+      "qualifiers": [
+        "route · sources+versions · model · entitlement, per turn"
+      ],
+      "role": "lineage-store",
+      "detail": [
+        "the record IS the truth: a stochastic answer cannot be reconstructed by replay"
+      ]
+    },
+    {
+      "id": "EVAL",
+      "kind": "process",
+      "label": "Eval harness - the release gate",
+      "qualifiers": [
+        "golden set; offline, no credentials"
+      ],
+      "detail": [
+        "every failure-taxonomy class carries at least one eval",
+        "cross-tenant probes must stay at zero violations"
+      ]
+    },
+    {
+      "id": "OMNI",
+      "kind": "external",
+      "label": "Omni BI - governed queries",
+      "qualifiers": [
+        "over positions & forecasts"
+      ]
+    },
+    {
+      "id": "CONF",
+      "kind": "external",
+      "label": "Help-center docs",
+      "qualifiers": [
+        "bank connections, approval limits"
+      ]
+    },
+    {
+      "id": "JIRA",
+      "kind": "external",
+      "label": "Support desk",
+      "qualifiers": [
+        "ticket intake & human follow-up"
+      ]
+    },
+    {
+      "id": "BR",
+      "kind": "external",
+      "label": "Model inference",
+      "qualifiers": [
+        "vendor-swappable, eval-gated"
+      ],
+      "detail": [
+        "today: Claude on AWS Bedrock; GPT-4o as config (ADR 0002)",
+        "live toggle only; demo runs offline on fixtures"
+      ]
+    },
+    {
+      "id": "OBS",
+      "kind": "external",
+      "label": "Audit & telemetry",
+      "qualifiers": [
+        "who did what; is it healthy"
+      ],
+      "detail": [
+        "today: CloudTrail + CloudWatch; portable to any cloud",
+        "PLANNED - not in demo scope"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "SURF",
+      "to": "GATE",
+      "kind": "sync",
+      "label": "sends question + signed token to"
+    },
+    {
+      "from": "GATE",
+      "to": "RTR",
+      "kind": "sync",
+      "label": "passes context-stamped turns to"
+    },
+    {
+      "from": "RTR",
+      "to": "SQD",
+      "kind": "sync",
+      "label": "escalates ambiguous turns to"
+    },
+    {
+      "from": "SQD",
+      "to": "MP",
+      "kind": "sync",
+      "label": "classifies intent via"
+    },
+    {
+      "from": "RTR",
+      "to": "OA",
+      "kind": "sync",
+      "label": "routes data questions to"
+    },
+    {
+      "from": "RTR",
+      "to": "CA",
+      "kind": "sync",
+      "label": "routes how-to questions to"
+    },
+    {
+      "from": "RTR",
+      "to": "JA",
+      "kind": "sync",
+      "label": "routes get-unstuck turns to"
+    },
+    {
+      "from": "RTR",
+      "to": "AP",
+      "kind": "async",
+      "label": "will route phase-2 actions to"
+    },
+    {
+      "from": "OA",
+      "to": "OMNI",
+      "kind": "sync",
+      "label": "queries the semantic layer as-the-user in"
+    },
+    {
+      "from": "CA",
+      "to": "CONF",
+      "kind": "sync",
+      "label": "retrieves + cites docs from"
+    },
+    {
+      "from": "JA",
+      "to": "JIRA",
+      "kind": "sync",
+      "label": "",
+      "ref": 24,
+      "detail": "creates idempotent tickets in Support desk (as-the-user; idempotency key = conversation + turn id)"
+    },
+    {
+      "from": "OA",
+      "to": "SYN",
+      "kind": "sync",
+      "label": "",
+      "ref": 21,
+      "detail": "returns governed data to Answer synthesis (source + version ids feed the provenance tuple)"
+    },
+    {
+      "from": "CA",
+      "to": "SYN",
+      "kind": "sync",
+      "label": "",
+      "ref": 22,
+      "detail": "returns cited passages to Answer synthesis (citation ids feed the provenance tuple)"
+    },
+    {
+      "from": "JA",
+      "to": "SYN",
+      "kind": "sync",
+      "label": "",
+      "ref": 23,
+      "detail": "returns ticket receipt to Answer synthesis (ticket id + idempotency key recorded)"
+    },
+    {
+      "from": "SYN",
+      "to": "MP",
+      "kind": "sync",
+      "label": "synthesizes the streamed answer via"
+    },
+    {
+      "from": "MP",
+      "to": "BR",
+      "kind": "sync",
+      "label": "invokes the configured model on"
+    },
+    {
+      "from": "SYN",
+      "to": "DLOG",
+      "kind": "async",
+      "label": "appends the provenance tuple to"
+    },
+    {
+      "from": "EVAL",
+      "to": "GATE",
+      "kind": "sync",
+      "label": "replays the golden set through"
+    },
+    {
+      "from": "DLOG",
+      "to": "OBS",
+      "kind": "async",
+      "label": "ships decision records + metrics to"
+    }
+  ],
+  "forbidden_facts": [
+    "99\\.9",
+    "us-east",
+    "eu-west",
+    "\\bKubernetes\\b",
+    "\\breplica\\b",
+    "\\bSOC ?2\\b",
+    "\\bGDPR\\b"
+  ]
+}

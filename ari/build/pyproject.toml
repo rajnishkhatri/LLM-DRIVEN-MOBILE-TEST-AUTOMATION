@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ari-demo"
+version = "0.1.0"
+description = "Ari — governed treasury assistant demo (offline-deterministic)"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+# boto3 is imported lazily and ONLY on the live-Bedrock toggle (ADR 0002).
+# The gates never install or exercise it.
+live = ["boto3>=1.34"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ari_demo*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

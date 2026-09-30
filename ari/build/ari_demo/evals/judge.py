@@ -39,11 +39,29 @@ class CalibrationError(RuntimeError):
 
 
 def is_calibrated() -> bool:
-    """Offline there are no human labels, so the judge is never calibrated."""
-    raise NotImplementedError("worker C: return False offline (no human slice)")
+    """Offline there are no human labels, so the judge is never calibrated.
+
+    Calibration requires TPR >= 0.9 AND TNR >= 0.9 on the 20-row human-labeled
+    slice (eval-spec §7). With no labels present offline, that bar can never be
+    met, so the gate stays closed.
+    """
+    return False
 
 
 def judge_faithfulness(answer: str, sources: Sequence[SourceRef]) -> Verdict:
     """Claim-decomposed support check. CALIBRATION GATE: verdicts carry no
-    authority until TPR and TNR >= 0.9 on the labeled slice (eval-spec §7)."""
+    authority until TPR and TNR >= 0.9 on the labeled slice (eval-spec §7).
+
+    Because the judge is uncalibrated offline, invoking it is a hard error: an
+    uncalibrated verdict must never be treated as authoritative. Security and
+    side-effect classes (F3/F4/F5) are guarded by deterministic probes, never by
+    this judge.
+    """
+    if not is_calibrated():
+        raise CalibrationError(
+            "judge is uncalibrated (no human-labeled slice offline; "
+            f"requires TPR >= {CALIBRATION_TPR_BAR} and TNR >= {CALIBRATION_TNR_BAR}) "
+            "- verdicts carry no authority (eval-spec §7)"
+        )
+    # Post-calibration the recorded/live verdict path would land here.
     raise NotImplementedError("stub - offline demo replays recorded verdicts")

@@ -105,8 +105,10 @@ class Pipeline:
             return self._record(resp, ctx, query)
 
         # Entitlement pre-check BEFORE any adapter/model sees data (ADR 0003).
+        # Both refuse and narrow short-circuit here, so no org-wide or
+        # cross-tenant data is ever fetched; synthesize emits the scoped copy.
         entitlement = precheck(ctx, query, route)
-        if entitlement.action == "refuse":
+        if entitlement.action in ("refuse", "narrow"):
             resp = synthesize(
                 route=route, ctx=ctx, entitlement=entitlement,
                 model=self._model, rule_ids=rule_ids,

@@ -63,6 +63,14 @@ REFUSED_ENTITLEMENT_COPY = (
     "I cannot share that — it is outside what your access covers. If you "
     "believe you should have it, your administrator can widen your scope."
 )
+NARROWED_COPY = (
+    "I can only show the part of this that your role covers, not the "
+    "organization-wide view. Ask your administrator if you need broader access."
+)
+NO_DATA_COPY = (
+    "I do not have that figure in the data I can see for your account, so I "
+    "will not guess. I can raise a ticket to look into it — want me to?"
+)
 
 # Per-route prompt versions (a prompt change is a release, ADR 0002).
 _PROMPT_VERSION = {
@@ -194,6 +202,20 @@ def synthesize(
         )
 
     # ----------------------------------------------------------------------
+    # Narrowed: role-overreach. The entitlement check ran BEFORE any adapter,
+    # so no org-wide data was fetched; return only the scope statement, never
+    # the full result set (ADR 0003). Audit event is recorded.
+    # ----------------------------------------------------------------------
+    if entitlement.action == "narrow":
+        prov = _prov(route, (), 0.0, _PROMPT_VERSION.get(route, "narrow-v1"), _mv(model))
+        return AriResponse(
+            text=NARROWED_COPY,
+            provenance=prov,
+            route=route,
+            audit_event=base_audit,
+        )
+
+    # ----------------------------------------------------------------------
     # Degraded: adapter/model failed; degrade honestly + offer a ticket. The
     # model never covers a failure with a made-up answer (F6).
     # ----------------------------------------------------------------------
@@ -258,6 +280,18 @@ def synthesize(
     # ----------------------------------------------------------------------
     if route is Route.DATA:
         rows = omni.rows if omni else ()
+        # No matching figure: answer honestly instead of emitting an empty
+        # answer at confidence 1.0 cited to a ':no-match' source (F4). No
+        # fabricated source; confidence 0.0; offer a ticket.
+        if not rows:
+            prov = _prov(Route.DATA, (), 0.0, _PROMPT_VERSION[Route.DATA], _mv(model))
+            return AriResponse(
+                text=NO_DATA_COPY,
+                provenance=prov,
+                route=Route.DATA,
+                ticket_offer=True,
+                audit_event=base_audit,
+            )
         lines: list[str] = []
         for r in rows:
             lines.append(r.value)

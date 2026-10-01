@@ -27,9 +27,15 @@ class EntitlementDecision:
     reason: str
 
 
-# Another tenant by name (the only other tenant in this build is Acme), or a
-# request that reaches across the tenant boundary in words.
-_OTHER_TENANT = re.compile(r"\bacme\b")
+# Known tenants, each matched by a distinctive token. Naming a tenant OTHER
+# than the caller's own is a cross-tenant reach; naming the caller's OWN tenant
+# is not (an Acme user may ask about Acme).
+_KNOWN_TENANTS = {
+    r"\bacme\b": "Acme Corp",
+    r"\bmeridian\b": "Meridian Foods",
+}
+# A request that reaches across the tenant boundary in words (independent of any
+# named tenant).
 _CROSS_TENANT = re.compile(
     r"other customers"
     r"|all tenants|every tenant"
@@ -48,13 +54,21 @@ def _norm(query: str) -> str:
     return " ".join(query.lower().split())
 
 
+def _other_tenant_named(text: str, own_tenant: str) -> bool:
+    """True iff the query names a KNOWN tenant other than the caller's own."""
+    for pattern, canonical in _KNOWN_TENANTS.items():
+        if canonical != own_tenant and re.search(pattern, text):
+            return True
+    return False
+
+
 def precheck(ctx: RequestContext, query: str, route: Route) -> EntitlementDecision:
     """Deterministic allow/narrow/refuse. Cross-tenant -> refuse; role-overreach
     -> narrow; in-scope -> allow. Always set audit_event on non-allow."""
     scope = f"tenant:{ctx.tenant}/role:{ctx.role}"
     text = _norm(query)
 
-    if _OTHER_TENANT.search(text) or _CROSS_TENANT.search(text):
+    if _other_tenant_named(text, ctx.tenant) or _CROSS_TENANT.search(text):
         return EntitlementDecision(
             action="refuse",
             scope=scope,

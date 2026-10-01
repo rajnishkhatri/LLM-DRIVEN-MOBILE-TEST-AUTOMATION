@@ -65,6 +65,30 @@ Everything depends only on ports + domain; imports point inward (gate 12).
   lazy-boto3 Bedrock adapter with a `guardrail_id` slot), deterministic
   classifier, judge stub behind the calibration gate, ActionPort (contract-only).
 
+## Code-review pass (high effort, 2026-09-30)
+
+Eight findings over the merged diff (all outside the 72-row gated paths). **Three
+fixed** (commit after the integration commit), all 12 gates still green:
+
+- **F4 honesty:** a DATA-routed query with no matching Omni row returned empty
+  text at confidence 1.0 cited to a fabricated `:no-match` source → now answers
+  honestly (no source, confidence 0.0, ticket offer).
+- **F2 entitlement:** the cross-tenant check matched the token `acme` without
+  comparing to `ctx.tenant`, refusing an Acme user their own data → now refuses
+  only a tenant *other than* the caller's own.
+- **F1 governance:** the `narrow` decision was declared but unenforced → the
+  pipeline now short-circuits narrow (like refuse) *before* any adapter runs and
+  returns a scoped answer + audit event.
+
+**Five documented known edges** (left for the panel conversation, not bugs in
+the demo'd paths): keyword-based doc sanitization can strip legitimate how-to
+lines; the guarded wrapper's timeout budget only labels after the call returns
+(can't bound a slow sync call — same family as the deferred circuit breaker); the
+CLI ctx hardcodes `turn_id` (latent C9 key collision if a Pipeline is reused
+across turns); `verify_token` raises `AttributeError` not `IdentityError` on a
+validly-signed non-dict payload; and `stage0` THRESHOLD/MARGIN are hand-duplicated
+vs the sweep report (gate 1 catches drift).
+
 ## Deliberately deferred (designed, not built — by decision, not omission)
 
 - **Judge verdict quality** — stub only; live verdicts require the 20-row

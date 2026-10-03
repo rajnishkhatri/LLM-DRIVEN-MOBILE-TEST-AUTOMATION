@@ -31,7 +31,9 @@ deterministic but brittle on paraphrase; rejected as sole mechanism.
 - **One guarded-call wrapper at the port boundary** for every adapter call:
   timeout budget (C7), degradation ladder with the ticket stream as floor
   (C11), a single jittered retry on idempotent reads only (C2), idempotency
-  key = conversation+turn id on the ticket write (C9). Circuit breaker (C1)
+  key = conversation+turn id on the ticket write (C9 — *amended 2026-10-03:
+  anchored to the draft `(conversation, draft id)` for confirm-before-write;
+  see Amendment below*). Circuit breaker (C1)
   deliberately deferred behind its CloudWatch signal (per-adapter error +
   slow-call rate); the wrapper is where it slots later — a one-place change.
 - **Degraded data path is deterministic:** when the data call fails, the model
@@ -91,7 +93,40 @@ injected-timeout test green (degrade + ticket offer, conversation survives);
 duplicate-injection test on the ticket write; architecture test: imports point
 inward and a new-adapter change touches zero core files.
 
+## Amendment — v2 overlap + draft-anchored write key (2026-10-03)
+Refines two clauses of the Decision for the v2 enhancement
+([ari-v2-breakdown.md](../../cases/ripple/ari-v2-breakdown.md)); the ADR
+stays Accepted. The decision is made now; the v2 build is its implementation.
+
+- **Overlap does not short-circuit.** The single-Tier-A short-circuit
+  applies only when that capability is the *only* one that fired. When more
+  than one fires, stage-0 does not return score 1.0; the turn emits a
+  `CapabilityPlan` (every fired capability is a read) or one `Route.CLARIFY`
+  (a write fired, or the reads are mutually exclusive) — a branch the router
+  computes from the fired set, so "Never guess" holds at the new fork too.
+  The clause generalizes the *response* across every Tier-A rule; it does
+  **not** generalize *detection* — overlap fires only when both capabilities
+  already carry phrases in the stage-0 table, so coverage stays bounded by
+  that table. That bound is a known limit, recorded here: the next move is
+  feeding the classifier's hints into the overlap check, not a growing phrase
+  list. The Reversal and road-back story is unchanged.
+- **The ticket-write idempotency key is anchored to the draft.** With
+  confirm-before-write (ADR 0003 amendment), `create` runs on a later
+  confirm turn, so the original C9 key "conversation + turn id" would hand
+  each repeated confirm a new key and write twice. For the ticket write the
+  C9 key is therefore `(conversation, draft id)`, fixed when the draft is
+  created and stable across every confirm of that draft, so C9 collapses a
+  duplicate confirm onto one ticket id. The single-jittered-retry-on-reads
+  rule (C2) and no-retry-on-the-write rule are unchanged.
+
+**Compliance delta.** Add: overlap emits plan/clarify (not score 1.0) on
+held-out compound utterances; a build-failing negative assertion that a
+single-capability how-to brushing a second phrase still routes
+single-capability; `CLARIFY` recorded as its own route in the provenance
+tuple; duplicate-confirm replay returns one ticket id under the
+draft-anchored key.
+
 ## Notes
 Author: session pipeline (sdd-brainstorm → arch-characteristics → arch-decide)
 Approved by / date: Rajnish Khatri / 2026-09-30 (incl. Reversal + road-back)
-Last modified: 2026-09-29 / new
+Last modified: 2026-10-03 / v2 amendment (overlap short-circuit + draft-anchored ticket-write key)

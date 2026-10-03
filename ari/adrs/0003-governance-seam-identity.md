@@ -53,7 +53,44 @@ no-context-no-call test; provenance-tuple completeness = 100% of answers;
 ActionPort conformance test (approval cannot be bypassed); decision-log +
 CloudTrail planes wired per the observability design.
 
+## Amendment — v2 confirm-before-write + adapter default-deny (2026-10-03)
+Extends the Decision for the v2 enhancement
+([ari-v2-breakdown.md](../../cases/ripple/ari-v2-breakdown.md)); the ADR
+stays Accepted. The decision is made now; the v2 build is its implementation.
+
+- **The ticket write gets the stakes rule the action port already has.** A
+  ticket route returns a **draft**; `TicketPort.create` runs only on a human
+  **confirm** on a later turn. A cancel drops the draft and does not call the
+  port; an unrelated turn leaves the draft pending. This applies this ADR's
+  "human review routed by stakes" to the one write v1 actually performs,
+  closing the v1 behavior where a misroute or a frustrated utterance wrote a
+  Jira row on the same turn. The idempotency key is the draft's
+  `(conversation, draft id)`, fixed at creation (see ADR 0001 amendment); a
+  confirm must match the draft id it confirms, so a second ticket-shaped turn
+  cannot commit the wrong draft.
+- **Adapter entitlement defaults to deny.** The deterministic pre-check still
+  runs before the model, but it cannot see a query that names no tenant, so
+  the confused-deputy control also lives in the adapter, scoped by the token
+  (the rejected "service super-user + post-filter" alternative, refused one
+  layer down). A docs chunk is returned only when the token is entitled to
+  it: a chunk stamped for a tenant goes only to that tenant; a chunk is
+  treated as the shared help center only when it is **explicitly** marked
+  shared; a chunk with neither marker is **withheld**. The fail-open default
+  (unstamped = visible to all) is rejected — the realistic error is
+  forgetting to stamp a tenant doc, and a fail-open default would leak it to
+  every tenant. Omni's existing per-tenant file selection is the same control
+  one layer over. Prompt-level enforcement stays rejected.
+
+Identity propagation, fail-closed control errors, and "ActionPort is a
+contract, unimplemented" stay exactly as written.
+
+**Compliance delta.** Add: Gate 8 — exactly one ticket, on the confirm turn,
+with cancel calling no port and a duplicate confirm replaying to one id; Gate
+6 extended — an un-annotated docs chunk is withheld cross-tenant
+(build-failing) and a fixture-lint flags any un-annotated chunk; the adapter
+entitlement assertion calls the adapter, not only `precheck`.
+
 ## Notes
 Author: session pipeline (sdd-brainstorm → arch-characteristics → arch-decide)
 Approved by / date: Rajnish Khatri / 2026-09-30
-Last modified: 2026-09-29 / new
+Last modified: 2026-10-03 / v2 amendment (confirm-before-write + adapter default-deny)

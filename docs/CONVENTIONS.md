@@ -77,6 +77,7 @@ before inventing new ones):
 | ML solutions architecture case notes (OKF bundle) | `cases/ml-solutions-arch/` |
 | FDE handbook / runbook (OKF bundle) | `cases/fde/` |
 | System design patterns (OKF bundle) | `cases/SystemDesignPatterns/` |
+| Verbal intelligence — the Tree Card and the Think-Say Card (OKF bundle) | `cases/verbal-intelligence/` |
 | `arch-*` delivery-project artifacts (MTA) | `docs/architecture/<artifact-home>/mobile-test-automation/` — declared bundle |
 | SDD specs / plans | `docs/sdd/{specs,plans}/` (in `knowledge_globs`, not a declared bundle) |
 | Research / option studies | `docs/research/` (in `knowledge_globs`, not a declared bundle) |
